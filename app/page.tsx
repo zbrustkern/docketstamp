@@ -1,21 +1,29 @@
 import { Suspense } from "react";
-import { VendingMachineBuilder } from "@/components/VendingMachineBuilder";
+import { isReworkV3Enabled } from "@/lib/feature-flags";
+import { ExperienceRouter } from "@/components/ExperienceRouter";
 
-export default function Home() {
+interface PageProps {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function Home({ searchParams }: PageProps) {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const isV3 = await isReworkV3Enabled({ searchParams: resolvedParams });
+
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FCFAF7] flex items-center justify-center p-8">
+        <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-8">
           <div className="text-center space-y-3">
-            <div className="w-8 h-8 border-2 border-stone-300 border-t-amber-700 rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-serif uppercase tracking-widest text-stone-500">
+            <div className="w-8 h-8 border-2 border-stone-300 border-t-amber-800 rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-serif uppercase tracking-widest text-stone-600">
               Opening Aster &amp; Blanche Atelier...
             </p>
           </div>
         </div>
       }
     >
-      <VendingMachineBuilder />
+      <ExperienceRouter initialIsV3={isV3} />
     </Suspense>
   );
 }
