@@ -17,7 +17,7 @@ export default async function Home({ searchParams }: PageProps) {
           <div className="text-center space-y-3">
             <div className="w-8 h-8 border-2 border-stone-300 border-t-amber-800 rounded-full animate-spin mx-auto" />
             <p className="text-xs font-serif uppercase tracking-widest text-stone-600">
-              Opening Aster &amp; Blanche Atelier...
+              Opening SendMyNotes...
             </p>
           </div>
         </div>

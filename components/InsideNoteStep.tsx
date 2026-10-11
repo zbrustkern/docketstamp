@@ -103,7 +103,7 @@ export function InsideNoteStep({
           </h2>
         </div>
         <p className="text-sm text-stone-500">
-          Written with a real ballpoint pen on heavy 120 lb archival cardstock. Mailed directly to their door.
+          Written with a real ballpoint pen on quality folded cardstock. Mailed directly to their door.
         </p>
       </div>
 
