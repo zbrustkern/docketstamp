@@ -458,11 +458,11 @@ export function Step2NoteComposition({
         )}
       </div>
 
-      {/* INKING GUARANTEE CALLOUT */}
+      {/* INKING NOTICE CALLOUT */}
       <div className="p-4 bg-stone-100/80 rounded-2xl border border-stone-200/80 flex items-start gap-3">
         <Feather className="w-4 h-4 text-stone-700 shrink-0 mt-0.5" />
         <p className="text-xs text-stone-600 leading-relaxed">
-          <strong className="text-stone-900 font-semibold">Authentic Inking Guarantee:</strong>{" "}
+          <strong className="text-stone-900 font-semibold">Real Pen Inking:</strong>{" "}
           All interior text is plotted in genuine ballpoint ink by automated precision pens—never digital imitation fonts or toner.
         </p>
       </div>

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { TargetPurchaseExperience } from "@/components/v3/TargetPurchaseExperience";
 
 export const metadata = {
-  title: "Send a Real Handwritten Card in 60 Seconds | SendMyNotes",
+  title: "Send a Real Handwritten Card Online | SendMyNotes",
   description:
     "Curated stationery cards written in real ballpoint pen by automated precision plotters. Mailed via USPS First-Class with your personal return address for $9.00 flat rate.",
 };

@@ -261,7 +261,7 @@ export default async function ScenarioPage({ params }: PageProps) {
             </span>
             <span className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white border border-stone-200 shadow-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              Apple Pay &amp; Google Pay
+              Secure Online Checkout
             </span>
           </div>
         </section>
@@ -276,7 +276,7 @@ export default async function ScenarioPage({ params }: PageProps) {
               </span>
             </div>
             <span className="text-[11px] text-amber-800 font-medium">
-              Step 1 of 4 • Edit names and mail in 60 seconds
+              Step 1 of 4 • Edit names and personalize
             </span>
           </div>
 

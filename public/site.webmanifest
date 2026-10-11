@@ -1,7 +1,7 @@
 {
   "name": "sendmynotes - Real Handwritten Cards, Mailed for You",
   "short_name": "sendmynotes",
-  "description": "Custom 5x7 folded greeting cards written with real pen and ink. Mailed via USPS First Class.",
+  "description": "Custom folded greeting cards written with real pen and ink. Mailed via USPS First Class.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAF8F5",

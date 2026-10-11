@@ -71,7 +71,7 @@ export const OCCASION_METADATA: Record<
     name: "Anniversary",
     headline: "Send a Real Handwritten Anniversary Card",
     description:
-      "Surprise your spouse or celebrate a couple's journey with a timeless love note written in real pen on heavy archival cardstock.",
+      "Surprise your spouse or celebrate a couple's journey with a timeless love note written in real pen on quality folded cardstock.",
     metaTitle: "Send a Handwritten Anniversary Card | Real Ink Delivery ($9)",
     metaDescription:
       "Celebrate anniversaries with a lasting handwritten love note. Real ballpoint ink, premium folded cardstock, and USPS First Class mail delivery.",
@@ -629,7 +629,7 @@ export const SEO_SCENARIOS: ScenarioConfig[] = [
     h1Title: "Send a Get Well Soon Card for Surgery Recovery",
     heroTagline: "Recovering from surgery is exhausting and lonely. Brighten their bedside table with real handwritten encouragement.",
     metaTitle: "Get Well Soon Card After Surgery | Real Handwritten Delivery ($9)",
-    metaDescription: "Send gentle healing wishes after a surgery or hospital stay. Crafted with real ballpoint pen ink on 5x7 folded cardstock with USPS stamp.",
+    metaDescription: "Send gentle healing wishes after a surgery or hospital stay. Crafted with real ballpoint pen ink on folded cardstock with USPS stamp.",
     keywords: [
       "get well soon card after surgery",
       "what to write someone recovering from surgery",

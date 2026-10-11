@@ -170,18 +170,18 @@ export async function sendOccasionReminderEmail({
   const subject = `💌 Reminder: ${occasionTitle} is in ${daysRemaining} days (${occasionDateFormatted})`;
 
   const textBody = `
-Aster & Blanche Occasion Reminder
-==================================
+SendMyNotes Occasion Reminder
+=============================
 Just a friendly heads-up: ${occasionTitle} is coming up on ${occasionDateFormatted} (in ${daysRemaining} days).
 
-Physical cards written with real ballpoint pen ink take 1-2 days to ink and 3-4 days to deliver via USPS First Class. 
-Sending your card now ensures it arrives right on their doorstep in time!
+Physical cards written with real ballpoint pen ink typically take 1–2 business days to prepare and 2–7 business days to deliver via USPS First-Class. 
+Sending your card now gives it plenty of time to arrive before the date!
 
 Send a card now:
 ${sendCardUrl}
 
 Warm regards,
-Aster & Blanche Press | sendmynotes.com
+SendMyNotes | sendmynotes.com
 `.trim();
 
   const htmlBody = `
@@ -210,7 +210,7 @@ Aster & Blanche Press | sendmynotes.com
       <p>This is your friendly reminder that <strong>${escapeHtml(recipientName)}</strong> has a milestone coming up on <strong>${escapeHtml(occasionDateFormatted)}</strong>.</p>
       
       <div class="highlight-box">
-        <strong>📮 Delivery Timing:</strong> Real ballpoint pen inking takes 1–2 business days, followed by 2–4 days USPS First Class transit. Sending your card this week ensures it arrives right on their doorstep before the big day.
+        <strong>📮 Delivery Timing:</strong> Real ballpoint pen inking typically takes 1–2 business days, followed by 2–7 business days USPS First-Class transit. Sending your card this week gives it plenty of time to arrive before the big day.
       </div>
       
       <a href="${escapeHtml(sendCardUrl)}" class="btn">Pick a Card for ${escapeHtml(recipientName)} &rarr;</a>
@@ -218,7 +218,7 @@ Aster & Blanche Press | sendmynotes.com
 
     <div class="footer">
       You are receiving this because you opted in to milestone reminders on <a href="https://sendmynotes.com" style="color: #78716C;">sendmynotes.com</a>.
-      <br/>Aster & Blanche Press &bull; Real pen handwritten cards, stamped & mailed for you.
+      <br/>SendMyNotes &bull; Real pen handwritten cards, stamped & mailed for you.
     </div>
   </div>
 </body>
@@ -241,7 +241,7 @@ Aster & Blanche Press | sendmynotes.com
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: `Aster & Blanche Reminders <${fromEmail}>`,
+          from: `SendMyNotes Reminders <${fromEmail}>`,
           to: [toEmail],
           subject,
           text: textBody,

@@ -13,17 +13,18 @@ export const metadata: Metadata = {
     template: "%s | sendmynotes.com",
   },
   description:
-    "Send real pen-on-paper handwritten greeting cards in minutes. Written with real ballpoint ink on 120 lb archival cardstock, stamped, and mailed anywhere in the US for $9.00 flat.",
+    "Send real pen-on-paper handwritten greeting cards in minutes. Written with real ballpoint ink on folded cardstock, stamped, and mailed anywhere in the US for $9.00 flat.",
   applicationName: "sendmynotes",
-  authors: [{ name: "Aster & Blanche Press" }],
-  creator: "Aster & Blanche Press",
+  authors: [{ name: "SendMyNotes" }],
+  creator: "SendMyNotes",
   publisher: "sendmynotes",
   keywords: [
     "handwritten greeting cards",
     "send handwritten card online",
     "real pen handwritten note",
     "handwritten cards mailed for you",
-    "custom 5x7 folded cards",
+    "folded greeting cards",
+    "A2 folded cards",
     "handwritten letter service",
   ],
   alternates: {
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Real Handwritten Cards, Mailed for You | sendmynotes.com",
     description:
-      "Send a real handwritten card in minutes. Written in real pen and ink on 120 lb archival cardstock, stamped, and mailed directly to their door for $9 flat.",
+      "Send a real handwritten card in minutes. Written in real pen and ink on folded cardstock, stamped, and mailed directly to their door for $9 flat.",
     url: "https://sendmynotes.com",
     siteName: "sendmynotes.com",
     images: [
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Real Handwritten Cards, Mailed for You | sendmynotes.com",
     description:
-      "Send a real handwritten card in minutes. Written in real pen and ink on 120 lb archival cardstock, stamped, and mailed directly to their door for $9 flat.",
+      "Send a real handwritten card in minutes. Written in real pen and ink on folded cardstock, stamped, and mailed directly to their door for $9 flat.",
     images: ["/og-image.png"],
   },
   icons: {
@@ -89,13 +90,13 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Product",
-              name: "Custom Handwritten 5x7 Greeting Card",
+              name: "Custom Handwritten Folded Greeting Card",
               image: "https://sendmynotes.com/aster-blanche-backplate.png",
               description:
-                "Physical 5x7 greeting cards written with real ballpoint pen inking on 120 lb archival cardstock. Stamped and mailed via USPS First Class.",
+                "Physical folded A2 greeting cards written with real ballpoint pen inking on quality cardstock. Stamped and mailed via USPS First Class.",
               brand: {
                 "@type": "Brand",
-                name: "Aster & Blanche Press",
+                name: "SendMyNotes",
               },
               offers: {
                 "@type": "Offer",
