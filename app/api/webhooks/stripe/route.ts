@@ -65,12 +65,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, warning: "Missing orderId in metadata" });
       }
 
-      console.log(`[Webhook] Payment confirmed for Order ${orderId}. Processing order...`);
+      const isTestPayment = event.livemode === false || paymentIntent.livemode === false;
+      const paymentMode = isTestPayment ? "stripe_test" : "live";
+
+      console.log(
+        `[Webhook] Payment confirmed for Order ${orderId} (mode: ${paymentMode}, livemode: ${!isTestPayment}). Processing order...`
+      );
 
       const result = await processPaidOrder(
         orderId,
         paymentIntent.id,
-        paymentIntent.receipt_email || undefined
+        paymentIntent.receipt_email || undefined,
+        {
+          isTest: isTestPayment,
+          paymentMode,
+        }
       );
 
       if (!result.success) {
