@@ -22,7 +22,14 @@
     "test:flags": "tsx tests/feature-flags.test.ts",
     "test:target": "tsx tests/target-experience.test.ts",
     "test:ads": "tsx tests/ad-scenarios-routing.test.ts",
-    "test:meta": "tsx tests/meta-conversions-api.test.ts"
+    "test:meta": "tsx tests/meta-conversions-api.test.ts",
+    "test:payment-mode": "tsx tests/payment-mode-safety.test.ts",
+    "test:sender-validation": "tsx tests/sender-validation.test.ts",
+    "test:telemetry-ingestion": "tsx tests/telemetry-ingestion.test.ts",
+    "test:delivery-estimate": "tsx tests/delivery-estimate.test.ts",
+    "test:draft": "tsx tests/draft.test.ts",
+    "test:all": "npm run test:target && npm run test:security && npm run test:flags && npm run test:ads && npm run test:meta && npm run test:sync && npm run test:intent && npm run test:payment-mode && npm run test:sender-validation && npm run test:telemetry-ingestion && npm run test:delivery-estimate && npm run test:draft",
+    "test": "npm run test:all"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^3.1.1",
