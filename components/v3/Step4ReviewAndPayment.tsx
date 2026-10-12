@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   Elements,
   PaymentElement,
+  ExpressCheckoutElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -58,7 +59,7 @@ interface Step4ReviewAndPaymentProps {
   onApplyDiscount: (code: string) => Promise<{ success: boolean; error?: string }>;
   onRemoveDiscount: () => void;
   appliedDiscount: AppliedDiscountInfo | null;
-  onPaymentSuccess: (orderId: string) => void;
+  onPaymentSuccess: (orderId: string, viewToken?: string, fulfillmentStatus?: string) => void;
   onBack: () => void;
 }
 
@@ -79,7 +80,7 @@ interface InnerPaymentProps {
   appliedDiscount: AppliedDiscountInfo | null;
   onApplyDiscount: (code: string) => Promise<{ success: boolean; error?: string }>;
   onRemoveDiscount: () => void;
-  onPaymentSuccess: (orderId: string) => void;
+  onPaymentSuccess: (orderId: string, viewToken?: string, fulfillmentStatus?: string) => void;
   onBack: () => void;
 }
 
@@ -109,6 +110,7 @@ function InnerPaymentForm({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [walletAvailable, setWalletAvailable] = useState(false);
 
   // Promo code toggle & input state
   const [showPromoInput, setShowPromoInput] = useState(Boolean(appliedDiscount));
@@ -147,6 +149,69 @@ function InnerPaymentForm({
     }
   };
 
+  const handleExpressReady = (event: {
+    availablePaymentMethods?: { applePay?: boolean; googlePay?: boolean; link?: boolean };
+  }) => {
+    const methods = event?.availablePaymentMethods;
+    const hasAny = Boolean(methods && (methods.applePay || methods.googlePay || methods.link));
+    setWalletAvailable(hasAny);
+    if (typeof window !== "undefined") {
+      (window as any).trackEvent?.("wallet_availability_observed", 4, {
+        applePay: Boolean(methods?.applePay),
+        googlePay: Boolean(methods?.googlePay),
+        link: Boolean(methods?.link),
+      });
+    }
+  };
+
+  const handleExpressConfirm = async () => {
+    if (!stripe || !elements) return;
+    setIsProcessing(true);
+    setErrorMessage(null);
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/order/${orderId}`,
+          receipt_email: customerEmail,
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        setErrorMessage(error.message || "Wallet payment failed. Please use card below.");
+        setIsProcessing(false);
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        let confirmData: any = null;
+        try {
+          const confirmRes = await fetch("/api/checkout/confirm-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId,
+              paymentIntentId: paymentIntent.id,
+              customerEmail,
+            }),
+          });
+          confirmData = await confirmRes.json();
+          if (!confirmRes.ok || !confirmData.success) {
+            console.warn("[Checkout] confirm-order returned non-ok status:", confirmData);
+          }
+        } catch (confirmErr) {
+          console.warn("[Checkout] Notice confirming order:", confirmErr);
+        }
+
+        setIsProcessing(false);
+        onPaymentSuccess(orderId, confirmData?.viewToken, confirmData?.status);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Payment error occurred";
+      setErrorMessage(msg);
+      setIsProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -177,7 +242,7 @@ function InnerPaymentForm({
         }
 
         setIsProcessing(false);
-        onPaymentSuccess(orderId);
+        onPaymentSuccess(orderId, data.viewToken, data.status);
         return;
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error completing free order";
@@ -220,7 +285,7 @@ function InnerPaymentForm({
           throw new Error(confirmData.error || "Failed to confirm simulated order.");
         }
         setIsProcessing(false);
-        onPaymentSuccess(orderId);
+        onPaymentSuccess(orderId, confirmData.viewToken, confirmData.status);
         return;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Error confirming simulated order.";
@@ -257,8 +322,9 @@ function InnerPaymentForm({
         setErrorMessage(error.message || "Payment declined. Please check your card information.");
         setIsProcessing(false);
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        let confirmData: any = null;
         try {
-          await fetch("/api/checkout/confirm-order", {
+          const confirmRes = await fetch("/api/checkout/confirm-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -267,12 +333,16 @@ function InnerPaymentForm({
               customerEmail,
             }),
           });
+          confirmData = await confirmRes.json();
+          if (!confirmRes.ok || !confirmData.success) {
+            console.warn("[Checkout] confirm-order returned non-ok status:", confirmData);
+          }
         } catch (confirmErr) {
           console.warn("[Checkout] Notice confirming order:", confirmErr);
         }
 
         setIsProcessing(false);
-        onPaymentSuccess(orderId);
+        onPaymentSuccess(orderId, confirmData?.viewToken, confirmData?.status);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Payment error occurred";
@@ -542,13 +612,34 @@ function InnerPaymentForm({
               </p>
             </div>
           ) : (
-            <div className="min-h-[140px] flex flex-col justify-center">
+            <div className="min-h-[140px] flex flex-col justify-center space-y-4">
               {!isPaymentElementReady && (
                 <div className="flex flex-col items-center justify-center py-6 gap-2 text-stone-400 text-xs">
                   <Loader2 className="w-5 h-5 animate-spin text-amber-700" />
                   <span>Loading secure Stripe payment fields...</span>
                 </div>
               )}
+
+              {/* EXPRESS CHECKOUT ELEMENT (Apple Pay / Google Pay / Link) */}
+              <div className={walletAvailable ? "space-y-3" : "hidden"}>
+                <ExpressCheckoutElement
+                  onConfirm={handleExpressConfirm}
+                  onReady={handleExpressReady}
+                  options={{ buttonHeight: 44 }}
+                />
+                <div className="relative my-3">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-stone-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-white px-3 text-stone-400 font-medium">
+                      — Or pay with card —
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD ELEMENT FALLBACK */}
               <PaymentElement
                 id="v3-payment-element"
                 options={{ layout: "tabs" }}

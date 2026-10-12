@@ -71,6 +71,7 @@ interface Step2NoteCompositionProps {
   occasion: string;
   onBack: () => void;
   onContinue: () => void;
+  hideFixedActionBar?: boolean;
 }
 
 export function Step2NoteComposition({
@@ -85,6 +86,7 @@ export function Step2NoteComposition({
   occasion,
   onBack,
   onContinue,
+  hideFixedActionBar = false,
 }: Step2NoteCompositionProps) {
   // Inspiration drawer state
   const [isInspirationOpen, setIsInspirationOpen] = useState(false);
@@ -241,10 +243,10 @@ export function Step2NoteComposition({
           ) : (
             <span className="text-emerald-700 font-medium flex items-center gap-1">
               <Check className="w-3.5 h-3.5 shrink-0" />
-              Fits beautifully on physical A2 card leaf
+              Fits beautifully on physical A2 card
             </span>
           )}
-          <span className="text-stone-400 text-[10px]">A2 Leaf (4.25&quot; × 5.5&quot;)</span>
+          <span className="text-stone-400 text-[10px]">A2 Card (4.25&quot; × 5.5&quot;)</span>
         </div>
       </div>
 
@@ -265,7 +267,7 @@ export function Step2NoteComposition({
                 onChangeSalutation(val);
               }
             }}
-            placeholder="Dear Eleanor,"
+            placeholder="e.g. Dear Eleanor,"
             className={`w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-600 shadow-2xs ${currentFont.fontClass}`}
           />
           <p className="text-[11px] text-stone-400 mt-0.5">
@@ -283,6 +285,27 @@ export function Step2NoteComposition({
               Font: {currentFont.name}
             </span>
           </div>
+
+          {/* 1-Tap Suggested Starter Chip */}
+          {!bodyNote.trim() && messageBank[0] && (
+            <div className="mb-2.5 flex items-center justify-between gap-2.5 bg-amber-50/90 border border-amber-200/90 rounded-xl p-3 text-xs text-amber-950 shadow-2xs">
+              <div className="min-w-0">
+                <span className="font-semibold block text-[10px] uppercase tracking-wider text-amber-800">
+                  Suggested Starter ({occasion}):
+                </span>
+                <span className="italic truncate block text-stone-700 mt-0.5">
+                  &ldquo;{messageBank[0].handwritten}&rdquo;
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onChangeBodyNote(messageBank[0].handwritten)}
+                className="shrink-0 bg-amber-800 hover:bg-amber-900 active:bg-amber-950 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition shadow-2xs cursor-pointer"
+              >
+                Use this starter
+              </button>
+            </div>
+          )}
 
           <div className="relative rounded-2xl border border-stone-300 overflow-hidden bg-white shadow-2xs">
             {/* Lined stationery ruling effect */}
@@ -313,7 +336,7 @@ export function Step2NoteComposition({
                 onChangeSignOff(val);
               }
             }}
-            placeholder="Warmly, Thomas"
+            placeholder="e.g. Warmly, Thomas"
             className={`w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-600 shadow-2xs ${currentFont.fontClass}`}
           />
           <p className="text-[11px] text-stone-400 mt-0.5">
@@ -525,31 +548,33 @@ export function Step2NoteComposition({
       </div>
 
       {/* MOBILE STICKY BOTTOM ACTION BAR */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200/90 p-3 shadow-lg flex items-center justify-between gap-3 safe-area-inset-bottom">
-        <button
-          type="button"
-          onClick={onBack}
-          className="px-3 py-2 text-stone-600 hover:text-stone-900 text-xs font-semibold flex items-center gap-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Card</span>
-        </button>
+      {!hideFixedActionBar && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200/90 p-3 shadow-lg flex items-center justify-between gap-3 safe-area-inset-bottom">
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-3 py-2 text-stone-600 hover:text-stone-900 text-xs font-semibold flex items-center gap-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Card</span>
+          </button>
 
-        <div className="text-center">
-          <span className="text-[11px] font-mono text-stone-500">
-            {charCount}/{MAX_CHARS} chars
-          </span>
+          <div className="text-center">
+            <span className="text-[11px] font-mono text-stone-500">
+              {charCount}/{MAX_CHARS} chars
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onContinue}
+            className="px-5 py-2.5 bg-stone-900 hover:bg-black text-white font-semibold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>Address Envelope →</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={onContinue}
-          className="px-5 py-2.5 bg-stone-900 hover:bg-black text-white font-semibold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
-        >
-          <span>Address Envelope →</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      )}
     </div>
   );
 }

@@ -85,6 +85,7 @@ interface Step3EnvelopeAddressingProps {
   fontClass: string;
   onBack: () => void;
   onContinue: () => void;
+  hideFixedActionBar?: boolean;
 }
 
 export function Step3EnvelopeAddressing({
@@ -95,6 +96,7 @@ export function Step3EnvelopeAddressing({
   fontClass,
   onBack,
   onContinue,
+  hideFixedActionBar = false,
 }: Step3EnvelopeAddressingProps) {
   const [showAptSuite, setShowAptSuite] = useState(Boolean(recipient.street2));
   const [formError, setFormError] = useState<string | null>(null);
@@ -212,7 +214,7 @@ export function Step3EnvelopeAddressing({
         <div className="relative z-10 mt-6 pt-3 border-t border-[#E8E0CE] flex items-center justify-between text-[11px] text-stone-500">
           <span className="font-serif italic">Genuine USPS First-Class Postage</span>
           <span className="text-[10px] text-stone-600 font-semibold uppercase tracking-wider">
-            Matching Premium Cream Envelope
+            Matching Paper Envelope
           </span>
         </div>
       </div>
@@ -221,7 +223,7 @@ export function Step3EnvelopeAddressing({
       <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 flex items-start gap-3">
         <ShieldCheck className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
         <p className="text-xs text-stone-700 leading-relaxed">
-          <strong className="font-semibold text-amber-950">High-Effort Personal Veneer:</strong>{" "}
+          <strong className="font-semibold text-amber-950">Personal Sender Return Address:</strong>{" "}
           Penned on the envelope so your recipient knows this card was sent personally by you, and USPS can return it if undeliverable. We never print barcodes or corporate shipping labels on the outer envelope.
         </p>
       </div>
@@ -484,25 +486,27 @@ export function Step3EnvelopeAddressing({
       </div>
 
       {/* MOBILE STICKY BOTTOM ACTION BAR */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200/90 p-3 shadow-lg flex items-center justify-between gap-3 safe-area-inset-bottom">
-        <button
-          type="button"
-          onClick={onBack}
-          className="px-3 py-2 text-stone-600 hover:text-stone-900 text-xs font-semibold flex items-center gap-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Note</span>
-        </button>
+      {!hideFixedActionBar && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200/90 p-3 shadow-lg flex items-center justify-between gap-3 safe-area-inset-bottom">
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-3 py-2 text-stone-600 hover:text-stone-900 text-xs font-semibold flex items-center gap-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Note</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={handleProceed}
-          className="px-5 py-2.5 bg-stone-900 hover:bg-black text-white font-semibold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
-        >
-          <span>Review &amp; Pay ($9.00) →</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={handleProceed}
+            className="px-5 py-2.5 bg-stone-900 hover:bg-black text-white font-semibold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>Review &amp; Pay ($9.00) →</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { TargetPurchaseExperience } from "@/components/v3/TargetPurchaseExperience";
+import { EntryPrototypeClient } from "@/app/preview/entry/client";
 import { VendingMachineBuilder } from "@/components/VendingMachineBuilder";
 
 interface ExperienceRouterProps {
@@ -24,7 +24,7 @@ export function ExperienceRouter({ initialIsV3 }: ExperienceRouterProps) {
   }, [searchParams, initialIsV3]);
 
   if (isV3) {
-    return <TargetPurchaseExperience />;
+    return <EntryPrototypeClient />;
   }
 
   return <VendingMachineBuilder />;

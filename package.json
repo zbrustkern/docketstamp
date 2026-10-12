@@ -28,7 +28,8 @@
     "test:telemetry-ingestion": "tsx tests/telemetry-ingestion.test.ts",
     "test:delivery-estimate": "tsx tests/delivery-estimate.test.ts",
     "test:draft": "tsx tests/draft.test.ts",
-    "test:all": "npm run test:target && npm run test:security && npm run test:flags && npm run test:ads && npm run test:meta && npm run test:sync && npm run test:intent && npm run test:payment-mode && npm run test:sender-validation && npm run test:telemetry-ingestion && npm run test:delivery-estimate && npm run test:draft",
+    "test:remediation": "tsx tests/review-remediation.test.ts",
+    "test:all": "npm run test:target && npm run test:security && npm run test:flags && npm run test:ads && npm run test:meta && npm run test:sync && npm run test:intent && npm run test:payment-mode && npm run test:sender-validation && npm run test:telemetry-ingestion && npm run test:delivery-estimate && npm run test:draft && npm run test:remediation",
     "test": "npm run test:all"
   },
   "dependencies": {

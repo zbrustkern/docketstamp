@@ -17,6 +17,7 @@ export interface SelectedDesign {
   imageUrl: string;
   title: string;
   source: "preset" | "custom";
+  occasion?: string;
   accepted: boolean;
 }
 
@@ -28,7 +29,9 @@ export interface CustomGenerationState {
 }
 
 export interface NoteDraft {
+  salutation?: string;
   text: string;
+  signOff?: string;
   style: string;
 }
 
@@ -75,6 +78,7 @@ export interface DraftOptionalPreferences {
   attribution: AttributionDraft | null;
   customGeneration: CustomGenerationState;
   checkoutSnapshotId: string | null;
+  currentStep?: string;
 }
 
 /**
@@ -99,6 +103,8 @@ export interface DraftState {
   attribution: AttributionDraft | null;
   customGeneration: CustomGenerationState;
   checkoutSnapshotId: string | null;
+  currentStep?: string;
+  completed?: boolean;
 }
 
 /**
@@ -120,6 +126,8 @@ export const ALLOWED_DRAFT_ROOT_KEYS: readonly (keyof DraftState)[] = [
   "attribution",
   "customGeneration",
   "checkoutSnapshotId",
+  "currentStep",
+  "completed",
 ] as const;
 
 /**

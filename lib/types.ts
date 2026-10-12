@@ -116,6 +116,13 @@ export interface Order {
   recipientOccasion?: RecipientOccasion;
   viewToken?: string;
   isRedacted?: boolean;
+  isTest?: boolean;
+  isComp?: boolean;
+  isFounderTest?: boolean;
+  paymentMode?: "live" | "stripe_test" | "local_mock";
+  finalAmountInCents?: number;
+  experienceVersion?: string;
+  sessionId?: string;
   createdAt: number;
   updatedAt: number;
 }
