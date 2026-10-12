@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStripeClient, getStripeSecretKey, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
+import { getStripeClient, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
+import { resolvePaymentMode, PaymentMode } from "@/lib/payment-mode";
 import { processPaidOrder } from "@/lib/order-processor";
 import { getOrderById, updateOrderStatus } from "@/lib/firebase-admin";
 import { logIncident } from "@/lib/incident-logger";
@@ -33,27 +34,6 @@ export async function POST(req: NextRequest) {
     }
 
     const verifiedPaymentIntentId = paymentIntentId || order.stripePaymentId;
-    const secret = getStripeSecretKey();
-    const isMockDevMode =
-      (!secret || secret.startsWith("sk_test_placeholder")) &&
-      process.env.NODE_ENV !== "production";
-
-    // Strict Fail-Closed Check: In production, missing or placeholder secrets are a hard failure
-    if (!secret || secret.startsWith("sk_test_placeholder")) {
-      if (process.env.NODE_ENV === "production") {
-        console.error("[Confirm Order Critical] Stripe secret key missing or placeholder in production.");
-        await logIncident({
-          type: "STRIPE",
-          severity: "error",
-          summary: "Stripe Secret Key Missing in Production",
-          technicalDetails: "Payment confirmation rejected because STRIPE_SECRET_KEY is unconfigured in production.",
-        });
-        return NextResponse.json(
-          { success: false, error: "Payment verification system is not configured." },
-          { status: 500 }
-        );
-      }
-    }
 
     if (!verifiedPaymentIntentId) {
       await updateOrderStatus(orderId, {
@@ -66,6 +46,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let mode: PaymentMode;
+    try {
+      mode = resolvePaymentMode();
+    } catch (modeErr: unknown) {
+      const msg = modeErr instanceof Error ? modeErr.message : "Payment mode configuration error";
+      console.error("[Confirm Order Critical] Payment mode error:", msg);
+      await logIncident({
+        type: "STRIPE",
+        severity: "error",
+        summary: "Payment Verification Misconfiguration",
+        technicalDetails: msg,
+      });
+      return NextResponse.json(
+        { success: false, error: "Payment verification system is not configured." },
+        { status: 503 }
+      );
+    }
+
+    const isMockDevMode = mode === "local_mock";
+    let isTest = isMockDevMode;
+    let paymentMode: PaymentMode = mode;
     let customerEmailFromStripe: string | undefined;
 
     if (!isMockDevMode) {
@@ -187,6 +188,8 @@ export async function POST(req: NextRequest) {
       }
 
       customerEmailFromStripe = pi.receipt_email || undefined;
+      isTest = !pi.livemode;
+      paymentMode = pi.livemode ? "live" : "stripe_test";
     } else {
       console.log(`[Confirm Order] Mock mode verification active for order ${orderId}`);
     }
@@ -202,7 +205,7 @@ export async function POST(req: NextRequest) {
       orderId,
       verifiedPaymentIntentId,
       customerEmail || customerEmailFromStripe || order.customerEmail,
-      { clientIp, userAgent }
+      { clientIp, userAgent, isTest, paymentMode }
     );
 
     return NextResponse.json({

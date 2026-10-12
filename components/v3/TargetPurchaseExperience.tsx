@@ -24,7 +24,8 @@ import {
 } from "@/lib/meta-ads";
 import { useAuth } from "@/context/AuthContext";
 import { getStoredAttribution } from "@/components/AttributionTracker";
-import { Feather, ShieldCheck } from "lucide-react";
+import { Feather, ShieldCheck, AlertCircle } from "lucide-react";
+import { evaluateCheckoutInitTransition } from "@/lib/payment-mode";
 
 export function extractRecipientName(salutation: string): string {
   if (!salutation) return "";
@@ -111,10 +112,12 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
   const [orderId, setOrderId] = useState<string>("");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
-  const [isMockCheckout, setIsMockCheckout] = useState<boolean>(true);
+  const [isMockCheckout, setIsMockCheckout] = useState<boolean>(false);
   const [isFreeOrder, setIsFreeOrder] = useState<boolean>(false);
   const [amountInCents, setAmountInCents] = useState<number>(900);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountInfo | null>(null);
+  const [checkoutInitError, setCheckoutInitError] = useState<string | null>(null);
+  const [isInitializingCheckout, setIsInitializingCheckout] = useState<boolean>(false);
 
   // Pre-fill user email and default return address if logged in
   useEffect(() => {
@@ -323,6 +326,8 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
 
   // Initialize checkout PaymentIntent when proceeding from Step 3 to Step 4
   const initializeCheckout = async (overrideDiscountCode?: string) => {
+    setCheckoutInitError(null);
+    setIsInitializingCheckout(true);
     try {
       const fullHandwrittenMessage = [salutation, bodyNote, signOff].filter(Boolean).join("\n\n");
 
@@ -376,7 +381,12 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to initialize payment.");
+        throw new Error(data.error || "Failed to initialize payment gateway.");
+      }
+
+      const decision = evaluateCheckoutInitTransition(true);
+      if (!decision.canAdvance) {
+        throw new Error(decision.errorMessage || "Unable to proceed to payment.");
       }
 
       setOrderId(data.orderId);
@@ -384,14 +394,19 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
       if (data.publishableKey) {
         setPublishableKey(data.publishableKey);
       }
-      setIsMockCheckout(data.isMock);
+      setIsMockCheckout(Boolean(data.isMock));
       setIsFreeOrder(Boolean(data.isFree));
       setAmountInCents(data.amountInCents || 900);
+      setCheckoutInitError(null);
       goToStep(4);
     } catch (err) {
-      console.warn("Notice initializing checkout intent:", err);
-      // Fallback: still navigate to step 4 in sandbox mode
-      goToStep(4);
+      const msg = err instanceof Error ? err.message : "Unable to connect to payment processor. Please try again.";
+      console.warn("Notice initializing checkout intent:", msg);
+      evaluateCheckoutInitTransition(false);
+      setCheckoutInitError(msg);
+      // Safe boundary: stay on current step with error and retry; never advance to payment
+    } finally {
+      setIsInitializingCheckout(false);
     }
   };
 
@@ -533,15 +548,33 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
         )}
 
         {currentStep === 3 && (
-          <Step3EnvelopeAddressing
-            recipient={recipient}
-            onChangeRecipient={handleUpdateRecipient}
-            sender={sender}
-            onChangeSender={handleUpdateSender}
-            fontClass={activeFont.fontClass}
-            onBack={() => goToStep(2)}
-            onContinue={() => initializeCheckout()}
-          />
+          <div className="space-y-4">
+            {checkoutInitError && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between gap-4 text-xs text-rose-900 shadow-xs animate-in fade-in">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{checkoutInitError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => initializeCheckout()}
+                  disabled={isInitializingCheckout}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-semibold rounded-lg text-xs transition cursor-pointer shrink-0"
+                >
+                  {isInitializingCheckout ? "Connecting..." : "Retry"}
+                </button>
+              </div>
+            )}
+            <Step3EnvelopeAddressing
+              recipient={recipient}
+              onChangeRecipient={handleUpdateRecipient}
+              sender={sender}
+              onChangeSender={handleUpdateSender}
+              fontClass={activeFont.fontClass}
+              onBack={() => goToStep(2)}
+              onContinue={() => initializeCheckout()}
+            />
+          </div>
         )}
 
         {currentStep === 4 && (

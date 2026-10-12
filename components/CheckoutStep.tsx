@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { calculateDeliveryEstimate } from "@/lib/delivery-estimate";
 import { useDeviceWallet } from "@/lib/device-wallet";
+import { evaluatePaymentSubmission } from "@/lib/payment-mode";
 
 export interface AppliedDiscountInfo {
   code: string;
@@ -135,46 +136,56 @@ function InnerPaymentForm({
       }
     }
 
-    // 2. MOCK MODE CHECKOUT (Development/Sandbox)
-    if (isMock || !stripe || !elements) {
-      setTimeout(async () => {
-        try {
-          // Trigger the mock webhook execution on server for end-to-end flow
-          const webhookRes = await fetch("/api/webhooks/stripe", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-mock-payment-intent": `pi_mock_${orderId}`,
-            },
-            body: JSON.stringify({
-              type: "payment_intent.succeeded",
-              data: {
-                object: {
-                  id: `pi_mock_${orderId}`,
-                  metadata: {
-                    orderId,
-                    discountCode: appliedDiscount?.code,
-                    discountAmountCents: appliedDiscount?.discountAmountInCents,
-                  },
-                  receipt_email: customerEmail,
-                  amount: appliedDiscount ? appliedDiscount.finalAmountInCents : 900,
-                  status: "succeeded",
-                },
-              },
-            }),
-          });
-          const webhookData = await webhookRes.json();
-          console.log("[Mock Checkout] Webhook simulation returned:", webhookData);
-        } catch (err) {
-          console.warn("[Mock Checkout] Webhook simulation notice:", err);
-        }
-        setIsProcessing(false);
-        onSuccess(orderId);
-      }, 1200);
+    // 2. EVALUATE PAYMENT SUBMISSION
+    const submissionDecision = evaluatePaymentSubmission({
+      isZeroCost: Boolean(isFree || (appliedDiscount && appliedDiscount.finalAmountInCents === 0)),
+      isMock: Boolean(isMock),
+      hasStripe: Boolean(stripe),
+      hasElements: Boolean(elements),
+    });
+
+    if (submissionDecision.mode === "blocked_error") {
+      setErrorMessage(
+        submissionDecision.errorMessage ||
+        "Payment processor is unavailable. Please check your connection and retry."
+      );
+      setIsProcessing(false);
       return;
     }
 
+    if (submissionDecision.mode === "local_mock") {
+      try {
+        const confirmRes = await fetch("/api/checkout/confirm-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            paymentIntentId: `pi_mock_${orderId}`,
+            customerEmail,
+          }),
+        });
+        const confirmData = await confirmRes.json();
+        if (!confirmRes.ok || !confirmData.success) {
+          throw new Error(confirmData.error || "Failed to confirm simulated order.");
+        }
+        setIsProcessing(false);
+        onSuccess(orderId);
+        return;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Error confirming simulated order.";
+        setErrorMessage(msg);
+        setIsProcessing(false);
+        return;
+      }
+    }
+
     // 3. REAL STRIPE CHECKOUT
+    if (!stripe || !elements) {
+      setErrorMessage("Payment processor is unavailable. Please check your connection and retry.");
+      setIsProcessing(false);
+      return;
+    }
+
     if (!isPaymentElementReady) {
       setErrorMessage("Payment form is still loading. Please try again in a moment.");
       setIsProcessing(false);
@@ -351,7 +362,7 @@ function InnerPaymentForm({
             <span className="leading-tight">{deviceWallet.paymentNotice}</span>
           </div>
 
-          {isMock || !elements ? (
+          {isMock ? (
             <div className="p-3 bg-white border border-stone-200 rounded-lg text-xs space-y-1.5 text-stone-600">
               <div className="flex items-center justify-between text-amber-700 font-medium">
                 <span className="flex items-center gap-1">
@@ -363,6 +374,16 @@ function InnerPaymentForm({
               </div>
               <p className="text-[11px] text-stone-500 leading-normal">
                 Stripe test mode active. Clicking &quot;Send Handwritten Card&quot; will process your order and dispatch the robotic pen fulfillment pipeline immediately.
+              </p>
+            </div>
+          ) : !elements ? (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs space-y-1.5 text-rose-800">
+              <div className="flex items-center gap-1 text-rose-700 font-medium">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                <span>Payment Processor Unavailable</span>
+              </div>
+              <p className="text-[11px] text-rose-600 leading-normal">
+                Unable to load secure payment fields. Please check your connection or retry.
               </p>
             </div>
           ) : (
@@ -550,7 +571,7 @@ export function CheckoutStep(props: CheckoutStepProps) {
             <InnerPaymentForm {...props} />
           </Elements>
         ) : (
-          <InnerPaymentForm {...props} isMock={true} />
+          <InnerPaymentForm {...props} isMock={props.isMock ?? false} />
         )}
       </div>
     </div>

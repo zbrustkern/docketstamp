@@ -20,6 +20,13 @@ export interface ProcessPaidOrderResult {
   alreadyProcessed?: boolean;
 }
 
+export interface ProcessOrderOptions {
+  clientIp?: string;
+  userAgent?: string;
+  isTest?: boolean;
+  paymentMode?: "live" | "stripe_test" | "local_mock";
+}
+
 export class DuplicateDispatchError extends Error {
   public status: string;
   public handwryttenOrderId?: string;
@@ -41,7 +48,7 @@ export async function processPaidOrder(
   orderId: string,
   paymentIntentId: string,
   customerEmail?: string,
-  clientContext?: { clientIp?: string; userAgent?: string }
+  clientContext?: ProcessOrderOptions
 ): Promise<ProcessPaidOrderResult> {
   let order: Order;
 
@@ -85,6 +92,12 @@ export async function processPaidOrder(
         customerEmail: finalEmail,
         dispatchStartedAt: Date.now(),
         updatedAt: Date.now(),
+        ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
+          ? {
+              isTest: Boolean(clientContext?.isTest ?? (clientContext?.paymentMode !== "live")),
+              paymentMode: clientContext?.paymentMode || "stripe_test",
+            }
+          : {}),
       });
 
       return {
@@ -129,17 +142,36 @@ export async function processPaidOrder(
     }
   }
 
-  // 5. Dispatch to Handwrytten robotic pen fulfillment with deterministic orderId for supplier idempotency
-  const fulfillment = await fulfillHandwryttenOrder({
-    orderId,
-    imageUrl: order.frontImageUrl,
-    printedGreeting: order.printedMessage,
-    handwrittenMessage: order.handwrittenNote,
-    fontId: order.fontStyleId || "1",
-    recipient: order.recipientAddress,
-    returnAddress: order.returnAddress,
-    scheduledSendDate: order.scheduledSendDate,
-  });
+  const isTestModePayment = Boolean(
+    clientContext?.isTest ||
+    clientContext?.paymentMode === "stripe_test" ||
+    clientContext?.paymentMode === "local_mock"
+  );
+
+  let fulfillment: { success: boolean; order_id?: string; error?: string; details?: unknown };
+
+  if (isTestModePayment) {
+    // Test/Live safety boundary: Test payments must NEVER submit to live Handwrytten supplier
+    console.log(
+      `[OrderProcessor] Test payment mode active (${clientContext?.paymentMode || "stripe_test"}). Skipping live Handwrytten dispatch.`
+    );
+    fulfillment = {
+      success: true,
+      order_id: `test_hw_${orderId}`,
+    };
+  } else {
+    // 5. Dispatch to Handwrytten robotic pen fulfillment with deterministic orderId for supplier idempotency
+    fulfillment = await fulfillHandwryttenOrder({
+      orderId,
+      imageUrl: order.frontImageUrl,
+      printedGreeting: order.printedMessage,
+      handwrittenMessage: order.handwrittenNote,
+      fontId: order.fontStyleId || "1",
+      recipient: order.recipientAddress,
+      returnAddress: order.returnAddress,
+      scheduledSendDate: order.scheduledSendDate,
+    });
+  }
 
   if (!fulfillment.success) {
     const rawError = fulfillment.error || "";
@@ -185,7 +217,13 @@ export async function processPaidOrder(
     status: "PROCESSING_HANDWRYTTEN",
     handwryttenOrderId: fulfillment.order_id,
     fulfillmentError: undefined,
-  });
+    ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
+      ? {
+          isTest: Boolean(clientContext?.isTest ?? (clientContext?.paymentMode !== "live")),
+          paymentMode: clientContext?.paymentMode || "stripe_test",
+        }
+      : {}),
+  } as any);
 
   // 7. Auto-resolve any prior incidents for this order
   try {
