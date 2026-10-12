@@ -1,0 +1,37 @@
+{
+  "verifiedDate": "2026-10-11",
+  "source": "Authenticated GET https://api.handwrytten.com/v2/fonts/list",
+  "status": "ok",
+  "fonts": [
+    {
+      "id": "hwKate",
+      "label": "Carefree Kate",
+      "line_spacing": 0.6
+    },
+    {
+      "id": "hwDavid",
+      "label": "Casual David",
+      "line_spacing": 0.6
+    },
+    {
+      "id": "hwChase",
+      "label": "Charming Chase",
+      "line_spacing": 0.55
+    },
+    {
+      "id": "hwCharity",
+      "label": "Chill Charity",
+      "line_spacing": 0.6
+    },
+    {
+      "id": "hwWill",
+      "label": "Dapper Will",
+      "line_spacing": 0.6
+    },
+    {
+      "id": "hwAdam",
+      "label": "Executive Adam",
+      "line_spacing": 0.6
+    }
+  ]
+}

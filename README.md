@@ -1,6 +1,36 @@
-# Aster & Blanche (SendMyNotes)
+# Send My Notes
 
-> **Boutique letterpress atelier & real pen-written greeting cards sent in 60 seconds.**
+> **A thoughtful gesture made seamless. Your words, real pen and ink, mailed for you.**
+
+## Start here: canonical project context
+
+**Founder decisions established October 11, 2026.** All project participants
+should read the [canonical project brief](docs/CANONICAL_PROJECT_BRIEF.md) and
+[canonical product specifications](docs/CANONICAL_PRODUCT_SPECS.md) first.
+
+- **Audience:** personal senders, 100%.
+- **Value:** a thoughtful gesture made seamless. Customization contributes to
+  thoughtfulness; stationery quality supports it.
+- **Brand:** SendMyNotes serves the sender. Aster & Blanche is the recipient-facing
+  stationery identity and landing page, with its small optional sending funnel.
+  The intended redesign removes A&B from the SendMyNotes customer experience.
+- **Baseline:** zero independent customer conversions. The one paid order was the
+  founder's test. Apple Pay remains untested despite a successful Stripe payment.
+- **Verified format:** Handwrytten A2 folded portrait, **4.25 × 5.5 inches**.
+  Exact paper weight and complete supplier cost remain unconfirmed.
+- **Photos:** authorized for marketing only after personal information is excluded
+  or redacted and the exported asset is visually reviewed.
+
+The [Handwrytten audit](docs/HANDWRYTTEN_INTEGRATION_AUDIT.md) records live catalog
+verification and required alignment. Older documents under `docs/` and
+`docs/factory/` are historical context when they conflict with these facts. The
+current UI still contains mismatches; documentation alignment is not a deployed
+redesign or a verified payment/fulfillment rollout.
+
+**Recommended next build:** [Conversion redesign builder plan](docs/CONVERSION_REDESIGN_BUILDER_PLAN.md)
+contains the executive change list, detailed screen behavior, implementation
+packages, acceptance criteria, and rollout protocol. It is a proposal, not a
+claim of implementation or conversion uplift.
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.1-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-blue?logo=react)](https://react.dev/)
@@ -14,19 +44,25 @@
 
 ## Overview
 
-**Aster & Blanche** is a modern e-commerce web platform engineered to eliminate friction from thoughtful correspondence. Customers can select a fine-art card, compose or shuffle a heartfelt personal note, preview physical pen-on-paper coordinates in real time, and mail a custom greeting card in under 60 seconds with Apple Pay or credit card.
+**Send My Notes** helps personal senders choose or create a card, write their own
+message, and have it penned and mailed for them from their phone. Aster & Blanche
+is the physical stationery identity. The experience aims to make sending quick
+and effortless; the 60-second target has not been measured as a customer baseline.
 
-Behind the scenes, orders are fulfilled physically via real ballpoint ink pens on heavy 100 lb textured cardstock through the **Handwrytten API**, stamped, and dispatched via First-Class USPS mail.
+Behind the scenes, the **Handwrytten API** selects an A2 folded portrait card and
+submits the message for real-pen writing and postal fulfillment. See the canonical
+specification sheet for confirmed dimensions, supplier timing guidance, and
+remaining paper/envelope questions.
 
 ---
 
 ## Key Features
 
-* **1:1 Photorealistic Card Preview:** Real-time canvas simulation mirroring physical Handwrytten plotting coordinates, line breaks, margins, and paper textures.
+* **Live Card Preview:** On-screen visualization of the card and note. Exact physical geometry and wrapping require alignment with verified A2 specifications.
 * **Natural Note Composer:** Unified single-field authoring (salutation, sentiment, closing, signature) with an instant smart shuffle across 11 occasions and 4 distinct tones.
 * **Curated Calligraphy:** Defaults to authentic adult handwriting scale (**Casual David / `hwDavid`** at ~4mm letter height and ~8.5mm line spacing).
 * **Atelier Colophon Backplate:** Custom architectural heritage press mark (Aster & Blanche Press, Lake Forest, IL) rendered at 300 DPI (`public/aster-blanche-backplate.png`, Handwrytten ID `751314`).
-* **Frictionless Checkout:** Flat $9.00 all-inclusive pricing (card + custom ink plotting + first-class postage) with native Apple Pay / Stripe Elements.
+* **Guest Checkout:** Base $9.00 pricing including mailing, using Stripe. Apple Pay must be verified through the actual mobile purchase journey.
 * **Zero-Spam Address Entry:** Clean inputs with standard HTML5 autofill (`shipping address-line1`, etc.) for 1-tap browser and Keychain autofill.
 
 ---
@@ -145,7 +181,7 @@ sendmynotes/
 sequenceDiagram
     autonumber
     actor Customer
-    participant Web as Aster & Blanche Web App
+    participant Web as SendMyNotes Web App
     participant Stripe as Stripe API / Apple Pay
     participant DB as Google Cloud Firestore
     participant HW as Handwrytten v2 API

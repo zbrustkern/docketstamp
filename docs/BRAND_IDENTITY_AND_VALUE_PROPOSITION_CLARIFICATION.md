@@ -1,5 +1,7 @@
 # Brand Identity & Value Proposition Clarification: The Strategic Separation of SendMyNotes and Aster & Blanche
 
+> **Historical context — current authority updated October 11, 2026.** Read the [canonical project brief](CANONICAL_PROJECT_BRIEF.md) and [canonical product specifications](CANONICAL_PRODUCT_SPECS.md) first. They supersede conflicting instructions, brand claims, product specifications, conversion baselines, cost assumptions, and experimental claims below. Zero independent customer conversions; the one paid order was the founder's test. Apple Pay is untested. Older “verified” labels do not establish supplier facts. This document is retained as historical context, not an active implementation directive.
+
 **Document Classification:** Canonical Brand Doctrine & Strategic Directive  
 **Target File:** `docs/BRAND_IDENTITY_AND_VALUE_PROPOSITION_CLARIFICATION.md`  
 **Author:** Brand Strategy Lead  

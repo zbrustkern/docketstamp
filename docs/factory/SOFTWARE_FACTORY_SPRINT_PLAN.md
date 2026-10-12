@@ -1,5 +1,7 @@
 # Software Factory: Master Sprint Plan & Engineering Architecture
 
+> **Historical context — current authority updated October 11, 2026.** Read the [canonical project brief](../CANONICAL_PROJECT_BRIEF.md) and [canonical product specifications](../CANONICAL_PRODUCT_SPECS.md) first. They supersede conflicting instructions, brand claims, product specifications, conversion baselines, cost assumptions, and experimental claims below. Zero independent customer conversions; the one paid order was the founder's test. Apple Pay is untested. Older “verified” labels do not establish supplier facts. This document is retained as historical context, not an active implementation directive.
+
 > **Purpose**: This document provides an exhaustive, multi-week engineering sprint plan for building the **v2 Micro-Commerce Software Factory**. It is designed to be fully portable and checked into the root of the new v2 repository.
 > **Paradigm**: Systematic Quantitative Micro-Commerce (Parameterizing widgets, micro-targets, headless funnels, pluggable fulfillment, and capital allocation).
 

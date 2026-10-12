@@ -1,5 +1,7 @@
 # SendMyNotes / Aster & Blanche: Comprehensive Rework Proposal & Agent Build Plan
 
+> **Historical context — current authority updated October 11, 2026.** Read the [canonical project brief](CANONICAL_PROJECT_BRIEF.md) and [canonical product specifications](CANONICAL_PRODUCT_SPECS.md) first. They supersede conflicting instructions, brand claims, product specifications, conversion baselines, cost assumptions, and experimental claims below. Zero independent customer conversions; the one paid order was the founder's test. Apple Pay is untested. Older “verified” labels do not establish supplier facts. This document is retained as historical context, not an active implementation directive.
+
 **Document Version:** 3.0.0  
 **Prepared:** October 3, 2026  
 **Stage:** Formal Proposal Package — Awaiting Founder Approval Following Independent Validation  
