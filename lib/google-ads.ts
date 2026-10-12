@@ -153,7 +153,7 @@ export function trackGA4Purchase(params: {
       items: [
         {
           item_id: params.orderId,
-          item_name: params.itemName || "Custom 5x7 Folded Handwritten Card",
+          item_name: params.itemName || "Custom Folded Handwritten Card",
           price: value,
           item_category: "Handwritten Card",
         },

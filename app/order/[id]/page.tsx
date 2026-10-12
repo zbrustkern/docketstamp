@@ -343,8 +343,8 @@ export default function OrderStatusPage() {
       status: "complete",
     },
     {
-      title: "Artwork Printed on Heavy Cardstock",
-      description: "5×7 folded card printed with rich front cover artwork.",
+      title: "Artwork Printed on Quality Cardstock",
+      description: "Folded card printed with rich front cover artwork.",
       icon: Sparkles,
       status: "complete",
     },
@@ -355,7 +355,7 @@ export default function OrderStatusPage() {
         ? "Real Ink Handwriting Complete"
         : "Real Ink Handwriting In Progress",
       description: order.scheduledSendDate
-        ? `Order confirmed. Queued to be penned with real ink and postmarked on ${order.scheduledSendDate}.`
+        ? `Order confirmed. Queued to be penned with real ink and mailed for ${order.scheduledSendDate}.`
         : isMailed
         ? `Penned with real blue ballpoint ink. (Handwrytten Order ID: ${order.handwryttenOrderId || "confirmed"})`
         : isInking
@@ -820,7 +820,7 @@ export default function OrderStatusPage() {
           <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-md flex flex-col justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              Physical 5×7 Folded Card
+              Physical Folded Card
             </h3>
             <div className="relative aspect-[5/7] w-full rounded-2xl overflow-hidden shadow-md border-2 border-stone-100">
               <Image

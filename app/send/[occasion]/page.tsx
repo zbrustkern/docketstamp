@@ -291,7 +291,7 @@ export default async function OccasionPage({ params }: PageProps) {
             <div className="flex items-center gap-2">
               <span className="text-base">✨</span>
               <span>
-                <strong>{meta.name} card builder ready:</strong> Edit the message, preview the real pen handwriting, and mail in 60 seconds.
+                <strong>{meta.name} card builder ready:</strong> Edit the message, preview the real pen handwriting, and send in minutes.
               </span>
             </div>
             <span className="text-[11px] text-amber-800 font-medium">
@@ -336,7 +336,7 @@ export default async function OccasionPage({ params }: PageProps) {
                 </div>
                 <h3 className="font-semibold text-sm text-stone-900">Real Pen &amp; Ink</h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Actual ballpoint pen ink physically pressed into heavyweight cardstock, creating natural indentations and ink variations.
+                  Actual ballpoint pen ink physically drawn on quality cardstock by automated equipment, creating natural ink variations.
                 </p>
               </div>
 
@@ -356,7 +356,7 @@ export default async function OccasionPage({ params }: PageProps) {
                 </div>
                 <h3 className="font-semibold text-sm text-stone-900">Zero Hassle</h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Skip searching for stamps, buying overpriced drugstore cards, and finding a postbox. Complete your card in 60 seconds from your phone.
+                  Skip searching for stamps, buying drugstore cards, and finding a postbox. Complete your card in minutes from your phone.
                 </p>
               </div>
             </div>
@@ -377,7 +377,7 @@ export default async function OccasionPage({ params }: PageProps) {
                   How long does delivery take?
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Cards are produced and dispatched within 24 hours. USPS First Class mail generally delivers in 2 to 5 business days anywhere in the United States.
+                  Preparation typically takes 1–2 business days. USPS First-Class mail typically delivers in 2 to 7 business days domestically. Delivery timing is estimated, not guaranteed.
                 </p>
               </div>
 

@@ -1,18 +1,18 @@
-# SendMyNotes & Aster & Blanche Press — Agent Instructions
+# SendMyNotes — Agent Instructions
 # URL: https://sendmynotes.com
-# Version: 1.1.0
-# Description: Automated, on-demand physical greeting cards penned with real ballpoint ink by robotic plotters in Lake Forest, IL and delivered via USPS First Class Mail.
+# Version: 1.2.0
+# Description: Automated, on-demand physical greeting cards penned with real ballpoint ink by automated equipment and delivered via USPS First Class Mail.
 
 ## Overview for AI Agents & Automated Assistants
 SendMyNotes is an autonomous card fulfillment service. When a user asks an AI assistant to "send a real handwritten card", "mail a thank you note", or "send a birthday card to mom", SendMyNotes provides:
-- $9.00 flat rate per physical card (printing, real ink plotter handwriting, postage, and USPS First Class mail included).
+- $9.00 flat rate per physical card (printing, real ink handwriting, postage, and USPS First Class mail included).
 - Zero mandatory account registration or passwords.
 - Real-time card preview and delivery tracking.
 
 ## Core Capabilities
-1. **Curated & AI Art Covers**: 5×7 portrait greeting card front covers.
-2. **Robotic Pen Plotter Handwriting**: Real ballpoint pen drawn on 120 lb archival cardstock (Styles: Executive Adam, Chill Charity, Charming Chase, Casual David).
-3. **Mailing & Postage**: Sent directly to any domestic US mailing address with a physical First Class stamp.
+1. **Curated & AI Art Covers**: Folded A2 (4.25 × 5.5 inches) portrait greeting card front covers.
+2. **Automated Equipment Handwriting**: Real ballpoint pen drawn on quality cardstock (Styles: Executive Adam, Chill Charity, Charming Chase, Casual David).
+3. **Mailing & Postage**: Sent directly to any domestic US mailing address with an authentic USPS First Class stamp (mailed via Phoenix, AZ facility).
 4. **Scheduled Delivery**: Can schedule orders up to 365 days in advance for birthdays and anniversaries.
 
 ## Supported Occasions
