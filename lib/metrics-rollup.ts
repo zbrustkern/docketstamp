@@ -31,6 +31,17 @@ export interface TelemetrySummary {
   addressCompleted: number;
   checkoutInitiated: number;
   paid: number;
+  // Unique session tracking per stage (sliding window per stage to prevent unbounded doc growth)
+  stageSessionIds?: {
+    coverSelected: string[];
+    noteCompleted: string[];
+    addressCompleted: string[];
+    checkoutInitiated: string[];
+    paid: string[];
+    [stage: string]: string[];
+  };
+  // Raw event counters (separate from unique session funnel)
+  rawEventCounts?: Record<string, number>;
   scenarios: Record<
     string,
     {
@@ -91,6 +102,24 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
   summary.geoCounts = summary.geoCounts || {};
   summary.sourceCounts = summary.sourceCounts || {};
 
+  // Ensure stageSessionIds and rawEventCounts exist
+  summary.stageSessionIds = summary.stageSessionIds || {
+    coverSelected: [],
+    noteCompleted: [],
+    addressCompleted: [],
+    checkoutInitiated: [],
+    paid: [],
+  };
+  summary.stageSessionIds.coverSelected = summary.stageSessionIds.coverSelected || [];
+  summary.stageSessionIds.noteCompleted = summary.stageSessionIds.noteCompleted || [];
+  summary.stageSessionIds.addressCompleted = summary.stageSessionIds.addressCompleted || [];
+  summary.stageSessionIds.checkoutInitiated = summary.stageSessionIds.checkoutInitiated || [];
+  summary.stageSessionIds.paid = summary.stageSessionIds.paid || [];
+  summary.rawEventCounts = summary.rawEventCounts || {};
+
+  // Track raw event count
+  summary.rawEventCounts[event.eventName] = (summary.rawEventCounts[event.eventName] || 0) + 1;
+
   // Track unique session ID
   let isNewSession = false;
   if (event.sessionId) {
@@ -104,43 +133,80 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     }
   }
 
-  // Update funnel counters
-  switch (event.eventName) {
-    case "cover_preset_selected":
-    case "ai_generate_succeeded":
+  // Update unique-session funnel counters (at most once per sessionId; step_navigated never completes a step)
+  if (
+    event.eventName === "cover_preset_selected" ||
+    event.eventName === "ai_generate_succeeded" ||
+    event.eventName === "card_completed"
+  ) {
+    if (event.sessionId && !summary.stageSessionIds.coverSelected.includes(event.sessionId)) {
+      summary.stageSessionIds.coverSelected.push(event.sessionId);
+      if (summary.stageSessionIds.coverSelected.length > 1000) {
+        summary.stageSessionIds.coverSelected = summary.stageSessionIds.coverSelected.slice(-1000);
+      }
       summary.coverSelected++;
-      break;
-    case "step_navigated":
-      if (event.step === 2) summary.noteCompleted++;
-      if (event.step === 3) summary.addressCompleted++;
-      break;
-    case "inside_note_edited":
+    }
+  } else if (
+    event.eventName === "note_completed" ||
+    event.eventName === "inside_note_edited"
+  ) {
+    if (event.sessionId && !summary.stageSessionIds.noteCompleted.includes(event.sessionId)) {
+      summary.stageSessionIds.noteCompleted.push(event.sessionId);
+      if (summary.stageSessionIds.noteCompleted.length > 1000) {
+        summary.stageSessionIds.noteCompleted = summary.stageSessionIds.noteCompleted.slice(-1000);
+      }
       summary.noteCompleted++;
-      break;
-    case "address_completed":
+    }
+  } else if (event.eventName === "address_completed") {
+    if (event.sessionId && !summary.stageSessionIds.addressCompleted.includes(event.sessionId)) {
+      summary.stageSessionIds.addressCompleted.push(event.sessionId);
+      if (summary.stageSessionIds.addressCompleted.length > 1000) {
+        summary.stageSessionIds.addressCompleted = summary.stageSessionIds.addressCompleted.slice(-1000);
+      }
       summary.addressCompleted++;
-      break;
-    case "checkout_initiated":
+    }
+  } else if (
+    event.eventName === "checkout_initiated" ||
+    event.eventName === "payment_viewed"
+  ) {
+    if (event.sessionId && !summary.stageSessionIds.checkoutInitiated.includes(event.sessionId)) {
+      summary.stageSessionIds.checkoutInitiated.push(event.sessionId);
+      if (summary.stageSessionIds.checkoutInitiated.length > 1000) {
+        summary.stageSessionIds.checkoutInitiated = summary.stageSessionIds.checkoutInitiated.slice(-1000);
+      }
       summary.checkoutInitiated++;
-      break;
-    case "payment_succeeded":
+    }
+  } else if (
+    event.eventName === "purchase_verified" ||
+    event.eventName === "payment_succeeded"
+  ) {
+    if (event.sessionId && !summary.stageSessionIds.paid.includes(event.sessionId)) {
+      summary.stageSessionIds.paid.push(event.sessionId);
+      if (summary.stageSessionIds.paid.length > 1000) {
+        summary.stageSessionIds.paid = summary.stageSessionIds.paid.slice(-1000);
+      }
       summary.paid++;
-      break;
+    }
   }
 
   // Determine current step number and label
   let stepNum = event.step || 1;
   let stepName = "Cover Selection";
-  if (event.eventName === "payment_succeeded") {
+  if (event.eventName === "purchase_verified" || event.eventName === "payment_succeeded") {
     stepNum = 5;
     stepName = "Paid & Penned";
-  } else if (event.eventName === "checkout_initiated" || event.step === 4) {
+  } else if (
+    event.eventName === "checkout_initiated" ||
+    event.eventName === "payment_viewed" ||
+    event.step === 4
+  ) {
     stepNum = 4;
     stepName = "Stripe Checkout";
   } else if (event.eventName === "address_completed" || event.step === 3) {
     stepNum = 3;
     stepName = "Recipient Address";
   } else if (
+    event.eventName === "note_completed" ||
     event.eventName === "inside_note_edited" ||
     event.eventName === "inspiration_applied" ||
     event.eventName === "note_shuffled" ||
@@ -149,6 +215,7 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     stepNum = 2;
     stepName = "Inside Note";
   } else if (
+    event.eventName === "card_completed" ||
     event.eventName === "cover_preset_selected" ||
     event.eventName === "ai_generate_succeeded" ||
     event.step === 1
@@ -198,7 +265,7 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
       existingSession.highestStep = stepNum;
       existingSession.highestStepName = stepName;
     }
-    if (event.eventName === "payment_succeeded") {
+    if (event.eventName === "purchase_verified" || event.eventName === "payment_succeeded") {
       existingSession.completed = true;
       existingSession.dropOffStep = undefined;
       if (event.orderId) existingSession.orderId = event.orderId;
@@ -214,14 +281,15 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     if (event.isBot !== undefined) existingSession.isBot = event.isBot;
     if (event.userAgent) existingSession.userAgent = event.userAgent;
   } else {
+    const isCompleted = event.eventName === "purchase_verified" || event.eventName === "payment_succeeded";
     const newSession: VisitorSessionRecord = {
       sessionId: event.sessionId,
       firstSeenAt: Date.now(),
       lastSeenAt: Date.now(),
       highestStep: stepNum,
       highestStepName: stepName,
-      dropOffStep: event.eventName === "payment_succeeded" ? undefined : stepName,
-      completed: event.eventName === "payment_succeeded",
+      dropOffStep: isCompleted ? undefined : stepName,
+      completed: isCompleted,
       orderId: event.orderId,
       source,
       medium,
@@ -265,7 +333,7 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
   if (isNewSession) {
     summary.sourceCounts[srcKey].sessions++;
   }
-  if (event.eventName === "payment_succeeded") {
+  if (event.eventName === "purchase_verified" || event.eventName === "payment_succeeded") {
     summary.sourceCounts[srcKey].paid++;
   } else {
     summary.sourceCounts[srcKey].dropOffs[stepName] =
@@ -288,17 +356,29 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     }
 
     const s = summary.scenarios[scenarioSlug];
-    if (event.eventName === "session_start" || event.eventName === "scenario_landing_viewed") {
+    if (
+      event.eventName === "session_start" ||
+      event.eventName === "scenario_landing_viewed" ||
+      event.eventName === "landing_viewed"
+    ) {
       s.views++;
     } else if (
+      event.eventName === "note_completed" ||
       event.eventName === "inside_note_edited" ||
       event.eventName === "scenario_customized" ||
-      event.eventName === "step_navigated"
+      event.eventName === "card_completed" ||
+      event.eventName === "cover_preset_selected"
     ) {
       s.customizations++;
-    } else if (event.eventName === "checkout_initiated") {
+    } else if (
+      event.eventName === "checkout_initiated" ||
+      event.eventName === "payment_viewed"
+    ) {
       s.checkouts++;
-    } else if (event.eventName === "payment_succeeded") {
+    } else if (
+      event.eventName === "purchase_verified" ||
+      event.eventName === "payment_succeeded"
+    ) {
       s.paid++;
     }
   }
@@ -307,6 +387,37 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
 
   // Save updated aggregate summary
   await setSystemConfig(SUMMARY_CONFIG_KEY, summary as unknown as Record<string, unknown>);
+}
+
+/**
+ * Server-only function for recording authority events (purchase_verified, fulfillment_*).
+ * Webhooks and backend order processors call this directly, completely bypassing /api/telemetry.
+ */
+export async function recordServerTelemetry(params: {
+  eventName: "purchase_verified" | "fulfillment_submitted" | "fulfillment_failed";
+  sessionId: string;
+  orderId?: string;
+  metadata?: Record<string, unknown>;
+  experienceVersion?: string;
+  draftRevision?: number;
+}): Promise<string> {
+  const eventId = `evt_srv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const now = Date.now();
+  const eventDoc: TelemetryEvent = {
+    id: eventId,
+    eventName: params.eventName,
+    sessionId: params.sessionId,
+    orderId: params.orderId,
+    metadata: params.metadata || {},
+    path: "/api/server",
+    timestamp: now,
+    createdAt: now,
+    experienceVersion: params.experienceVersion,
+    draftRevision: params.draftRevision,
+  };
+
+  await ingestTelemetryEvent(eventDoc);
+  return eventId;
 }
 
 /**
@@ -334,31 +445,36 @@ export async function getTelemetrySummary(): Promise<TelemetrySummary> {
   try {
     const snap = await firestoreDb.collection(TELEMETRY_COLLECTION).get();
     const sessions = new Set<string>();
+    const coverSessions = new Set<string>();
+    const noteSessions = new Set<string>();
+    const addressSessions = new Set<string>();
+    const checkoutSessions = new Set<string>();
+    const paidSessions = new Set<string>();
 
     snap.forEach((doc) => {
       const evt = doc.data() as TelemetryEvent;
       if (evt.sessionId) sessions.add(evt.sessionId);
 
       switch (evt.eventName) {
+        case "card_completed":
         case "cover_preset_selected":
         case "ai_generate_succeeded":
-          summary.coverSelected++;
+          if (evt.sessionId) coverSessions.add(evt.sessionId);
           break;
-        case "step_navigated":
-          if (evt.step === 2) summary.noteCompleted++;
-          if (evt.step === 3) summary.addressCompleted++;
-          break;
+        case "note_completed":
         case "inside_note_edited":
-          summary.noteCompleted++;
+          if (evt.sessionId) noteSessions.add(evt.sessionId);
           break;
         case "address_completed":
-          summary.addressCompleted++;
+          if (evt.sessionId) addressSessions.add(evt.sessionId);
           break;
         case "checkout_initiated":
-          summary.checkoutInitiated++;
+        case "payment_viewed":
+          if (evt.sessionId) checkoutSessions.add(evt.sessionId);
           break;
+        case "purchase_verified":
         case "payment_succeeded":
-          summary.paid++;
+          if (evt.sessionId) paidSessions.add(evt.sessionId);
           break;
       }
 
@@ -371,17 +487,29 @@ export async function getTelemetrySummary(): Promise<TelemetrySummary> {
           summary.scenarios[slug] = { views: 0, customizations: 0, checkouts: 0, paid: 0 };
         }
         const s = summary.scenarios[slug];
-        if (evt.eventName === "session_start" || evt.eventName === "scenario_landing_viewed") {
+        if (
+          evt.eventName === "session_start" ||
+          evt.eventName === "scenario_landing_viewed" ||
+          evt.eventName === "landing_viewed"
+        ) {
           s.views++;
         } else if (
+          evt.eventName === "note_completed" ||
           evt.eventName === "inside_note_edited" ||
           evt.eventName === "scenario_customized" ||
-          evt.eventName === "step_navigated"
+          evt.eventName === "card_completed" ||
+          evt.eventName === "cover_preset_selected"
         ) {
           s.customizations++;
-        } else if (evt.eventName === "checkout_initiated") {
+        } else if (
+          evt.eventName === "checkout_initiated" ||
+          evt.eventName === "payment_viewed"
+        ) {
           s.checkouts++;
-        } else if (evt.eventName === "payment_succeeded") {
+        } else if (
+          evt.eventName === "purchase_verified" ||
+          evt.eventName === "payment_succeeded"
+        ) {
           s.paid++;
         }
       }
@@ -389,6 +517,18 @@ export async function getTelemetrySummary(): Promise<TelemetrySummary> {
 
     summary.activeSessionIds = Array.from(sessions).slice(-500);
     summary.totalSessions = sessions.size;
+    summary.coverSelected = coverSessions.size;
+    summary.noteCompleted = noteSessions.size;
+    summary.addressCompleted = addressSessions.size;
+    summary.checkoutInitiated = checkoutSessions.size;
+    summary.paid = paidSessions.size;
+    summary.stageSessionIds = {
+      coverSelected: Array.from(coverSessions).slice(-1000),
+      noteCompleted: Array.from(noteSessions).slice(-1000),
+      addressCompleted: Array.from(addressSessions).slice(-1000),
+      checkoutInitiated: Array.from(checkoutSessions).slice(-1000),
+      paid: Array.from(paidSessions).slice(-1000),
+    };
     summary.updatedAt = Date.now();
 
     // Persist backfilled aggregate

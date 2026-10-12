@@ -1,5 +1,6 @@
 import { TelemetryEventName } from "./types";
 import { getStoredAttribution } from "@/components/AttributionTracker";
+import { isAuthorityEvent, sanitizeUrlOrPath } from "./telemetry-schema";
 
 export const TELEMETRY_COLLECTION = "telemetry_events";
 
@@ -74,6 +75,11 @@ export async function trackEvent(
 ): Promise<void> {
   if (typeof window === "undefined") return;
 
+  // Authority events are server-only; browser emitter skips sending them
+  if (isAuthorityEvent(eventName)) {
+    return;
+  }
+
   const sessionId = getSessionId();
 
   try {
@@ -82,6 +88,11 @@ export async function trackEvent(
     const deviceType = getDeviceType();
     const screenResolution = getScreenResolution();
 
+    const rawReferrer = attr?.referrer || (document.referrer ? document.referrer : undefined);
+    const cleanReferrer = sanitizeUrlOrPath(rawReferrer);
+    const cleanPath = sanitizeUrlOrPath(window.location.pathname) || "/";
+    const cleanLandingPath = sanitizeUrlOrPath(attr?.landingPath || window.location.pathname) || "/";
+
     const payload = {
       eventName,
       step,
@@ -89,7 +100,7 @@ export async function trackEvent(
       orderId,
       metadata: metadata || {},
       timestamp: Date.now(),
-      path: window.location.pathname,
+      path: cleanPath,
       // Visitor acquisition attribution
       utmSource: attr?.utmSource,
       utmMedium: attr?.utmMedium,
@@ -98,8 +109,8 @@ export async function trackEvent(
       utmTerm: attr?.utmTerm,
       gclid: attr?.gclid,
       fbclid: attr?.fbclid,
-      referrer: attr?.referrer || (document.referrer ? document.referrer : undefined),
-      landingPath: attr?.landingPath || window.location.pathname,
+      referrer: cleanReferrer,
+      landingPath: cleanLandingPath,
       // Technology & Google Analytics identity
       googleClientId,
       deviceType,
