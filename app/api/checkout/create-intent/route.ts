@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { saveOrder, getDiscountCode } from "@/lib/firebase-admin";
 import { createCardPaymentIntent, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
+import { PaymentModeConfigError } from "@/lib/payment-mode";
 import { validateDiscount } from "@/lib/discount";
 import { Order, MailingAddress, RecipientOccasion } from "@/lib/types";
 import { logIncident } from "@/lib/incident-logger";
@@ -204,6 +205,25 @@ export async function POST(req: NextRequest) {
       isFree: false,
     });
   } catch (error: unknown) {
+    if (error instanceof PaymentModeConfigError) {
+      console.error("[Checkout Intent Config Error]", error.message);
+      const incidentId = await logIncident({
+        type: "STRIPE",
+        severity: "error",
+        summary: "Stripe Payment Mode Configuration Error",
+        technicalDetails: error.message,
+      });
+
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          incidentId,
+        },
+        { status: error.statusCode }
+      );
+    }
+
     const rawMsg = error instanceof Error ? error.message : "Error creating checkout intent";
     console.error("[Checkout Intent Error]", rawMsg);
 

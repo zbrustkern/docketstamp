@@ -1,15 +1,18 @@
 import Stripe from "stripe";
 
+import { resolvePaymentMode } from "./payment-mode";
+
 export function getStripeSecretKey(): string {
   return (
     process.env["stripe-secret-key"] ||
     process.env.STRIPE_SECRET_KEY ||
-    "sk_test_placeholder_key_for_dev"
+    ""
   );
 }
 
 export function getStripeClient(): Stripe {
-  return new Stripe(getStripeSecretKey(), {
+  const secretKey = getStripeSecretKey() || "sk_test_unconfigured_placeholder";
+  return new Stripe(secretKey, {
     apiVersion: "2025-01-27.acacia" as unknown as Stripe.LatestApiVersion,
     typescript: true,
   });
@@ -34,10 +37,10 @@ export interface PaymentIntentResult {
 }
 
 export async function createCardPaymentIntent(params: CreateIntentParams): Promise<PaymentIntentResult> {
-  const secret = getStripeSecretKey();
+  const mode = resolvePaymentMode();
   const amountToCharge = params.amountInCents !== undefined ? params.amountInCents : CARD_FLAT_RATE_CENTS;
 
-  if (!secret || secret.startsWith("sk_test_placeholder")) {
+  if (mode === "local_mock") {
     console.log("[MOCK Stripe] Creating simulated PaymentIntent for order:", params.orderId, "amount:", amountToCharge);
     return {
       clientSecret: `mock_pi_secret_${params.orderId}_${Date.now()}`,
@@ -53,7 +56,7 @@ export async function createCardPaymentIntent(params: CreateIntentParams): Promi
     receipt_email: params.customerEmail,
     metadata: {
       orderId: params.orderId,
-      product: "5x7 Physical Folded Greeting Card with Real Pen Inking",
+      product: "Folded A2 greeting card, written in pen and mailed",
       ...(params.metadata || {}),
     },
     automatic_payment_methods: {
