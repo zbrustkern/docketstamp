@@ -218,7 +218,7 @@ export function Step5Confirmation({
                 </span>
               </div>
               <p className="text-xs text-stone-600">
-                Phoenix Fulfillment Center robotic plotters loaded with genuine ballpoint ink on 120 lb archival cardstock.
+                Phoenix Fulfillment Center robotic plotters loaded with genuine ballpoint ink on quality folded cardstock.
               </p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export function Step5Confirmation({
                 3. USPS First-Class Stamped
               </span>
               <p className="text-xs text-stone-500">
-                Enclosed in 70 lb envelope with authentic USPS stamp. Scheduled for next business day carrier dispatch.
+                Enclosed in a matching envelope with an authentic USPS stamp. Typically prepared in 1–2 business days.
               </p>
             </div>
           </div>
@@ -248,7 +248,7 @@ export function Step5Confirmation({
                 4. Estimated USPS Arrival: {deliveryEstimate.earliestDate} – {deliveryEstimate.latestDate}
               </span>
               <p className="text-xs text-stone-500">
-                Nationwide transit window (3–5 business days) delivered directly to {recipient.fullName}&apos;s physical mailbox.
+                Typically 2–7 business days domestic transit delivered directly to {recipient.fullName}&apos;s physical mailbox. Timing is estimated, not guaranteed.
               </p>
             </div>
           </div>

@@ -136,7 +136,7 @@ export function Step3EnvelopeAddressing({
             </h1>
           </div>
           <p className="text-xs text-stone-500">
-            Penned directly on a 70 lb matching stationery envelope. Delivered via USPS First-Class Mail.
+            Penned directly on a matching stationery envelope. Delivered via USPS First-Class Mail.
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export function Step3EnvelopeAddressing({
         <div className="relative z-10 mt-6 pt-3 border-t border-[#E8E0CE] flex items-center justify-between text-[11px] text-stone-500">
           <span className="font-serif italic">Genuine USPS First-Class Postage</span>
           <span className="text-[10px] text-stone-600 font-semibold uppercase tracking-wider">
-            Matching 70 lb Premium Cream Envelope
+            Matching Premium Cream Envelope
           </span>
         </div>
       </div>

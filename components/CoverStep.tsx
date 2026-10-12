@@ -184,7 +184,7 @@ export function CoverStep({
             1
           </span>
           <h2 className="text-xl font-bold tracking-tight text-stone-900">
-            5×7 Front Cover Art
+            Front Cover Art
           </h2>
         </div>
         <p className="text-sm text-stone-500">
@@ -282,13 +282,13 @@ export function CoverStep({
         )}
       </div>
 
-      {/* DISPLAY GENERATED BESPOKE ART (Buff Aster & Blanche atelier brand, no Google Imagen ads) */}
+      {/* DISPLAY GENERATED BESPOKE ART */}
       {generatedArt && (
         <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/60 to-amber-50/90 border-2 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-md animate-in fade-in zoom-in-95 duration-300">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-amber-950 uppercase tracking-wider flex items-center gap-1.5 font-serif">
               <Sparkles className="w-4 h-4 text-amber-600" />
-              Aster &amp; Blanche Bespoke Atelier
+              SendMyNotes Custom Studio
             </span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full">
@@ -318,7 +318,7 @@ export function CoverStep({
               type="button"
               onClick={() => setShowFullPreviewModal(true)}
               className="relative w-18 sm:w-22 aspect-[5/7] rounded-xl overflow-hidden border-2 border-amber-300 shadow-md shrink-0 bg-stone-100 cursor-pointer group text-left focus:outline-none focus:ring-2 focus:ring-amber-500"
-              title="Click to view full 5×7 card cover"
+              title="Click to view full card cover"
             >
               <Image
                 src={generatedArt.imageUrl}
@@ -359,7 +359,7 @@ export function CoverStep({
                 onClick={() => setShowFullPreviewModal(true)}
                 className="text-[11px] text-stone-500 hover:text-amber-900 mt-1 flex items-center gap-1 cursor-pointer underline underline-offset-2"
               >
-                <span>Tap artwork to view full 5×7 greeting card preview &rarr;</span>
+                <span>Tap artwork to view full greeting card preview &rarr;</span>
               </button>
             </div>
           </div>
@@ -406,7 +406,7 @@ export function CoverStep({
         </div>
       )}
 
-      {/* FULL-SCREEN 5×7 LIGHTBOX PREVIEW MODAL */}
+      {/* FULL-SCREEN LIGHTBOX PREVIEW MODAL */}
       {showFullPreviewModal && generatedArt && (
         <div
           role="dialog"
@@ -421,7 +421,7 @@ export function CoverStep({
             <div className="w-full flex items-center justify-between pb-2 border-b border-stone-100">
               <div>
                 <span className="text-[10px] uppercase font-bold text-amber-700 tracking-wider block font-serif">
-                  Aster &amp; Blanche Studio Preview
+                  SendMyNotes Card Preview
                 </span>
                 <h3 className="text-sm font-bold text-stone-900 truncate max-w-[260px] sm:max-w-sm">
                   &ldquo;{generatedArt.prompt}&rdquo;
@@ -436,7 +436,7 @@ export function CoverStep({
               </button>
             </div>
 
-            {/* High-Res 5x7 Card Cover with authentic shadow */}
+            {/* High-Res Card Cover with authentic shadow */}
             <div className="relative w-full aspect-[5/7] max-w-[340px] rounded-2xl overflow-hidden shadow-2xl border-4 border-white ring-1 ring-stone-200/80 bg-stone-100">
               <Image
                 src={generatedArt.imageUrl}
@@ -450,7 +450,7 @@ export function CoverStep({
             {/* Modal Actions */}
             <div className="w-full pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
               <span className="text-xs text-stone-500">
-                Printed on 120 lb archival cardstock
+                Printed on quality cardstock
               </span>
               <button
                 type="button"

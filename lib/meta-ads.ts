@@ -313,7 +313,7 @@ export function trackMetaPurchase(params: {
     {
       value: purchaseValue,
       currency,
-      content_name: params.itemName || "Custom 5x7 Folded Handwritten Card",
+      content_name: params.itemName || "Custom Folded Handwritten Card",
       content_type: "product",
       content_ids: [params.orderId],
       contents: [
