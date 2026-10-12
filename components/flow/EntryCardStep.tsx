@@ -27,6 +27,7 @@ interface EntryCardStepProps {
   onSelectDesign: (preset: CardPreset) => void;
   onAcceptAndContinue: () => void;
   initialOccasion?: string;
+  onOpenCustomArt?: () => void;
 }
 
 export function EntryCardStep({
@@ -34,6 +35,7 @@ export function EntryCardStep({
   onSelectDesign,
   onAcceptAndContinue,
   initialOccasion,
+  onOpenCustomArt,
 }: EntryCardStepProps) {
   // Normalize initial occasion if provided
   const normalizedInitial = useMemo<PersonalOccasion>(() => {
@@ -127,7 +129,13 @@ export function EntryCardStep({
       <div className="mb-3.5">
         <button
           type="button"
-          onClick={() => setIsCustomSheetOpen(true)}
+          onClick={() => {
+            if (onOpenCustomArt) {
+              onOpenCustomArt();
+            } else {
+              setIsCustomSheetOpen(true);
+            }
+          }}
           className="w-full flex items-center justify-between gap-3 bg-stone-50 hover:bg-stone-100/90 active:bg-stone-200/70 border border-dashed border-stone-300 rounded-xl px-3.5 py-2.5 transition text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-600"
         >
           <div className="flex items-center gap-2.5 min-w-0">
