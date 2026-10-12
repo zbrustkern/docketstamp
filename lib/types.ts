@@ -234,7 +234,23 @@ export type TelemetryEventName =
   | "payment_attempted"
   | "payment_succeeded"
   | "payment_failed"
-  | "card_abandoned";
+  | "card_abandoned"
+  // Source plan §10 additions:
+  | "landing_viewed"
+  | "builder_started"
+  | "card_completed"
+  | "custom_generation_requested"
+  | "custom_generation_completed"
+  | "custom_generation_failed"
+  | "note_completed"
+  | "payment_viewed"
+  | "wallet_availability_observed"
+  | "payment_canceled"
+  | "reminder_opt_in"
+  // Server-only authority events (§10):
+  | "purchase_verified"
+  | "fulfillment_submitted"
+  | "fulfillment_failed";
 
 export interface TelemetryEvent {
   id: string;
@@ -246,6 +262,9 @@ export interface TelemetryEvent {
   path: string;
   timestamp: number;
   createdAt: number;
+  // Common context (§10)
+  experienceVersion?: string;
+  draftRevision?: number;
   // Enriched visitor attribution & tech telemetry
   utmSource?: string;
   utmMedium?: string;
