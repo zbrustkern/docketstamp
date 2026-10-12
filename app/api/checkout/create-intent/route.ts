@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { saveOrder, getDiscountCode } from "@/lib/firebase-admin";
 import { createCardPaymentIntent, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
 import { PaymentModeConfigError } from "@/lib/payment-mode";
+import { validatePersonalSender } from "@/lib/order-processor";
 import { validateDiscount } from "@/lib/discount";
 import { Order, MailingAddress, RecipientOccasion } from "@/lib/types";
 import { logIncident } from "@/lib/incident-logger";
@@ -36,8 +37,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Complete recipient address is required." }, { status: 400 });
     }
 
-    if (!returnAddress || !returnAddress.street1 || !returnAddress.city || !returnAddress.state || !returnAddress.zip) {
-      return NextResponse.json({ error: "Complete return address is required." }, { status: 400 });
+    const senderValidation = validatePersonalSender(returnAddress);
+    if (!senderValidation.valid) {
+      return NextResponse.json(
+        { error: senderValidation.error || "Complete return address is required." },
+        { status: 400 }
+      );
     }
 
     // Generate unguessable 128-bit cryptographically secure Order ID and View Token

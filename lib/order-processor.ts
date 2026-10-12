@@ -27,6 +27,49 @@ export interface ProcessOrderOptions {
   paymentMode?: "live" | "stripe_test" | "local_mock";
 }
 
+export interface SenderValidationResult {
+  valid: boolean;
+  error?: string;
+  isBrandSender?: boolean;
+}
+
+export function validatePersonalSender(
+  address?: Partial<Order["returnAddress"]> | null
+): SenderValidationResult {
+  if (!address) {
+    return { valid: false, error: "Return address is required." };
+  }
+
+  const firstName = (address.firstName || "").trim();
+  const lastName = (address.lastName || "").trim();
+  const street1 = (address.street1 || "").trim();
+  const city = (address.city || "").trim();
+  const state = (address.state || "").trim();
+  const zip = (address.zip || "").trim();
+
+  if (!firstName) {
+    return { valid: false, error: "Personal sender first name is required." };
+  }
+
+  const isBrandSender =
+    firstName.toLowerCase() === "aster & blanche" ||
+    (firstName.toLowerCase() === "aster" && lastName.toLowerCase() === "blanche");
+
+  if (isBrandSender) {
+    return {
+      valid: false,
+      isBrandSender: true,
+      error: "Return address must use personal sender name, not brand name Aster & Blanche.",
+    };
+  }
+
+  if (!street1 || !city || !state || !zip) {
+    return { valid: false, error: "Complete return address (street, city, state, ZIP) is required." };
+  }
+
+  return { valid: true };
+}
+
 export class DuplicateDispatchError extends Error {
   public status: string;
   public handwryttenOrderId?: string;
@@ -140,6 +183,33 @@ export async function processPaidOrder(
     } catch (discErr) {
       console.warn("[OrderProcessor] Notice recording discount code usage:", discErr);
     }
+  }
+
+  // S0-06: Reject orders without a personal sender name and return address before fulfillment
+  const senderValidation = validatePersonalSender(order.returnAddress);
+  if (!senderValidation.valid) {
+    const errorMsg = senderValidation.error || "Missing or invalid personal sender return address.";
+    console.error(`[OrderProcessor Critical] ${errorMsg} on Order ${orderId}. Halting fulfillment.`);
+
+    await updateOrderStatus(orderId, {
+      status: "QUEUED_FOR_FULFILLMENT",
+      fulfillmentError: `${errorMsg} Requires operator review.`,
+    });
+
+    await logIncident({
+      type: "HANDWRYTTEN",
+      category: "OPERATOR_ACTION",
+      severity: "error",
+      summary: `Invalid/Missing Sender Address on Order ${orderId}`,
+      technicalDetails: `${errorMsg} Automatic dispatch halted to prevent brand-name or missing sender delivery.`,
+      metadata: { orderId, returnAddress: order.returnAddress },
+    });
+
+    return {
+      success: false,
+      status: "QUEUED_FOR_FULFILLMENT",
+      error: errorMsg,
+    };
   }
 
   const isTestModePayment = Boolean(
