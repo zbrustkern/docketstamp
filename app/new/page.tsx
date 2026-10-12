@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { TargetPurchaseExperience } from "@/components/v3/TargetPurchaseExperience";
+import { EntryPrototypeClient } from "@/app/preview/entry/client";
 
 export const metadata = {
   title: "Send a Real Handwritten Card Online | SendMyNotes",
@@ -21,7 +21,7 @@ export default function NewCardPage() {
         </div>
       }
     >
-      <TargetPurchaseExperience />
+      <EntryPrototypeClient />
     </Suspense>
   );
 }

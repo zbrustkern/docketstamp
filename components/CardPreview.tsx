@@ -164,9 +164,9 @@ export function CardPreview({
         </button>
       </div>
 
-      {/* 1. FRONT COVER VIEW: Standard Portrait 5" x 7" Greeting Card (Pure Artwork Only) */}
+      {/* 1. FRONT COVER VIEW: Folded A2 Portrait 4.25" x 5.5" Greeting Card (17:22 Aspect Ratio) */}
       {viewMode === "cover" && (
-        <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[5/7] transition-all duration-300">
+        <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[17/22] transition-all duration-300">
           <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-white flex flex-col group">
             <div className="relative w-full h-full">
               <Image
@@ -188,9 +188,9 @@ export function CardPreview({
         </div>
       )}
 
-      {/* 2. INSIDE NOTE (RIGHT PAGE FOCUS): Prominent Full 5×7 View with Left Spine Fold */}
+      {/* 2. INSIDE NOTE (RIGHT PAGE FOCUS): Prominent Full A2 View with Left Spine Fold */}
       {viewMode === "rightPage" && (
-        <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[5/7] rounded-2xl overflow-hidden shadow-2xl border-4 border-white transition-all duration-300">
+        <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[17/22] rounded-2xl overflow-hidden shadow-2xl border-4 border-white transition-all duration-300">
           <InsideRightLeaf
             printedGreeting={printedGreeting}
             handwrittenNote={handwrittenNote}
@@ -200,9 +200,9 @@ export function CardPreview({
         </div>
       )}
 
-      {/* 3. FULL OPEN SPREAD: Panoramic 10×7 View Showing Both Leaves with 100% Proportional Fidelity */}
+      {/* 3. FULL OPEN SPREAD: Panoramic 8.5×5.5 View (17:11) Showing Both Leaves with 100% Proportional Fidelity */}
       {viewMode === "spread" && (
-        <div className="relative w-full max-w-full lg:max-w-[560px] aspect-[10/7] rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-[#FDFCF7] paper-texture flex transition-all duration-300 group">
+        <div className="relative w-full max-w-full lg:max-w-[560px] aspect-[17/11] rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-[#FDFCF7] paper-texture flex transition-all duration-300 group">
           {/* LEFT PAGE: Inside Left Page (Pristine Unprinted Archival Cardstock) */}
           <div
             style={{ containerType: "inline-size" }}
@@ -248,9 +248,9 @@ export function CardPreview({
         </div>
       )}
 
-      {/* 4. CARD BACK VIEW: Aster & Blanche Press Colophon Only */}
+      {/* 4. CARD BACK VIEW: Colophon Only */}
       {viewMode === "back" && (
-        <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[5/7] transition-all duration-300">
+        <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[17/22] transition-all duration-300">
           <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-[#FCFAF7] paper-texture flex flex-col justify-center items-center group p-2">
             <Image
               src="/aster-blanche-backplate.png"
@@ -295,7 +295,7 @@ export function CardPreview({
               <div>
                 <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-stone-700" />
-                  Full Open Card Spread (10&quot; × 7&quot; Open Panoramic)
+                  Full Open Card Spread (8.5&quot; × 5.5&quot; Open Panoramic)
                 </h3>
                 <p className="text-xs text-stone-500">
                   Exact 1:1 physical proportion of inside left page and handwritten inside right page.
@@ -310,7 +310,7 @@ export function CardPreview({
               </button>
             </div>
 
-            <div className="relative w-full aspect-[10/7] rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-[#FDFCF7] paper-texture flex">
+            <div className="relative w-full aspect-[17/11] rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-[#FDFCF7] paper-texture flex">
               {/* Left page */}
               <div
                 style={{ containerType: "inline-size" }}

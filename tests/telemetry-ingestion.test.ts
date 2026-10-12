@@ -161,7 +161,7 @@ async function runTelemetryIngestionTests() {
   });
 
   s = await getTelemetrySummary();
-  testAssert(s.noteCompleted === baseNoteCount + 1, "Session A note edit increments noteCompleted by 1");
+  testAssert(s.noteCompleted === baseNoteCount, "Session A note edit does NOT increment noteCompleted (Finding 1)");
 
   // Session A emits note_completed
   await ingestTelemetryEvent({
@@ -172,6 +172,20 @@ async function runTelemetryIngestionTests() {
     timestamp: Date.now(),
     createdAt: Date.now(),
     metadata: { charCount: 40 },
+  });
+
+  s = await getTelemetrySummary();
+  testAssert(s.noteCompleted === baseNoteCount + 1, "Session A note_completed increments noteCompleted by 1");
+
+  // Subsequent note_completed by same session does NOT increment noteCompleted again
+  await ingestTelemetryEvent({
+    id: `evt_test_${Date.now()}_7`,
+    sessionId: sessionA,
+    eventName: "note_completed",
+    path: "/send/birthday",
+    timestamp: Date.now(),
+    createdAt: Date.now(),
+    metadata: { charCount: 45 },
   });
 
   s = await getTelemetrySummary();
@@ -371,12 +385,13 @@ async function runTelemetryIngestionTests() {
   const preServerSummary = await getTelemetrySummary();
   const preServerPaid = preServerSummary.paid;
 
+  const testOrderId = `ord_verified_ingest_${Date.now()}`;
   const srvEventId = await recordServerTelemetry({
     eventName: "purchase_verified",
     sessionId: serverSession,
-    orderId: "ord_verified_999",
+    orderId: testOrderId,
     metadata: {
-      orderId: "ord_verified_999",
+      orderId: testOrderId,
       amountInCents: 900,
       customerType: "customer",
     },
@@ -396,7 +411,7 @@ async function runTelemetryIngestionTests() {
   await recordServerTelemetry({
     eventName: "purchase_verified",
     sessionId: serverSession,
-    orderId: "ord_verified_999",
+    orderId: testOrderId,
   });
 
   const dedupServerSummary = await getTelemetrySummary();

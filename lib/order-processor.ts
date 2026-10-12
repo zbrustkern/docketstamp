@@ -11,6 +11,7 @@ import { fulfillHandwryttenOrder } from "./handwrytten";
 import { logIncident } from "./incident-logger";
 import { Order } from "./types";
 import { sendMetaCapiPurchaseEvent } from "./meta-conversions-api";
+import { recordServerTelemetry } from "./metrics-rollup";
 
 export interface ProcessPaidOrderResult {
   success: boolean;
@@ -176,6 +177,27 @@ export async function processPaidOrder(
     throw err;
   }
 
+  // Record server authority telemetry for verified purchase
+  try {
+    const rawSessionId =
+      (order.attribution as any)?.sessionId ||
+      order.sessionId ||
+      `sess_${orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+    await recordServerTelemetry({
+      eventName: "purchase_verified",
+      sessionId: rawSessionId,
+      orderId,
+      metadata: {
+        amountInCents: order.finalAmountInCents || order.amountInCents || 900,
+        isTest: Boolean(clientContext?.isTest || order.isTest),
+        paymentMode: clientContext?.paymentMode || order.paymentMode || "stripe_test",
+      },
+      experienceVersion: order.experienceVersion,
+    });
+  } catch (telErr) {
+    console.warn("[OrderProcessor] Notice recording purchase_verified telemetry:", telErr);
+  }
+
   // 4. Record discount code usage metrics if applicable
   if (order.discountCode) {
     try {
@@ -275,6 +297,25 @@ export async function processPaidOrder(
       metadata: { orderId, details: fulfillment.details },
     });
 
+    try {
+      const rawSessionId =
+        (order.attribution as any)?.sessionId ||
+        order.sessionId ||
+        `sess_${orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+      await recordServerTelemetry({
+        eventName: "fulfillment_failed",
+        sessionId: rawSessionId,
+        orderId,
+        metadata: {
+          error: rawError,
+          isTest: isTestModePayment,
+        },
+        experienceVersion: order.experienceVersion,
+      });
+    } catch (telErr) {
+      console.warn("[OrderProcessor] Notice recording fulfillment_failed telemetry:", telErr);
+    }
+
     return {
       success: false,
       status: "QUEUED_FOR_FULFILLMENT",
@@ -339,6 +380,26 @@ export async function processPaidOrder(
     } catch (capiErr) {
       console.warn("[OrderProcessor] Notice sending Meta CAPI purchase event:", capiErr);
     }
+  }
+
+  // Record server authority telemetry for submitted fulfillment
+  try {
+    const rawSessionId =
+      (order.attribution as any)?.sessionId ||
+      order.sessionId ||
+      `sess_${orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+    await recordServerTelemetry({
+      eventName: "fulfillment_submitted",
+      sessionId: rawSessionId,
+      orderId,
+      metadata: {
+        handwryttenOrderId: fulfillment.order_id,
+        isTest: isTestModePayment,
+      },
+      experienceVersion: order.experienceVersion,
+    });
+  } catch (telErr) {
+    console.warn("[OrderProcessor] Notice recording fulfillment_submitted telemetry:", telErr);
   }
 
   console.log(`[OrderProcessor] Order ${orderId} successfully dispatched! HW ID: ${fulfillment.order_id}`);

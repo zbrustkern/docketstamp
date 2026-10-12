@@ -71,12 +71,12 @@ export function EntryPrototypeClient() {
   const [isCustomAiOpen, setIsCustomAiOpen] = useState(false);
 
   // Salutation and signoff helper state (for note step auto-sync)
-  const [salutation, setSalutation] = useState("Dear Eleanor,");
-  const [signOff, setSignOff] = useState("Warmly, Thomas");
+  const [salutation, setSalutation] = useState("");
+  const [signOff, setSignOff] = useState("");
 
   // Address editing state (bridged with draft)
   const [recipient, setRecipient] = useState<AddressData>({
-    fullName: "Eleanor Vance",
+    fullName: "",
     street1: "",
     street2: "",
     city: "",
@@ -85,7 +85,7 @@ export function EntryPrototypeClient() {
   });
 
   const [sender, setSender] = useState<AddressData>({
-    fullName: "Thomas Miller",
+    fullName: "",
     street1: "",
     city: "",
     state: "",
@@ -98,6 +98,8 @@ export function EntryPrototypeClient() {
   // Payment & checkout state
   const [customerEmail, setCustomerEmail] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [viewToken, setViewToken] = useState<string | null>(null);
+  const [fulfillmentStatus, setFulfillmentStatus] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [isMockCheckout, setIsMockCheckout] = useState(false);
@@ -118,6 +120,12 @@ export function EntryPrototypeClient() {
   useEffect(() => {
     if (!isLoaded) return;
 
+    if (draft.completed) {
+      setIsOrderConfirmed(true);
+    } else if (draft.currentStep && draft.currentStep !== "confirmation") {
+      setStep(draft.currentStep as FlowStep);
+    }
+
     if (!draft.selectedDesign && initialPreset) {
       dispatch({
         type: "SELECT_DESIGN",
@@ -125,33 +133,58 @@ export function EntryPrototypeClient() {
           presetId: initialPreset.id,
           imageUrl: initialPreset.imageUrl,
           title: initialPreset.title,
+          occasion: initialPreset.occasion,
           source: "preset",
           accepted: false,
         },
       });
     }
 
+    if (draft.note.salutation !== undefined && draft.note.salutation !== "") {
+      setSalutation(draft.note.salutation);
+    }
+    if (draft.note.signOff !== undefined && draft.note.signOff !== "") {
+      setSignOff(draft.note.signOff);
+    }
+
     if (draft.recipient) {
       setRecipient({
-        fullName: draft.recipient.name || "Eleanor Vance",
+        fullName: draft.recipient.name || "",
         street1: draft.recipient.addressLine1 || "",
         street2: draft.recipient.addressLine2 || "",
         city: draft.recipient.city || "",
         state: draft.recipient.state || "",
         zip: draft.recipient.zip || "",
       });
+      if (draft.recipient.name) {
+        setUserCustomizedRecipientName(true);
+      }
     }
 
     if (draft.sender) {
       setSender({
-        fullName: draft.sender.name || "Thomas Miller",
+        fullName: draft.sender.name || "",
         street1: draft.sender.addressLine1 || "",
         city: draft.sender.city || "",
         state: draft.sender.state || "",
         zip: draft.sender.zip || "",
       });
+      if (draft.sender.name) {
+        setUserCustomizedSenderName(true);
+      }
     }
-  }, [isLoaded, draft.selectedDesign, draft.recipient, draft.sender, initialPreset, dispatch]);
+  }, [
+    isLoaded,
+    draft.completed,
+    draft.currentStep,
+    draft.selectedDesign,
+    draft.note.salutation,
+    draft.note.signOff,
+    draft.recipient,
+    draft.sender,
+    initialPreset,
+    dispatch,
+  ]);
 
   // Telemetry on initial load
   useEffect(() => {
@@ -173,20 +206,31 @@ export function EntryPrototypeClient() {
   // Current selected card details
   const currentCard = useMemo(() => {
     if (draft.selectedDesign) {
+      const presetMatch = CARD_PRESETS.find((p) => p.id === draft.selectedDesign?.presetId);
+      const occasion =
+        draft.selectedDesign.occasion ||
+        presetMatch?.occasion ||
+        (draft.selectedDesign.source === "preset"
+          ? CARD_PRESETS.find((p) => p.title === draft.selectedDesign?.title)?.occasion
+          : undefined) ||
+        occasionParam ||
+        CARD_PRESETS[0].occasion;
+
       return {
         imageUrl: draft.selectedDesign.imageUrl,
         title: draft.selectedDesign.title,
         presetId: draft.selectedDesign.presetId,
-        occasion: occasionParam || CARD_PRESETS[0].occasion,
+        occasion,
       };
     }
+    const defaultPreset = initialPreset || CARD_PRESETS[0];
     return {
-      imageUrl: CARD_PRESETS[0].imageUrl,
-      title: CARD_PRESETS[0].title,
-      presetId: CARD_PRESETS[0].id,
-      occasion: CARD_PRESETS[0].occasion,
+      imageUrl: defaultPreset.imageUrl,
+      title: defaultPreset.title,
+      presetId: defaultPreset.id,
+      occasion: defaultPreset.occasion,
     };
-  }, [draft.selectedDesign, occasionParam]);
+  }, [draft.selectedDesign, initialPreset, occasionParam]);
 
   // Active handwriting font
   const activeFont = useMemo(() => {
@@ -202,6 +246,7 @@ export function EntryPrototypeClient() {
         presetId: preset.id,
         imageUrl: preset.imageUrl,
         title: preset.title,
+        occasion: preset.occasion,
         source: "preset",
         accepted: false,
       },
@@ -214,13 +259,14 @@ export function EntryPrototypeClient() {
     });
   };
 
-  // Handle Custom AI generation selection
+  // Handle Custom AI generation selection (Finding 8: never transmit customer prompt to Meta)
   const handleSelectCustomCover = (art: { imageUrl: string; prompt: string; occasion: string }) => {
     dispatch({
       type: "SELECT_DESIGN",
       payload: {
         imageUrl: art.imageUrl,
-        title: `Custom: ${art.prompt.slice(0, 30)}...`,
+        title: "Custom Artwork Card",
+        occasion: art.occasion,
         source: "custom",
         accepted: true,
       },
@@ -229,13 +275,14 @@ export function EntryPrototypeClient() {
     trackMetaCustomizeProduct({
       customizationType: "AI Art Generated",
       occasion: art.occasion,
-      contentName: `Custom: ${art.prompt.slice(0, 30)}`,
+      contentName: "Custom Artwork Card",
     });
   };
 
-  // Auto-sync Salutation -> Recipient Full Name
+  // Auto-sync Salutation -> Recipient Full Name and persist to draft
   const handleSalutationChange = (newSalutation: string) => {
     setSalutation(newSalutation);
+    dispatch({ type: "UPDATE_NOTE", payload: { salutation: newSalutation } });
     if (!userCustomizedRecipientName) {
       const extracted = extractRecipientName(newSalutation);
       if (extracted) {
@@ -255,9 +302,10 @@ export function EntryPrototypeClient() {
     }
   };
 
-  // Auto-sync Sign-Off -> Sender Full Name
+  // Auto-sync Sign-Off -> Sender Full Name and persist to draft
   const handleSignOffChange = (newSignOff: string) => {
     setSignOff(newSignOff);
+    dispatch({ type: "UPDATE_NOTE", payload: { signOff: newSignOff } });
     if (!userCustomizedSenderName) {
       const extracted = extractSenderName(newSignOff);
       if (extracted) {
@@ -340,26 +388,20 @@ export function EntryPrototypeClient() {
   const handleStepTransition = (nextStep: FlowStep) => {
     if (nextStep === "note") {
       if (!draft.selectedDesign) {
-        const fallback = CARD_PRESETS[0];
+        const fallback = initialPreset || CARD_PRESETS[0];
         dispatch({
           type: "SELECT_DESIGN",
           payload: {
             presetId: fallback.id,
             imageUrl: fallback.imageUrl,
             title: fallback.title,
+            occasion: fallback.occasion,
             source: "preset",
             accepted: true,
           },
         });
       } else {
         dispatch({ type: "ACCEPT_DESIGN" });
-      }
-
-      // Default body note if empty
-      if (!draft.note.text.trim()) {
-        const defaultNote =
-          initialPreset?.defaultHandwrittenNote || CARD_PRESETS[0].defaultHandwrittenNote;
-        dispatch({ type: "UPDATE_NOTE", payload: { text: defaultNote } });
       }
 
       trackEvent("card_completed", 1, {
@@ -388,6 +430,7 @@ export function EntryPrototypeClient() {
     }
 
     setStep(nextStep);
+    dispatch({ type: "SET_STEP", payload: nextStep });
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -462,6 +505,9 @@ export function EntryPrototypeClient() {
       }
 
       setOrderId(data.orderId);
+      if (data.viewToken) {
+        setViewToken(data.viewToken);
+      }
       setClientSecret(data.clientSecret);
       if (data.publishableKey) {
         setPublishableKey(data.publishableKey);
@@ -480,19 +526,9 @@ export function EntryPrototypeClient() {
         price: 9.0,
         shippingTier: "USPS First Class",
       });
-      trackGA4AddPaymentInfo({
-        itemId: currentCard.presetId || "card",
-        itemName: currentCard.title,
-        price: 9.0,
-        paymentType: "card",
-      });
-      trackMetaAddPaymentInfo({
-        contentName: currentCard.title,
-        value: 9.0,
-        paymentType: "card",
-      });
 
       setStep("pay");
+      dispatch({ type: "SET_STEP", payload: "pay" });
       if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -542,11 +578,21 @@ export function EntryPrototypeClient() {
     await initializeCheckout("");
   };
 
-  // Payment success handler
-  const handlePaymentSuccess = (completedOrderId: string) => {
+  // Payment success handler (server records verified telemetry)
+  const handlePaymentSuccess = (
+    completedOrderId: string,
+    returnedViewToken?: string,
+    status?: string
+  ) => {
     setOrderId(completedOrderId);
+    if (returnedViewToken) {
+      setViewToken(returnedViewToken);
+    }
+    if (status) {
+      setFulfillmentStatus(status);
+    }
     setIsOrderConfirmed(true);
-    trackEvent("payment_succeeded", 4, { orderId: completedOrderId });
+    dispatch({ type: "MARK_COMPLETED" });
   };
 
   // Send another card handler
@@ -594,6 +640,8 @@ export function EntryPrototypeClient() {
         <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
           <Step5Confirmation
             orderId={orderId}
+            viewToken={viewToken}
+            fulfillmentStatus={fulfillmentStatus || undefined}
             cardTitle={currentCard.title}
             cardUrl={currentCard.imageUrl}
             occasion={currentCard.occasion}
@@ -635,6 +683,7 @@ export function EntryPrototypeClient() {
         {step === "note" && (
           <div className="max-w-4xl mx-auto px-4 py-6 pb-32">
             <Step2NoteComposition
+              hideFixedActionBar={true}
               salutation={salutation}
               onChangeSalutation={handleSalutationChange}
               bodyNote={draft.note.text}
@@ -644,7 +693,10 @@ export function EntryPrototypeClient() {
               fontStyleId={draft.note.style || "hwDavid"}
               onChangeFontStyleId={handleFontStyleChange}
               occasion={currentCard.occasion}
-              onBack={() => setStep("card")}
+              onBack={() => {
+                setStep("card");
+                dispatch({ type: "SET_STEP", payload: "card" });
+              }}
               onContinue={() => handleStepTransition("address")}
             />
           </div>
@@ -669,12 +721,16 @@ export function EntryPrototypeClient() {
               </div>
             )}
             <Step3EnvelopeAddressing
+              hideFixedActionBar={true}
               recipient={recipient}
               onChangeRecipient={handleUpdateRecipient}
               sender={sender}
               onChangeSender={handleUpdateSender}
               fontClass={activeFont.fontClass}
-              onBack={() => setStep("note")}
+              onBack={() => {
+                setStep("note");
+                dispatch({ type: "SET_STEP", payload: "note" });
+              }}
               onContinue={() => initializeCheckout()}
             />
           </div>
@@ -702,7 +758,10 @@ export function EntryPrototypeClient() {
               onRemoveDiscount={handleRemoveDiscount}
               appliedDiscount={appliedDiscount}
               onPaymentSuccess={handlePaymentSuccess}
-              onBack={() => setStep("address")}
+              onBack={() => {
+                setStep("address");
+                dispatch({ type: "SET_STEP", payload: "address" });
+              }}
             />
           </div>
         )}
@@ -739,8 +798,14 @@ export function EntryPrototypeClient() {
               <button
                 type="button"
                 onClick={() => {
-                  if (step === "note") setStep("card");
-                  if (step === "address") setStep("note");
+                  if (step === "note") {
+                    setStep("card");
+                    dispatch({ type: "SET_STEP", payload: "card" });
+                  }
+                  if (step === "address") {
+                    setStep("note");
+                    dispatch({ type: "SET_STEP", payload: "note" });
+                  }
                 }}
                 className="text-xs text-stone-600 hover:text-stone-900 font-medium px-3 py-2 rounded-lg hover:bg-stone-100 transition cursor-pointer"
               >

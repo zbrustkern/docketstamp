@@ -425,7 +425,7 @@ function InnerPaymentForm({
       {/* Flat Rate Total Box with Delivery Window & Discount Line */}
       <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200/80 space-y-2">
         <div className="flex justify-between text-xs text-stone-600">
-          <span>5×7 Heavy Cardstock &amp; Real Pen Handwriting</span>
+          <span>Folded A2 Cardstock &amp; Real Pen Handwriting</span>
           <span>$8.00</span>
         </div>
         <div className="flex justify-between text-xs text-stone-600">

@@ -86,7 +86,9 @@ export function sanitizeDraftState(raw: unknown): DraftState | null {
   // Ensure note is well-formed
   const noteObj = record.note as Record<string, unknown> | undefined;
   sanitized.note = {
+    salutation: typeof noteObj?.salutation === "string" ? noteObj.salutation : "",
     text: typeof noteObj?.text === "string" ? noteObj.text : "",
+    signOff: typeof noteObj?.signOff === "string" ? noteObj.signOff : "",
     style: typeof noteObj?.style === "string" ? noteObj.style : "hwDavid",
   };
 

@@ -18,6 +18,7 @@ export type DraftAction =
         imageUrl: string;
         title: string;
         source: "preset" | "custom";
+        occasion?: string;
         accepted?: boolean;
       };
     }
@@ -30,6 +31,8 @@ export type DraftAction =
   | { type: "SET_ATTRIBUTION"; payload: AttributionDraft | null }
   | { type: "SET_CUSTOM_GENERATION"; payload: Partial<CustomGenerationState> }
   | { type: "SET_CHECKOUT_SNAPSHOT"; payload: string | null }
+  | { type: "SET_STEP"; payload: string }
+  | { type: "MARK_COMPLETED" }
   | { type: "CLEAR_DRAFT"; payload?: { experienceVersion?: string } }
   | { type: "HYDRATE_DRAFT"; payload: DraftState };
 
@@ -43,7 +46,9 @@ export function createInitialDraft(experienceVersion = "candidate_v1"): DraftSta
     experienceVersion,
     selectedDesign: null,
     note: {
+      salutation: "",
       text: "",
+      signOff: "",
       style: "hwDavid",
     },
     recipient: null,
@@ -55,6 +60,8 @@ export function createInitialDraft(experienceVersion = "candidate_v1"): DraftSta
       status: "idle",
     },
     checkoutSnapshotId: null,
+    currentStep: "card",
+    completed: false,
   };
 }
 
@@ -88,6 +95,7 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
           imageUrl: action.payload.imageUrl,
           title: action.payload.title,
           source: action.payload.source,
+          occasion: action.payload.occasion,
           accepted: action.payload.accepted ?? false,
         },
       };
@@ -180,6 +188,28 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
         ...state,
         updatedAt: now,
         checkoutSnapshotId: action.payload,
+      };
+    }
+
+    case "SET_STEP": {
+      if (state.currentStep === action.payload) {
+        return state;
+      }
+      return {
+        ...state,
+        updatedAt: now,
+        draftRevision: state.draftRevision + 1,
+        currentStep: action.payload,
+      };
+    }
+
+    case "MARK_COMPLETED": {
+      return {
+        ...state,
+        updatedAt: now,
+        draftRevision: state.draftRevision + 1,
+        completed: true,
+        currentStep: "confirmation",
       };
     }
 

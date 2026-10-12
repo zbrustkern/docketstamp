@@ -26,6 +26,8 @@ import { trackMetaPurchase } from "@/lib/meta-ads";
 
 interface Step5ConfirmationProps {
   orderId: string;
+  viewToken?: string | null;
+  fulfillmentStatus?: string;
   cardTitle: string;
   cardUrl: string;
   occasion: string;
@@ -42,6 +44,8 @@ interface Step5ConfirmationProps {
 
 export function Step5Confirmation({
   orderId,
+  viewToken,
+  fulfillmentStatus,
   cardTitle,
   cardUrl,
   occasion,
@@ -203,7 +207,7 @@ export function Step5Confirmation({
             </div>
           </div>
 
-          {/* Stage 2: Queued for Real Ballpoint Inking */}
+          {/* Stage 2: Real Ballpoint Inking (Dynamic fulfillment state) */}
           <div className="relative flex items-start gap-4">
             <div className="relative z-10 w-8 h-8 rounded-full bg-amber-700 text-white flex items-center justify-center shadow-xs shrink-0 animate-pulse">
               <PenTool className="w-4 h-4" />
@@ -211,14 +215,22 @@ export function Step5Confirmation({
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-amber-950">
-                  2. Queued for Real Ballpoint Inking
+                  2. {fulfillmentStatus === "MAILED" ? "Inked & Mailed" : "Real Ballpoint Inking"}
                 </span>
                 <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded-full">
-                  In Production
+                  {fulfillmentStatus === "MAILED"
+                    ? "Mailed"
+                    : fulfillmentStatus === "PROCESSING_HANDWRYTTEN"
+                    ? "In Production"
+                    : fulfillmentStatus === "QUEUED_FOR_FULFILLMENT"
+                    ? "Queued for Fulfillment"
+                    : "Payment Received"}
                 </span>
               </div>
               <p className="text-xs text-stone-600">
-                Phoenix Fulfillment Center robotic plotters loaded with genuine ballpoint ink on quality folded cardstock.
+                {fulfillmentStatus === "QUEUED_FOR_FULFILLMENT"
+                  ? "Order verified and queued for robotic pen fulfillment at Phoenix studio."
+                  : "Phoenix Fulfillment Center robotic plotters loaded with genuine ballpoint ink on quality folded cardstock."}
               </p>
             </div>
           </div>
@@ -312,6 +324,21 @@ export function Step5Confirmation({
           <span className="text-[10px] text-emerald-700 font-semibold block">Paid</span>
         </div>
       </div>
+
+      {/* PROTECTED GUEST RECEIPT LINK */}
+      {viewToken && (
+        <div className="flex justify-center -mt-2">
+          <a
+            href={`/order/${orderId}?viewToken=${viewToken}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-amber-900 hover:text-amber-950 font-medium underline underline-offset-2 flex items-center gap-1.5 transition"
+          >
+            <span>View protected guest receipt</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      )}
 
       {/* CTA: SEND ANOTHER CARD */}
       <div className="pt-2 text-center">

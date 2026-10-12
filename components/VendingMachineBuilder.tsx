@@ -637,7 +637,7 @@ export function VendingMachineBuilder(props?: VendingMachineBuilderProps) {
       <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center pt-6 pb-2">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100/90 border border-stone-200 text-[10px] uppercase font-bold tracking-widest text-stone-600 mb-3">
           <Sparkles className="w-3 h-3 text-amber-500" />
-          <span>Aster &amp; Blanche Press • Lake Forest, IL</span>
+          <span>SendMyNotes</span>
         </div>
 
         <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-stone-900 mb-2 leading-tight">
@@ -645,7 +645,7 @@ export function VendingMachineBuilder(props?: VendingMachineBuilderProps) {
         </h1>
 
         <p className="text-xs sm:text-sm text-stone-600 max-w-xl mx-auto leading-relaxed mb-4">
-          Send a real handwritten card right now—without buying stationery, finding a pen, or looking for a mailbox. We write your note in real pen ink on 120&nbsp;lb archival cardstock, stamp it, and mail it via USPS today for a flat <strong>$9.00</strong>. {deviceWallet.heroCallout}
+          Send a real handwritten card right now—without buying stationery, finding a pen, or looking for a mailbox. We write your note in real pen ink on quality cardstock, stamp it, and mail it via USPS for a flat <strong>$9.00</strong> including mailing. {deviceWallet.heroCallout}
         </p>
 
         {/* 3-Step Horizon Micro-Bar */}

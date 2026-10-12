@@ -31,6 +31,8 @@ export interface TelemetrySummary {
   addressCompleted: number;
   checkoutInitiated: number;
   paid: number;
+  // Per-order durable purchase ledger IDs (Finding 1)
+  paidOrderIds?: string[];
   // Unique session tracking per stage (sliding window per stage to prevent unbounded doc growth)
   stageSessionIds?: {
     coverSelected: string[];
@@ -89,6 +91,7 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     addressCompleted: 0,
     checkoutInitiated: 0,
     paid: 0,
+    paidOrderIds: [],
     scenarios: {},
     recentSessions: [],
     deviceCounts: { mobile: 0, desktop: 0, tablet: 0 },
@@ -101,6 +104,7 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
   summary.deviceCounts = summary.deviceCounts || { mobile: 0, desktop: 0, tablet: 0 };
   summary.geoCounts = summary.geoCounts || {};
   summary.sourceCounts = summary.sourceCounts || {};
+  summary.paidOrderIds = summary.paidOrderIds || [];
 
   // Ensure stageSessionIds and rawEventCounts exist
   summary.stageSessionIds = summary.stageSessionIds || {
@@ -146,10 +150,7 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
       }
       summary.coverSelected++;
     }
-  } else if (
-    event.eventName === "note_completed" ||
-    event.eventName === "inside_note_edited"
-  ) {
+  } else if (event.eventName === "note_completed") {
     if (event.sessionId && !summary.stageSessionIds.noteCompleted.includes(event.sessionId)) {
       summary.stageSessionIds.noteCompleted.push(event.sessionId);
       if (summary.stageSessionIds.noteCompleted.length > 1000) {
@@ -180,12 +181,27 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     event.eventName === "purchase_verified" ||
     event.eventName === "payment_succeeded"
   ) {
-    if (event.sessionId && !summary.stageSessionIds.paid.includes(event.sessionId)) {
-      summary.stageSessionIds.paid.push(event.sessionId);
-      if (summary.stageSessionIds.paid.length > 1000) {
-        summary.stageSessionIds.paid = summary.stageSessionIds.paid.slice(-1000);
+    if (!summary.paidOrderIds) {
+      summary.paidOrderIds = [];
+    }
+    const orderKey = event.orderId || event.sessionId;
+    const isTest = Boolean(event.metadata?.isTest);
+    const sessionAlreadyPaid = event.sessionId ? summary.stageSessionIds.paid.includes(event.sessionId) : false;
+    const orderAlreadyPaid = orderKey ? summary.paidOrderIds.includes(orderKey) : false;
+
+    if (!sessionAlreadyPaid && !orderAlreadyPaid) {
+      if (event.sessionId) {
+        summary.stageSessionIds.paid.push(event.sessionId);
+        if (summary.stageSessionIds.paid.length > 1000) {
+          summary.stageSessionIds.paid = summary.stageSessionIds.paid.slice(-1000);
+        }
       }
-      summary.paid++;
+      if (orderKey) {
+        summary.paidOrderIds.push(orderKey);
+      }
+      if (!isTest) {
+        summary.paid++;
+      }
     }
   }
 
@@ -462,7 +478,6 @@ export async function getTelemetrySummary(): Promise<TelemetrySummary> {
           if (evt.sessionId) coverSessions.add(evt.sessionId);
           break;
         case "note_completed":
-        case "inside_note_edited":
           if (evt.sessionId) noteSessions.add(evt.sessionId);
           break;
         case "address_completed":
@@ -541,6 +556,22 @@ export async function getTelemetrySummary(): Promise<TelemetrySummary> {
 }
 
 /**
+ * Determines whether an order belongs to a non-customer cohort (founder test, studio comp, test mode, or mock).
+ * These orders must be excluded from customer conversion and business metrics.
+ */
+export function isExcludedOrderCohort(o: Partial<Order>): boolean {
+  return (
+    o.isTest === true ||
+    o.isComp === true ||
+    o.isFounderTest === true ||
+    o.paymentMode === "stripe_test" ||
+    o.paymentMode === "local_mock" ||
+    o.paymentMethod === "STUDIO_COMP" ||
+    Boolean(o.customerEmail && o.customerEmail.toLowerCase().includes("founder"))
+  );
+}
+
+/**
  * Computes scalable admin dashboard metrics by combining:
  * 1. Pre-aggregated telemetry summary
  * 2. High-performance order queries with limit and status filtering
@@ -585,6 +616,12 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
 
   allOrdersSnap.forEach((doc) => {
     const o = doc.data() as Order;
+
+    // S0-05 & Finding 1: Exclude founder testing, free comps, and synthetic test traffic from customer conversion and revenue metrics
+    if (isExcludedOrderCohort(o)) {
+      return;
+    }
+
     const isPaid =
       o.status === "PROCESSING_HANDWRYTTEN" ||
       o.status === "PAYMENT_RECEIVED" ||
