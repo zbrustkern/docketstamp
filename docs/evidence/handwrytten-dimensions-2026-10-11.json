@@ -1,0 +1,48 @@
+{
+  "verifiedDate": "2026-10-11",
+  "source": "Authenticated GET https://api.handwrytten.com/v2/design/dimensions",
+  "selectedDimensionId": 4,
+  "status": "ok",
+  "dimensions": [
+    {
+      "id": 1,
+      "name": "A7 Flat Card Landscape",
+      "orientation": "landscape",
+      "open_width": "7.000",
+      "open_height": "5.000",
+      "format": "flat"
+    },
+    {
+      "id": 2,
+      "name": "A7 Flat Card Portrait",
+      "orientation": "portrait",
+      "open_width": "5.000",
+      "open_height": "7.000",
+      "format": "flat"
+    },
+    {
+      "id": 3,
+      "name": "A2 Folded Landscape",
+      "orientation": "landscape",
+      "open_width": "5.500",
+      "open_height": "8.500",
+      "format": "folded"
+    },
+    {
+      "id": 4,
+      "name": "A2 Folded Portrait",
+      "orientation": "portrait",
+      "open_width": "8.500",
+      "open_height": "5.500",
+      "format": "folded"
+    },
+    {
+      "id": 15,
+      "name": "8.5x11 Letter ($5.75)",
+      "orientation": "portrait",
+      "open_width": "8.500",
+      "open_height": "11.000",
+      "format": "flat"
+    }
+  ]
+}

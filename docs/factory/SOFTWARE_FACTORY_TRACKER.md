@@ -1,5 +1,7 @@
 # Software Factory: Master Task & Milestone Tracker
 
+> **Historical context — current authority updated October 11, 2026.** Read the [canonical project brief](../CANONICAL_PROJECT_BRIEF.md) and [canonical product specifications](../CANONICAL_PRODUCT_SPECS.md) first. They supersede conflicting instructions, brand claims, product specifications, conversion baselines, cost assumptions, and experimental claims below. Zero independent customer conversions; the one paid order was the founder's test. Apple Pay is untested. Older “verified” labels do not establish supplier facts. This document is retained as historical context, not an active implementation directive.
+
 > **Usage**: This file serves as the single source of truth for execution. You can check this file into git, check off items as they complete, and track progress across both Operator (Cloud/Infra) and Agent (AI Engineering) tracks.
 
 ---
