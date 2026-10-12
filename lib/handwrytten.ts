@@ -245,6 +245,17 @@ export async function fulfillHandwryttenOrder(
       ? `${params.printedGreeting.trim()}\n\n${params.handwrittenMessage.trim()}`
       : params.handwrittenMessage.trim();
 
+    const senderFirstName = (params.returnAddress.firstName || "").trim();
+    const senderLastName = (params.returnAddress.lastName || "").trim();
+
+    if (!senderFirstName) {
+      console.error("[Handwrytten] Order dispatch halted: personal sender name is required.");
+      return {
+        success: false,
+        error: "Personal sender name is required for fulfillment dispatch; cannot dispatch without personal sender.",
+      };
+    }
+
     const isTestMode = process.env.HANDWRYTTEN_TEST_MODE === "true";
 
     const orderRes = await fetch("https://api.handwrytten.com/v2/orders/singleStepOrder", {
@@ -267,8 +278,8 @@ export async function fulfillHandwryttenOrder(
         recipient_city: params.recipient.city.trim(),
         recipient_state: params.recipient.state.trim().toUpperCase(),
         recipient_zip: params.recipient.zip.trim(),
-        sender_first_name: (params.returnAddress.firstName || "Aster & Blanche").trim(),
-        sender_last_name: (params.returnAddress.lastName || "Press").trim(),
+        sender_first_name: senderFirstName,
+        sender_last_name: senderLastName,
         sender_address1: params.returnAddress.street1.trim(),
         sender_address2: (params.returnAddress.street2 || "").trim(),
         sender_city: params.returnAddress.city.trim(),

@@ -10,6 +10,7 @@ import { validateDiscount } from "@/lib/discount";
 import { CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
 import { fulfillHandwryttenOrder } from "@/lib/handwrytten";
 import { logIncident } from "@/lib/incident-logger";
+import { validatePersonalSender } from "@/lib/order-processor";
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,6 +58,33 @@ export async function POST(req: NextRequest) {
 
     // 2. Increment discount code usage
     await recordDiscountUsage(codeToVerify, CARD_FLAT_RATE_CENTS);
+
+    // S0-06: Reject orders without a personal sender name and return address before fulfillment
+    const senderValidation = validatePersonalSender(order.returnAddress);
+    if (!senderValidation.valid) {
+      const errorMsg = senderValidation.error || "Missing or invalid personal sender return address.";
+      console.error(`[Free Order] ${errorMsg} for ${orderId}. Halting fulfillment.`);
+      await updateOrderStatus(orderId, {
+        status: "QUEUED_FOR_FULFILLMENT",
+        fulfillmentError: `${errorMsg} Requires operator review.`,
+      });
+
+      await logIncident({
+        type: "HANDWRYTTEN",
+        category: "OPERATOR_ACTION",
+        severity: "error",
+        summary: `Invalid/Missing Sender Address on Free Order ${orderId}`,
+        technicalDetails: `${errorMsg} Dispatch halted to prevent brand-name or blank sender delivery.`,
+        metadata: { orderId, discountCode: codeToVerify },
+      });
+
+      return NextResponse.json({
+        success: true,
+        orderId,
+        status: "QUEUED_FOR_FULFILLMENT",
+        warning: "Order placed, but fulfillment is queued for studio verification of return address.",
+      });
+    }
 
     // 3. Dispatch to Handwrytten robotic pen fulfillment
     console.log(`[Free Order] Disagreeing payment needed for ${orderId} (Promo: ${codeToVerify}). Dispatching to Handwrytten...`);

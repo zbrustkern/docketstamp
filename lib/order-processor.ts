@@ -20,6 +20,56 @@ export interface ProcessPaidOrderResult {
   alreadyProcessed?: boolean;
 }
 
+export interface ProcessOrderOptions {
+  clientIp?: string;
+  userAgent?: string;
+  isTest?: boolean;
+  paymentMode?: "live" | "stripe_test" | "local_mock";
+}
+
+export interface SenderValidationResult {
+  valid: boolean;
+  error?: string;
+  isBrandSender?: boolean;
+}
+
+export function validatePersonalSender(
+  address?: Partial<Order["returnAddress"]> | null
+): SenderValidationResult {
+  if (!address) {
+    return { valid: false, error: "Return address is required." };
+  }
+
+  const firstName = (address.firstName || "").trim();
+  const lastName = (address.lastName || "").trim();
+  const street1 = (address.street1 || "").trim();
+  const city = (address.city || "").trim();
+  const state = (address.state || "").trim();
+  const zip = (address.zip || "").trim();
+
+  if (!firstName) {
+    return { valid: false, error: "Personal sender first name is required." };
+  }
+
+  const isBrandSender =
+    firstName.toLowerCase() === "aster & blanche" ||
+    (firstName.toLowerCase() === "aster" && lastName.toLowerCase() === "blanche");
+
+  if (isBrandSender) {
+    return {
+      valid: false,
+      isBrandSender: true,
+      error: "Return address must use personal sender name, not brand name Aster & Blanche.",
+    };
+  }
+
+  if (!street1 || !city || !state || !zip) {
+    return { valid: false, error: "Complete return address (street, city, state, ZIP) is required." };
+  }
+
+  return { valid: true };
+}
+
 export class DuplicateDispatchError extends Error {
   public status: string;
   public handwryttenOrderId?: string;
@@ -41,7 +91,7 @@ export async function processPaidOrder(
   orderId: string,
   paymentIntentId: string,
   customerEmail?: string,
-  clientContext?: { clientIp?: string; userAgent?: string }
+  clientContext?: ProcessOrderOptions
 ): Promise<ProcessPaidOrderResult> {
   let order: Order;
 
@@ -85,6 +135,12 @@ export async function processPaidOrder(
         customerEmail: finalEmail,
         dispatchStartedAt: Date.now(),
         updatedAt: Date.now(),
+        ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
+          ? {
+              isTest: Boolean(clientContext?.isTest ?? (clientContext?.paymentMode !== "live")),
+              paymentMode: clientContext?.paymentMode || "stripe_test",
+            }
+          : {}),
       });
 
       return {
@@ -129,17 +185,63 @@ export async function processPaidOrder(
     }
   }
 
-  // 5. Dispatch to Handwrytten robotic pen fulfillment with deterministic orderId for supplier idempotency
-  const fulfillment = await fulfillHandwryttenOrder({
-    orderId,
-    imageUrl: order.frontImageUrl,
-    printedGreeting: order.printedMessage,
-    handwrittenMessage: order.handwrittenNote,
-    fontId: order.fontStyleId || "1",
-    recipient: order.recipientAddress,
-    returnAddress: order.returnAddress,
-    scheduledSendDate: order.scheduledSendDate,
-  });
+  // S0-06: Reject orders without a personal sender name and return address before fulfillment
+  const senderValidation = validatePersonalSender(order.returnAddress);
+  if (!senderValidation.valid) {
+    const errorMsg = senderValidation.error || "Missing or invalid personal sender return address.";
+    console.error(`[OrderProcessor Critical] ${errorMsg} on Order ${orderId}. Halting fulfillment.`);
+
+    await updateOrderStatus(orderId, {
+      status: "QUEUED_FOR_FULFILLMENT",
+      fulfillmentError: `${errorMsg} Requires operator review.`,
+    });
+
+    await logIncident({
+      type: "HANDWRYTTEN",
+      category: "OPERATOR_ACTION",
+      severity: "error",
+      summary: `Invalid/Missing Sender Address on Order ${orderId}`,
+      technicalDetails: `${errorMsg} Automatic dispatch halted to prevent brand-name or missing sender delivery.`,
+      metadata: { orderId, returnAddress: order.returnAddress },
+    });
+
+    return {
+      success: false,
+      status: "QUEUED_FOR_FULFILLMENT",
+      error: errorMsg,
+    };
+  }
+
+  const isTestModePayment = Boolean(
+    clientContext?.isTest ||
+    clientContext?.paymentMode === "stripe_test" ||
+    clientContext?.paymentMode === "local_mock"
+  );
+
+  let fulfillment: { success: boolean; order_id?: string; error?: string; details?: unknown };
+
+  if (isTestModePayment) {
+    // Test/Live safety boundary: Test payments must NEVER submit to live Handwrytten supplier
+    console.log(
+      `[OrderProcessor] Test payment mode active (${clientContext?.paymentMode || "stripe_test"}). Skipping live Handwrytten dispatch.`
+    );
+    fulfillment = {
+      success: true,
+      order_id: `test_hw_${orderId}`,
+    };
+  } else {
+    // 5. Dispatch to Handwrytten robotic pen fulfillment with deterministic orderId for supplier idempotency
+    fulfillment = await fulfillHandwryttenOrder({
+      orderId,
+      imageUrl: order.frontImageUrl,
+      printedGreeting: order.printedMessage,
+      handwrittenMessage: order.handwrittenNote,
+      fontId: order.fontStyleId || "1",
+      recipient: order.recipientAddress,
+      returnAddress: order.returnAddress,
+      scheduledSendDate: order.scheduledSendDate,
+    });
+  }
 
   if (!fulfillment.success) {
     const rawError = fulfillment.error || "";
@@ -185,7 +287,13 @@ export async function processPaidOrder(
     status: "PROCESSING_HANDWRYTTEN",
     handwryttenOrderId: fulfillment.order_id,
     fulfillmentError: undefined,
-  });
+    ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
+      ? {
+          isTest: Boolean(clientContext?.isTest ?? (clientContext?.paymentMode !== "live")),
+          paymentMode: clientContext?.paymentMode || "stripe_test",
+        }
+      : {}),
+  } as any);
 
   // 7. Auto-resolve any prior incidents for this order
   try {

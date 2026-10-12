@@ -131,7 +131,7 @@ export function VendingMachineBuilder(props?: VendingMachineBuilderProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [isInitializingCheckout, setIsInitializingCheckout] = useState<boolean>(false);
-  const [isMockIntent, setIsMockIntent] = useState<boolean>(true);
+  const [isMockIntent, setIsMockIntent] = useState<boolean>(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   // Discount & Promo Voucher State
@@ -502,7 +502,7 @@ export function VendingMachineBuilder(props?: VendingMachineBuilderProps) {
       if (data.publishableKey) {
         setPublishableKey(data.publishableKey);
       }
-      setIsMockIntent(data.isMock);
+      setIsMockIntent(Boolean(data.isMock));
       setIsFreeOrder(Boolean(data.isFree));
       trackEvent("checkout_initiated", 4, { orderId: data.orderId, amount: data.amountInCents });
       setCurrentStep(4);
