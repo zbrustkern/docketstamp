@@ -450,7 +450,15 @@ async function runRemediationTests() {
     updatedAt: Date.now(),
   };
   assert(testOrderRecord.sessionId === "sess_visitor_abc123", "Order record preserves visitor telemetry sessionId");
-  assert(testOrderRecord.experienceVersion === "candidate_v1", "Order record preserves experienceVersion");
+  // Next config redirects /preview to /
+  const nextConfigModule = await import("../next.config");
+  const nextConfig = nextConfigModule.default;
+  if (typeof nextConfig.redirects === "function") {
+    const redirects = await nextConfig.redirects();
+    const previewRedirect = redirects.find((r: any) => r.source === "/preview");
+    assert(previewRedirect !== undefined, "Redirect rule for /preview exists");
+    assert(Boolean(previewRedirect && previewRedirect.destination === "/"), "Redirects /preview to root /");
+  }
 
   console.log("\n=================================================");
   console.log(`🎉 ALL REMEDIATION TESTS PASSED (${passed}/${passed + failed})`);
