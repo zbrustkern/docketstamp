@@ -413,3 +413,14 @@ secret is invalid. Resolve this configuration drift and handle refusal explicitl
 Ready-made recommendations must remain separate from custom-generation success,
 and fallback images must not be cached as successful generated artwork. Preserve
 the request and offer an editable prompt plus optional ready-made alternatives.
+
+## October 13: Review & pay authentication blocker
+
+See [the checkout authentication incident and recovery handoff](CHECKOUT_AUTH_INCIDENT_2026-10-13.md).
+Production revision `009` selects managed Stripe secret version 1, which Stripe
+rejects with `api_key_expired`. A different legacy live credential authenticates
+but is overridden by the managed value. Repair the authoritative secret and
+deploy its validated version before attributing this failure to the frontend.
+Require real customer-route payment initialization for both custom artwork and
+ready-made cards as release evidence; a passing build or working preview does
+not establish checkout readiness.

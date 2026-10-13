@@ -28,7 +28,7 @@ export interface FeatureFlagsState {
 }
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlagsMap = {
-  reworkV3Experience: false,
+  reworkV3Experience: true,
 };
 
 export const COOKIE_REWORK_V3 = "smn_rework_v3";

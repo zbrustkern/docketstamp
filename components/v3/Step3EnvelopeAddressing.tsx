@@ -412,18 +412,23 @@ export function Step3EnvelopeAddressing({
         </p>
       </div>
 
-      {/* ENVELOPE PREVIEW (COLLAPSIBLE / BELOW FORMS) */}
+      {/* REALISTIC ENVELOPE PREVIEW */}
       <div className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs overflow-hidden">
         <button
           type="button"
           onClick={() => setShowEnvelopePreview(!showEnvelopePreview)}
           className="w-full p-4 flex items-center justify-between text-left hover:bg-stone-50 transition cursor-pointer"
         >
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-stone-600" />
-            <span className="text-xs font-semibold text-stone-800">
-              Envelope Preview
-            </span>
+          <div className="flex items-center gap-2.5">
+            <Mail className="w-4 h-4 text-emerald-800" />
+            <div>
+              <span className="text-xs font-bold text-stone-900 block">
+                Envelope Preview
+              </span>
+              <span className="text-[11px] text-stone-500 font-normal block">
+                Penned in real blue ink &amp; mailed with a USPS Forever stamp
+              </span>
+            </div>
           </div>
           {showEnvelopePreview ? (
             <ChevronUp className="w-4 h-4 text-stone-400" />
@@ -433,73 +438,186 @@ export function Step3EnvelopeAddressing({
         </button>
 
         {showEnvelopePreview && (
-          <div className="p-4 pt-1 border-t border-stone-100 bg-[#FAF8F5]">
-            <div className="relative w-full max-w-2xl mx-auto rounded-2xl bg-[#FDFCF7] border-2 border-[#E7DFC6] p-5 sm:p-7 shadow-xs overflow-hidden text-stone-800">
-              {/* Subtle envelope texture */}
-              <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(#E8E0CE_1px,transparent_1px)] [background-size:16px_16px]" />
-
-              {/* TOP ROW: RETURN ADDRESS & STAMP */}
-              <div className="relative z-10 flex items-start justify-between gap-4 mb-6 sm:mb-8">
-                {/* Top-Left: Sender Return Address */}
-                <div className="max-w-[240px] sm:max-w-xs space-y-0.5">
-                  <div className="text-[10px] uppercase font-semibold tracking-wider text-stone-500">
-                    Return Address
-                  </div>
-                  <div className="font-sans text-xs text-stone-800 leading-tight">
-                    <p className="font-semibold text-stone-900">
-                      {sender.fullName || "Your Name"}
-                    </p>
-                    <p>{sender.street1 || "Your Street Address"}</p>
-                    {sender.street2 && <p>{sender.street2}</p>}
-                    <p>
-                      {sender.city || "City"}, {sender.state || "ST"}{" "}
-                      {sender.zip || "ZIP"}
-                    </p>
-                  </div>
+          <div className="p-4 sm:p-6 pt-1 border-t border-stone-100 bg-stone-100/60">
+            {/* PHYSICAL ENVELOPE (A2 FORMAT: 4.375" x 5.75", ratio ~1.31) */}
+            <div className="relative w-full max-w-xl mx-auto rounded-xl bg-[#FCFAF7] border border-[#E6DFD5] p-5 sm:p-7 shadow-md overflow-hidden text-stone-900">
+              {/* TOP ROW: HANDWRITTEN RETURN ADDRESS + POSTMARK & FOREVER STAMP */}
+              <div className="flex items-start justify-between gap-2 sm:gap-4 mb-6 sm:mb-8">
+                {/* Top-Left: SENDER RETURN ADDRESS IN REAL BLUE PEN INK */}
+                <div
+                  className={`max-w-[180px] sm:max-w-[220px] text-[#1e3a8a] text-xs sm:text-sm leading-tight select-none ${fontClass}`}
+                >
+                  <p className="font-medium">{sender.fullName || "Your Name"}</p>
+                  <p>{sender.street1 || "Street Address"}</p>
+                  {sender.street2 && <p>{sender.street2}</p>}
+                  <p>
+                    {sender.city || "City"}, {sender.state || "ST"}{" "}
+                    {sender.zip || "ZIP"}
+                  </p>
                 </div>
 
-                {/* Top-Right: USPS First-Class Stamp Artwork */}
-                <div className="shrink-0 w-16 h-20 sm:w-20 sm:h-24 rounded border-2 border-dashed border-red-700/60 bg-gradient-to-b from-red-50 via-amber-50 to-blue-50 p-1 flex flex-col items-center justify-between text-center shadow-2xs">
-                  <div className="text-[8px] sm:text-[9px] font-bold text-red-900 uppercase tracking-widest leading-none pt-0.5">
-                    USPS
+                {/* Top-Right: REALISTIC POSTMARK & USPS FOREVER STAMP */}
+                <div className="flex items-start shrink-0 select-none">
+                  {/* Cancellation postmark (Phoenix, AZ hub per supplier specs) */}
+                  <div className="hidden sm:flex flex-col items-end justify-center mr-1 mt-1 text-stone-600/70 text-[9px] font-mono leading-none tracking-tight text-right">
+                    <span>PHOENIX AZ 852</span>
+                    <span className="text-[8px] text-stone-500/80 my-0.5">
+                      FIRST-CLASS
+                    </span>
+                    {/* Wavy cancellation ink lines */}
+                    <svg
+                      viewBox="0 0 48 16"
+                      className="w-12 h-3 text-stone-600/60 stroke-current fill-none"
+                    >
+                      <path
+                        d="M0,4 Q6,0 12,4 T24,4 T36,4 T48,4"
+                        strokeWidth="1.2"
+                      />
+                      <path
+                        d="M0,8 Q6,4 12,8 T24,8 T36,8 T48,8"
+                        strokeWidth="1.2"
+                      />
+                      <path
+                        d="M0,12 Q6,8 12,12 T24,12 T36,12 T48,12"
+                        strokeWidth="1.2"
+                      />
+                    </svg>
                   </div>
-                  <div className="my-auto text-red-800">
-                    <Mail className="w-5 h-5 sm:w-6 sm:h-6 mx-auto stroke-1 text-red-800" />
-                  </div>
-                  <div className="text-[7px] sm:text-[8px] font-semibold text-stone-700 uppercase tracking-tighter leading-none pb-0.5">
-                    First-Class
+
+                  {/* USPS FOREVER STAMP (AUTHENTIC PERFORATED POSTAGE STAMP) */}
+                  <div className="relative w-14 h-18 sm:w-16 sm:h-20 bg-white rounded-xs border border-stone-300 shadow-xs p-1 flex flex-col justify-between overflow-hidden">
+                    {/* Perforated scalloped stamp edges */}
+                    <div className="absolute inset-0 border border-dashed border-stone-400/40 pointer-events-none" />
+
+                    {/* Stamp artwork: Flag / USA Forever */}
+                    <div className="h-full w-full bg-gradient-to-b from-[#1e3a8a] via-[#f8fafc] to-[#991b1b] rounded-[2px] p-1 flex flex-col justify-between relative overflow-hidden">
+                      {/* Flag stars header */}
+                      <div className="flex items-center justify-between text-white text-[7px] font-sans font-bold leading-none tracking-widest">
+                        <span>USA</span>
+                        <span className="text-[6px] font-serif">★</span>
+                      </div>
+                      {/* Center emblem */}
+                      <div className="text-center py-1">
+                        <span className="text-[10px] sm:text-xs font-serif font-black tracking-wider text-white drop-shadow-xs">
+                          FOREVER
+                        </span>
+                      </div>
+                      {/* Bottom value */}
+                      <div className="flex items-center justify-between text-white/90 text-[6px] font-mono leading-none">
+                        <span>USPS</span>
+                        <span>2026</span>
+                      </div>
+                      {/* Cancellation wavy line crossing stamp */}
+                      <svg
+                        viewBox="0 0 60 40"
+                        className="absolute inset-0 w-full h-full text-stone-800/40 stroke-current fill-none pointer-events-none"
+                      >
+                        <path
+                          d="M-10,10 Q10,5 30,12 T70,10"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d="M-10,22 Q10,17 30,24 T70,22"
+                          strokeWidth="1.5"
+                        />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* CENTER: RECIPIENT ADDRESS IN REAL HANDWRITING STYLING */}
-              <div className="relative z-10 pl-4 sm:pl-12 pr-4 py-2 max-w-lg mx-auto text-left">
-                <div className="text-[10px] uppercase font-semibold tracking-wider text-stone-400 mb-1">
-                  Mailing To
-                </div>
-                <div className={`space-y-1 text-lg sm:text-xl text-stone-900 leading-tight ${fontClass}`}>
-                  <p className="font-semibold text-xl sm:text-2xl text-stone-950">
+              {/* CENTER: MAILING RECIPIENT IN AUTHENTIC BLUE PEN INK */}
+              <div className="pl-6 sm:pl-20 pr-2 py-2 sm:py-4 max-w-sm sm:max-w-md mx-auto text-left select-none">
+                <div
+                  className={`space-y-0.5 text-base sm:text-xl text-[#1e3a8a] leading-snug ${fontClass}`}
+                >
+                  <p className="font-semibold text-lg sm:text-2xl text-[#1e3a8a]">
                     {recipient.fullName || "Recipient Name"}
                   </p>
                   <p>
-                    {recipient.street1 || "123 Main Street"}
+                    {recipient.street1 || "Street Address"}
                     {recipient.street2 ? `, ${recipient.street2}` : ""}
                   </p>
                   <p>
                     {recipient.city || "City"},{" "}
-                    {recipient.state || "State"} {recipient.zip || "12345"}
+                    {recipient.state || "State"} {recipient.zip || "ZIP"}
                   </p>
                 </div>
               </div>
 
-              {/* Envelope footer */}
-              <div className="relative z-10 mt-6 pt-2.5 border-t border-[#E8E0CE] flex items-center justify-between text-[11px] text-stone-500">
-                <span>USPS First-Class Postage</span>
-                <span className="font-medium text-stone-600">
-                  Matching Envelope
-                </span>
+              {/* BOTTOM: AUTHENTIC USPS INTELLIGENT MAIL BARCODE */}
+              <div className="mt-6 pt-3 flex flex-col items-center justify-center select-none">
+                <svg
+                  viewBox="0 0 240 14"
+                  className="w-48 sm:w-64 h-3 sm:h-3.5 text-stone-800/70 fill-current opacity-80"
+                >
+                  <rect x="0" y="2" width="2" height="10" />
+                  <rect x="4" y="2" width="2" height="6" />
+                  <rect x="8" y="2" width="2" height="10" />
+                  <rect x="12" y="5" width="2" height="7" />
+                  <rect x="16" y="2" width="2" height="10" />
+                  <rect x="20" y="2" width="2" height="10" />
+                  <rect x="24" y="5" width="2" height="4" />
+                  <rect x="28" y="2" width="2" height="10" />
+                  <rect x="32" y="2" width="2" height="7" />
+                  <rect x="36" y="5" width="2" height="7" />
+                  <rect x="40" y="2" width="2" height="10" />
+                  <rect x="44" y="5" width="2" height="4" />
+                  <rect x="48" y="2" width="2" height="10" />
+                  <rect x="52" y="2" width="2" height="7" />
+                  <rect x="56" y="2" width="2" height="10" />
+                  <rect x="60" y="5" width="2" height="7" />
+                  <rect x="64" y="2" width="2" height="10" />
+                  <rect x="68" y="2" width="2" height="10" />
+                  <rect x="72" y="5" width="2" height="4" />
+                  <rect x="76" y="2" width="2" height="7" />
+                  <rect x="80" y="2" width="2" height="10" />
+                  <rect x="84" y="5" width="2" height="7" />
+                  <rect x="88" y="2" width="2" height="10" />
+                  <rect x="92" y="2" width="2" height="10" />
+                  <rect x="96" y="5" width="2" height="4" />
+                  <rect x="100" y="2" width="2" height="10" />
+                  <rect x="104" y="2" width="2" height="7" />
+                  <rect x="108" y="5" width="2" height="7" />
+                  <rect x="112" y="2" width="2" height="10" />
+                  <rect x="116" y="5" width="2" height="4" />
+                  <rect x="120" y="2" width="2" height="10" />
+                  <rect x="124" y="2" width="2" height="7" />
+                  <rect x="128" y="2" width="2" height="10" />
+                  <rect x="132" y="5" width="2" height="7" />
+                  <rect x="136" y="2" width="2" height="10" />
+                  <rect x="140" y="2" width="2" height="10" />
+                  <rect x="144" y="5" width="2" height="4" />
+                  <rect x="148" y="2" width="2" height="7" />
+                  <rect x="152" y="2" width="2" height="10" />
+                  <rect x="156" y="5" width="2" height="7" />
+                  <rect x="160" y="2" width="2" height="10" />
+                  <rect x="164" y="2" width="2" height="10" />
+                  <rect x="168" y="5" width="2" height="4" />
+                  <rect x="172" y="2" width="2" height="10" />
+                  <rect x="176" y="2" width="2" height="7" />
+                  <rect x="180" y="5" width="2" height="7" />
+                  <rect x="184" y="2" width="2" height="10" />
+                  <rect x="188" y="5" width="2" height="4" />
+                  <rect x="192" y="2" width="2" height="10" />
+                  <rect x="196" y="2" width="2" height="7" />
+                  <rect x="200" y="2" width="2" height="10" />
+                  <rect x="204" y="5" width="2" height="7" />
+                  <rect x="208" y="2" width="2" height="10" />
+                  <rect x="212" y="2" width="2" height="10" />
+                  <rect x="216" y="5" width="2" height="4" />
+                  <rect x="220" y="2" width="2" height="7" />
+                  <rect x="224" y="2" width="2" height="10" />
+                  <rect x="228" y="5" width="2" height="7" />
+                  <rect x="232" y="2" width="2" height="10" />
+                  <rect x="236" y="2" width="2" height="10" />
+                </svg>
               </div>
             </div>
+
+            <p className="text-[11px] text-stone-500 text-center mt-3">
+              Mailed in a matching woven envelope directly to your recipient via USPS First-Class.
+            </p>
           </div>
         )}
       </div>
