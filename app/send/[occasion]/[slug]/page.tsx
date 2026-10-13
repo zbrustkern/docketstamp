@@ -280,11 +280,10 @@ export default async function ScenarioPage({ params, searchParams }: PageProps) 
               </span>
             </div>
             <span className="text-[11px] text-amber-800 font-medium">
-              Step 1 of 4 • Edit names and personalize
+              Curated Etiquette Template • Ready to Personalize
             </span>
           </div>
 
-          {/* Mounted VendingMachineBuilder inside Suspense for static pre-rendering */}
           <Suspense
             fallback={
               <div className="min-h-[500px] bg-white rounded-3xl border border-stone-200 shadow-sm flex items-center justify-center p-8">
@@ -305,6 +304,9 @@ export default async function ScenarioPage({ params, searchParams }: PageProps) 
               initialHandwrittenNote={scenario.handwrittenNote}
               initialFontStyleId={scenario.fontStyleId}
               scenarioSlug={scenario.slug}
+              scenarioTitle={scenario.h1Title}
+              embedded={true}
+              initialStep="note"
             />
           </Suspense>
         </section>
@@ -347,7 +349,7 @@ export default async function ScenarioPage({ params, searchParams }: PageProps) 
               Why Real Pen-on-Paper Outperforms Digital Messages
             </h2>
             <p className="text-stone-300 text-sm leading-relaxed">
-              In a world where everyone sends fleeting text messages, emails, and LinkedIn DMs, physical mail commands 100% of the recipient&apos;s attention. Every card is written with real ballpoint pens featuring natural variable stroke pressure and ink shading on 120lb premium textured cardstock—giving them the warmth of a real handwritten note without you needing to find stamps or visit the post office.
+              In a world where everyone sends fleeting text messages, emails, and LinkedIn DMs, physical mail commands 100% of the recipient&apos;s attention. Every card is written with real ballpoint pens featuring natural variable stroke pressure and ink shading on quality folded cardstock—giving them the warmth of a real handwritten note without you needing to find stamps or visit the post office.
             </p>
             <div className="pt-2 flex flex-wrap gap-4 text-xs text-stone-400">
               <span>✓ Never marked as spam or archived</span>

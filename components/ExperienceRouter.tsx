@@ -6,23 +6,29 @@ import { EntryPrototypeClient } from "@/app/preview/entry/client";
 import { VendingMachineBuilder } from "@/components/VendingMachineBuilder";
 
 export interface ExperienceRouterProps {
-  initialIsV3: boolean;
+  initialIsV3?: boolean;
   initialOccasion?: string;
   initialCoverUrl?: string;
   initialPrintedGreeting?: string;
   initialHandwrittenNote?: string;
   initialFontStyleId?: string;
   scenarioSlug?: string;
+  scenarioTitle?: string;
+  embedded?: boolean;
+  initialStep?: "card" | "note" | "address" | "pay";
 }
 
 export function ExperienceRouter({
-  initialIsV3,
+  initialIsV3 = true,
   initialOccasion,
   initialCoverUrl,
   initialPrintedGreeting,
   initialHandwrittenNote,
   initialFontStyleId,
   scenarioSlug,
+  scenarioTitle,
+  embedded,
+  initialStep,
 }: ExperienceRouterProps) {
   const searchParams = useSearchParams();
 
@@ -33,7 +39,7 @@ export function ExperienceRouter({
       if (v3Param === "1" || v3Param === "true") return true;
       if (v3Param === "0" || v3Param === "false") return false;
     }
-    // 2. Fallback to server-resolved feature flag state
+    // 2. Fallback to server-resolved feature flag state (defaults to true)
     return initialIsV3;
   }, [searchParams, initialIsV3]);
 
@@ -41,7 +47,14 @@ export function ExperienceRouter({
     return (
       <EntryPrototypeClient
         initialOccasion={initialOccasion}
+        initialCoverUrl={initialCoverUrl}
+        initialPrintedGreeting={initialPrintedGreeting}
+        initialHandwrittenNote={initialHandwrittenNote}
+        initialFontStyleId={initialFontStyleId}
         scenarioSlug={scenarioSlug}
+        scenarioTitle={scenarioTitle}
+        embedded={embedded}
+        initialStep={initialStep}
       />
     );
   }
@@ -57,3 +70,4 @@ export function ExperienceRouter({
     />
   );
 }
+

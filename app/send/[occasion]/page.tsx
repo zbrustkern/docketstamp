@@ -323,6 +323,9 @@ export default async function OccasionPage({ params, searchParams }: PageProps) 
               initialHandwrittenNote={primaryScenario.handwrittenNote}
               initialFontStyleId={primaryScenario.fontStyleId}
               scenarioSlug={primaryScenario.slug}
+              scenarioTitle={primaryScenario.h1Title}
+              embedded={true}
+              initialStep="card"
             />
           </Suspense>
         </section>

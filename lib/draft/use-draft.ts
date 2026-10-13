@@ -11,6 +11,11 @@ interface UseDraftOptions {
   initialPresetId?: string;
   initialPresetTitle?: string;
   initialPresetUrl?: string;
+  initialOccasion?: string;
+  initialHandwrittenNote?: string;
+  initialSalutation?: string;
+  initialSignOff?: string;
+  initialFontStyleId?: string;
 }
 
 export function useDraft(options: UseDraftOptions = {}) {
@@ -20,6 +25,11 @@ export function useDraft(options: UseDraftOptions = {}) {
     initialPresetId,
     initialPresetTitle,
     initialPresetUrl,
+    initialOccasion,
+    initialHandwrittenNote,
+    initialSalutation,
+    initialSignOff,
+    initialFontStyleId,
   } = options;
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -33,22 +43,43 @@ export function useDraft(options: UseDraftOptions = {}) {
     if (existing) {
       dispatch({ type: "HYDRATE_DRAFT", payload: existing });
     } else {
-      // If an initial preset was passed via URL/context and no draft was present:
-      if (initialPresetId && initialPresetUrl && initialPresetTitle) {
+      // If an initial preset or curated scenario was passed via URL/context and no draft was present:
+      if (initialPresetUrl && initialPresetTitle) {
         dispatch({
           type: "SELECT_DESIGN",
           payload: {
             presetId: initialPresetId,
             imageUrl: initialPresetUrl,
             title: initialPresetTitle,
+            occasion: initialOccasion,
             source: "preset",
-            accepted: false, // Contextual recommendation is NOT accepted until explicit action
+            accepted: Boolean(initialHandwrittenNote), // Pre-seeded curated scenario starts accepted
+          },
+        });
+      }
+      if (initialHandwrittenNote || initialSalutation || initialSignOff) {
+        dispatch({
+          type: "UPDATE_NOTE",
+          payload: {
+            salutation: initialSalutation || "",
+            text: initialHandwrittenNote || "",
+            signOff: initialSignOff || "",
+            style: initialFontStyleId || "hwDavid",
           },
         });
       }
     }
     setIsLoaded(true);
-  }, [initialPresetId, initialPresetUrl, initialPresetTitle]);
+  }, [
+    initialPresetId,
+    initialPresetUrl,
+    initialPresetTitle,
+    initialOccasion,
+    initialHandwrittenNote,
+    initialSalutation,
+    initialSignOff,
+    initialFontStyleId,
+  ]);
 
   // Persist state updates
   useEffect(() => {

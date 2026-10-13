@@ -835,3 +835,82 @@ export function getAllOccasions(): {
 
   return results;
 }
+
+/**
+ * Maps legacy numerical scenario font styles ("1", "2", "3", "4") to Handwrytten SVG font keys.
+ */
+export function mapScenarioFontId(fontStyleId?: string): string {
+  if (!fontStyleId) return "hwDavid";
+  switch (fontStyleId) {
+    case "1":
+      return "hwKate"; // Warm Cursive
+    case "2":
+      return "hwKate"; // Classic Cursive
+    case "3":
+      return "hwAdam"; // Architect Print
+    case "4":
+      return "hwAdam"; // Executive Fountain Pen
+    case "hwDavid":
+    case "hwKate":
+    case "hwAdam":
+    case "hwChase":
+      return fontStyleId;
+    default:
+      return "hwDavid";
+  }
+}
+
+/**
+ * Splits a pre-formatted etiquette scenario handwritten note into:
+ * - salutation (e.g. "Dear [Interviewer Name],")
+ * - bodyNote (the core body text)
+ * - signOff (e.g. "Best regards,\n[Your Name]")
+ */
+export function parseScenarioNote(rawNote: string): {
+  salutation: string;
+  bodyNote: string;
+  signOff: string;
+} {
+  const trimmed = rawNote.trim();
+  if (!trimmed) {
+    return { salutation: "", bodyNote: "", signOff: "" };
+  }
+
+  const paragraphs = trimmed.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+
+  if (paragraphs.length === 1) {
+    return { salutation: "", bodyNote: paragraphs[0], signOff: "" };
+  }
+
+  let salutation = "";
+  let signOff = "";
+  const bodyParagraphs = [...paragraphs];
+
+  // 1. Check if the first paragraph is a greeting/salutation
+  const first = bodyParagraphs[0];
+  if (
+    /^(dear|to|hi|hello|happy\b)/i.test(first) ||
+    (first.length < 50 && (first.endsWith(",") || first.endsWith("!")))
+  ) {
+    salutation = bodyParagraphs.shift()!;
+  }
+
+  // 2. Check if the last paragraph is a sign-off
+  if (bodyParagraphs.length > 0) {
+    const last = bodyParagraphs[bodyParagraphs.length - 1];
+    if (
+      /^(warmly|best|with|love|sincerely|cheers|yours|always|here's to)/i.test(last) ||
+      last.includes("[Your Name]") ||
+      (last.length < 50 && (last.includes(",") || last.includes("\n")))
+    ) {
+      signOff = bodyParagraphs.pop()!;
+    }
+  }
+
+  return {
+    salutation,
+    bodyNote: bodyParagraphs.join("\n\n"),
+    signOff,
+  };
+}
+
