@@ -13,6 +13,7 @@ interface CardPreviewProps {
   fontStyleId: string;
   occasion?: string;
   currentStep?: number;
+  initialView?: "cover" | "rightPage" | "spread" | "back";
   onNextStep?: () => void;
   onPreviousStep?: () => void;
 }
@@ -91,20 +92,25 @@ export function CardPreview({
   fontStyleId,
   occasion = "Custom Card",
   currentStep = 1,
+  initialView,
   onNextStep,
   onPreviousStep,
 }: CardPreviewProps) {
-  const [viewMode, setViewMode] = useState<"cover" | "rightPage" | "spread" | "back">("cover");
+  const [viewMode, setViewMode] = useState<"cover" | "rightPage" | "spread" | "back">(
+    initialView || (currentStep === 2 ? "rightPage" : "cover")
+  );
   const [isSpreadModalOpen, setIsSpreadModalOpen] = useState(false);
 
-  // Automatically focus on cover for Step 1, inside note for Step 2
+  // Automatically focus on cover for Step 1, inside note for Step 2 (unless caller specified initialView)
   useEffect(() => {
-    if (currentStep === 1) {
+    if (initialView) {
+      setViewMode(initialView);
+    } else if (currentStep === 1) {
       setViewMode("cover");
     } else if (currentStep === 2) {
       setViewMode("rightPage");
     }
-  }, [currentStep]);
+  }, [currentStep, initialView]);
 
   const currentFont =
     FONT_OPTIONS.find(
@@ -168,7 +174,13 @@ export function CardPreview({
       {/* 1. FRONT COVER VIEW: Folded A2 Portrait 4.25" x 5.5" Greeting Card (17:22 Aspect Ratio) */}
       {viewMode === "cover" && (
         <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[17/22] transition-all duration-300">
-          <CardFrontPreview artworkUrl={coverUrl} title="Card front preview" sizes="(max-width: 768px) 100vw, 400px" priority />
+          <CardFrontPreview
+            artworkUrl={coverUrl}
+            title="Card front preview"
+            sizes="(max-width: 768px) 100vw, 400px"
+            priority
+            unoptimized={Boolean(coverUrl?.startsWith("data:"))}
+          />
         </div>
       )}
 

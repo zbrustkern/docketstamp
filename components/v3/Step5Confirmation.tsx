@@ -320,7 +320,13 @@ export function Step5Confirmation({
       <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200/80 flex items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative w-12 h-16 rounded-lg overflow-hidden border border-stone-200 shrink-0 bg-stone-100">
-            <Image src={cardUrl} alt={cardTitle} fill className="object-cover" />
+            <Image
+              src={cardUrl}
+              alt={cardTitle}
+              fill
+              unoptimized={Boolean(cardUrl?.startsWith("data:"))}
+              className="object-cover"
+            />
           </div>
           <div className="min-w-0">
             <p className="font-serif font-bold text-stone-900 truncate">{cardTitle}</p>
