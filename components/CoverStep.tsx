@@ -114,6 +114,8 @@ export function CoverStep({
     prompt: string;
     occasion: string;
     provider?: string;
+    isMock?: boolean;
+    fallbackNotice?: string | null;
     matchedSentiments?: ThematicSentiment[];
     themeTag?: string;
   } | null>(null);
@@ -160,6 +162,8 @@ export function CoverStep({
           prompt: customPrompt,
           occasion,
           provider: data.provider,
+          isMock: Boolean(data.isMock),
+          fallbackNotice: data.fallbackNotice,
           matchedSentiments: data.matchedSentiments,
           themeTag: data.themeTag,
         };
@@ -291,9 +295,15 @@ export function CoverStep({
               SendMyNotes Custom Studio
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full">
-                ✨ 1-of-1 Studio Original
-              </span>
+              {generatedArt.isMock ? (
+                <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full">
+                  Ready-Made Match
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full">
+                  ✨ 1-of-1 Studio Original
+                </span>
+              )}
               {selectedCover === generatedArt.imageUrl ? (
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                   <Check className="w-3 h-3 stroke-[3]" />
@@ -338,7 +348,7 @@ export function CoverStep({
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-1 mb-0.5">
                 <span className="block text-[10px] font-bold text-amber-700 uppercase tracking-wider">
-                  {generatedArt.occasion} • Bespoke Prompt
+                  {generatedArt.occasion} • {generatedArt.isMock ? "Collection Match" : "Bespoke Prompt"}
                 </span>
                 <button
                   type="button"
@@ -353,6 +363,12 @@ export function CoverStep({
               <p className="text-xs sm:text-sm font-medium text-stone-900 italic line-clamp-2">
                 &ldquo;{generatedArt.prompt}&rdquo;
               </p>
+
+              {generatedArt.isMock && (
+                <p className="text-[11px] text-stone-500 mt-1">
+                  Custom creation is briefly resting. We matched this card from our collection for your theme.
+                </p>
+              )}
 
               <button
                 type="button"

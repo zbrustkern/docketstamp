@@ -7,9 +7,11 @@ import { SelectedDesign } from "@/lib/draft";
 import { Sheet } from "./Sheet";
 import { CardFrontPreview } from "../CardFrontPreview";
 
-// Personal occasions supported per builder plan §3
+// Personal occasions supported per builder plan §3 & seasonal relevance
 export const PERSONAL_OCCASIONS = [
   "All",
+  "Halloween",
+  "Christmas & Holidays",
   "Birthday",
   "Thank You",
   "Thinking of You",
@@ -65,10 +67,21 @@ export function EntryCardStep({
     // TODO: trackEvent('landing_viewed', { occasion: activeOccasion });
   }, []);
 
-  // Filter cards by selected occasion
+  // Filter cards by selected occasion, prioritizing timely seasonal cards and excluding off-season cards
   const filteredPresets = useMemo(() => {
-    if (activeOccasion === "All") return CARD_PRESETS;
-    return CARD_PRESETS.filter((p) => p.occasion === activeOccasion);
+    // Current season: Fall/Winter. Exclude off-season Spring/Easter from customer catalog for now
+    const seasonalActive = CARD_PRESETS.filter((p) => p.occasion !== "Easter & Spring");
+    if (activeOccasion === "All") {
+      // Prioritize currently timely seasonal cards (Halloween, then Christmas) near the front
+      const timely = seasonalActive.filter(
+        (p) => p.occasion === "Halloween" || p.occasion === "Christmas & Holidays"
+      );
+      const evergreen = seasonalActive.filter(
+        (p) => p.occasion !== "Halloween" && p.occasion !== "Christmas & Holidays"
+      );
+      return [...timely, ...evergreen];
+    }
+    return seasonalActive.filter((p) => p.occasion === activeOccasion);
   }, [activeOccasion]);
 
   // Handle card click (selection only, does NOT advance)

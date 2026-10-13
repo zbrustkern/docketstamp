@@ -323,6 +323,8 @@ export function EntryPrototypeClient({
       occasion: art.occasion,
       contentName: "Custom Artwork Card",
     });
+
+    handleStepTransition("note");
   };
 
   // Auto-sync Salutation -> Recipient Full Name and persist to draft

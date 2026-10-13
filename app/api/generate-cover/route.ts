@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       provider: art.provider,
       matchedSentiments: thematic.sentiments,
       themeTag: thematic.themeTag,
-      fallbackNotice: art.isMock ? "Selected from our Aster & Blanche signature cards." : null,
+      fallbackNotice: art.isMock ? "Selected from our signature card collection." : null,
       remaining: rateLimit.remaining,
       limit: rateLimit.limit,
     });
