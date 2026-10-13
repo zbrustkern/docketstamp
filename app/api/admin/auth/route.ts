@@ -3,6 +3,7 @@ import {
   verifyAdminPassphrase,
   generateAdminSessionToken,
   isValidAdminSessionToken,
+  getAdminSessionEmail,
   isAuthorizedAdminEmail,
   ADMIN_COOKIE_NAME,
 } from "@/lib/admin-auth";
@@ -18,12 +19,14 @@ import {
 export async function GET(req: NextRequest) {
   const sessionCookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
   const isAuthenticated = sessionCookie ? isValidAdminSessionToken(sessionCookie) : false;
+  const email = sessionCookie ? getAdminSessionEmail(sessionCookie) : null;
 
   const clientIp = getClientIp(req);
   const rateLimit = await checkAdminRateLimit(clientIp);
 
   return NextResponse.json({
     authenticated: isAuthenticated,
+    email,
     locked: rateLimit.locked,
     retryAfterSeconds: rateLimit.retryAfterSeconds,
     remainingAttempts: rateLimit.remainingAttempts,

@@ -3,10 +3,12 @@ import {
   getAdminSecret,
   generateAdminSessionToken,
   isValidAdminSessionToken,
+  getAdminSessionEmail,
   verifyAdminAuth,
   isAuthorizedAdminEmail,
 } from "../lib/admin-auth";
-import { POST as adminAuthPost } from "../app/api/admin/auth/route";
+import { POST as adminAuthPost, GET as adminAuthGet } from "../app/api/admin/auth/route";
+import { GET as adminMetricsGet } from "../app/api/admin/metrics/route";
 import { resolvePaymentMode } from "../lib/payment-mode";
 import { getClientFirebaseConfig, getFirebaseAuth, STAGING_FIREBASE_CONFIG, PROD_FIREBASE_CONFIG } from "../lib/firebase-client";
 import { POST as testMetaCapiPost } from "../app/api/admin/test-meta-capi/route";
@@ -142,9 +144,43 @@ async function runSecurityRemediationTests() {
   });
   const sentralAuthRes = await adminAuthPost(sentralAuthReq);
   const sentralAuthData = await sentralAuthRes.json();
+  const sentralCookieHeader = sentralAuthRes.headers.get("set-cookie") || "";
+  const cookieMatch = sentralCookieHeader.match(/smn_admin_session=([^;]+)/);
+  const sentralSessionToken = cookieMatch ? cookieMatch[1] : "";
+
   assert(
     sentralAuthRes.status === 200 && sentralAuthData.success === true,
     "Authorized admin sentral@gmail.com logs in via ID token"
+  );
+  assert(
+    isValidAdminSessionToken(sentralSessionToken) === true,
+    "Session token for sentral@gmail.com validates cleanly without failing on dots in domain"
+  );
+  assert(
+    getAdminSessionEmail(sentralSessionToken) === "sentral@gmail.com",
+    "Session token safely extracts sentral@gmail.com"
+  );
+
+  // Verify that downstream admin GET routes accept this cookie
+  const checkAuthWithCookieReq = new NextRequest("http://localhost:3000/api/admin/auth", {
+    method: "GET",
+    headers: { cookie: `smn_admin_session=${sentralSessionToken}` },
+  });
+  const checkAuthWithCookieRes = await adminAuthGet(checkAuthWithCookieReq);
+  const checkAuthWithCookieData = await checkAuthWithCookieRes.json();
+  assert(
+    checkAuthWithCookieData.authenticated === true && checkAuthWithCookieData.email === "sentral@gmail.com",
+    "GET /api/admin/auth recognizes authenticated session and returns email"
+  );
+
+  const metricsWithCookieReq = new NextRequest("http://localhost:3000/api/admin/metrics", {
+    method: "GET",
+    headers: { cookie: `smn_admin_session=${sentralSessionToken}` },
+  });
+  const metricsWithCookieRes = await adminMetricsGet(metricsWithCookieReq);
+  assert(
+    metricsWithCookieRes.status === 200,
+    `GET /api/admin/metrics succeeds with 200 using session cookie (Got: ${metricsWithCookieRes.status})`
   );
 
   const unauthorizedAuthReq = new NextRequest("http://localhost:3000/api/admin/auth", {
