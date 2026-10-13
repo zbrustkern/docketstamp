@@ -115,6 +115,32 @@ async function runPaymentModeSafetyTests() {
       "sk_live_ key in production resolves to 'live'"
     );
 
+    // 1E-2. Production with rk_live_ (Restricted Key) resolves to 'live'
+    assert(
+      resolvePaymentMode({
+        NODE_ENV: "production",
+        STRIPE_SECRET_KEY: "rk_live_valid_restricted_key_456",
+      }) === "live",
+      "rk_live_ restricted key in production resolves to 'live'"
+    );
+
+    // 1E-3. Production with quoted keys resolves to 'live'
+    assert(
+      resolvePaymentMode({
+        NODE_ENV: "production",
+        STRIPE_SECRET_KEY: '"sk_live_quoted_key_789"',
+      }) === "live",
+      "Quoted \"sk_live_\" key in production resolves to 'live'"
+    );
+
+    assert(
+      resolvePaymentMode({
+        NODE_ENV: "production",
+        STRIPE_SECRET_KEY: "'rk_live_single_quoted_key_101'",
+      }) === "live",
+      "Single-quoted 'rk_live_' key in production resolves to 'live'"
+    );
+
     // 1F. Development with sk_test_ resolves to 'stripe_test'
     assert(
       resolvePaymentMode({
@@ -258,6 +284,12 @@ async function runPaymentModeSafetyTests() {
     assert(
       missingConfigRes.status === 503 && !missingConfigData.clientSecret,
       `Missing live config in production returns 503 (got: ${missingConfigRes.status}, no mock secret)`
+    );
+    assert(
+      !missingConfigData.error.includes("Invalid Stripe live secret key") &&
+        !missingConfigData.error.includes("configured in production") &&
+        missingConfigData.error.includes("difficulty connecting"),
+      "Error returned to client is masked and customer-safe"
     );
 
     // 3B. Placeholder key with NODE_ENV=production returns 503

@@ -3,11 +3,11 @@ import Stripe from "stripe";
 import { resolvePaymentMode } from "./payment-mode";
 
 export function getStripeSecretKey(): string {
-  return (
+  const raw =
     process.env["stripe-secret-key"] ||
     process.env.STRIPE_SECRET_KEY ||
-    ""
-  );
+    "";
+  return raw.trim().replace(/^["']|["']$/g, "").trim();
 }
 
 export function getStripeClient(): Stripe {

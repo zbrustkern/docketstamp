@@ -217,7 +217,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     if (error instanceof PaymentModeConfigError) {
-      console.error("[Checkout Intent Config Error]", error.message);
+      console.error("[Checkout Intent Config Error]", error.message, {
+        code: error.code,
+      });
       const incidentId = await logIncident({
         type: "STRIPE",
         severity: "error",
@@ -227,7 +229,8 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json(
         {
-          error: error.message,
+          error:
+            "We are temporarily experiencing difficulty connecting to our secure payment gateway. Our studio team has been notified. Please try again in a moment.",
           code: error.code,
           incidentId,
         },
