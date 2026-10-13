@@ -267,6 +267,7 @@ export function Step3EnvelopeAddressing({
                   type="text"
                   name="shippingZip"
                   autoComplete="shipping postal-code"
+                  inputMode="numeric"
                   value={recipient.zip}
                   onChange={(e) => onChangeRecipient("zip", e.target.value)}
                   placeholder="80206"
@@ -391,6 +392,7 @@ export function Step3EnvelopeAddressing({
                   type="text"
                   name="billingZip"
                   autoComplete="billing postal-code"
+                  inputMode="numeric"
                   value={sender.zip}
                   onChange={(e) => onChangeSender("zip", e.target.value)}
                   placeholder="60601"
@@ -527,9 +529,9 @@ export function Step3EnvelopeAddressing({
               </div>
 
               {/* CENTER: MAILING RECIPIENT IN AUTHENTIC BLUE PEN INK */}
-              <div className="pl-6 sm:pl-20 pr-2 py-2 sm:py-4 max-w-sm sm:max-w-md mx-auto text-left select-none">
+              <div className="flex justify-center px-4 py-2 sm:py-4 select-none">
                 <div
-                  className={`space-y-0.5 text-base sm:text-xl text-[#1e3a8a] leading-snug ${fontClass}`}
+                  className={`w-fit min-w-[200px] max-w-xs sm:max-w-sm text-left space-y-0.5 text-base sm:text-xl text-[#1e3a8a] leading-snug ${fontClass}`}
                 >
                   <p className="font-semibold text-lg sm:text-2xl text-[#1e3a8a]">
                     {recipient.fullName || "Recipient Name"}

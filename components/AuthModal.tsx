@@ -140,7 +140,14 @@ export function AuthModal({
             <div className="relative">
               <Mail className="w-4 h-4 absolute left-3 top-3 text-stone-400" />
               <input
+                id="auth-email"
+                name="email"
                 type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

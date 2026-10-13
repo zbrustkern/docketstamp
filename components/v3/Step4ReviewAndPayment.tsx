@@ -541,14 +541,23 @@ function InnerPaymentForm({
 
       {/* CUSTOMER EMAIL INPUT (RECEIPT & TRACKING) */}
       <div className="bg-white rounded-2xl p-5 border border-stone-200/90 shadow-xs space-y-2">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
+        <label
+          htmlFor="email"
+          className="block text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1.5 cursor-pointer"
+        >
           <Mail className="w-3.5 h-3.5 text-amber-800" />
           <span>Receipt &amp; USPS Tracking Notification Email</span>
         </label>
         <input
+          id="email"
+          name="email"
           type="email"
-          required
+          inputMode="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          required
           value={customerEmail}
           onChange={(e) => {
             onChangeCustomerEmail(e.target.value);
