@@ -95,6 +95,22 @@ async function runTargetExperienceTests() {
     extractRecipientName("To: Grandma Rose") === "Grandma Rose",
     `Salutation 'To: Grandma Rose' extracts 'Grandma Rose'`
   );
+  assert(
+    extractRecipientName("D") === "",
+    `Single character typing 'D' does not populate recipient name`
+  );
+  assert(
+    extractRecipientName("Dear") === "",
+    `Greeting word 'Dear' does not populate recipient name`
+  );
+  assert(
+    extractRecipientName("Dear ") === "",
+    `Greeting 'Dear ' does not populate recipient name`
+  );
+  assert(
+    extractRecipientName("Dear [Interviewer Name],") === "",
+    `Bracket template placeholder 'Dear [Interviewer Name],' does not populate recipient name`
+  );
 
   assert(
     extractSenderName("Warmly, Thomas") === "Thomas",
@@ -111,6 +127,18 @@ async function runTargetExperienceTests() {
   assert(
     extractSenderName("Sincerely, Jessica Davis") === "Jessica Davis",
     `Sign-off 'Sincerely, Jessica Davis' extracts 'Jessica Davis'`
+  );
+  assert(
+    extractSenderName("W") === "",
+    `Single character typing 'W' does not populate sender name`
+  );
+  assert(
+    extractSenderName("Warmly,") === "",
+    `Sign-off 'Warmly,' without name does not populate sender name`
+  );
+  assert(
+    extractSenderName("Best regards,\n[Your Name]") === "",
+    `Template bracket '[Your Name]' does not populate sender name`
   );
 
   // 4. Character Limit & Fit Boundary
