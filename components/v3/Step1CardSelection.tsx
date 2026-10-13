@@ -248,6 +248,7 @@ export function Step1CardSelection({
               src={selectedCardUrl}
               alt={selectedCardTitle}
               fill
+              unoptimized={Boolean(selectedCardUrl?.startsWith("data:"))}
               className="object-cover"
             />
           </div>
@@ -282,6 +283,7 @@ export function Step1CardSelection({
               src={selectedCardUrl}
               alt={selectedCardTitle}
               fill
+              unoptimized={Boolean(selectedCardUrl?.startsWith("data:"))}
               className="object-cover"
             />
           </div>

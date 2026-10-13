@@ -416,6 +416,7 @@ function InnerPaymentForm({
               src={cardUrl}
               alt={cardTitle}
               fill
+              unoptimized={Boolean(cardUrl?.startsWith("data:"))}
               className="object-cover"
             />
           </div>
@@ -833,7 +834,8 @@ function InnerPaymentForm({
             handwrittenNote={[bodyNote, signOff].filter(Boolean).join("\n\n")}
             fontStyleId={fontStyleId || "hwDavid"}
             occasion={occasion || "Greeting Card"}
-            currentStep={2}
+            currentStep={4}
+            initialView="cover"
           />
         </div>
       </Sheet>

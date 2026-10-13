@@ -138,36 +138,73 @@ export function EntryCardStep({
         </div>
       </section>
 
-      {/* 3. COMPACT 'MAKE A CUSTOM DESIGN' ENTRY NEAR FIRST CHOICES */}
-      <div className="mb-3.5">
-        <button
-          type="button"
-          onClick={() => {
-            if (onOpenCustomArt) {
-              onOpenCustomArt();
-            } else {
-              setIsCustomSheetOpen(true);
-            }
-          }}
-          className="w-full flex items-center justify-between gap-3 bg-stone-50 hover:bg-stone-100/90 active:bg-stone-200/70 border border-dashed border-stone-300 rounded-xl px-3.5 py-2.5 transition text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-600"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center shrink-0 shadow-xs">
-              <Sparkles className="w-4 h-4" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <span className="block text-xs font-semibold text-stone-900 truncate">
-                Make it personal — Create a custom design
-              </span>
-              <span className="block text-[11px] text-stone-500 truncate">
-                Describe a personal scene or memory for custom artwork
-              </span>
+      {/* 3. COMPACT 'MAKE A CUSTOM DESIGN' ENTRY / ACTIVE CUSTOM ARTWORK */}
+      <div className="mb-3.5 space-y-2">
+        {selectedDesign?.source === "custom" && selectedDesign.imageUrl ? (
+          <div className="bg-emerald-50/80 border-2 border-emerald-600 rounded-xl p-3 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-12 aspect-[17/22] rounded-md overflow-hidden border border-emerald-300 shadow-2xs shrink-0 bg-stone-100">
+                <CardFrontPreview
+                  artworkUrl={selectedDesign.imageUrl}
+                  title={selectedDesign.title}
+                  sizes="60px"
+                  priority
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>Your Custom Artwork (Active)</span>
+                </div>
+                <p className="font-serif font-bold text-stone-900 text-xs sm:text-sm truncate">
+                  {selectedDesign.title}
+                </p>
+                <p className="text-[11px] text-stone-500">
+                  $9.00 flat rate • Ready to write note
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenCustomArt) onOpenCustomArt();
+                else setIsCustomSheetOpen(true);
+              }}
+              className="text-xs font-semibold text-stone-700 hover:text-stone-900 bg-white border border-stone-200 hover:bg-stone-50 px-2.5 py-1.5 rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
+            >
+              New art
+            </button>
           </div>
-          <span className="text-xs font-medium text-emerald-800 bg-white border border-stone-200 px-2.5 py-1 rounded-md shrink-0 shadow-2xs">
-            Custom Art
-          </span>
-        </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenCustomArt) {
+                onOpenCustomArt();
+              } else {
+                setIsCustomSheetOpen(true);
+              }
+            }}
+            className="w-full flex items-center justify-between gap-3 bg-stone-50 hover:bg-stone-100/90 active:bg-stone-200/70 border border-dashed border-stone-300 rounded-xl px-3.5 py-2.5 transition text-left cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-600"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold text-stone-900 truncate">
+                  Make it personal — Create a custom design
+                </span>
+                <span className="block text-[11px] text-stone-500 truncate">
+                  Describe a personal scene or memory for custom artwork
+                </span>
+              </div>
+            </div>
+            <span className="text-xs font-medium text-emerald-800 bg-white border border-stone-200 px-2.5 py-1 rounded-md shrink-0 shadow-2xs">
+              Custom Art
+            </span>
+          </button>
+        )}
       </div>
 
       {/* 4. TWO-COLUMN 17:22 CARD GRID */}

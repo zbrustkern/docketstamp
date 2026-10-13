@@ -840,6 +840,7 @@ export default function OrderStatusPage() {
                 src={order.frontImageUrl}
                 alt="Front Cover"
                 fill
+                unoptimized={Boolean(order.frontImageUrl?.startsWith("data:"))}
                 className="object-cover"
               />
             </div>

@@ -318,13 +318,29 @@ export function EntryPrototypeClient({
       },
     });
 
+    trackEvent("custom_generation_completed", 1, {
+      occasion: art.occasion,
+    });
+    trackEvent("card_completed", 1, {
+      cardType: "custom",
+    });
+
     trackMetaCustomizeProduct({
       customizationType: "AI Art Generated",
       occasion: art.occasion,
       contentName: "Custom Artwork Card",
     });
+    trackMetaAddToCart({
+      contentId: "custom_ai",
+      contentName: "Custom Artwork Card",
+      value: 9.0,
+    });
 
-    handleStepTransition("note");
+    setStep("note");
+    dispatch({ type: "SET_STEP", payload: "note" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   // Auto-sync Salutation -> Recipient Full Name and persist to draft
