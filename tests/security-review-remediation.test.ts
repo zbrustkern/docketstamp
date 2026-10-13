@@ -4,7 +4,10 @@ import {
   generateAdminSessionToken,
   isValidAdminSessionToken,
   verifyAdminAuth,
+  isAuthorizedAdminEmail,
 } from "../lib/admin-auth";
+import { POST as adminAuthPost } from "../app/api/admin/auth/route";
+import { resolvePaymentMode } from "../lib/payment-mode";
 import { POST as testMetaCapiPost } from "../app/api/admin/test-meta-capi/route";
 import { GET as accountGet, POST as accountPost } from "../app/api/account/route";
 import { GET as remindersGet, POST as remindersPost, DELETE as remindersDelete } from "../app/api/reminders/route";
@@ -97,6 +100,79 @@ async function runSecurityRemediationTests() {
   assert(
     isValidAdminSessionToken(freshToken) === true,
     "Freshly generated session token is valid"
+  );
+
+  // Account-bound admin email authorization checks
+  assert(
+    isAuthorizedAdminEmail("zbrustkern@gmail.com") === true,
+    "Primary founder email zbrustkern@gmail.com is authorized as admin"
+  );
+  assert(
+    isAuthorizedAdminEmail("sentral@gmail.com") === true,
+    "Secondary founder email sentral@gmail.com is authorized as admin"
+  );
+  assert(
+    isAuthorizedAdminEmail("ZBRUSTKERN@GMAIL.COM") === true,
+    "Case-insensitive matching authorizes ZBRUSTKERN@GMAIL.COM"
+  );
+  assert(
+    isAuthorizedAdminEmail("attacker@evil.com") === false,
+    "Unauthorized email attacker@evil.com is rejected"
+  );
+
+  // Account-bound Firebase ID token login via POST /api/admin/auth
+  const zekeAuthReq = new NextRequest("http://localhost:3000/api/admin/auth", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ idToken: "mock_token_zbrustkern@gmail.com" }),
+  });
+  const zekeAuthRes = await adminAuthPost(zekeAuthReq);
+  const zekeAuthData = await zekeAuthRes.json();
+  const setCookieHeader = zekeAuthRes.headers.get("set-cookie") || "";
+  assert(
+    zekeAuthRes.status === 200 && zekeAuthData.success === true && setCookieHeader.includes("smn_admin_session="),
+    "Authorized admin zbrustkern@gmail.com logs in via ID token and receives smn_admin_session cookie"
+  );
+
+  const sentralAuthReq = new NextRequest("http://localhost:3000/api/admin/auth", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ idToken: "mock_token_sentral@gmail.com" }),
+  });
+  const sentralAuthRes = await adminAuthPost(sentralAuthReq);
+  const sentralAuthData = await sentralAuthRes.json();
+  assert(
+    sentralAuthRes.status === 200 && sentralAuthData.success === true,
+    "Authorized admin sentral@gmail.com logs in via ID token"
+  );
+
+  const unauthorizedAuthReq = new NextRequest("http://localhost:3000/api/admin/auth", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ idToken: "mock_token_randomuser@example.com" }),
+  });
+  const unauthorizedAuthRes = await adminAuthPost(unauthorizedAuthReq);
+  assert(
+    unauthorizedAuthRes.status === 403,
+    "Non-admin Google account randomuser@example.com is rejected with HTTP 403"
+  );
+
+  // Staging auto-detection for resolvePaymentMode
+  assert(
+    resolvePaymentMode({
+      NODE_ENV: "production",
+      STRIPE_SECRET_KEY: "sk_test_staging_key_123",
+      FIREBASE_PROJECT_ID: "sendmynotes-staging",
+    }) === "stripe_test",
+    "Stripe test key in production environment with FIREBASE_PROJECT_ID=sendmynotes-staging resolves to stripe_test"
+  );
+  assert(
+    resolvePaymentMode({
+      NODE_ENV: "production",
+      STRIPE_SECRET_KEY: "sk_test_staging_key_123",
+      K_SERVICE: "sendmynotes-staging",
+    }) === "stripe_test",
+    "Stripe test key in production environment with K_SERVICE=sendmynotes-staging resolves to stripe_test"
   );
 
   // ---------------------------------------------------------------------------
