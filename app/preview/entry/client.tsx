@@ -35,23 +35,51 @@ import {
 import { getStoredAttribution } from "@/components/AttributionTracker";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle } from "lucide-react";
+import { parseScenarioNote, mapScenarioFontId } from "@/lib/seo-scenarios";
 
 export interface EntryPrototypeClientProps {
   initialOccasion?: string;
   initialPresetId?: string;
+  initialCoverUrl?: string;
+  initialPrintedGreeting?: string;
+  initialHandwrittenNote?: string;
+  initialFontStyleId?: string;
   scenarioSlug?: string;
+  scenarioTitle?: string;
+  embedded?: boolean;
+  initialStep?: FlowStep;
 }
 
 export function EntryPrototypeClient({
   initialOccasion,
   initialPresetId,
+  initialCoverUrl,
+  initialPrintedGreeting,
+  initialHandwrittenNote,
+  initialFontStyleId,
   scenarioSlug,
+  scenarioTitle,
+  embedded = false,
+  initialStep,
 }: EntryPrototypeClientProps = {}) {
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
   const occasionParam = initialOccasion || searchParams?.get("occasion") || undefined;
   const presetParam = initialPresetId || searchParams?.get("preset") || undefined;
+
+  // Parse pre-seeded etiquette scenario note if provided
+  const parsedScenario = useMemo(() => {
+    if (initialHandwrittenNote) {
+      return parseScenarioNote(initialHandwrittenNote);
+    }
+    return null;
+  }, [initialHandwrittenNote]);
+
+  // Map legacy numerical font IDs to Handwrytten SVG handwriting styles
+  const mappedInitialFont = useMemo(() => {
+    return mapScenarioFontId(initialFontStyleId);
+  }, [initialFontStyleId]);
 
   // Resolve contextual preselection if specified
   const initialPreset = useMemo(() => {
@@ -66,23 +94,35 @@ export function EntryPrototypeClient({
     return undefined;
   }, [presetParam, occasionParam]);
 
+  const resolvedInitialPresetId = scenarioSlug || initialPreset?.id;
+  const resolvedInitialPresetTitle =
+    scenarioTitle || initialPreset?.title || (occasionParam ? `${occasionParam} Card` : "Custom Card");
+  const resolvedInitialPresetUrl = initialCoverUrl || initialPreset?.imageUrl;
+
   const { draft, dispatch, clearDraft, isLoaded } = useDraft({
     experienceVersion: "candidate_v1",
-    initialPresetId: initialPreset?.id,
-    initialPresetTitle: initialPreset?.title,
-    initialPresetUrl: initialPreset?.imageUrl,
+    initialPresetId: resolvedInitialPresetId,
+    initialPresetTitle: resolvedInitialPresetTitle,
+    initialPresetUrl: resolvedInitialPresetUrl,
+    initialOccasion: occasionParam || initialPreset?.occasion,
+    initialHandwrittenNote: parsedScenario?.bodyNote,
+    initialSalutation: parsedScenario?.salutation,
+    initialSignOff: parsedScenario?.signOff,
+    initialFontStyleId: mappedInitialFont,
   });
 
-  // Current active step
-  const [step, setStep] = useState<FlowStep>("card");
+  // Current active step (curated etiquette landing pages default to 'note' for immediate personalisation)
+  const [step, setStep] = useState<FlowStep>(
+    initialStep || (initialHandwrittenNote ? "note" : "card")
+  );
   const [isOrderConfirmed, setIsOrderConfirmed] = useState(false);
 
   // Custom AI drawer state
   const [isCustomAiOpen, setIsCustomAiOpen] = useState(false);
 
   // Salutation and signoff helper state (for note step auto-sync)
-  const [salutation, setSalutation] = useState("");
-  const [signOff, setSignOff] = useState("");
+  const [salutation, setSalutation] = useState(parsedScenario?.salutation || "");
+  const [signOff, setSignOff] = useState(parsedScenario?.signOff || "");
 
   // Address editing state (bridged with draft)
   const [recipient, setRecipient] = useState<AddressData>({
@@ -170,27 +210,35 @@ export function EntryPrototypeClient({
       }
     } else if (draft.currentStep && draft.currentStep !== "confirmation") {
       setStep(draft.currentStep as FlowStep);
+    } else if (initialStep) {
+      setStep(initialStep);
+    } else if (initialHandwrittenNote) {
+      setStep("note");
     }
 
-    if (!draft.selectedDesign && initialPreset) {
+    if (!draft.selectedDesign && (resolvedInitialPresetUrl && resolvedInitialPresetTitle)) {
       dispatch({
         type: "SELECT_DESIGN",
         payload: {
-          presetId: initialPreset.id,
-          imageUrl: initialPreset.imageUrl,
-          title: initialPreset.title,
-          occasion: initialPreset.occasion,
+          presetId: resolvedInitialPresetId,
+          imageUrl: resolvedInitialPresetUrl,
+          title: resolvedInitialPresetTitle,
+          occasion: occasionParam || initialPreset?.occasion,
           source: "preset",
-          accepted: false,
+          accepted: Boolean(initialHandwrittenNote),
         },
       });
     }
 
     if (draft.note.salutation !== undefined && draft.note.salutation !== "") {
       setSalutation(draft.note.salutation);
+    } else if (parsedScenario?.salutation) {
+      setSalutation(parsedScenario.salutation);
     }
     if (draft.note.signOff !== undefined && draft.note.signOff !== "") {
       setSignOff(draft.note.signOff);
+    } else if (parsedScenario?.signOff) {
+      setSignOff(parsedScenario.signOff);
     }
 
     if (draft.recipient) {
@@ -229,6 +277,14 @@ export function EntryPrototypeClient({
     draft.recipient,
     draft.sender,
     initialPreset,
+    resolvedInitialPresetUrl,
+    resolvedInitialPresetTitle,
+    resolvedInitialPresetId,
+    occasionParam,
+    initialStep,
+    initialHandwrittenNote,
+    parsedScenario?.salutation,
+    parsedScenario?.signOff,
     dispatch,
   ]);
 
@@ -777,8 +833,8 @@ export function EntryPrototypeClient({
   // Render Post-Purchase Confirmation (Step 5)
   if (isOrderConfirmed) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] text-stone-900 flex flex-col antialiased">
-        <FlowHeader showClearDraft={false} onClearDraft={resetEntireFlow} />
+      <div className={`min-h-screen bg-[#FAF8F5] text-stone-900 flex flex-col antialiased ${embedded ? "rounded-3xl border border-stone-200/90 shadow-xs overflow-hidden" : ""}`}>
+        {!embedded && <FlowHeader showClearDraft={false} onClearDraft={resetEntireFlow} />}
         <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
           <Step5Confirmation
             orderId={orderId}
@@ -803,9 +859,9 @@ export function EntryPrototypeClient({
   }
 
   return (
-    <div className="min-h-screen bg-white text-stone-900 flex flex-col antialiased">
-      {/* 1. COMPACT SENDMYNOTES FLOW HEADER */}
-      <FlowHeader showClearDraft={true} onClearDraft={resetEntireFlow} />
+    <div className={`min-h-screen bg-white text-stone-900 flex flex-col antialiased ${embedded ? "rounded-3xl border border-stone-200/90 shadow-xs overflow-hidden" : ""}`}>
+      {/* 1. COMPACT SENDMYNOTES FLOW HEADER (suppressed when embedded in an occasion/scenario landing page with its own navbar) */}
+      {!embedded && <FlowHeader showClearDraft={true} onClearDraft={resetEntireFlow} />}
 
       {/* 2. PROGRESS INDICATOR: CARD / NOTE / ADDRESS / PAY */}
       <ProgressIndicator currentStep={step} />

@@ -140,7 +140,8 @@ export function EntryCardStep({
 
       {/* 3. COMPACT 'MAKE A CUSTOM DESIGN' ENTRY / ACTIVE CUSTOM ARTWORK */}
       <div className="mb-3.5 space-y-2">
-        {selectedDesign?.source === "custom" && selectedDesign.imageUrl ? (
+        {selectedDesign?.imageUrl &&
+        (selectedDesign.source === "custom" || !filteredPresets.some((p) => p.imageUrl === selectedDesign.imageUrl)) ? (
           <div className="bg-emerald-50/80 border-2 border-emerald-600 rounded-xl p-3 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative w-12 aspect-[17/22] rounded-md overflow-hidden border border-emerald-300 shadow-2xs shrink-0 bg-stone-100">
@@ -154,7 +155,11 @@ export function EntryCardStep({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800">
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>Your Custom Artwork (Active)</span>
+                  <span>
+                    {selectedDesign.source === "custom"
+                      ? "Your Custom Artwork (Active)"
+                      : "Curated Scenario Design (Active)"}
+                  </span>
                 </div>
                 <p className="font-serif font-bold text-stone-900 text-xs sm:text-sm truncate">
                   {selectedDesign.title}
@@ -164,16 +169,18 @@ export function EntryCardStep({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenCustomArt) onOpenCustomArt();
-                else setIsCustomSheetOpen(true);
-              }}
-              className="text-xs font-semibold text-stone-700 hover:text-stone-900 bg-white border border-stone-200 hover:bg-stone-50 px-2.5 py-1.5 rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
-            >
-              New art
-            </button>
+            {selectedDesign.source === "custom" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenCustomArt) onOpenCustomArt();
+                  else setIsCustomSheetOpen(true);
+                }}
+                className="text-xs font-semibold text-stone-700 hover:text-stone-900 bg-white border border-stone-200 hover:bg-stone-50 px-2.5 py-1.5 rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
+              >
+                New art
+              </button>
+            ) : null}
           </div>
         ) : (
           <button
