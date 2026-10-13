@@ -334,7 +334,18 @@ export function sanitizeFirestoreData<T extends Record<string, any>>(data: T): T
 
 // Singleton check for Real vs Mock Firebase Admin
 function initializeFirebase() {
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const isStagingEnv =
+    process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging")) ||
+    (typeof process.env.FIREBASE_CONFIG === "string" && process.env.FIREBASE_CONFIG.includes("sendmynotes-staging"));
+
+  const projectId =
+    process.env.FIREBASE_PROJECT_ID ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    (isStagingEnv ? "sendmynotes-staging" : undefined) ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+    "sendmynotes-2a417";
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
