@@ -592,10 +592,19 @@ export function EntryPrototypeClient({
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err) {
-      const msg =
+      let msg =
         err instanceof Error
           ? err.message
           : "Unable to connect to payment processor. Please try again.";
+      if (
+        msg.includes("configured in production") ||
+        msg.includes("secret key") ||
+        msg.includes("Stripe live") ||
+        msg.includes("Stripe test")
+      ) {
+        msg =
+          "We are temporarily experiencing difficulty connecting to our secure payment gateway. Our studio team has been notified. Please retry in a moment.";
+      }
       console.warn("Notice initializing checkout intent:", msg);
       evaluateCheckoutInitTransition(false);
       setCheckoutInitError(msg);

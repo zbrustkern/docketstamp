@@ -38,11 +38,18 @@ export function resolvePaymentMode(
     env["stripe-secret-key"] ||
     env.STRIPE_SECRET_KEY ||
     "";
-  const secret = rawSecret.trim();
+  // Strip surrounding quotes and whitespace
+  const secret = rawSecret.trim().replace(/^["']|["']$/g, "").trim();
 
   const allowLocalMock =
     env.ALLOW_LOCAL_MOCK_PAYMENTS === "true" ||
     env.ALLOW_LOCAL_MOCK_PAYMENTS === "1";
+
+  const allowTestInProduction =
+    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "true" ||
+    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "1" ||
+    env.STRIPE_TEST_MODE === "true" ||
+    env.STRIPE_TEST_MODE === "1";
 
   if (isProduction) {
     if (!secret || secret.startsWith("sk_test_placeholder")) {
@@ -53,16 +60,21 @@ export function resolvePaymentMode(
       );
     }
 
-    if (secret.startsWith("sk_test_")) {
+    // Live Stripe keys (Standard 'sk_live_' or Restricted 'rk_live_')
+    if (secret.startsWith("sk_live_") || secret.startsWith("rk_live_")) {
+      return "live";
+    }
+
+    // Test Stripe keys (Standard 'sk_test_' or Restricted 'rk_test_')
+    if (secret.startsWith("sk_test_") || secret.startsWith("rk_test_")) {
+      if (allowTestInProduction) {
+        return "stripe_test";
+      }
       throw new PaymentModeConfigError(
         "Stripe test key configured in production environment.",
         503,
         "PRODUCTION_STRIPE_TEST_KEY_FORBIDDEN"
       );
-    }
-
-    if (secret.startsWith("sk_live_")) {
-      return "live";
     }
 
     throw new PaymentModeConfigError(
@@ -73,11 +85,14 @@ export function resolvePaymentMode(
   }
 
   // Non-production environment
-  if (secret.startsWith("sk_live_")) {
+  if (secret.startsWith("sk_live_") || secret.startsWith("rk_live_")) {
     return "live";
   }
 
-  if (secret.startsWith("sk_test_") && !secret.startsWith("sk_test_placeholder")) {
+  if (
+    (secret.startsWith("sk_test_") || secret.startsWith("rk_test_")) &&
+    !secret.startsWith("sk_test_placeholder")
+  ) {
     return "stripe_test";
   }
 
