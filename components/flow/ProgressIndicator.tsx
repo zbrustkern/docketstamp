@@ -28,7 +28,36 @@ export function ProgressIndicator({ currentStep }: ProgressIndicatorProps) {
   return (
     <nav aria-label="Order progress" className="w-full bg-white border-b border-stone-100 py-2.5 px-4">
       <div className="max-w-2xl mx-auto">
-        <ol className="flex items-center justify-between gap-1 sm:gap-2">
+        {/* Mobile Compact View (< 640px) */}
+        <div className="sm:hidden flex items-center justify-between text-xs py-0.5">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-stone-900">
+              Step {currentIndex + 1} of {STEPS.length}
+            </span>
+            <span className="text-stone-300">·</span>
+            <span className="font-semibold text-emerald-800">
+              {STEPS[currentIndex]?.label}
+            </span>
+          </div>
+          {/* Mini step dots */}
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            {STEPS.map((step, idx) => (
+              <div
+                key={step.key}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  idx < currentIndex
+                    ? "bg-emerald-700"
+                    : idx === currentIndex
+                    ? "bg-stone-900 ring-2 ring-stone-900/20"
+                    : "bg-stone-200"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop / Tablet Full View (>= 640px) */}
+        <ol className="hidden sm:flex items-center justify-between gap-1 sm:gap-2">
           {STEPS.map((step, index) => {
             const isCompleted = index < currentIndex;
             const isCurrent = index === currentIndex;

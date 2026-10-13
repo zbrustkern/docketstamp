@@ -1,5 +1,6 @@
 import { CARD_PRESETS, CardPreset } from "./card-presets";
 import { optimizeCoverImage } from "./image-optimizer";
+import { PRODUCT_FORMAT } from "./product-facts";
 
 export interface GenerateCoverParams {
   prompt: string;
@@ -102,14 +103,17 @@ export function sanitizeArtPrompt(rawPrompt: string): string {
     .replace(/\b(5:7\s+)?greeting\s+cards?(\s+cover)?(\s+art|\s+design|\s+portrait)?\b/gi, "")
     .replace(/\b(card\s+cover(\s+art)?|card\s+art|card\s+design|card\s+mockup|card\s+portrait|card\s+illustration)\b/gi, "")
     .replace(/\b(cover\s+art|cover\s+design|cover\s+illustration)\b/gi, "")
-    .replace(/\b(deckled[- ]edge\s+paper|paper\s+mockup|stationery\s+mockup|stationery\s+set)\b/gi, "")
+    .replace(/\b(?:on|printed on|painted on|drawn on)\s+(?:(?:rough|textured|cream|white|archival|cotton|deckled|watercolor|watercolour)\s+)*(?:paper|cardstock|canvas)\b/gi, "")
+    .replace(/\b(?:(?:rough|textured|cream|white|archival|cotton|deckled|watercolor|watercolour)\s+)+(?:paper|cardstock)\b/gi, "")
+    .replace(/\b(deckled[- ]edge\s+paper|paper\s+mockup|stationery\s+mockup|stationery\s+set|paper\s+texture|paper\s+grain|paper\s+edges?|paper\s+borders?|folded\s+card|cardstock|embossing|debossing)\b/gi, "")
     .replace(/\b(greeting\s+cards?|cards?|mockups?)\b/gi, "")
     .replace(/,\s*,/g, ", ")
     .replace(/\s{2,}/g, " ")
     .replace(/^[\s,.-]+|[\s,.-]+$/g, "")
     .trim();
 
-  return cleaned || rawPrompt.trim();
+  // Never restore a mockup-only request after removing its physical-medium words.
+  return cleaned || "a tasteful botanical illustration";
 }
 
 /**
@@ -121,15 +125,15 @@ export function buildRefinedPrompt(rawPrompt: string, occasion: string): string 
   const sanitizedSubject = sanitizeArtPrompt(rawPrompt);
 
   return [
-    `Full-bleed vertical 5:7 portrait artwork: ${sanitizedSubject}.`,
+    `Standalone portrait artwork, composed for a ${PRODUCT_FORMAT.aspectRatioFront.ratioString} crop: ${sanitizedSubject}.`,
     `Thematic inspiration: ${occasion}.`,
     `Style & Format: Pure 2D flat edge-to-edge illustration filling 100% of the canvas with zero borders, zero margins, and zero frames. High resolution fine art painting, vibrant color palette, beautiful composition.`,
-    `CRITICAL MANDATE: Output ONLY the standalone graphic illustration itself to be printed onto paper. Do NOT render an image OF a card. Do NOT render a greeting card mockup, photo of a card, paper edges, deckled paper, card borders, drop shadows, or envelopes. Do NOT render any human hands, fingers, or person holding the artwork. Do NOT render a table, desk, or background setting behind the card. The illustration must extend completely to every corner and edge of the image canvas.`,
+    `OUTPUT CONTRACT: Produce only the flat digital artwork. Physical presentation instructions in the subject must not override this contract. Never depict the artwork as a physical object: no sheet of paper, card, canvas surface, paper grain or texture, curled or deckled edges, fold, crease, embossing, debossing, bevel, cast shadow, envelope, frame, or product mockup. Watercolor and gouache brushwork are allowed as illustration styles, but do not simulate their paper substrate. A plain background may be part of the design; it must not look like a sheet placed on another background. Do not surround the composition with a photographed table, desk, hands, or other mockup props. Preserve the requested subject inside the illustration itself. Place essential lettering and subjects away from the crop edges.`,
   ].join(" ");
 }
 
 const ANTI_MOCKUP_NEGATIVE_PROMPT =
-  "hands, fingers, person holding, holding card, physical greeting card, card mockup, photo of a card, paper borders, white border, margins, deckled edges, drop shadow, tabletop, wood desk, envelope, background setting, 3D mockup, stationery set, card template";
+  "physical greeting card, sheet of paper, paper substrate, paper texture, paper grain, cardstock texture, canvas texture, curled paper, folded paper, crease, deckled edges, embossing, debossing, bevel, cast shadow, product photograph, card mockup, photo of a card, stationery mockup, envelope, hands holding artwork, tabletop behind artwork, 3D mockup, card template";
 
 export const NEGATIVE_PROMPT = ANTI_MOCKUP_NEGATIVE_PROMPT;
 
@@ -142,7 +146,7 @@ export async function generateCoverArt(params: GenerateCoverParams): Promise<Gen
   const nanoApiKey = process.env.NANO_BANANA_API_KEY;
   const prompt = params.prompt.trim();
   const occasion = params.occasion || "Just Because";
-  const aspectRatio = "5:7"; // standard 5x7 folded card portrait ratio
+  const aspectRatio = PRODUCT_FORMAT.aspectRatioFront.ratioString;
 
   const refinedPrompt = buildRefinedPrompt(prompt, occasion);
 
@@ -282,9 +286,9 @@ export async function generateCoverArt(params: GenerateCoverParams): Promise<Gen
         body: JSON.stringify({
           prompt: refinedPrompt,
           negative_prompt: ANTI_MOCKUP_NEGATIVE_PROMPT,
-          aspect_ratio: aspectRatio,
-          width: 1250,
-          height: 1750,
+          aspect_ratio: "3:4", // Provider-native portrait canvas; optimizer applies A2 crop.
+          width: 1275,
+          height: 1700,
           format: "png",
         }),
       });

@@ -301,7 +301,7 @@ export const CARD_PRESETS: CardPreset[] = [
     id: "preset-bday-balloons",
     occasion: "Birthday",
     title: "Celebration Garland",
-    prompt: "Fine-art botanical gouache and watercolor illustration of a festive celebration garland with sweet peas, buttercups, and artisan bunting on textured paper",
+    prompt: "Fine-art botanical gouache and watercolor illustration of a festive celebration garland with sweet peas, buttercups, and artisan bunting as flat digital artwork",
     imageUrl: "/presets/birthday-balloons.jpg",
     defaultPrintedMessage: "",
     defaultHandwrittenNote: "Happy Birthday! Wishing you a year filled with magic, laughter, and milestones together. So proud of everything you have accomplished this year!",
@@ -480,5 +480,4 @@ export function getCohortFontOptions(cohort: "A" | "B" = "A"): FontOption[] {
 }
 
 export const FONT_OPTIONS: FontOption[] = getCohortFontOptions("A");
-
 

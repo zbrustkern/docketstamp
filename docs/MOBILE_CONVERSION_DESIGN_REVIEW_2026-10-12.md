@@ -247,3 +247,157 @@ Recommended behavior:
 Acceptance: a sender can preview their actual assembled card from note and review
 on both mobile and desktop; it includes all text and custom/preset cover, reflects
 edits without losing content, and is never mistaken for a generic font specimen.
+
+## P0 checkout incident addendum — stabilize before design rollout
+
+**Added October 12, 2026 after the Stripe production-key RCA.** Treat the ability
+to accept customer payment as the immediate P0, regardless of the RCA's P1 label.
+Error masking improves the customer experience but does not restore checkout.
+The design cleanup above follows incident stabilization.
+
+### RCA assessment
+
+The earlier payment-mode validator accepted only `sk_live_` in production. Stripe
+also supports live restricted keys beginning `rk_live_`, so that guard can reject a
+legitimate deployed configuration. This is a compatibility regression in the
+safety work if the active deployment used such a key. The exact injected key type
+and active revision have not been independently verified here; quoted credentials
+or an incorrect credential type remain alternative causes.
+
+The observed error proves a non-empty selected configuration failed the guard,
+not that the right Secret Manager value was injected or that Stripe rejected it.
+Check environment-variable precedence as well: both the resolver and SDK prefer
+`stripe-secret-key` over `STRIPE_SECRET_KEY`, so a stale alias can override the
+configured value. Record configuration source name, secret version and revision
+without recording or exposing the secret itself.
+
+Official key reference: https://docs.stripe.com/keys
+
+### Additional engineering acceptance criteria
+
+1. **One consistent credential path.** Normalize the selected credential once and
+   use that same value in validation and Stripe client creation. Trimming or
+   removing quotes only in the validator can pass validation while sending a
+   different credential to Stripe. Remove only a matching outer quote pair; reject
+   malformed values rather than trying to repair arbitrary strings.
+
+2. **Restricted-key permissions, not just prefix acceptance.** Recognizing
+   `rk_live_` establishes the local type, not a valid, active, authorized key.
+   Verify permissions for both PaymentIntent creation and retrieval used by
+   create-intent, confirm-order, and admin reconciliation. Verify the live
+   publishable key belongs to the same account/mode and the deployed webhook
+   signing secret matches the relevant endpoint. Do not rotate or replace a valid
+   key solely because the old guard rejected its type.
+
+3. **Mode boundary remains intact.** Customer production must not accept test
+   credentials, local mock success, or test-to-live supplier submission. The
+   in-progress resolver includes explicit test-in-production overrides; constrain
+   those to isolated preview configuration and confirm they are disabled on the
+   customer deployment. Test both `rk_test_` and `sk_test_`, including quoted forms.
+   Do not fix this incident by weakening webhook signatures or enabling mock mode.
+
+4. **Safe diagnostics.** Log an enumerated type such as restricted-live,
+   standard-live, test, publishable, missing, or unknown; configuration-source
+   name, incident ID, and length if useful. Avoid logging `slice(0, 8)` of an
+   arbitrary invalid value: its contents are not known to be safe. Never log key
+   material, complete headers, or credentials in incidents/browser responses.
+
+5. **Customer errors use codes, not keyword replacement.** API routes should
+   expose a stable error code, safe message, and opaque support reference. The
+   client should map known codes to copy and use a generic fallback for unknown
+   technical errors. Searching for the words “Stripe” or “key” is insufficient
+   and can misclassify legitimate payment errors. Preserve actionable card-decline
+   feedback where appropriate. All flows share the API, so check legacy and
+   candidate callers, not only `/new`.
+
+6. **Regression tests exercise the boundary.** Add restricted/standard live-key
+   recognition, quoted/whitespace variants, test-key rejection, publishable-key
+   rejection, malformed quote handling, environment-alias precedence, and no raw
+   diagnostics in HTTP responses. Mock the Stripe SDK boundary and assert it
+   receives the identical normalized credential accepted by the resolver. Test
+   authentication/permission failures and unavailable incident logging without
+   exposing credentials or losing the customer's draft.
+
+7. **Recovery must be genuinely recoverable.** Repeated Retry cannot create
+   duplicate charge/fulfillment or overwrite a paid order. Keep all card, message,
+   address and discount data intact. Reconcile existing PaymentIntent status after
+   a payment-network interruption before offering another payment attempt.
+
+### Customer-facing outage copy
+
+For a confirmed initialization/configuration failure before any authorization:
+
+> Payment is temporarily unavailable. Your card and message are saved.
+> Please try again shortly.
+
+Action: **Try again**. An optional support link can include an opaque incident
+reference, never an address, note, key, or payment credential. Use “saved” only when
+storage succeeded; if the draft is only in memory, use “Your card and message are
+still here.” Do not promise that the team was notified unless that alert path
+actually succeeds. A server configuration issue usually will not recover until
+an operator fixes it, so avoid promising recovery “in a moment”.
+
+For uncertainty after authorization, use a different state: “We're checking your
+payment. Please don't submit it again.” Poll/reconcile server state and offer
+order support. Never imply “You haven't been charged” without verifying it.
+
+### Incident exit and rollout
+
+- Record the deployed revision and configuration that caused the failure and the
+  revision containing the repair; do not infer the deployed cause from local code.
+- Test initialization and payment reconciliation on the repaired deployment,
+  including the actual configured restricted-key permissions, no raw diagnostic
+  strings, and successful protected guest receipt access.
+- Use an explicitly authorized controlled live order for final production proof;
+  label it as an operator test, exclude it from customer conversion, and reconcile
+  Stripe, app state and supplier handling. None is authorized or performed by this
+  design-review addendum.
+- Confirm the actual ad landing route, payment methods, webhook operation and
+  rollback configuration before expanding candidate allocation. Observe error
+  counts and independent paid orders after recovery.
+- Only then apply the note/address language, layout and real-card-preview cleanup.
+  Do not confuse removal of the error banner with restored purchase capability.
+
+## Artwork-only source and consistent card presentation
+
+**Founder direction, October 12:** printable artwork must contain only the design.
+Paper/card presentation belongs in the website preview, never in the printed image.
+
+Implemented locally: strengthened the shared generation prompt and negative rules
+against paper grain, physical sheets, folds, deckled edges, mockups, substrate
+texture, bevels and cast shadows. Removed the sanitizer's fallback that restored
+mockup-only requests. Preserved illustration brushwork, deliberate plain
+backgrounds and subjects such as a mug on a desk. Prompt composition now refers
+to the verified A2 crop instead of claiming the printed product is 5:7. Removed
+“on textured paper” from the birthday preset's source prompt.
+
+A shared CardFrontPreview now presents catalog, enlarged preset preview and the
+existing CardPreview front consistently with a neutral card edge and subtle
+shadow. The component uses the original artwork URL; this CSS framing is not
+encoded into any print asset. Removed the older preview's decorative deboss-like
+front border and exaggerated spine effect. This does not certify an exact paper
+finish or create a new physical manufacturing feature.
+
+**Existing assets still require cleanup.** Prompt changes do not alter existing
+JPEGs or cached generated art. Several current covers visibly contain paper/edge
+rendering already in their pixels. Adding a frame does not fix those source files.
+Audit all presets and cached artwork; replace affected images with artwork-only
+variants, retain old originals privately, and invalidate matching cache entries
+when replacing them. Review generation/install scripts so they use the same
+contract. Do not crop away important artwork indiscriminately or merely hide baked
+paper beneath another simulated card.
+
+Prompt rules reduce errors; they cannot guarantee visual compliance. Before
+approving replacement presets, inspect output for any depicted card, surrounding
+surface, paper edge, grain, shadow or fold. Add a bounded generated-output QA gate
+before claiming an automatic “never” guarantee. Low-confidence/rejected results
+should offer retry or an approved ready-made card, preserving the draft. No live
+image-provider calls, asset regeneration, cache mutations, or deployments were
+performed in this change.
+
+Conversion recommendation: make the gallery look like a consistent set of things
+one can send, with crisp readable artwork and quiet framing. Use the same selected
+artwork in the front/inside assembled-card preview requested earlier. Avoid large
+lifestyle scenes and fake paper craftsmanship as substitutes for actual product
+proof. Neutral display framing plus honest real product photography communicates
+physicality without baking a photograph of paper into the card that gets printed.

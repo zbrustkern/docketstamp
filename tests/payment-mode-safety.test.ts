@@ -288,7 +288,7 @@ async function runPaymentModeSafetyTests() {
     assert(
       !missingConfigData.error.includes("Invalid Stripe live secret key") &&
         !missingConfigData.error.includes("configured in production") &&
-        missingConfigData.error.includes("difficulty connecting"),
+        missingConfigData.error.includes("Payment is temporarily unavailable"),
       "Error returned to client is masked and customer-safe"
     );
 

@@ -592,19 +592,10 @@ export function EntryPrototypeClient({
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err) {
-      let msg =
+      const msg =
         err instanceof Error
           ? err.message
-          : "Unable to connect to payment processor. Please try again.";
-      if (
-        msg.includes("configured in production") ||
-        msg.includes("secret key") ||
-        msg.includes("Stripe live") ||
-        msg.includes("Stripe test")
-      ) {
-        msg =
-          "We are temporarily experiencing difficulty connecting to our secure payment gateway. Our studio team has been notified. Please retry in a moment.";
-      }
+          : "Payment is temporarily unavailable. Your card and message are saved. Please try again shortly.";
       console.warn("Notice initializing checkout intent:", msg);
       evaluateCheckoutInitTransition(false);
       setCheckoutInitError(msg);
@@ -826,6 +817,8 @@ export function EntryPrototypeClient({
               fontStyleId={draft.note.style || "hwDavid"}
               onChangeFontStyleId={handleFontStyleChange}
               occasion={currentCard.occasion}
+              cardTitle={currentCard.title}
+              cardUrl={currentCard.imageUrl}
               onBack={() => {
                 setStep("card");
                 dispatch({ type: "SET_STEP", payload: "card" });
@@ -849,7 +842,7 @@ export function EntryPrototypeClient({
                   disabled={isInitializingCheckout}
                   className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-semibold rounded-lg text-xs transition cursor-pointer shrink-0"
                 >
-                  {isInitializingCheckout ? "Connecting..." : "Retry"}
+                  {isInitializingCheckout ? "Connecting..." : "Try again"}
                 </button>
               </div>
             )}
@@ -878,6 +871,8 @@ export function EntryPrototypeClient({
               bodyNote={draft.note.text}
               signOff={signOff}
               fontClass={activeFont.fontClass}
+              fontStyleId={draft.note.style || "hwDavid"}
+              occasion={currentCard.occasion}
               recipient={recipient}
               sender={sender}
               customerEmail={customerEmail}
@@ -909,8 +904,8 @@ export function EntryPrototypeClient({
             step === "card"
               ? "Write your note"
               : step === "note"
-              ? "Next: Address"
-              : "Next: Review & Pay"
+              ? "Add mailing address"
+              : "Review & pay"
           }
           isLoading={isInitializingCheckout}
           isDisabled={
