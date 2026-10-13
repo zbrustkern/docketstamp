@@ -9,7 +9,8 @@ import {
   getScenariosByCategory,
   OCCASION_ALIASES,
 } from "@/lib/seo-scenarios";
-import { VendingMachineBuilder } from "@/components/VendingMachineBuilder";
+import { isReworkV3Enabled } from "@/lib/feature-flags";
+import { ExperienceRouter } from "@/components/ExperienceRouter";
 import {
   PenTool,
   CheckCircle2,
@@ -27,6 +28,7 @@ interface PageProps {
     occasion: string;
     slug: string;
   }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Explicitly allow dynamic rendering on-demand for any other ad URLs or incoming aliases
@@ -88,8 +90,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function ScenarioPage({ params }: PageProps) {
+export default async function ScenarioPage({ params, searchParams }: PageProps) {
   const { occasion, slug } = await params;
+  const resolvedParams = searchParams ? await searchParams : {};
+  const isV3 = await isReworkV3Enabled({ searchParams: resolvedParams });
   const scenario = getScenario(occasion, slug);
 
   if (!scenario) {
@@ -293,7 +297,8 @@ export default async function ScenarioPage({ params }: PageProps) {
               </div>
             }
           >
-            <VendingMachineBuilder
+            <ExperienceRouter
+              initialIsV3={isV3}
               initialOccasion={scenario.occasionName}
               initialCoverUrl={scenario.coverUrl}
               initialPrintedGreeting={scenario.printedGreeting}

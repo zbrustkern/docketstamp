@@ -18,7 +18,7 @@ import { Step5Confirmation } from "@/components/v3/Step5Confirmation";
 import { CustomAiCommissionDrawer } from "@/components/v3/CustomAiCommissionDrawer";
 import { evaluateCheckoutInitTransition } from "@/lib/payment-mode";
 import { extractRecipientName, extractSenderName } from "@/components/v3/TargetPurchaseExperience";
-import { trackEvent } from "@/lib/telemetry";
+import { trackEvent, getSessionId } from "@/lib/telemetry";
 import {
   trackGA4ViewItem,
   trackGA4BeginCheckout,
@@ -36,12 +36,22 @@ import { getStoredAttribution } from "@/components/AttributionTracker";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle } from "lucide-react";
 
-export function EntryPrototypeClient() {
+export interface EntryPrototypeClientProps {
+  initialOccasion?: string;
+  initialPresetId?: string;
+  scenarioSlug?: string;
+}
+
+export function EntryPrototypeClient({
+  initialOccasion,
+  initialPresetId,
+  scenarioSlug,
+}: EntryPrototypeClientProps = {}) {
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  const occasionParam = searchParams.get("occasion") || undefined;
-  const presetParam = searchParams.get("preset") || undefined;
+  const occasionParam = initialOccasion || searchParams?.get("occasion") || undefined;
+  const presetParam = initialPresetId || searchParams?.get("preset") || undefined;
 
   // Resolve contextual preselection if specified
   const initialPreset = useMemo(() => {
@@ -116,12 +126,48 @@ export function EntryPrototypeClient() {
     }
   }, [user, customerEmail]);
 
-  // Sync draft to local state once loaded
+  // Sync draft to local state once loaded and verify any completed order server-side
   useEffect(() => {
     if (!isLoaded) return;
 
     if (draft.completed) {
-      setIsOrderConfirmed(true);
+      // Recover checkout identity from storage and verify with server
+      const savedOrderId =
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("smn_completed_order_id") ||
+            sessionStorage.getItem("smn_checkout_order_id")
+          : null) || "";
+      const savedViewToken =
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("smn_completed_view_token") ||
+            (savedOrderId ? sessionStorage.getItem(`order_token_${savedOrderId}`) : null)
+          : null) || null;
+
+      if (savedOrderId) {
+        setOrderId(savedOrderId);
+        if (savedViewToken) setViewToken(savedViewToken);
+
+        // Verify order on server before presenting confirmation
+        fetch(`/api/orders/${savedOrderId}${savedViewToken ? `?token=${encodeURIComponent(savedViewToken)}` : ""}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.order && data.order.status !== "PENDING_PAYMENT") {
+              setFulfillmentStatus(data.order.status);
+              setIsOrderConfirmed(true);
+            } else {
+              // Not paid on server — never treat a client completed bit as proof of payment!
+              setIsOrderConfirmed(false);
+              dispatch({ type: "SET_STEP", payload: "pay" });
+              setStep("pay");
+            }
+          })
+          .catch(() => {
+            setIsOrderConfirmed(false);
+          });
+      } else {
+        // No order identity found — do not certify completed
+        setIsOrderConfirmed(false);
+      }
     } else if (draft.currentStep && draft.currentStep !== "confirmation") {
       setStep(draft.currentStep as FlowStep);
     }
@@ -491,6 +537,8 @@ export function EntryPrototypeClient() {
           userId: user?.uid,
           discountCode: discountCodeToUse,
           attribution: getStoredAttribution() || undefined,
+          sessionId: getSessionId(),
+          experienceVersion: draft.experienceVersion || "candidate_v1",
         }),
       });
 
@@ -507,6 +555,17 @@ export function EntryPrototypeClient() {
       setOrderId(data.orderId);
       if (data.viewToken) {
         setViewToken(data.viewToken);
+      }
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("smn_checkout_order_id", data.orderId);
+          if (data.viewToken) {
+            sessionStorage.setItem("smn_checkout_view_token", data.viewToken);
+            sessionStorage.setItem(`order_token_${data.orderId}`, data.viewToken);
+          }
+        } catch {
+          // ignore
+        }
       }
       setClientSecret(data.clientSecret);
       if (data.publishableKey) {
@@ -581,29 +640,94 @@ export function EntryPrototypeClient() {
   // Payment success handler (server records verified telemetry)
   const handlePaymentSuccess = (
     completedOrderId: string,
-    returnedViewToken?: string,
-    status?: string
+    returnedViewToken?: string | null,
+    status?: string | null
   ) => {
     setOrderId(completedOrderId);
-    if (returnedViewToken) {
-      setViewToken(returnedViewToken);
+    const finalToken = returnedViewToken || viewToken;
+    if (finalToken) {
+      setViewToken(finalToken);
     }
     if (status) {
       setFulfillmentStatus(status);
     }
     setIsOrderConfirmed(true);
     dispatch({ type: "MARK_COMPLETED" });
+
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("smn_completed_order_id", completedOrderId);
+        if (finalToken) {
+          sessionStorage.setItem("smn_completed_view_token", finalToken);
+          sessionStorage.setItem(`order_token_${completedOrderId}`, finalToken);
+        }
+      } catch {
+        // ignore
+      }
+    }
   };
 
-  // Send another card handler
-  const handleSendAnotherCard = () => {
+  // Reset entire flow handler for "Clear draft" and "Send another card"
+  const resetEntireFlow = () => {
     clearDraft();
     setIsOrderConfirmed(false);
     setStep("card");
+    setSalutation("");
+    setSignOff("");
+    setRecipient({
+      fullName: "",
+      street1: "",
+      street2: "",
+      city: "",
+      state: "",
+      zip: "",
+    });
+    setSender({
+      fullName: "",
+      street1: "",
+      city: "",
+      state: "",
+      zip: "",
+    });
+    setUserCustomizedRecipientName(false);
+    setUserCustomizedSenderName(false);
+    setOrderId("");
+    setViewToken(null);
+    setFulfillmentStatus(null);
+    setClientSecret(null);
+    setPublishableKey(null);
+    setIsMockCheckout(false);
+    setIsFreeOrder(false);
+    setAmountInCents(900);
+    setAppliedDiscount(null);
+    setCheckoutInitError(null);
+
     if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("smn_checkout_order_id");
+        sessionStorage.removeItem("smn_checkout_view_token");
+        sessionStorage.removeItem("smn_completed_order_id");
+        sessionStorage.removeItem("smn_completed_view_token");
+      } catch {
+        // ignore
+      }
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  // Auto-resume checkout intent on pay-step refresh if not already initialized
+  useEffect(() => {
+    if (
+      isLoaded &&
+      step === "pay" &&
+      !clientSecret &&
+      !isInitializingCheckout &&
+      !checkoutInitError &&
+      !isOrderConfirmed
+    ) {
+      initializeCheckout();
+    }
+  }, [isLoaded, step, clientSecret, isInitializingCheckout, checkoutInitError, isOrderConfirmed]);
 
   // Check if address is valid for advancing
   const isAddressValid = Boolean(
@@ -636,7 +760,7 @@ export function EntryPrototypeClient() {
   if (isOrderConfirmed) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] text-stone-900 flex flex-col antialiased">
-        <FlowHeader showClearDraft={false} onClearDraft={clearDraft} />
+        <FlowHeader showClearDraft={false} onClearDraft={resetEntireFlow} />
         <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
           <Step5Confirmation
             orderId={orderId}
@@ -653,7 +777,7 @@ export function EntryPrototypeClient() {
             sender={sender}
             customerEmail={customerEmail}
             amountInCents={amountInCents}
-            onSendAnotherCard={handleSendAnotherCard}
+            onSendAnotherCard={resetEntireFlow}
           />
         </main>
       </div>
@@ -663,7 +787,7 @@ export function EntryPrototypeClient() {
   return (
     <div className="min-h-screen bg-white text-stone-900 flex flex-col antialiased">
       {/* 1. COMPACT SENDMYNOTES FLOW HEADER */}
-      <FlowHeader showClearDraft={true} onClearDraft={clearDraft} />
+      <FlowHeader showClearDraft={true} onClearDraft={resetEntireFlow} />
 
       {/* 2. PROGRESS INDICATOR: CARD / NOTE / ADDRESS / PAY */}
       <ProgressIndicator currentStep={step} />

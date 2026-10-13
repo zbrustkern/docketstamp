@@ -9,7 +9,8 @@ import {
   OCCASION_ALIASES,
   OCCASION_METADATA,
 } from "@/lib/seo-scenarios";
-import { VendingMachineBuilder } from "@/components/VendingMachineBuilder";
+import { isReworkV3Enabled } from "@/lib/feature-flags";
+import { ExperienceRouter } from "@/components/ExperienceRouter";
 import {
   PenTool,
   CheckCircle2,
@@ -25,6 +26,7 @@ interface PageProps {
   params: Promise<{
     occasion: string;
   }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Allow dynamic resolution on-demand for occasion variations without registering separate pages
@@ -83,8 +85,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function OccasionPage({ params }: PageProps) {
+export default async function OccasionPage({ params, searchParams }: PageProps) {
   const { occasion } = await params;
+  const resolvedParams = searchParams ? await searchParams : {};
+  const isV3 = await isReworkV3Enabled({ searchParams: resolvedParams });
   const normOccasion = normalizeOccasionSlug(occasion);
   const meta = OCCASION_METADATA[normOccasion];
   const scenarios = getScenariosByOccasion(normOccasion);
@@ -311,7 +315,8 @@ export default async function OccasionPage({ params }: PageProps) {
               </div>
             }
           >
-            <VendingMachineBuilder
+            <ExperienceRouter
+              initialIsV3={isV3}
               initialOccasion={primaryScenario.occasionName}
               initialCoverUrl={primaryScenario.coverUrl}
               initialPrintedGreeting={primaryScenario.printedGreeting}

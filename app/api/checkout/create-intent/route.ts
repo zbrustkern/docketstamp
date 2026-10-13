@@ -27,6 +27,8 @@ export async function POST(req: NextRequest) {
       attribution,
       recipientOccasion,
       occasion,
+      sessionId,
+      experienceVersion,
     } = body;
 
     if (!frontImageUrl) {
@@ -123,6 +125,8 @@ export async function POST(req: NextRequest) {
         discountAmountInCents,
         paymentMethod: "PROMO_CODE",
         ...(attribution ? { attribution } : {}),
+        ...(sessionId ? { sessionId } : {}),
+        ...(experienceVersion ? { experienceVersion } : {}),
         viewToken,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -181,6 +185,8 @@ export async function POST(req: NextRequest) {
       ...(discountAmountInCents > 0 ? { discountAmountInCents } : {}),
       paymentMethod: "STRIPE",
       ...(attribution ? { attribution } : {}),
+      ...(sessionId ? { sessionId } : {}),
+      ...(experienceVersion ? { experienceVersion } : {}),
       viewToken,
       createdAt: Date.now(),
       updatedAt: Date.now(),

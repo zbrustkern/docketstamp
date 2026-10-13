@@ -73,11 +73,19 @@ export interface TelemetrySummary {
 
 const SUMMARY_CONFIG_KEY = "telemetry_summary";
 
+let ingestQueue: Promise<void> = Promise.resolve();
+
 /**
  * Persistently stores a telemetry event and updates the pre-aggregated summary document.
- * This ensures O(1) reads for admin dashboards instead of expensive table scans.
+ * Serializes concurrent writes to ensure atomic summary updates without race conditions.
  */
-export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void> {
+export function ingestTelemetryEvent(event: TelemetryEvent): Promise<void> {
+  const run = () => executeIngest(event);
+  ingestQueue = ingestQueue.then(run, run);
+  return ingestQueue;
+}
+
+async function executeIngest(event: TelemetryEvent): Promise<void> {
   // 1. Write the raw event document for audit trail
   const sanitized = sanitizeFirestoreData(event);
   await firestoreDb.collection(TELEMETRY_COLLECTION).doc(sanitized.id).set(sanitized);
@@ -189,15 +197,21 @@ export async function ingestTelemetryEvent(event: TelemetryEvent): Promise<void>
     const sessionAlreadyPaid = event.sessionId ? summary.stageSessionIds.paid.includes(event.sessionId) : false;
     const orderAlreadyPaid = orderKey ? summary.paidOrderIds.includes(orderKey) : false;
 
-    if (!sessionAlreadyPaid && !orderAlreadyPaid) {
-      if (event.sessionId) {
-        summary.stageSessionIds.paid.push(event.sessionId);
-        if (summary.stageSessionIds.paid.length > 1000) {
-          summary.stageSessionIds.paid = summary.stageSessionIds.paid.slice(-1000);
-        }
+    // 1. Session conversion tracking (unique visitor sessions that converted)
+    if (event.sessionId && !sessionAlreadyPaid) {
+      summary.stageSessionIds.paid.push(event.sessionId);
+      if (summary.stageSessionIds.paid.length > 1000) {
+        summary.stageSessionIds.paid = summary.stageSessionIds.paid.slice(-1000);
       }
+    }
+
+    // 2. Durable per-order purchase ledger tracking (counts every paid order, including repeat purchases in same session)
+    if (!orderAlreadyPaid) {
       if (orderKey) {
         summary.paidOrderIds.push(orderKey);
+        if (summary.paidOrderIds.length > 2000) {
+          summary.paidOrderIds = summary.paidOrderIds.slice(-2000);
+        }
       }
       if (!isTest) {
         summary.paid++;

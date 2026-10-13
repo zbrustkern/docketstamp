@@ -5,11 +5,25 @@ import { useSearchParams } from "next/navigation";
 import { EntryPrototypeClient } from "@/app/preview/entry/client";
 import { VendingMachineBuilder } from "@/components/VendingMachineBuilder";
 
-interface ExperienceRouterProps {
+export interface ExperienceRouterProps {
   initialIsV3: boolean;
+  initialOccasion?: string;
+  initialCoverUrl?: string;
+  initialPrintedGreeting?: string;
+  initialHandwrittenNote?: string;
+  initialFontStyleId?: string;
+  scenarioSlug?: string;
 }
 
-export function ExperienceRouter({ initialIsV3 }: ExperienceRouterProps) {
+export function ExperienceRouter({
+  initialIsV3,
+  initialOccasion,
+  initialCoverUrl,
+  initialPrintedGreeting,
+  initialHandwrittenNote,
+  initialFontStyleId,
+  scenarioSlug,
+}: ExperienceRouterProps) {
   const searchParams = useSearchParams();
 
   const isV3 = useMemo(() => {
@@ -24,8 +38,22 @@ export function ExperienceRouter({ initialIsV3 }: ExperienceRouterProps) {
   }, [searchParams, initialIsV3]);
 
   if (isV3) {
-    return <EntryPrototypeClient />;
+    return (
+      <EntryPrototypeClient
+        initialOccasion={initialOccasion}
+        scenarioSlug={scenarioSlug}
+      />
+    );
   }
 
-  return <VendingMachineBuilder />;
+  return (
+    <VendingMachineBuilder
+      initialOccasion={initialOccasion}
+      initialCoverUrl={initialCoverUrl}
+      initialPrintedGreeting={initialPrintedGreeting}
+      initialHandwrittenNote={initialHandwrittenNote}
+      initialFontStyleId={initialFontStyleId}
+      scenarioSlug={scenarioSlug}
+    />
+  );
 }

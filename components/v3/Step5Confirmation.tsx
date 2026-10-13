@@ -74,7 +74,17 @@ export function Step5Confirmation({
       // ignore
     }
 
-    if (orderId) {
+    if (orderId && viewToken && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(`order_token_${orderId}`, viewToken);
+      } catch {
+        // ignore
+      }
+    }
+
+    // Emit final purchase marketing events only when order is verified (not reconciling)
+    const isReconciling = fulfillmentStatus === "RECONCILING";
+    if (orderId && !isReconciling) {
       trackGoogleAdsPurchase({
         orderId,
         amountInCents: amountInCents || 900,
@@ -92,7 +102,7 @@ export function Step5Confirmation({
         itemName: cardTitle,
       });
     }
-  }, [orderId, amountInCents, customerEmail, cardTitle, sender.fullName, recipient.city, recipient.state, recipient.zip]);
+  }, [orderId, viewToken, fulfillmentStatus, amountInCents, customerEmail, cardTitle, sender.fullName, recipient.city, recipient.state, recipient.zip]);
 
   // Occasion intent classification
   const intentConfig = useMemo(() => {

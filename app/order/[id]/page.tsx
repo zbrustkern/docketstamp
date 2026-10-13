@@ -150,7 +150,20 @@ export default function OrderStatusPage() {
     const fetchOrder = async () => {
       try {
         const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-        const tokenFromUrl = urlParams?.get("token");
+        const tokenFromUrl = urlParams?.get("token") || urlParams?.get("viewToken");
+        if (tokenFromUrl && typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem(`order_token_${orderId}`, tokenFromUrl);
+            // Bearer token hygiene: strip sensitive tokens from URL history to prevent leaking into Referer headers or analytics
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete("token");
+            cleanUrl.searchParams.delete("viewToken");
+            const newSearch = cleanUrl.searchParams.toString();
+            window.history.replaceState({}, "", cleanUrl.pathname + (newSearch ? `?${newSearch}` : ""));
+          } catch {
+            // ignore storage/history errors in restricted sandboxes
+          }
+        }
         const tokenFromStorage = typeof window !== "undefined" ? sessionStorage.getItem(`order_token_${orderId}`) : null;
         const activeToken = tokenFromUrl || tokenFromStorage;
 
