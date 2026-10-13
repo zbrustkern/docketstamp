@@ -81,11 +81,20 @@ export function CustomAiCommissionDrawer({
   const [occasion, setOccasion] = useState(currentOccasion || "Birthday");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [policyBlock, setPolicyBlock] = useState<{
+    message: string;
+    suggestion?: string;
+  } | null>(null);
+  const [presetAlternative, setPresetAlternative] = useState<{
+    id: string;
+    title: string;
+    imageUrl: string;
+    occasion: string;
+  } | null>(null);
   const [generatedArt, setGeneratedArt] = useState<{
     imageUrl: string;
     prompt: string;
     occasion: string;
-    isMock?: boolean;
   } | null>(null);
 
   if (!isOpen) return null;
@@ -99,6 +108,8 @@ export function CustomAiCommissionDrawer({
     }
 
     setError(null);
+    setPolicyBlock(null);
+    setPresetAlternative(null);
     setIsGenerating(true);
 
     try {
@@ -112,16 +123,56 @@ export function CustomAiCommissionDrawer({
       });
 
       const data = await res.json();
+
       if (!res.ok) {
-        throw new Error(data.error || "Unable to complete AI commission.");
+        // HTTP 422: Policy Refusal (IP / Trademark / Safety)
+        if (res.status === 422 || data.code === "ART_REQUEST_BLOCKED") {
+          setGeneratedArt(null);
+          setPolicyBlock({
+            message:
+              data.message ||
+              "This prompt triggered image safety guidelines (often due to trademarked names or restricted characters).",
+            suggestion: data.suggestion,
+          });
+          if (data.presetRecommendation) {
+            setPresetAlternative(data.presetRecommendation);
+          }
+          return;
+        }
+
+        // HTTP 429: Rate limit
+        if (res.status === 429) {
+          setGeneratedArt(null);
+          setError(
+            data.message ||
+              "You've reached the 5-card AI generation limit for now. Please choose from our ready-made card collection."
+          );
+          if (data.presetRecommendation) {
+            setPresetAlternative(data.presetRecommendation);
+          }
+          return;
+        }
+
+        // HTTP 503 / 500 / other errors
+        setGeneratedArt(null);
+        setError(
+          data.message ||
+            "Our AI studio is temporarily busy. Please try again shortly or choose from our ready-made collection."
+        );
+        if (data.presetRecommendation) {
+          setPresetAlternative(data.presetRecommendation);
+        }
+        return;
       }
 
-      setGeneratedArt({
-        imageUrl: data.imageUrl,
-        prompt: prompt.trim(),
-        occasion,
-        isMock: Boolean(data.isMock),
-      });
+      // Success: True custom art generated
+      if (data.imageUrl) {
+        setGeneratedArt({
+          imageUrl: data.imageUrl,
+          prompt: prompt.trim(),
+          occasion,
+        });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error generating custom art";
       setError(msg);
@@ -133,6 +184,16 @@ export function CustomAiCommissionDrawer({
   const handleSelect = () => {
     if (!generatedArt) return;
     onSelectCover(generatedArt);
+    onClose();
+  };
+
+  const handleSelectPresetAlternative = () => {
+    if (!presetAlternative) return;
+    onSelectCover({
+      imageUrl: presetAlternative.imageUrl,
+      prompt: presetAlternative.title,
+      occasion: presetAlternative.occasion,
+    });
     onClose();
   };
 
@@ -255,26 +316,88 @@ export function CustomAiCommissionDrawer({
             </button>
           </div>
 
+          {policyBlock && (
+            <div className="p-4 bg-amber-50/80 border border-amber-300 rounded-2xl space-y-2.5 text-xs text-amber-950">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold block text-stone-900">
+                    Prompt Safety &amp; Rights Notice
+                  </span>
+                  <p className="text-stone-700 mt-0.5 leading-relaxed">
+                    {policyBlock.message}
+                  </p>
+                </div>
+              </div>
+
+              {policyBlock.suggestion && (
+                <div className="p-3 bg-white/90 rounded-xl border border-amber-200/90 text-stone-800 space-y-1">
+                  <span className="font-semibold text-amber-900 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    How to rephrase your prompt:
+                  </span>
+                  <p className="text-[11px] text-stone-600 leading-normal">
+                    {policyBlock.suggestion}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Result Preview */}
+          {/* Optional Ready-Made Alternative (Separate from custom generation) */}
+          {presetAlternative && !generatedArt && (
+            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-stone-800">
+                  Ready-Made Card Recommendation
+                </span>
+                <span className="text-[10px] text-stone-500 uppercase tracking-wider">
+                  {presetAlternative.occasion}
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-600">
+                Prefer not to rephrase? You can choose this matching card from our collection:
+              </p>
+              <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-stone-200">
+                <div className="w-14 aspect-[17/22] rounded-lg overflow-hidden bg-stone-100 shrink-0">
+                  <CardFrontPreview
+                    artworkUrl={presetAlternative.imageUrl}
+                    title={presetAlternative.title}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="block text-xs font-serif font-bold text-stone-900 truncate">
+                    {presetAlternative.title}
+                  </span>
+                  <span className="block text-[10px] text-stone-500">
+                    Folded greeting card
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSelectPresetAlternative}
+                    className="mt-1.5 px-3 py-1 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-medium transition cursor-pointer"
+                  >
+                    Choose this card instead →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* True Result Preview (Success Only) */}
           {generatedArt && (
             <div className="bg-white p-4 rounded-2xl border border-stone-300 shadow-sm space-y-3">
               <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
-                {generatedArt.isMock ? (
-                  <span className="flex items-center gap-1.5 text-amber-800">
-                    <Sparkles className="w-4 h-4 text-amber-700" /> Ready-made design matched
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5 text-emerald-700">
-                    <Check className="w-4 h-4" /> Artwork Created
-                  </span>
-                )}
+                <span className="flex items-center gap-1.5 text-emerald-700">
+                  <Check className="w-4 h-4" /> Artwork Created
+                </span>
               </div>
               <div className="w-full max-w-[240px] mx-auto">
                 <CardFrontPreview
@@ -286,11 +409,6 @@ export function CustomAiCommissionDrawer({
               <p className="text-xs text-stone-600 text-center italic line-clamp-2">
                 &ldquo;{generatedArt.prompt}&rdquo;
               </p>
-              {generatedArt.isMock && (
-                <p className="text-[11px] text-stone-500 text-center">
-                  Custom creation is briefly resting. We matched this card from our collection for your theme.
-                </p>
-              )}
               <button
                 type="button"
                 onClick={handleSelect}

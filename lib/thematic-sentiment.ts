@@ -20,23 +20,26 @@ export async function generateThematicSentiments(params: {
   occasion?: string;
 }): Promise<ThematicSentimentResult> {
   const { prompt, occasion = "Birthday" } = params;
-  const geminiApiKey =
+  const rawKey =
     process.env.GEMINI_API_KEY ||
     process.env["GEMINI_API_KEY"] ||
-    process.env.GOOGLE_GENAI_API_KEY;
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env["gemini-api-key"];
+  const geminiApiKey = rawKey?.replace(/^["']|["']$/g, "").trim();
 
   if (geminiApiKey && !geminiApiKey.includes("your_gemini_api_key_here")) {
-    const textModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    const textModels = ["gemini-2.5-flash", "gemini-1.5-flash-latest"];
     for (const model of textModels) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "x-goog-api-key": geminiApiKey,
             },
+            signal: AbortSignal.timeout(3500),
             body: JSON.stringify({
               contents: [
                 {

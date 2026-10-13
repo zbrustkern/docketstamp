@@ -168,6 +168,9 @@ export interface ImageCachePoolItem {
   status: ImageCacheStatus;
   reservedAt?: number;
   createdAt: number;
+  provider?: string;
+  model?: string;
+  isGenerated?: boolean;
 }
 
 export interface HandwryttenAddress {

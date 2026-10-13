@@ -71,3 +71,15 @@ export function checkRateLimit(clientId: string): RateLimitResult {
     retryAfterSeconds: 0,
   };
 }
+
+/**
+ * Refunds a single request timestamp from the client's rate limit quota
+ * if their prompt was rejected by a provider policy filter (non-punitive UX).
+ */
+export function refundRateLimit(clientId: string): void {
+  const record = ipStore.get(clientId);
+  if (record && record.timestamps.length > 0) {
+    record.timestamps.pop();
+    ipStore.set(clientId, record);
+  }
+}

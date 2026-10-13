@@ -401,3 +401,15 @@ artwork in the front/inside assembled-card preview requested earlier. Avoid larg
 lifestyle scenes and fake paper craftsmanship as substitutes for actual product
 proof. Neutral display framing plus honest real product photography communicates
 physicality without baking a photograph of paper into the card that gets printed.
+
+## October 13: custom artwork incident evidence
+
+See [the custom artwork incident diagnosis and builder handoff](CUSTOM_ART_GENERATION_INCIDENT_2026-10-13.md)
+before declaring generation restored. Production calls unavailable Imagen 3
+models; the founder's castle example also reproduces a Google policy refusal,
+including HTTP 200 with no image and `PROHIBITED_CONTENT`. The active deployed
+credential generates benign original artwork, while the separate managed Gemini
+secret is invalid. Resolve this configuration drift and handle refusal explicitly.
+Ready-made recommendations must remain separate from custom-generation success,
+and fallback images must not be cached as successful generated artwork. Preserve
+the request and offer an editable prompt plus optional ready-made alternatives.
