@@ -30,7 +30,8 @@
     "test:draft": "tsx tests/draft.test.ts",
     "test:remediation": "tsx tests/review-remediation.test.ts",
     "test:artwork": "tsx tests/artwork-harness.test.ts",
-    "test:all": "npm run test:target && npm run test:security && npm run test:flags && npm run test:ads && npm run test:meta && npm run test:sync && npm run test:intent && npm run test:payment-mode && npm run test:sender-validation && npm run test:telemetry-ingestion && npm run test:delivery-estimate && npm run test:draft && npm run test:remediation && npm run test:artwork",
+    "test:art-fixtures": "tsx tests/art-generation-fixtures.test.ts",
+    "test:all": "npm run test:target && npm run test:security && npm run test:flags && npm run test:ads && npm run test:meta && npm run test:sync && npm run test:intent && npm run test:payment-mode && npm run test:sender-validation && npm run test:telemetry-ingestion && npm run test:delivery-estimate && npm run test:draft && npm run test:remediation && npm run test:artwork && npm run test:art-fixtures",
     "test": "npm run test:all"
   },
   "dependencies": {

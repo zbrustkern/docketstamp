@@ -142,12 +142,19 @@ export function CoverStep({
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 422 || data.code === "ART_REQUEST_BLOCKED") {
+          setError(
+            (data.message || "Prompt triggered safety guidelines.") +
+              (data.suggestion ? `\n\nTip: ${data.suggestion}` : "")
+          );
+          return;
+        }
         if (res.status === 429) {
           setRemainingGenerations(0);
           setError(data.message || "You've reached the 5-card AI generation limit for now. Please select from our curated designs below!");
           return;
         }
-        throw new Error(data.error || "Failed to generate artwork. Please try again.");
+        throw new Error(data.message || data.error || "Failed to generate artwork. Please try again.");
       }
 
       if (typeof data.remaining === "number") {

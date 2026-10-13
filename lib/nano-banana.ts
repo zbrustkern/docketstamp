@@ -2,45 +2,92 @@ import { CARD_PRESETS, CardPreset } from "./card-presets";
 import { optimizeCoverImage } from "./image-optimizer";
 import { PRODUCT_FORMAT } from "./product-facts";
 
+export type GenerateArtResultKind =
+  | "success"
+  | "policy_refusal"
+  | "provider_unavailable"
+  | "auth_error"
+  | "unexpected_error";
+
 export interface GenerateCoverParams {
   prompt: string;
   occasion?: string;
 }
 
 export interface GenerateCoverResult {
-  imageUrl: string;
+  kind: GenerateArtResultKind;
+  imageUrl?: string;
   prompt: string;
   occasion: string;
   isMock: boolean;
   aspectRatio: string;
-  provider?: "gemini_imagen" | "nano_banana" | "preset_fallback";
+  provider?: string;
+  model?: string;
   error?: string;
+  userMessage?: string;
+  refusalDetails?: {
+    blockReason?: string;
+    finishReason?: string;
+    suggestion?: string;
+  };
+  presetRecommendation?: CardPreset;
+}
+
+export type ProviderResultKind =
+  | "success"
+  | "policy_refusal"
+  | "auth_error"
+  | "model_not_found"
+  | "provider_unavailable"
+  | "unexpected_error";
+
+export interface ParsedProviderResult {
+  kind: ProviderResultKind;
+  imageDataUrl?: string;
+  finishReason?: string;
+  blockReason?: string;
+  errorMessage?: string;
+  statusCode: number;
 }
 
 /**
  * Universal extractor for image data returned by Google GenAI APIs
- * Handles Interactions API, generateContent, and legacy prediction response shapes.
+ * Handles Interactions API, generateContent, and prediction response shapes.
  */
-function extractImageDataUrl(data: any): string | null {
+export function extractImageDataUrl(data: any): string | null {
   if (!data) return null;
 
-  // 1. Direct output_image in modern Interactions API
+  // 1. Direct output_image / outputImage in modern Interactions API
   const directImage = data.output_image || data.outputImage;
   if (directImage?.data) {
-    const mime = directImage.mime_type || directImage.mimeType || "image/png";
+    const mime = directImage.mime_type || directImage.mimeType || "image/jpeg";
     return `data:${mime};base64,${directImage.data}`;
   }
 
   // 2. Steps in Interactions API
   if (Array.isArray(data.steps)) {
     for (const step of data.steps) {
-      const contentList = step.content || step.model_output?.content || step.modelOutputStep?.content;
+      // Check direct image on step
+      const directStepImg = step.image_content || step.imageContent || step.image;
+      if (directStepImg?.data) {
+        const mime = directStepImg.mime_type || directStepImg.mimeType || "image/jpeg";
+        return `data:${mime};base64,${directStepImg.data}`;
+      }
+      if (step.data && typeof step.data === "string") {
+        const mime = step.mime_type || step.mimeType || "image/jpeg";
+        return `data:${mime};base64,${step.data}`;
+      }
+
+      // Check step contents
+      const contentList =
+        step.content || step.model_output?.content || step.modelOutputStep?.content;
       if (Array.isArray(contentList)) {
         for (const item of contentList) {
-          const imgObj = item.image_content || item.imageContent || (item.type === "image" ? item : null);
+          const imgObj =
+            item.image_content || item.imageContent || (item.type === "image" ? item : null);
           const base64 = imgObj?.data || item.data;
           if (base64) {
-            const mime = imgObj?.mime_type || imgObj?.mimeType || item.mime_type || "image/png";
+            const mime = imgObj?.mime_type || imgObj?.mimeType || item.mime_type || "image/jpeg";
             return `data:${mime};base64,${base64}`;
           }
         }
@@ -53,7 +100,7 @@ function extractImageDataUrl(data: any): string | null {
     for (const out of data.outputs) {
       const base64 = out.data || out.image?.data;
       if (base64) {
-        const mime = out.mime_type || out.mimeType || "image/png";
+        const mime = out.mime_type || out.mimeType || "image/jpeg";
         return `data:${mime};base64,${base64}`;
       }
     }
@@ -67,7 +114,7 @@ function extractImageDataUrl(data: any): string | null {
         for (const part of parts) {
           const inline = part.inlineData || part.inline_data;
           if (inline?.data) {
-            const mime = inline.mimeType || inline.mime_type || "image/png";
+            const mime = inline.mimeType || inline.mime_type || "image/jpeg";
             return `data:${mime};base64,${inline.data}`;
           }
         }
@@ -75,7 +122,7 @@ function extractImageDataUrl(data: any): string | null {
     }
   }
 
-  // 5. Predictions in legacy Imagen predict API
+  // 5. Predictions in legacy prediction response
   if (Array.isArray(data.predictions)) {
     const pred = data.predictions[0];
     const base64 = pred?.bytesBase64Encoded || pred?.image?.bytesBase64Encoded;
@@ -89,11 +136,236 @@ function extractImageDataUrl(data: any): string | null {
 }
 
 /**
- * AI Image Generator Client
- * 1. Google Gemini (Interactions API / generateContent with gemini-3.1-flash-image / gemini-2.5-flash-image)
- * 2. Nano Banana API (via NANO_BANANA_API_KEY)
- * 3. Fallback: Curated Aster & Blanche 5:7 boutique presets
+ * Checks if an error string or status represents a content policy / safety refusal.
  */
+function isPolicyRefusalText(text: string): boolean {
+  return /\b(prohibited content|safety guidelines|safety policy|content policy|safety ratings|blocked content|policy violation|PROHIBITED_CONTENT|SAFETY|BLOCKLIST|SPII|RECITATION)\b/i.test(
+    text
+  );
+}
+
+/**
+ * Parses and classifies an Interactions API response.
+ */
+export function parseInteractionsResponse(
+  statusCode: number,
+  data: any,
+  rawText?: string
+): ParsedProviderResult {
+  const errMsg =
+    data?.error?.message ||
+    data?.message ||
+    (typeof rawText === "string" ? rawText : "");
+
+  if (statusCode === 200) {
+    // 1. Check top-level finish reasons
+    const finishReason =
+      data?.finishReason || data?.finish_reason || data?.steps?.[0]?.finish_reason;
+    if (
+      finishReason &&
+      ["PROHIBITED_CONTENT", "SAFETY", "BLOCKLIST", "SPII", "RECITATION"].includes(
+        finishReason
+      )
+    ) {
+      return {
+        kind: "policy_refusal",
+        finishReason,
+        statusCode: 200,
+      };
+    }
+
+    // 2. Extract image
+    const imageDataUrl = extractImageDataUrl(data);
+    if (imageDataUrl) {
+      return {
+        kind: "success",
+        imageDataUrl,
+        statusCode: 200,
+      };
+    }
+
+    // 3. 200 with no image and no explicit finish reason
+    return {
+      kind: "unexpected_error",
+      errorMessage: "Interactions API 200 returned no usable image data.",
+      statusCode: 200,
+    };
+  }
+
+  // HTTP 400: Check if it's a content-policy refusal (e.g. prohibited content guidelines)
+  if (statusCode === 400) {
+    if (isPolicyRefusalText(errMsg)) {
+      return {
+        kind: "policy_refusal",
+        finishReason: "PROHIBITED_CONTENT",
+        errorMessage: errMsg,
+        statusCode: 400,
+      };
+    }
+    return {
+      kind: "unexpected_error",
+      errorMessage: errMsg || "Invalid request (400)",
+      statusCode: 400,
+    };
+  }
+
+  // HTTP 401 or 403: Authentication or permission error
+  if (statusCode === 401 || statusCode === 403) {
+    if (isPolicyRefusalText(errMsg)) {
+      return {
+        kind: "policy_refusal",
+        finishReason: "PROHIBITED_CONTENT",
+        errorMessage: errMsg,
+        statusCode,
+      };
+    }
+    return {
+      kind: "auth_error",
+      errorMessage: errMsg || "Authentication failure",
+      statusCode,
+    };
+  }
+
+  // HTTP 404: Model not found or deprecated
+  if (statusCode === 404) {
+    return {
+      kind: "model_not_found",
+      errorMessage: errMsg || "Model not found (404)",
+      statusCode: 404,
+    };
+  }
+
+  // HTTP 429 or 5xx: Transient provider outage or rate limit
+  if (statusCode === 429 || statusCode >= 500) {
+    return {
+      kind: "provider_unavailable",
+      errorMessage: errMsg || `Provider service unavailable (${statusCode})`,
+      statusCode,
+    };
+  }
+
+  return {
+    kind: "unexpected_error",
+    errorMessage: errMsg || `Unexpected provider status ${statusCode}`,
+    statusCode,
+  };
+}
+
+/**
+ * Parses and classifies a generateContent API response.
+ */
+export function parseGenerateContentResponse(
+  statusCode: number,
+  data: any,
+  rawText?: string
+): ParsedProviderResult {
+  const errMsg =
+    data?.error?.message ||
+    data?.message ||
+    (typeof rawText === "string" ? rawText : "");
+
+  if (statusCode === 200) {
+    // 1. Check promptFeedback block reason
+    const blockReason = data?.promptFeedback?.blockReason;
+    if (blockReason) {
+      return {
+        kind: "policy_refusal",
+        blockReason,
+        finishReason: blockReason,
+        statusCode: 200,
+      };
+    }
+
+    // 2. Check candidate finish reason
+    const candidate = data?.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    if (
+      finishReason &&
+      ["PROHIBITED_CONTENT", "SAFETY", "BLOCKLIST", "SPII", "RECITATION"].includes(
+        finishReason
+      )
+    ) {
+      return {
+        kind: "policy_refusal",
+        finishReason,
+        statusCode: 200,
+      };
+    }
+
+    // 3. Extract image
+    const imageDataUrl = extractImageDataUrl(data);
+    if (imageDataUrl) {
+      return {
+        kind: "success",
+        imageDataUrl,
+        statusCode: 200,
+      };
+    }
+
+    // 4. 200 with no image
+    return {
+      kind: "unexpected_error",
+      finishReason,
+      errorMessage: "generateContent API 200 returned no usable image parts.",
+      statusCode: 200,
+    };
+  }
+
+  if (statusCode === 400) {
+    if (isPolicyRefusalText(errMsg)) {
+      return {
+        kind: "policy_refusal",
+        finishReason: "PROHIBITED_CONTENT",
+        errorMessage: errMsg,
+        statusCode: 400,
+      };
+    }
+    return {
+      kind: "unexpected_error",
+      errorMessage: errMsg || "Invalid request (400)",
+      statusCode: 400,
+    };
+  }
+
+  if (statusCode === 401 || statusCode === 403) {
+    if (isPolicyRefusalText(errMsg)) {
+      return {
+        kind: "policy_refusal",
+        finishReason: "PROHIBITED_CONTENT",
+        errorMessage: errMsg,
+        statusCode,
+      };
+    }
+    return {
+      kind: "auth_error",
+      errorMessage: errMsg || "Authentication failure",
+      statusCode,
+    };
+  }
+
+  if (statusCode === 404) {
+    return {
+      kind: "model_not_found",
+      errorMessage: errMsg || "Model not found (404)",
+      statusCode: 404,
+    };
+  }
+
+  if (statusCode === 429 || statusCode >= 500) {
+    return {
+      kind: "provider_unavailable",
+      errorMessage: errMsg || `Provider service unavailable (${statusCode})`,
+      statusCode,
+    };
+  }
+
+  return {
+    kind: "unexpected_error",
+    errorMessage: errMsg || `Unexpected provider status ${statusCode}`,
+    statusCode,
+  };
+}
+
 /**
  * Strips meta-references to cards, mockups, or paper borders from prompts
  * so the AI model generates the artwork itself rather than a picture of a card.
@@ -137,261 +409,305 @@ const ANTI_MOCKUP_NEGATIVE_PROMPT =
 
 export const NEGATIVE_PROMPT = ANTI_MOCKUP_NEGATIVE_PROMPT;
 
-export async function generateCoverArt(params: GenerateCoverParams): Promise<GenerateCoverResult> {
-  const geminiApiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.GOOGLE_GENAI_API_KEY ||
-    process.env["gemini-api-key"];
-  const nanoApiKey = process.env.NANO_BANANA_API_KEY;
-  const prompt = params.prompt.trim();
-  const occasion = params.occasion || "Just Because";
-  const aspectRatio = PRODUCT_FORMAT.aspectRatioFront.ratioString;
+/**
+ * Provides constructive rephrasing suggestions when a prompt is rejected
+ * by provider safety filters (e.g. for trademarked studio characters or restricted IP).
+ */
+export function getPromptGuidanceSuggestion(prompt: string): string {
+  const p = prompt.toLowerCase();
 
-  const refinedPrompt = buildRefinedPrompt(prompt, occasion);
-
-  const errors: string[] = [];
-
-  // 1. Google Gemini / Imagen Native Image Generation
-  if (geminiApiKey) {
-    // Strategy 1: Google Imagen 3 Predict API (Official Google AI Studio Imagen 3 models)
-    const imagenModels = [
-      "imagen-3.0-generate-002",
-      "imagen-3.0-fast-generate-001",
-    ];
-
-    for (const model of imagenModels) {
-      try {
-        const predictUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${geminiApiKey}`;
-        const response = await fetch(predictUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiApiKey,
-          },
-          body: JSON.stringify({
-            instances: [{ prompt: refinedPrompt }],
-            parameters: {
-              sampleCount: 1,
-              aspectRatio: "3:4",
-              outputMimeType: "image/jpeg",
-              personGeneration: "ALLOW_ADULT",
-              negativePrompt: ANTI_MOCKUP_NEGATIVE_PROMPT,
-            },
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const dataUrl = extractImageDataUrl(data);
-          if (dataUrl) {
-            console.log(`[Google Imagen] Successfully generated artwork via ${model}`);
-            const optimizedUrl = await optimizeCoverImage(dataUrl);
-            return {
-              imageUrl: optimizedUrl,
-              prompt,
-              occasion,
-              isMock: false,
-              aspectRatio,
-              provider: "gemini_imagen",
-            };
-          }
-        } else {
-          const errText = await response.text();
-          let parsedMsg = errText;
-          try {
-            const parsed = JSON.parse(errText);
-            parsedMsg = parsed.error?.message || errText;
-          } catch {}
-          console.warn(`[Google Imagen ${model}] API error (${response.status}):`, parsedMsg);
-          errors.push(`Imagen ${model} (${response.status}): ${parsedMsg}`);
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[Google Imagen ${model}] Exception:`, msg);
-        errors.push(`Imagen ${model} network error: ${msg}`);
-      }
-    }
-
-    // Strategy 2: Modern Interactions API (Google GenAI recommended standard)
-    const interactionModels = [
-      "gemini-3.1-flash-image",
-      "gemini-2.5-flash-image",
-      "gemini-3.1-flash-lite-image",
-    ];
-
-    for (const model of interactionModels) {
-      try {
-        const interactionUrl = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${geminiApiKey}`;
-        const response = await fetch(interactionUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiApiKey,
-          },
-          body: JSON.stringify({
-            model,
-            input: refinedPrompt,
-            response_format: {
-              type: "image",
-              aspect_ratio: "3:4",
-            },
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const dataUrl = extractImageDataUrl(data);
-          if (dataUrl) {
-            console.log(`[Google Gemini] Successfully generated artwork via Interactions API using ${model}`);
-            const optimizedUrl = await optimizeCoverImage(dataUrl);
-            return {
-              imageUrl: optimizedUrl,
-              prompt,
-              occasion,
-              isMock: false,
-              aspectRatio,
-              provider: "gemini_imagen",
-            };
-          }
-        } else {
-          const errText = await response.text();
-          let parsedMsg = errText;
-          try {
-            const parsed = JSON.parse(errText);
-            parsedMsg = parsed.error?.message || errText;
-          } catch {}
-          console.warn(`[Google Interactions ${model}] API error (${response.status}):`, parsedMsg);
-          errors.push(`Interactions ${model} (${response.status}): ${parsedMsg}`);
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[Google Interactions ${model}] Exception:`, msg);
-        errors.push(`Interactions ${model} network error: ${msg}`);
-      }
-    }
-
-    // Strategy B: generateContent with IMAGE response modalities
-    const contentModels = [
-      "gemini-2.5-flash-image",
-      "gemini-3.1-flash-image",
-    ];
-
-    for (const model of contentModels) {
-      try {
-        const generateUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-        const response = await fetch(generateUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiApiKey,
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: refinedPrompt }],
-              },
-            ],
-            generationConfig: {
-              response_modalities: ["IMAGE"],
-            },
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const dataUrl = extractImageDataUrl(data);
-          if (dataUrl) {
-            console.log(`[Google Gemini] Successfully generated artwork via generateContent using ${model}`);
-            const optimizedUrl = await optimizeCoverImage(dataUrl);
-            return {
-              imageUrl: optimizedUrl,
-              prompt,
-              occasion,
-              isMock: false,
-              aspectRatio,
-              provider: "gemini_imagen",
-            };
-          }
-        } else {
-          const errText = await response.text();
-          let parsedMsg = errText;
-          try {
-            const parsed = JSON.parse(errText);
-            parsedMsg = parsed.error?.message || errText;
-          } catch {}
-          console.warn(`[Google generateContent ${model}] API error (${response.status}):`, parsedMsg);
-          errors.push(`generateContent ${model} (${response.status}): ${parsedMsg}`);
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[Google generateContent ${model}] Exception:`, msg);
-        errors.push(`generateContent ${model} network error: ${msg}`);
-      }
-    }
-  } else {
-    errors.push("GEMINI_API_KEY environment variable was not found in runtime container");
+  if (
+    /\b(cinderella|sleeping beauty|snow white|ariel|belle|rapunzel|elsa|anna|disney|mickey|minnie|pixar)\b/i.test(
+      p
+    )
+  ) {
+    return "Specific studio and character names (such as Cinderella or Disney) are trademarked and cannot be generated directly. Try describing the visual elements in your own words—for example: 'An enchanted fairytale castle with illuminated spires, starry night sky, and celebratory fireworks'.";
   }
 
-  // 2. Nano Banana API (if configured)
-  if (nanoApiKey && !nanoApiKey.includes("your_nano_banana_api_key_here")) {
-    try {
-      const response = await fetch("https://api.nanobanana.ai/v1/images/generate", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${nanoApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: refinedPrompt,
-          negative_prompt: ANTI_MOCKUP_NEGATIVE_PROMPT,
-          aspect_ratio: "3:4", // Provider-native portrait canvas; optimizer applies A2 crop.
-          width: 1275,
-          height: 1700,
-          format: "png",
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const imageUrl = data.image_url || data.data?.[0]?.url || data.url;
-        if (imageUrl) {
-          const optimizedUrl = await optimizeCoverImage(imageUrl);
-          return {
-            imageUrl: optimizedUrl,
-            prompt,
-            occasion,
-            isMock: false,
-            aspectRatio,
-            provider: "nano_banana",
-          };
-        }
-      }
-      console.warn("[Nano Banana] API returned error or empty response.");
-    } catch (error) {
-      console.error("[Nano Banana] Failed to call generation API:", error);
-    }
+  if (
+    /\b(harry potter|hogwarts|gryffindor|slytherin|star wars|jedi|vader|marvel|avengers|iron man|spiderman|batman|superman|pokemon|pikachu|barbie)\b/i.test(
+      p
+    )
+  ) {
+    return "Specific franchise or character names are protected. Try describing the visual scenery, mood, artistic medium (like watercolor or gouache), and colors in your own words.";
   }
 
-  // 3. Fallback: Curated Aster & Blanche 5:7 boutique card presets (No Pollinations)
+  return "To follow creative rights and safety guidelines, trademarked characters or restricted subjects cannot be generated directly. Try describing the visual setting, colors, and artistic style in your own words.";
+}
+
+/**
+ * Returns a friendly, non-punitive user message for policy refusals.
+ */
+export function getPolicyRefusalUserMessage(prompt: string): string {
+  return "We couldn't create artwork for this prompt because it triggered safety guidelines (for example, references to specific trademarked characters or brands). You can edit your description below or choose a ready-made card from our collection.";
+}
+
+/**
+ * Matches a suitable ready-made preset as a separate, optional alternative.
+ */
+function findPresetAlternative(prompt: string, occasion: string): CardPreset {
   const matchedByOccasion = CARD_PRESETS.find(
     (p) => p.occasion.toLowerCase() === occasion.toLowerCase()
   );
 
   const matchedByPrompt = CARD_PRESETS.find((p) =>
-    prompt.toLowerCase().split(" ").some((word) => word.length > 3 && p.prompt.toLowerCase().includes(word))
+    prompt
+      .toLowerCase()
+      .split(" ")
+      .some((word) => word.length > 3 && p.prompt.toLowerCase().includes(word))
   );
 
-  const selectedPreset: CardPreset = matchedByPrompt || matchedByOccasion || CARD_PRESETS[0];
-  const presetImageUrl = selectedPreset.imageUrl;
+  return matchedByPrompt || matchedByOccasion || CARD_PRESETS[0];
+}
 
+/**
+ * AI Image Generator Client
+ *
+ * Primary Model: gemini-nano-banana-2.1 (via Interactions API)
+ * Secondary Model: gemini-2.5-flash-image (via generateContent, for transient 503/404)
+ * Tertiary Model: gemini-3.1-flash-image (via generateContent)
+ *
+ * Explicitly terminates cascade on policy refusals or auth errors.
+ * Never presents a fallback preset as a custom generation success.
+ */
+export async function generateCoverArt(
+  params: GenerateCoverParams
+): Promise<GenerateCoverResult> {
+  const rawKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env["gemini-api-key"];
+  const geminiApiKey = rawKey?.replace(/^["']|["']$/g, "").trim();
+
+  const prompt = params.prompt.trim();
+  const occasion = params.occasion || "Just Because";
+  const aspectRatio = PRODUCT_FORMAT.aspectRatioFront.ratioString;
+  const presetRecommendation = findPresetAlternative(prompt, occasion);
+
+  if (!geminiApiKey || geminiApiKey.includes("your_gemini_api_key_here")) {
+    return {
+      kind: "auth_error",
+      prompt,
+      occasion,
+      isMock: false,
+      aspectRatio,
+      error: "GEMINI_API_KEY environment variable is not configured.",
+      userMessage:
+        "Custom art generation is temporarily offline. Please choose from our curated card collection below.",
+      presetRecommendation,
+    };
+  }
+
+  const refinedPrompt = buildRefinedPrompt(prompt, occasion);
+  const errors: string[] = [];
+
+  // =========================================================================
+  // 1. PRIMARY MODEL: gemini-nano-banana-2.1 via Interactions API
+  // Supported Interactions contract with header authentication only.
+  // =========================================================================
+  try {
+    const interactionUrl = "https://generativelanguage.googleapis.com/v1beta/interactions";
+    const response = await fetch(interactionUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": geminiApiKey,
+      },
+      signal: AbortSignal.timeout(16000),
+      body: JSON.stringify({
+        model: "gemini-nano-banana-2.1",
+        input: refinedPrompt,
+        response_format: {
+          type: "image",
+          aspect_ratio: "3:4",
+          mime_type: "image/jpeg",
+        },
+      }),
+    });
+
+    const rawText = await response.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(rawText);
+    } catch {}
+
+    const parsed = parseInteractionsResponse(response.status, data, rawText);
+
+    // CRITICAL: Stop cascade immediately on policy refusal.
+    if (parsed.kind === "policy_refusal") {
+      console.warn(
+        `[CoverArt] Primary model policy refusal: ${parsed.finishReason || parsed.errorMessage}`
+      );
+      return {
+        kind: "policy_refusal",
+        prompt,
+        occasion,
+        isMock: false,
+        aspectRatio,
+        provider: "gemini_interactions",
+        model: "gemini-nano-banana-2.1",
+        error: `Policy refusal from gemini-nano-banana-2.1: ${parsed.errorMessage || parsed.finishReason}`,
+        userMessage: getPolicyRefusalUserMessage(prompt),
+        refusalDetails: {
+          finishReason: parsed.finishReason || "PROHIBITED_CONTENT",
+          blockReason: parsed.blockReason,
+          suggestion: getPromptGuidanceSuggestion(prompt),
+        },
+        presetRecommendation,
+      };
+    }
+
+    if (parsed.kind === "auth_error") {
+      console.error(`[CoverArt] Auth error from Interactions API: ${parsed.errorMessage}`);
+      return {
+        kind: "auth_error",
+        prompt,
+        occasion,
+        isMock: false,
+        aspectRatio,
+        error: `Auth error: ${parsed.errorMessage}`,
+        userMessage:
+          "Custom art generation is temporarily offline. Please select from our ready-made collection.",
+        presetRecommendation,
+      };
+    }
+
+    if (parsed.kind === "success" && parsed.imageDataUrl) {
+      console.log("[CoverArt] Successfully generated artwork via gemini-nano-banana-2.1");
+      const optimizedUrl = await optimizeCoverImage(parsed.imageDataUrl);
+      return {
+        kind: "success",
+        imageUrl: optimizedUrl,
+        prompt,
+        occasion,
+        isMock: false,
+        aspectRatio,
+        provider: "gemini_interactions",
+        model: "gemini-nano-banana-2.1",
+      };
+    }
+
+    // Transient failure: record diagnostic and cascade to secondary model
+    errors.push(
+      `gemini-nano-banana-2.1 (${response.status}): ${parsed.errorMessage || "No image"}`
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[CoverArt] Exception calling gemini-nano-banana-2.1: ${msg}`);
+    errors.push(`gemini-nano-banana-2.1 exception: ${msg}`);
+  }
+
+  // =========================================================================
+  // 2. SECONDARY / TERTIARY MODELS: generateContent API with IMAGE modality
+  // =========================================================================
+  const contentModels = ["gemini-2.5-flash-image", "gemini-3.1-flash-image"];
+
+  for (const model of contentModels) {
+    try {
+      const generateUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const response = await fetch(generateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": geminiApiKey,
+        },
+        signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: refinedPrompt }],
+            },
+          ],
+          generationConfig: {
+            response_modalities: ["IMAGE"],
+          },
+        }),
+      });
+
+      const rawText = await response.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {}
+
+      const parsed = parseGenerateContentResponse(response.status, data, rawText);
+
+      // CRITICAL: Stop cascade immediately on policy refusal.
+      if (parsed.kind === "policy_refusal") {
+        console.warn(
+          `[CoverArt] Secondary model ${model} policy refusal: ${parsed.finishReason || parsed.blockReason}`
+        );
+        return {
+          kind: "policy_refusal",
+          prompt,
+          occasion,
+          isMock: false,
+          aspectRatio,
+          provider: "gemini_generate_content",
+          model,
+          error: `Policy refusal from ${model}: ${parsed.errorMessage || parsed.finishReason}`,
+          userMessage: getPolicyRefusalUserMessage(prompt),
+          refusalDetails: {
+            finishReason: parsed.finishReason || "PROHIBITED_CONTENT",
+            blockReason: parsed.blockReason,
+            suggestion: getPromptGuidanceSuggestion(prompt),
+          },
+          presetRecommendation,
+        };
+      }
+
+      if (parsed.kind === "auth_error") {
+        return {
+          kind: "auth_error",
+          prompt,
+          occasion,
+          isMock: false,
+          aspectRatio,
+          error: `Auth error on ${model}: ${parsed.errorMessage}`,
+          userMessage:
+            "Custom art generation is temporarily offline. Please select from our ready-made collection.",
+          presetRecommendation,
+        };
+      }
+
+      if (parsed.kind === "success" && parsed.imageDataUrl) {
+        console.log(`[CoverArt] Successfully generated artwork via ${model}`);
+        const optimizedUrl = await optimizeCoverImage(parsed.imageDataUrl);
+        return {
+          kind: "success",
+          imageUrl: optimizedUrl,
+          prompt,
+          occasion,
+          isMock: false,
+          aspectRatio,
+          provider: "gemini_generate_content",
+          model,
+        };
+      }
+
+      errors.push(`${model} (${response.status}): ${parsed.errorMessage || "No image"}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[CoverArt] Exception calling ${model}: ${msg}`);
+      errors.push(`${model} exception: ${msg}`);
+    }
+  }
+
+  // =========================================================================
+  // 3. ALL MODELS EXHAUSTED (TRANSIENT / PROVIDER OUTAGE)
+  // Return explicit provider_unavailable result with preset recommendation.
+  // =========================================================================
+  console.error(`[CoverArt] All provider attempts exhausted: ${errors.join(" | ")}`);
   return {
-    imageUrl: presetImageUrl,
+    kind: "provider_unavailable",
     prompt,
     occasion,
-    isMock: true,
+    isMock: false,
     aspectRatio,
-    provider: "preset_fallback",
     error: errors.join(" | "),
+    userMessage:
+      "Our AI art studio is temporarily busy or undergoing scheduled maintenance. Please try again shortly or choose a design from our ready-made card collection.",
+    presetRecommendation,
   };
 }
