@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Eye, BookOpen, PenTool, Feather, ArrowRight, ArrowLeft, Maximize2, X } from "lucide-react";
 import { FONT_OPTIONS, FontOption } from "@/lib/card-presets";
+import { CardFrontPreview } from "./CardFrontPreview";
 
 interface CardPreviewProps {
   coverUrl: string;
@@ -167,24 +168,7 @@ export function CardPreview({
       {/* 1. FRONT COVER VIEW: Folded A2 Portrait 4.25" x 5.5" Greeting Card (17:22 Aspect Ratio) */}
       {viewMode === "cover" && (
         <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[17/22] transition-all duration-300">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-white flex flex-col group">
-            <div className="relative w-full h-full">
-              <Image
-                src={coverUrl}
-                alt="Card Cover Art"
-                fill
-                sizes="(max-width: 768px) 100vw, 400px"
-                className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                priority
-                unoptimized
-              />
-              {/* Natural Left Spine Fold Shadow */}
-              <div className="absolute left-0 top-0 bottom-0 w-3.5 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none" />
-
-              {/* Blind-Deboss Inset Micro-Rule (Letterpress Effect) */}
-              <div className="absolute inset-2 sm:inset-2.5 border border-white/35 rounded-xl pointer-events-none" />
-            </div>
-          </div>
+          <CardFrontPreview artworkUrl={coverUrl} title="Card front preview" sizes="(max-width: 768px) 100vw, 400px" priority />
         </div>
       )}
 

@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import Image from "next/image";
 import { Check, Eye, Sparkles, AlertCircle } from "lucide-react";
 import { CARD_PRESETS, CardPreset } from "@/lib/card-presets";
 import { SelectedDesign } from "@/lib/draft";
 import { Sheet } from "./Sheet";
+import { CardFrontPreview } from "../CardFrontPreview";
 
 // Personal occasions supported per builder plan §3
 export const PERSONAL_OCCASIONS = [
@@ -144,7 +144,7 @@ export function EntryCardStep({
             </span>
             <div className="min-w-0">
               <span className="block text-xs font-semibold text-stone-900 truncate">
-                Make a custom design
+                Make it personal — Create a custom design
               </span>
               <span className="block text-[11px] text-stone-500 truncate">
                 Describe a personal scene or memory for custom artwork
@@ -195,14 +195,11 @@ export function EntryCardStep({
                 >
                   {/* Card Front Frame (17:22 ratio) */}
                   <div className="relative w-full aspect-[17/22] bg-stone-100 overflow-hidden">
-                    <Image
-                      src={preset.imageUrl}
-                      alt={preset.title}
-                      fill
+                    <CardFrontPreview
+                      artworkUrl={preset.imageUrl}
+                      title={preset.title}
                       sizes="(max-width: 640px) 45vw, 300px"
                       priority={isFirstRow}
-                      loading={isFirstRow ? "eager" : "lazy"}
-                      className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                     />
 
                     {/* Preselection / Selection Checkmark Badge */}
@@ -255,13 +252,11 @@ export function EntryCardStep({
       >
         {previewPreset && (
           <div className="space-y-4">
-            <div className="relative w-full aspect-[17/22] max-w-xs mx-auto rounded-xl overflow-hidden border border-stone-200 shadow-md">
-              <Image
-                src={previewPreset.imageUrl}
-                alt={previewPreset.title}
-                fill
+            <div className="w-full max-w-xs mx-auto bg-stone-100 p-3 rounded-xl">
+              <CardFrontPreview
+                artworkUrl={previewPreset.imageUrl}
+                title={previewPreset.title}
                 sizes="(max-width: 640px) 85vw, 320px"
-                className="object-cover"
                 priority
               />
             </div>

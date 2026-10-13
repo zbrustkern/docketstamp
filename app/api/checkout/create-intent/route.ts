@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { saveOrder, getDiscountCode } from "@/lib/firebase-admin";
 import { createCardPaymentIntent, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
-import { PaymentModeConfigError } from "@/lib/payment-mode";
+import { PaymentModeConfigError, normalizeStripeSecretKey } from "@/lib/payment-mode";
 import { validatePersonalSender } from "@/lib/order-processor";
 import { validateDiscount } from "@/lib/discount";
 import { Order, MailingAddress, RecipientOccasion } from "@/lib/types";
@@ -217,20 +217,23 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     if (error instanceof PaymentModeConfigError) {
-      console.error("[Checkout Intent Config Error]", error.message, {
+      const keyInfo = normalizeStripeSecretKey();
+      console.error("[Checkout Intent Config Error]", {
         code: error.code,
+        keyType: keyInfo.keyType,
+        source: keyInfo.source,
       });
       const incidentId = await logIncident({
         type: "STRIPE",
         severity: "error",
         summary: "Stripe Payment Mode Configuration Error",
-        technicalDetails: error.message,
+        technicalDetails: `Code: ${error.code}, Type: ${keyInfo.keyType}, Source: ${keyInfo.source}`,
       });
 
       return NextResponse.json(
         {
           error:
-            "We are temporarily experiencing difficulty connecting to our secure payment gateway. Our studio team has been notified. Please try again in a moment.",
+            "Payment is temporarily unavailable. Your card and message are saved. Please try again shortly.",
           code: error.code,
           incidentId,
         },

@@ -30,14 +30,16 @@ export function ActionBar({
       <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
         {/* Left: Total & details */}
         <div className="flex flex-col min-w-0">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-lg font-bold tracking-tight text-stone-900 font-serif">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-base sm:text-lg font-bold tracking-tight text-stone-900 font-serif whitespace-nowrap">
               {priceDisplay}
             </span>
+            {priceSubtext && (
+              <span className="text-[11px] text-stone-600 font-medium truncate">
+                · {priceSubtext}
+              </span>
+            )}
           </div>
-          <span className="text-[11px] text-stone-700 truncate font-medium">
-            {priceSubtext}
-          </span>
         </div>
 
         {/* Right: Actions */}

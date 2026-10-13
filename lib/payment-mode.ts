@@ -30,29 +30,108 @@ export class PaymentModeConfigError extends Error {
  *    - If ALLOW_LOCAL_MOCK_PAYMENTS === "true" or "1": mode is "local_mock".
  *    - Otherwise (missing/placeholder key without explicit opt-in): throws PaymentModeConfigError (503).
  */
+export type StripeKeyType =
+  | "standard_live"
+  | "restricted_live"
+  | "standard_test"
+  | "restricted_test"
+  | "publishable"
+  | "placeholder"
+  | "empty"
+  | "unknown";
+
+export interface NormalizedStripeKey {
+  secret: string;
+  keyType: StripeKeyType;
+  rawLength: number;
+  hasMatchingQuotes: boolean;
+  source: string;
+}
+
+/**
+ * Normalizes and classifies a Stripe secret key from environment variables.
+ * Enforces one consistent credential path for validation and client SDK initialization.
+ * Precedence: STRIPE_SECRET_KEY -> stripe-secret-key
+ */
+export function normalizeStripeSecretKey(
+  env: Record<string, string | undefined> = process.env
+): NormalizedStripeKey {
+  let source = "none";
+  let raw = "";
+
+  if (env.STRIPE_SECRET_KEY !== undefined && env.STRIPE_SECRET_KEY !== "") {
+    raw = env.STRIPE_SECRET_KEY;
+    source = "STRIPE_SECRET_KEY";
+  } else if (env["stripe-secret-key"] !== undefined && env["stripe-secret-key"] !== "") {
+    raw = env["stripe-secret-key"];
+    source = "stripe-secret-key";
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return {
+      secret: "",
+      keyType: "empty",
+      rawLength: 0,
+      hasMatchingQuotes: false,
+      source,
+    };
+  }
+
+  let secret = trimmed;
+  let hasMatchingQuotes = false;
+
+  // Strip ONLY a matching outer quote pair ("..." or '...')
+  if (
+    (secret.startsWith('"') && secret.endsWith('"') && secret.length >= 2) ||
+    (secret.startsWith("'") && secret.endsWith("'") && secret.length >= 2)
+  ) {
+    secret = secret.slice(1, -1).trim();
+    hasMatchingQuotes = true;
+  }
+
+  let keyType: StripeKeyType = "unknown";
+  if (!secret) {
+    keyType = "empty";
+  } else if (secret.startsWith("sk_test_placeholder")) {
+    keyType = "placeholder";
+  } else if (secret.startsWith("sk_live_")) {
+    keyType = "standard_live";
+  } else if (secret.startsWith("rk_live_")) {
+    keyType = "restricted_live";
+  } else if (secret.startsWith("sk_test_")) {
+    keyType = "standard_test";
+  } else if (secret.startsWith("rk_test_")) {
+    keyType = "restricted_test";
+  } else if (secret.startsWith("pk_live_") || secret.startsWith("pk_test_")) {
+    keyType = "publishable";
+  }
+
+  return {
+    secret,
+    keyType,
+    rawLength: trimmed.length,
+    hasMatchingQuotes,
+    source,
+  };
+}
+
 export function resolvePaymentMode(
   env: Record<string, string | undefined> = process.env
 ): PaymentMode {
   const isProduction = env.NODE_ENV === "production";
-  const rawSecret =
-    env["stripe-secret-key"] ||
-    env.STRIPE_SECRET_KEY ||
-    "";
-  // Strip surrounding quotes and whitespace
-  const secret = rawSecret.trim().replace(/^["']|["']$/g, "").trim();
+  const { secret, keyType } = normalizeStripeSecretKey(env);
 
   const allowLocalMock =
     env.ALLOW_LOCAL_MOCK_PAYMENTS === "true" ||
     env.ALLOW_LOCAL_MOCK_PAYMENTS === "1";
 
   const allowTestInProduction =
-    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "true" ||
-    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "1" ||
-    env.STRIPE_TEST_MODE === "true" ||
-    env.STRIPE_TEST_MODE === "1";
+    env.IS_PREVIEW_TEST_ENVIRONMENT === "true" ||
+    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "true";
 
   if (isProduction) {
-    if (!secret || secret.startsWith("sk_test_placeholder")) {
+    if (keyType === "empty" || keyType === "placeholder") {
       throw new PaymentModeConfigError(
         "Stripe live secret key is missing or is a placeholder in production.",
         503,
@@ -61,12 +140,12 @@ export function resolvePaymentMode(
     }
 
     // Live Stripe keys (Standard 'sk_live_' or Restricted 'rk_live_')
-    if (secret.startsWith("sk_live_") || secret.startsWith("rk_live_")) {
+    if (keyType === "standard_live" || keyType === "restricted_live") {
       return "live";
     }
 
-    // Test Stripe keys (Standard 'sk_test_' or Restricted 'rk_test_')
-    if (secret.startsWith("sk_test_") || secret.startsWith("rk_test_")) {
+    // Test Stripe keys in production
+    if (keyType === "standard_test" || keyType === "restricted_test") {
       if (allowTestInProduction) {
         return "stripe_test";
       }
@@ -85,14 +164,11 @@ export function resolvePaymentMode(
   }
 
   // Non-production environment
-  if (secret.startsWith("sk_live_") || secret.startsWith("rk_live_")) {
+  if (keyType === "standard_live" || keyType === "restricted_live") {
     return "live";
   }
 
-  if (
-    (secret.startsWith("sk_test_") || secret.startsWith("rk_test_")) &&
-    !secret.startsWith("sk_test_placeholder")
-  ) {
+  if (keyType === "standard_test" || keyType === "restricted_test") {
     return "stripe_test";
   }
 

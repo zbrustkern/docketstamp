@@ -1,13 +1,9 @@
 import Stripe from "stripe";
 
-import { resolvePaymentMode } from "./payment-mode";
+import { resolvePaymentMode, normalizeStripeSecretKey } from "./payment-mode";
 
 export function getStripeSecretKey(): string {
-  const raw =
-    process.env["stripe-secret-key"] ||
-    process.env.STRIPE_SECRET_KEY ||
-    "";
-  return raw.trim().replace(/^["']|["']$/g, "").trim();
+  return normalizeStripeSecretKey(process.env).secret;
 }
 
 export function getStripeClient(): Stripe {

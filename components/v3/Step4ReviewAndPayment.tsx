@@ -25,11 +25,14 @@ import {
   CreditCard,
   Truck,
   Feather,
+  Eye,
 } from "lucide-react";
 import { calculateDeliveryEstimate } from "@/lib/delivery-estimate";
 import { AddressData } from "./Step3EnvelopeAddressing";
 import { evaluatePaymentSubmission } from "@/lib/payment-mode";
 import { trackEvent } from "@/lib/telemetry";
+import { Sheet } from "@/components/flow/Sheet";
+import { CardPreview } from "@/components/CardPreview";
 
 export interface AppliedDiscountInfo {
   code: string;
@@ -48,6 +51,8 @@ interface Step4ReviewAndPaymentProps {
   bodyNote: string;
   signOff: string;
   fontClass: string;
+  fontStyleId?: string;
+  occasion?: string;
   recipient: AddressData;
   sender: AddressData;
   customerEmail: string;
@@ -71,6 +76,8 @@ interface InnerPaymentProps {
   bodyNote: string;
   signOff: string;
   fontClass: string;
+  fontStyleId?: string;
+  occasion?: string;
   recipient: AddressData;
   sender: AddressData;
   customerEmail: string;
@@ -92,6 +99,8 @@ function InnerPaymentForm({
   bodyNote,
   signOff,
   fontClass,
+  fontStyleId,
+  occasion,
   recipient,
   sender,
   customerEmail,
@@ -113,6 +122,7 @@ function InnerPaymentForm({
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Promo code toggle & input state
   const [showPromoInput, setShowPromoInput] = useState(Boolean(appliedDiscount));
@@ -413,12 +423,20 @@ function InnerPaymentForm({
           {/* Details */}
           <div className="space-y-2 flex-1 min-w-0">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-800">
-                A2 Folded Stationery Leaf (4.25&quot; × 5.5&quot;)
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800">
+                Folded Greeting Card (4.25&quot; × 5.5&quot;)
               </div>
               <h3 className="font-serif font-bold text-base text-stone-900 truncate">
                 {cardTitle}
               </h3>
+              <button
+                type="button"
+                onClick={() => setIsPreviewOpen(true)}
+                className="mt-1 text-xs text-emerald-800 hover:text-emerald-950 font-medium inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Preview your card</span>
+              </button>
             </div>
 
             {/* Note Excerpt */}
@@ -489,6 +507,33 @@ function InnerPaymentForm({
             <div className="font-serif font-bold text-xl text-stone-950">
               {isZeroCost ? "$0.00 (Free)" : `$${(finalPriceCents / 100).toFixed(2)}`}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* REAL PRODUCT PROOF */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200/90 shadow-2xs space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-stone-700">
+            What Arrives
+          </span>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="relative w-full sm:w-44 aspect-[1200/628] rounded-xl overflow-hidden border border-stone-200 shadow-2xs shrink-0 bg-stone-100">
+            <Image
+              src="/ad-assets/google-ads-landscape-delivery-1200x628.jpg"
+              alt="Real handwritten card, envelope, and pen"
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className="text-xs text-stone-600 leading-relaxed space-y-1">
+            <p className="font-semibold text-stone-900">
+              Real pen ink on heavy cardstock.
+            </p>
+            <p>
+              Each note is written with real ballpoint pen ink, sealed in a matching envelope with USPS First-Class postage, and mailed directly to your recipient.
+            </p>
           </div>
         </div>
       </div>
@@ -773,6 +818,25 @@ function InnerPaymentForm({
           )}
         </button>
       </div>
+
+      {/* CARD PREVIEW SHEET */}
+      <Sheet
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        title="Card Preview"
+        description={cardTitle}
+      >
+        <div className="py-2">
+          <CardPreview
+            coverUrl={cardUrl}
+            printedGreeting={salutation}
+            handwrittenNote={[bodyNote, signOff].filter(Boolean).join("\n\n")}
+            fontStyleId={fontStyleId || "hwDavid"}
+            occasion={occasion || "Greeting Card"}
+            currentStep={2}
+          />
+        </div>
+      </Sheet>
     </form>
   );
 }

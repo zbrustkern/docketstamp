@@ -4,7 +4,7 @@ import { EntryPrototypeClient } from "@/app/preview/entry/client";
 export const metadata = {
   title: "Send a Real Handwritten Card Online | SendMyNotes",
   description:
-    "Curated stationery cards written in real ballpoint pen by automated precision plotters. Mailed via USPS First-Class with your personal return address for $9.00 flat rate.",
+    "Curated greeting cards written in real ballpoint pen ink. Mailed via USPS First-Class with your return address for $9.00 total.",
 };
 
 export default function NewCardPage() {
