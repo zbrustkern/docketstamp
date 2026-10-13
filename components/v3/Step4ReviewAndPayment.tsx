@@ -29,6 +29,7 @@ import {
 import { calculateDeliveryEstimate } from "@/lib/delivery-estimate";
 import { AddressData } from "./Step3EnvelopeAddressing";
 import { evaluatePaymentSubmission } from "@/lib/payment-mode";
+import { trackEvent } from "@/lib/telemetry";
 
 export interface AppliedDiscountInfo {
   code: string;
@@ -59,7 +60,7 @@ interface Step4ReviewAndPaymentProps {
   onApplyDiscount: (code: string) => Promise<{ success: boolean; error?: string }>;
   onRemoveDiscount: () => void;
   appliedDiscount: AppliedDiscountInfo | null;
-  onPaymentSuccess: (orderId: string, viewToken?: string, fulfillmentStatus?: string) => void;
+  onPaymentSuccess: (orderId: string, viewToken?: string | null, fulfillmentStatus?: string | null) => void;
   onBack: () => void;
 }
 
@@ -80,7 +81,7 @@ interface InnerPaymentProps {
   appliedDiscount: AppliedDiscountInfo | null;
   onApplyDiscount: (code: string) => Promise<{ success: boolean; error?: string }>;
   onRemoveDiscount: () => void;
-  onPaymentSuccess: (orderId: string, viewToken?: string, fulfillmentStatus?: string) => void;
+  onPaymentSuccess: (orderId: string, viewToken?: string | null, fulfillmentStatus?: string | null) => void;
   onBack: () => void;
 }
 
@@ -108,6 +109,7 @@ function InnerPaymentForm({
   const elements = useElements();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPaymentCaptured, setIsPaymentCaptured] = useState(false);
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
@@ -155,13 +157,11 @@ function InnerPaymentForm({
     const methods = event?.availablePaymentMethods;
     const hasAny = Boolean(methods && (methods.applePay || methods.googlePay || methods.link));
     setWalletAvailable(hasAny);
-    if (typeof window !== "undefined") {
-      (window as any).trackEvent?.("wallet_availability_observed", 4, {
-        applePay: Boolean(methods?.applePay),
-        googlePay: Boolean(methods?.googlePay),
-        link: Boolean(methods?.link),
-      });
-    }
+    trackEvent("wallet_availability_observed", 4, {
+      applePay: Boolean(methods?.applePay),
+      googlePay: Boolean(methods?.googlePay),
+      link: Boolean(methods?.link),
+    });
   };
 
   const handleExpressConfirm = async () => {
@@ -170,6 +170,14 @@ function InnerPaymentForm({
     setErrorMessage(null);
 
     try {
+      // Per Stripe Express Checkout documentation: elements.submit() validates element fields
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setErrorMessage(submitError.message || "Please complete all required payment details.");
+        setIsProcessing(false);
+        return;
+      }
+
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -183,6 +191,8 @@ function InnerPaymentForm({
         setErrorMessage(error.message || "Wallet payment failed. Please use card below.");
         setIsProcessing(false);
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        // Stripe captured payment: lock form against duplicate charges
+        setIsPaymentCaptured(true);
         let confirmData: any = null;
         try {
           const confirmRes = await fetch("/api/checkout/confirm-order", {
@@ -195,15 +205,18 @@ function InnerPaymentForm({
             }),
           });
           confirmData = await confirmRes.json();
-          if (!confirmRes.ok || !confirmData.success) {
-            console.warn("[Checkout] confirm-order returned non-ok status:", confirmData);
+          if (confirmRes.ok && confirmData.success) {
+            setIsProcessing(false);
+            onPaymentSuccess(orderId, confirmData?.viewToken, confirmData?.status);
+            return;
           }
         } catch (confirmErr) {
           console.warn("[Checkout] Notice confirming order:", confirmErr);
         }
 
+        // Paid by customer, but server fulfillment delay or outage: transition to reconciling state
         setIsProcessing(false);
-        onPaymentSuccess(orderId, confirmData?.viewToken, confirmData?.status);
+        onPaymentSuccess(orderId, null, "RECONCILING");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Payment error occurred";
@@ -322,6 +335,8 @@ function InnerPaymentForm({
         setErrorMessage(error.message || "Payment declined. Please check your card information.");
         setIsProcessing(false);
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        // Stripe captured payment: lock form against duplicate charges
+        setIsPaymentCaptured(true);
         let confirmData: any = null;
         try {
           const confirmRes = await fetch("/api/checkout/confirm-order", {
@@ -334,15 +349,18 @@ function InnerPaymentForm({
             }),
           });
           confirmData = await confirmRes.json();
-          if (!confirmRes.ok || !confirmData.success) {
-            console.warn("[Checkout] confirm-order returned non-ok status:", confirmData);
+          if (confirmRes.ok && confirmData.success) {
+            setIsProcessing(false);
+            onPaymentSuccess(orderId, confirmData?.viewToken, confirmData?.status);
+            return;
           }
         } catch (confirmErr) {
           console.warn("[Checkout] Notice confirming order:", confirmErr);
         }
 
+        // Paid by customer, but server fulfillment delay or outage: transition to reconciling state
         setIsProcessing(false);
-        onPaymentSuccess(orderId, confirmData?.viewToken, confirmData?.status);
+        onPaymentSuccess(orderId, null, "RECONCILING");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Payment error occurred";
@@ -693,10 +711,15 @@ function InnerPaymentForm({
 
         <button
           type="submit"
-          disabled={isProcessing || (!isZeroCost && !isMock && !isPaymentElementReady)}
+          disabled={isProcessing || isPaymentCaptured || (!isZeroCost && !isMock && !isPaymentElementReady)}
           className="px-8 py-3.5 bg-stone-900 hover:bg-black disabled:bg-stone-300 text-white font-semibold rounded-xl text-sm transition shadow-sm flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
         >
-          {isProcessing ? (
+          {isPaymentCaptured ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+              <span>Payment Captured • Finalizing Order...</span>
+            </>
+          ) : isProcessing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
               <span>Verifying &amp; Authorizing Order...</span>
@@ -719,7 +742,8 @@ function InnerPaymentForm({
         <button
           type="button"
           onClick={onBack}
-          className="px-3 py-2 text-stone-600 hover:text-stone-900 text-xs font-semibold flex items-center gap-1"
+          disabled={isPaymentCaptured}
+          className="px-3 py-2 text-stone-600 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 disabled:opacity-40"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Address</span>
@@ -727,10 +751,15 @@ function InnerPaymentForm({
 
         <button
           type="submit"
-          disabled={isProcessing || (!isZeroCost && !isMock && !isPaymentElementReady)}
+          disabled={isProcessing || isPaymentCaptured || (!isZeroCost && !isMock && !isPaymentElementReady)}
           className="px-5 py-2.5 bg-stone-900 hover:bg-black disabled:bg-stone-300 text-white font-semibold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
         >
-          {isProcessing ? (
+          {isPaymentCaptured ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+              <span>Payment Received...</span>
+            </>
+          ) : isProcessing ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
             <>

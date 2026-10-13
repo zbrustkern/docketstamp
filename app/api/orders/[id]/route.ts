@@ -55,11 +55,14 @@ export async function GET(
     }
 
     // Check authorization:
-    // 1. URL search param ?token=...
+    // 1. URL search param ?token=... or ?viewToken=...
     // 2. Header x-view-token
     // 3. Admin authorization
     const url = new URL(req.url);
-    const token = url.searchParams.get("token") || req.headers.get("x-view-token");
+    const token =
+      url.searchParams.get("token") ||
+      url.searchParams.get("viewToken") ||
+      req.headers.get("x-view-token");
     const adminKey = req.headers.get("x-admin-key");
 
     const isAuthorized =
