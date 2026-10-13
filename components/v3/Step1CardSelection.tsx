@@ -73,7 +73,7 @@ export function Step1CardSelection({
           {/* Pedigree tag */}
           <div className="flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
             <Feather className="w-3.5 h-3.5 text-stone-600" />
-            <span>Luxury 120 lb archival cardstock • Real ballpoint inking</span>
+            <span>Curated cardstock • Real ballpoint inking</span>
           </div>
         </div>
 
@@ -81,10 +81,10 @@ export function Step1CardSelection({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-stone-800">
           <div className="space-y-0.5">
             <h1 className="text-lg sm:text-xl font-serif font-bold text-stone-900 tracking-tight">
-              Ready-Made Stationery Leaf Collection
+              Curated Greeting Card Collection
             </h1>
             <p className="text-xs text-stone-600">
-              Select an authentic front leaf below, or commission custom artwork with Studio AI.
+              Select a curated card below, or create custom artwork with Studio AI.
             </p>
           </div>
           <div className="inline-flex items-center gap-1.5 bg-amber-50/80 border border-amber-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-amber-900 shrink-0 self-start sm:self-auto">
@@ -150,8 +150,8 @@ export function Step1CardSelection({
                   : "border-stone-200/90 hover:border-stone-300 hover:shadow-md"
               }`}
             >
-              {/* True vertical A2 proportions (5:7 ratio) */}
-              <div className="relative aspect-[5/7] w-full bg-stone-100 overflow-hidden">
+              {/* True vertical Folded A2 proportions (17:22 ratio) */}
+              <div className="relative aspect-[17/22] w-full bg-stone-100 overflow-hidden">
                 <Image
                   src={preset.imageUrl}
                   alt={preset.title}
@@ -179,21 +179,19 @@ export function Step1CardSelection({
                     setZoomPreset(preset);
                   }}
                   className="absolute bottom-2.5 right-2.5 p-1.5 rounded-full bg-white/90 text-stone-700 hover:text-black hover:bg-white shadow-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Zoom card leaf"
+                  title="Zoom card"
                   aria-label={`Preview ${preset.title}`}
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
                 </button>
-
-                {/* Occasion pill tag on image */}
-                <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[10px] font-semibold uppercase tracking-wider text-stone-700 shadow-2xs">
-                  {preset.occasion}
-                </span>
               </div>
 
               {/* Card Meta Info */}
               <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 bg-white">
                 <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-800 block mb-1">
+                    {preset.occasion}
+                  </span>
                   <h3 className="font-serif font-bold text-sm text-stone-900 line-clamp-1 group-hover:text-amber-800 transition">
                     {preset.title}
                   </h3>
@@ -335,7 +333,7 @@ export function Step1CardSelection({
               </button>
             </div>
 
-            <div className="relative aspect-[5/7] w-full rounded-xl overflow-hidden shadow-inner border border-stone-200">
+            <div className="relative aspect-[17/22] w-full rounded-xl overflow-hidden shadow-inner border border-stone-200">
               <Image
                 src={zoomPreset.imageUrl}
                 alt={zoomPreset.title}
@@ -356,7 +354,7 @@ export function Step1CardSelection({
               }}
               className="w-full py-2.5 bg-stone-900 hover:bg-black text-white rounded-xl text-xs font-semibold transition"
             >
-              Select This Card Leaf
+              Select This Card
             </button>
           </div>
         </div>
