@@ -156,58 +156,73 @@ export function Step3EnvelopeAddressing({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* SECTION 1: RECIPIENT ("Send to") */}
         <div className="bg-white rounded-2xl p-5 border border-stone-200/90 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-stone-100 pb-2.5">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
             <h2 className="text-sm font-bold text-stone-900">
               Send to
             </h2>
+            <span className="text-[11px] font-normal text-emerald-800 bg-emerald-50 border border-emerald-200/70 rounded-md px-2 py-0.5">
+              Phone autofill ready
+            </span>
           </div>
 
           {/* Recipient Full Name */}
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
+            <label htmlFor="shipping-name" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
               Recipient name
             </label>
             <input
+              id="shipping-name"
               type="text"
               name="recipientName"
               autoComplete="shipping name"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
               value={recipient.fullName}
               onChange={(e) => onChangeRecipient("fullName", e.target.value)}
-              placeholder="e.g. Eleanor Vance"
-              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+              placeholder="First and last name"
+              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
             />
           </div>
 
           {/* Street Address */}
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
+            <label htmlFor="shipping-street1" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
               Street address
             </label>
             <input
+              id="shipping-street1"
               type="text"
               name="shippingStreet1"
               autoComplete="shipping address-line1"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
               value={recipient.street1}
               onChange={(e) => onChangeRecipient("street1", e.target.value)}
-              placeholder="e.g. 456 Colorado Blvd"
-              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+              placeholder="Street address (e.g. 456 Colorado Blvd)"
+              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
             />
           </div>
 
           {/* Apt/Suite Toggle & Field */}
           {showRecipientApt ? (
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
+              <label htmlFor="shipping-street2" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                 Apartment, Suite, Unit
               </label>
               <input
+                id="shipping-street2"
                 type="text"
                 name="shippingStreet2"
                 autoComplete="shipping address-line2"
+                autoCapitalize="words"
+                autoCorrect="off"
+                spellCheck={false}
                 value={recipient.street2 || ""}
                 onChange={(e) => onChangeRecipient("street2", e.target.value)}
-                placeholder="e.g. Apt 4B or Suite 200"
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+                placeholder="Apt, Suite, Unit (optional)"
+                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
               />
             </div>
           ) : (
@@ -224,26 +239,31 @@ export function Step3EnvelopeAddressing({
           {/* Responsive City, State, ZIP Layout: City full width, State & ZIP below */}
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
+              <label htmlFor="shipping-city" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                 City
               </label>
               <input
+                id="shipping-city"
                 type="text"
                 name="shippingCity"
                 autoComplete="shipping address-level2"
+                autoCapitalize="words"
+                autoCorrect="off"
+                spellCheck={false}
                 value={recipient.city}
                 onChange={(e) => onChangeRecipient("city", e.target.value)}
-                placeholder="Denver"
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+                placeholder="City (e.g. Denver)"
+                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label htmlFor="shipping-state" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                   State
                 </label>
                 <select
+                  id="shipping-state"
                   name="shippingState"
                   autoComplete="shipping address-level1"
                   value={recipient.state}
@@ -260,19 +280,22 @@ export function Step3EnvelopeAddressing({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label htmlFor="shipping-zip" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                   ZIP Code
                 </label>
                 <input
+                  id="shipping-zip"
                   type="text"
                   name="shippingZip"
                   autoComplete="shipping postal-code"
                   inputMode="numeric"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={recipient.zip}
                   onChange={(e) => onChangeRecipient("zip", e.target.value)}
                   placeholder="80206"
                   maxLength={10}
-                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-mono"
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-mono"
                 />
               </div>
             </div>
@@ -289,50 +312,62 @@ export function Step3EnvelopeAddressing({
 
           {/* Sender Full Name */}
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
+            <label htmlFor="billing-name" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
               Your name
             </label>
             <input
+              id="billing-name"
               type="text"
               name="senderName"
               autoComplete="billing name"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
               value={sender.fullName}
               onChange={(e) => onChangeSender("fullName", e.target.value)}
-              placeholder="e.g. Thomas Miller"
-              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+              placeholder="Your first and last name"
+              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
             />
           </div>
 
           {/* Street Address */}
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
+            <label htmlFor="billing-street1" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
               Your street address
             </label>
             <input
+              id="billing-street1"
               type="text"
               name="billingStreet1"
               autoComplete="billing address-line1"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
               value={sender.street1}
               onChange={(e) => onChangeSender("street1", e.target.value)}
-              placeholder="e.g. 123 North Michigan Ave"
-              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+              placeholder="Your street address"
+              className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
             />
           </div>
 
           {/* Sender Apt/Suite Toggle & Field */}
           {showSenderApt ? (
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
+              <label htmlFor="billing-street2" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                 Apartment, Suite, Unit
               </label>
               <input
+                id="billing-street2"
                 type="text"
                 name="billingStreet2"
                 autoComplete="billing address-line2"
+                autoCapitalize="words"
+                autoCorrect="off"
+                spellCheck={false}
                 value={sender.street2 || ""}
                 onChange={(e) => onChangeSender("street2", e.target.value)}
-                placeholder="e.g. Apt 2A"
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+                placeholder="Apt, Suite, Unit (optional)"
+                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
               />
             </div>
           ) : (
@@ -349,26 +384,31 @@ export function Step3EnvelopeAddressing({
           {/* Responsive City, State, ZIP Layout */}
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
+              <label htmlFor="billing-city" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                 City
               </label>
               <input
+                id="billing-city"
                 type="text"
                 name="billingCity"
                 autoComplete="billing address-level2"
+                autoCapitalize="words"
+                autoCorrect="off"
+                spellCheck={false}
                 value={sender.city}
                 onChange={(e) => onChangeSender("city", e.target.value)}
-                placeholder="Chicago"
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
+                placeholder="City (e.g. Chicago)"
+                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-sans"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label htmlFor="billing-state" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                   State
                 </label>
                 <select
+                  id="billing-state"
                   name="billingState"
                   autoComplete="billing address-level1"
                   value={sender.state}
@@ -385,19 +425,22 @@ export function Step3EnvelopeAddressing({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label htmlFor="billing-zip" className="block text-xs font-semibold text-stone-700 mb-1 cursor-pointer">
                   ZIP Code
                 </label>
                 <input
+                  id="billing-zip"
                   type="text"
                   name="billingZip"
                   autoComplete="billing postal-code"
                   inputMode="numeric"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={sender.zip}
                   onChange={(e) => onChangeSender("zip", e.target.value)}
                   placeholder="60601"
                   maxLength={10}
-                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-mono"
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-base text-stone-900 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white font-mono"
                 />
               </div>
             </div>

@@ -405,20 +405,18 @@ export function EntryPrototypeClient({
     dispatch({ type: "UPDATE_NOTE", payload: { salutation: newSalutation } });
     if (!userCustomizedRecipientName) {
       const extracted = extractRecipientName(newSalutation);
-      if (extracted) {
-        setRecipient((prev) => ({ ...prev, fullName: extracted }));
-        dispatch({
-          type: "UPDATE_RECIPIENT",
-          payload: {
-            name: extracted,
-            addressLine1: recipient.street1,
-            addressLine2: recipient.street2,
-            city: recipient.city,
-            state: recipient.state,
-            zip: recipient.zip,
-          },
-        });
-      }
+      setRecipient((prev) => ({ ...prev, fullName: extracted }));
+      dispatch({
+        type: "UPDATE_RECIPIENT",
+        payload: {
+          name: extracted,
+          addressLine1: recipient.street1,
+          addressLine2: recipient.street2,
+          city: recipient.city,
+          state: recipient.state,
+          zip: recipient.zip,
+        },
+      });
     }
   };
 
@@ -428,19 +426,17 @@ export function EntryPrototypeClient({
     dispatch({ type: "UPDATE_NOTE", payload: { signOff: newSignOff } });
     if (!userCustomizedSenderName) {
       const extracted = extractSenderName(newSignOff);
-      if (extracted) {
-        setSender((prev) => ({ ...prev, fullName: extracted }));
-        dispatch({
-          type: "UPDATE_SENDER",
-          payload: {
-            name: extracted,
-            addressLine1: sender.street1,
-            city: sender.city,
-            state: sender.state,
-            zip: sender.zip,
-          },
-        });
-      }
+      setSender((prev) => ({ ...prev, fullName: extracted }));
+      dispatch({
+        type: "UPDATE_SENDER",
+        payload: {
+          name: extracted,
+          addressLine1: sender.street1,
+          city: sender.city,
+          state: sender.state,
+          zip: sender.zip,
+        },
+      });
     }
   };
 

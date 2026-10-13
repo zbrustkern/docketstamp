@@ -29,20 +29,37 @@ import { evaluateCheckoutInitTransition } from "@/lib/payment-mode";
 
 export function extractRecipientName(salutation: string): string {
   if (!salutation) return "";
-  let cleaned = salutation.trim();
-  cleaned = cleaned.replace(/^(dear|dearest|to|hello|hi|hey)[:,\s]+\s*/i, "");
+  const trimmed = salutation.trim();
+  // Solitary greeting prefixes or single characters while typing (e.g. "D", "De", "Dear", "Hello")
+  if (/^(d|de|dea|dear|dearest|to|hello|hi|hey|happy)$/i.test(trimmed)) {
+    return "";
+  }
+  let cleaned = trimmed.replace(/^(dear|dearest|to|hello|hi|hey)[:,\s]+\s*/i, "");
   cleaned = cleaned.replace(/[,!.:;]+$/, "").trim();
+  // Strip bracketed template placeholders (e.g. "[Friend's Name]", "[Name]")
+  cleaned = cleaned.replace(/^\[.*\]$/, "").trim();
+  if (cleaned.length < 2 || /^(dear|dearest|to|hello|hi|hey)$/i.test(cleaned)) {
+    return "";
+  }
   return cleaned;
 }
 
 export function extractSenderName(signOff: string): string {
   if (!signOff) return "";
-  let cleaned = signOff.trim();
-  cleaned = cleaned.replace(
+  const trimmed = signOff.trim();
+  if (/^(w|wa|war|warm|warmly|l|lo|lov|love|s|sin|sinc|sincerely|b|be|bes|best)$/i.test(trimmed)) {
+    return "";
+  }
+  let cleaned = trimmed.replace(
     /^(warmly|love|with love|sincerely|best regards|regards|best|cheers|yours truly|yours|affectionately|fondly|all the best)[,:\s]+/i,
     ""
   );
   cleaned = cleaned.replace(/[,!.:;]+$/, "").trim();
+  // Strip bracketed template placeholders (e.g. "[Your Name]")
+  cleaned = cleaned.replace(/^\[.*\]$/, "").trim();
+  if (cleaned.length < 2 || /^(warmly|love|sincerely|best|cheers)$/i.test(cleaned)) {
+    return "";
+  }
   return cleaned;
 }
 
@@ -75,13 +92,13 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
 
   // 3. Note Composition State (Step 2)
   const [salutation, setSalutation] = useState<string>(
-    props?.initialSalutation || "Dear Eleanor,"
+    props?.initialSalutation || ""
   );
   const [bodyNote, setBodyNote] = useState<string>(
-    props?.initialNote || CARD_PRESETS[0].defaultHandwrittenNote
+    props?.initialNote || ""
   );
   const [signOff, setSignOff] = useState<string>(
-    props?.initialSignOff || "Warmly, Thomas"
+    props?.initialSignOff || ""
   );
   const [fontStyleId, setFontStyleId] = useState<string>("hwDavid");
 
@@ -91,7 +108,7 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
 
   // 4. Envelope Addressing State (Step 3)
   const [recipient, setRecipient] = useState<AddressData>({
-    fullName: "Eleanor Vance",
+    fullName: "",
     street1: "",
     street2: "",
     city: "",
@@ -100,7 +117,7 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
   });
 
   const [sender, setSender] = useState<AddressData>({
-    fullName: "Thomas Miller",
+    fullName: "",
     street1: "",
     city: "",
     state: "",
@@ -199,9 +216,7 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
     setSalutation(newSalutation);
     if (!userCustomizedRecipientName) {
       const extracted = extractRecipientName(newSalutation);
-      if (extracted) {
-        setRecipient((prev) => ({ ...prev, fullName: extracted }));
-      }
+      setRecipient((prev) => ({ ...prev, fullName: extracted }));
     }
   };
 
@@ -210,9 +225,7 @@ export function TargetPurchaseExperience(props?: TargetPurchaseExperienceProps) 
     setSignOff(newSignOff);
     if (!userCustomizedSenderName) {
       const extracted = extractSenderName(newSignOff);
-      if (extracted) {
-        setSender((prev) => ({ ...prev, fullName: extracted }));
-      }
+      setSender((prev) => ({ ...prev, fullName: extracted }));
     }
   };
 
