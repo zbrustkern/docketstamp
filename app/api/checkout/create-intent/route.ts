@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { saveOrder, getDiscountCode } from "@/lib/firebase-admin";
 import { createCardPaymentIntent, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
-import { PaymentModeConfigError, normalizeStripeSecretKey } from "@/lib/payment-mode";
+import { PaymentModeConfigError, normalizeStripeSecretKey, resolvePaymentMode } from "@/lib/payment-mode";
 import { validatePersonalSender } from "@/lib/order-processor";
 import { validateDiscount } from "@/lib/discount";
 import { Order, MailingAddress, RecipientOccasion } from "@/lib/types";
@@ -195,12 +195,15 @@ export async function POST(req: NextRequest) {
     await saveOrder(orderRecord);
     await maybeSaveReminder();
 
+    const resolvedMode = resolvePaymentMode();
     const publishableKey =
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
       process.env["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"] ||
       process.env.STRIPE_PUBLISHABLE_KEY ||
       process.env["stripe-publishable-key"] ||
-      null;
+      (resolvedMode === "stripe_test"
+        ? "pk_test_51UIUjfQRpUiJEWIAEBVsU9gEPGjYg84rOZRarlTUfW057pYo1YcbkHv00h288Bth0582JDovGyvz1ZfSPen6VSYP00u7h8Ve2Y"
+        : null);
 
     return NextResponse.json({
       orderId,

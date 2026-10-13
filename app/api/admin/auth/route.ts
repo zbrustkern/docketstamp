@@ -3,8 +3,10 @@ import {
   verifyAdminPassphrase,
   generateAdminSessionToken,
   isValidAdminSessionToken,
+  isAuthorizedAdminEmail,
   ADMIN_COOKIE_NAME,
 } from "@/lib/admin-auth";
+import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import {
   getClientIp,
   checkAdminRateLimit,
@@ -34,7 +36,55 @@ export async function POST(req: NextRequest) {
     const clientIp = getClientIp(req);
     const userAgent = req.headers.get("user-agent") || undefined;
 
-    // 1. Check if IP is currently locked out
+    const body = await req.json().catch(() => ({}));
+    const authHeader = req.headers.get("authorization");
+    const idToken =
+      body?.idToken ||
+      (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null);
+
+    // 1. Firebase ID Token Auth: Account-bound to authorized emails (zbrustkern@gmail.com, sentral@gmail.com)
+    if (idToken) {
+      const decoded = await verifyFirebaseIdToken(idToken);
+      if (!decoded) {
+        return NextResponse.json(
+          { error: "Invalid or expired Firebase authentication token." },
+          { status: 401 }
+        );
+      }
+
+      if (!decoded.email || !isAuthorizedAdminEmail(decoded.email)) {
+        console.warn(`[AdminAuth] Access denied for user: ${decoded.email || decoded.uid}`);
+        return NextResponse.json(
+          {
+            error: `Access denied. The account (${decoded.email || decoded.uid}) is not authorized for administrator access.`,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Successful verified admin user
+      await clearAdminFailedAttempts(clientIp);
+      const token = generateAdminSessionToken(decoded.email);
+      const response = NextResponse.json({
+        success: true,
+        email: decoded.email,
+        authType: "firebase_user",
+      });
+
+      response.cookies.set({
+        name: ADMIN_COOKIE_NAME,
+        value: token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 60 * 8,
+      });
+
+      return response;
+    }
+
+    // 2. Passphrase Auth: Check if IP is currently locked out before processing passphrase
     const rateLimit = await checkAdminRateLimit(clientIp);
     if (!rateLimit.allowed) {
       const minutes = Math.ceil((rateLimit.retryAfterSeconds || 60) / 60);
@@ -55,7 +105,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json().catch(() => ({}));
     const passphrase = body?.passphrase;
 
     // 2. Validate passphrase

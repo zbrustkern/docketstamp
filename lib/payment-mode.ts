@@ -126,9 +126,15 @@ export function resolvePaymentMode(
     env.ALLOW_LOCAL_MOCK_PAYMENTS === "true" ||
     env.ALLOW_LOCAL_MOCK_PAYMENTS === "1";
 
-  const allowTestInProduction =
+  const isStagingEnvironment =
     env.IS_PREVIEW_TEST_ENVIRONMENT === "true" ||
-    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "true";
+    env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "true" ||
+    env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    (typeof env.K_SERVICE === "string" && env.K_SERVICE.includes("staging")) ||
+    (typeof env.FIREBASE_CONFIG === "string" && env.FIREBASE_CONFIG.includes("sendmynotes-staging"));
+
+  const allowTestInProduction = isStagingEnvironment;
 
   if (isProduction) {
     if (keyType === "empty" || keyType === "placeholder") {

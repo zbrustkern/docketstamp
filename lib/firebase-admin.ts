@@ -400,7 +400,7 @@ export async function verifyFirebaseIdToken(
       const uid = cleanToken.replace("mock_token_", "");
       return {
         uid,
-        email: `${uid}@example.com`,
+        email: uid.includes("@") ? uid : `${uid}@example.com`,
         email_verified: true,
       } as unknown as admin.auth.DecodedIdToken;
     }
