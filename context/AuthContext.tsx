@@ -37,7 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchAccount = async (currentUser: User) => {
     try {
-      const res = await fetch(`/api/account?uid=${currentUser.uid}&email=${encodeURIComponent(currentUser.email || "")}`);
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(
+        `/api/account?uid=${currentUser.uid}&email=${encodeURIComponent(currentUser.email || "")}`,
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.user) {
@@ -46,7 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Initialize new UserAccount record
           const initRes = await fetch("/api/account", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
             body: JSON.stringify({
               uid: currentUser.uid,
               email: currentUser.email || "",
@@ -195,9 +206,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    const idToken = await user.getIdToken();
     const res = await fetch("/api/account", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
       body: JSON.stringify({
         uid: user.uid,
         email: user.email || account?.email || "",
@@ -218,11 +233,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAddress = async (addressId: string) => {
     if (!user) return;
 
+    const idToken = await user.getIdToken();
     const currentAddresses = account?.savedAddresses || [];
     const updatedAddresses = currentAddresses.filter((a) => a.id !== addressId);
     const res = await fetch("/api/account", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
       body: JSON.stringify({
         uid: user.uid,
         email: user.email || account?.email || "",
@@ -243,9 +262,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateDefaultReturnAddress = async (address: MailingAddress) => {
     if (!user) return;
 
+    const idToken = await user.getIdToken();
     const res = await fetch("/api/account", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
       body: JSON.stringify({
         uid: user.uid,
         email: user.email || account?.email || "",

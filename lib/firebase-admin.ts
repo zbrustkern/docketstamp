@@ -383,6 +383,37 @@ function initializeFirebase() {
 
 const { db: firestoreDb, isMock: isFirestoreMock } = initializeFirebase();
 
+/**
+ * Verifies a client-supplied Firebase ID token using Firebase Admin Auth.
+ * Returns the decoded token payload or null if invalid or missing.
+ */
+export async function verifyFirebaseIdToken(
+  token?: string | null
+): Promise<admin.auth.DecodedIdToken | null> {
+  if (!token || typeof token !== "string" || token.trim().length === 0) {
+    return null;
+  }
+  const cleanToken = token.trim();
+  if (admin.apps.length === 0 || isFirestoreMock) {
+    // In mock mode / local test environment
+    if (cleanToken.startsWith("mock_token_")) {
+      const uid = cleanToken.replace("mock_token_", "");
+      return {
+        uid,
+        email: `${uid}@example.com`,
+        email_verified: true,
+      } as unknown as admin.auth.DecodedIdToken;
+    }
+    return null;
+  }
+  try {
+    return await admin.auth().verifyIdToken(cleanToken);
+  } catch (err) {
+    console.warn("[Auth] Failed to verify Firebase ID token:", err);
+    return null;
+  }
+}
+
 export { firestoreDb, isFirestoreMock };
 
 // Collection Helpers

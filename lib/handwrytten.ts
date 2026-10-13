@@ -100,9 +100,65 @@ export async function getOrCreateBackplateImageId(apiKey: string): Promise<numbe
  * 3. Create custom folded portrait card (dimension_id: 4, cover_id, back_id, header_text)
  * 4. Dispatch singleStepOrder with flat recipient & sender fields
  */
+/**
+ * Validates cover image path or URL against path traversal, insecure schemes, and SSRF targets.
+ */
+export function validateCoverImagePathOrUrl(imageUrl: string): void {
+  if (!imageUrl || typeof imageUrl !== "string") {
+    throw new Error("Missing or invalid cover image URL");
+  }
+
+  if (imageUrl.startsWith("data:")) {
+    const matches = imageUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || !matches[2]) {
+      throw new Error("Invalid base64 data URI for card cover art");
+    }
+  } else if (imageUrl.startsWith("/") && !imageUrl.startsWith("//")) {
+    if (imageUrl.includes("..")) {
+      throw new Error("Invalid image path: traversal outside public directory is prohibited");
+    }
+    const publicDir = path.resolve(process.cwd(), "public");
+    const localFilePath = path.resolve(publicDir, "." + imageUrl);
+
+    if (!localFilePath.startsWith(publicDir + path.sep)) {
+      throw new Error("Invalid image path: traversal outside public directory is prohibited");
+    }
+  } else {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(imageUrl);
+    } catch {
+      throw new Error("Invalid cover image URL format");
+    }
+
+    if (parsedUrl.protocol !== "https:") {
+      throw new Error("Only secure HTTPS cover image URLs are permitted");
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname.endsWith(".internal") ||
+      hostname.endsWith(".local") ||
+      hostname === "169.254.169.254" ||
+      hostname === "metadata.google.internal" ||
+      /^127\./.test(hostname) ||
+      /^10\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+      /^0\./.test(hostname)
+    ) {
+      throw new Error("Prohibited host for cover image fetch");
+    }
+  }
+}
+
 export async function fulfillHandwryttenOrder(
   params: HandwryttenOrderParams
 ): Promise<HandwryttenOrderResult> {
+  // Validate image safety (containment & SSRF) immediately
+  validateCoverImagePathOrUrl(params.imageUrl);
+
   const apiKey =
     process.env.HANDWRYTTEN_API_KEY || process.env["handwrytten-api-key"];
 
@@ -144,7 +200,17 @@ export async function fulfillHandwryttenOrder(
       }
     } else if (params.imageUrl.startsWith("/") && !params.imageUrl.startsWith("//")) {
       // Local public asset (e.g. /presets/birthday-balloons.jpg)
-      const localFilePath = path.join(process.cwd(), "public", params.imageUrl);
+      if (params.imageUrl.includes("..")) {
+        throw new Error("Invalid image path: traversal outside public directory is prohibited");
+      }
+      const publicDir = path.resolve(process.cwd(), "public");
+      const localFilePath = path.resolve(publicDir, "." + params.imageUrl);
+
+      // Enforce strict containment within the public directory
+      if (!localFilePath.startsWith(publicDir + path.sep)) {
+        throw new Error("Invalid image path: traversal outside public directory is prohibited");
+      }
+
       if (fs.existsSync(localFilePath)) {
         console.log("[Handwrytten] Reading cover image from local public directory:", localFilePath);
         const fileBuffer = fs.readFileSync(localFilePath);
@@ -153,7 +219,7 @@ export async function fulfillHandwryttenOrder(
         fileName = path.basename(localFilePath);
       } else {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://sendmynotes.com";
-        const fullUrl = `${baseUrl.replace(/\/$/, "")}${params.imageUrl}`;
+        const fullUrl = `${baseUrl.replace(/\/$/, "")}${params.imageUrl.startsWith("/") ? "" : "/"}${params.imageUrl}`;
         console.log("[Handwrytten] Fetching cover image from reconstructed URL:", fullUrl);
         const imgRes = await fetch(fullUrl);
         if (!imgRes.ok) {
@@ -163,11 +229,49 @@ export async function fulfillHandwryttenOrder(
       }
     } else {
       console.log("[Handwrytten] Fetching cover image from URL:", params.imageUrl);
-      const imgRes = await fetch(params.imageUrl);
-      if (!imgRes.ok) {
-        throw new Error(`Failed to download cover image (${imgRes.status}): ${imgRes.statusText}`);
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(params.imageUrl);
+      } catch {
+        throw new Error("Invalid cover image URL format");
       }
-      imgBuffer = await imgRes.arrayBuffer();
+
+      if (parsedUrl.protocol !== "https:") {
+        throw new Error("Only secure HTTPS cover image URLs are permitted");
+      }
+
+      const hostname = parsedUrl.hostname.toLowerCase();
+      // Block local, private, and cloud metadata destinations
+      if (
+        hostname === "localhost" ||
+        hostname.endsWith(".internal") ||
+        hostname.endsWith(".local") ||
+        hostname === "169.254.169.254" ||
+        hostname === "metadata.google.internal" ||
+        /^127\./.test(hostname) ||
+        /^10\./.test(hostname) ||
+        /^192\.168\./.test(hostname) ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+        /^0\./.test(hostname)
+      ) {
+        throw new Error("Prohibited host for cover image fetch");
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        const imgRes = await fetch(params.imageUrl, { signal: controller.signal });
+        if (!imgRes.ok) {
+          throw new Error(`Failed to download cover image (${imgRes.status}): ${imgRes.statusText}`);
+        }
+        imgBuffer = await imgRes.arrayBuffer();
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (imgBuffer.byteLength > 15 * 1024 * 1024) {
+        throw new Error("Cover image exceeds 15MB size limit");
+      }
     }
 
     const formData = new FormData();

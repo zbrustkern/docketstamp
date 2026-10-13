@@ -5,11 +5,31 @@ import {
   getMetaTestEventCode,
   sendMetaCapiEvents,
 } from "@/lib/meta-conversions-api";
+import { verifyAdminAuth } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
   try {
+    // Enforce admin authorization guard
+    if (!verifyAdminAuth(req)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const testCode = body.testEventCode || getMetaTestEventCode();
+
+    if (!testCode) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Explicit testEventCode is required to prevent contaminating live ad measurement.",
+        },
+        { status: 400 }
+      );
+    }
+
     const token = getMetaAccessToken();
 
     if (!token) {

@@ -18,6 +18,7 @@
     "test:thematic": "tsx tests/thematic-sentiment.test.ts",
     "test:sync": "tsx tests/handwrytten-sync.test.ts",
     "test:security": "tsx tests/transaction-security.test.ts",
+    "test:security-review": "tsx tests/security-review-remediation.test.ts",
     "test:telemetry": "tsx tests/visitor-telemetry.test.ts",
     "test:flags": "tsx tests/feature-flags.test.ts",
     "test:target": "tsx tests/target-experience.test.ts",
@@ -46,7 +47,7 @@
     "next": "^15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "stripe": "^17.6.0"
   },
   "devDependencies": {
