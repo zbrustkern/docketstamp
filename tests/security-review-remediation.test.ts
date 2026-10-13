@@ -8,6 +8,7 @@ import {
 } from "../lib/admin-auth";
 import { POST as adminAuthPost } from "../app/api/admin/auth/route";
 import { resolvePaymentMode } from "../lib/payment-mode";
+import { getClientFirebaseConfig, getFirebaseAuth, STAGING_FIREBASE_CONFIG, PROD_FIREBASE_CONFIG } from "../lib/firebase-client";
 import { POST as testMetaCapiPost } from "../app/api/admin/test-meta-capi/route";
 import { GET as accountGet, POST as accountPost } from "../app/api/account/route";
 import { GET as remindersGet, POST as remindersPost, DELETE as remindersDelete } from "../app/api/reminders/route";
@@ -173,6 +174,41 @@ async function runSecurityRemediationTests() {
       K_SERVICE: "sendmynotes-staging",
     }) === "stripe_test",
     "Stripe test key in production environment with K_SERVICE=sendmynotes-staging resolves to stripe_test"
+  );
+
+  // Client Firebase configuration fallback and environment selection
+  const prodConfig = getClientFirebaseConfig();
+  assert(
+    Boolean(prodConfig.apiKey && prodConfig.apiKey.startsWith("AIzaSy")),
+    "Production client Firebase config has non-empty valid API key"
+  );
+  assert(
+    prodConfig.apiKey === PROD_FIREBASE_CONFIG.apiKey,
+    "Default client Firebase config matches production API key"
+  );
+
+  const prevEnv = process.env.FIREBASE_PROJECT_ID;
+  process.env.FIREBASE_PROJECT_ID = "sendmynotes-staging";
+  const stagingClientConfig = getClientFirebaseConfig();
+  assert(
+    stagingClientConfig.apiKey === STAGING_FIREBASE_CONFIG.apiKey,
+    "Staging environment resolves staging client Firebase API key"
+  );
+  assert(
+    stagingClientConfig.projectId === "sendmynotes-staging",
+    "Staging environment resolves staging projectId"
+  );
+  if (prevEnv) {
+    process.env.FIREBASE_PROJECT_ID = prevEnv;
+  } else {
+    delete process.env.FIREBASE_PROJECT_ID;
+  }
+
+  // Ensure getFirebaseAuth does not throw auth/invalid-api-key
+  const authInstance = getFirebaseAuth();
+  assert(
+    Boolean(authInstance && authInstance.app && authInstance.app.options.apiKey),
+    "getFirebaseAuth initializes successfully with non-empty API key"
   );
 
   // ---------------------------------------------------------------------------
