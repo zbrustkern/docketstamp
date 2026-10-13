@@ -662,6 +662,9 @@ export default function AdminDashboardPage() {
         const data = await res.json();
         if (data.authenticated) {
           setIsAuthenticated(true);
+          if (data.email) {
+            setAdminUserEmail(data.email);
+          }
           fetchMetrics();
           fetchIncidents();
           fetchDiscounts();

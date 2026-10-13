@@ -64,7 +64,9 @@ export function getAdminSessionSigningKey(): string {
 export function generateAdminSessionToken(adminEmail?: string): string {
   const signingKey = getAdminSessionSigningKey();
   const timestamp = Date.now();
-  const userTag = adminEmail ? `_${encodeURIComponent(adminEmail.toLowerCase())}` : "";
+  const userTag = adminEmail
+    ? `_${Buffer.from(adminEmail.toLowerCase().trim()).toString("hex")}`
+    : "";
   const payload = `smn_admin_${timestamp}${userTag}`;
   const signature = crypto
     .createHmac("sha256", signingKey)
@@ -82,7 +84,10 @@ export function isValidAdminSessionToken(token: string): boolean {
   if (!token || typeof token !== "string" || !token.includes(".")) return false;
   const signingKey = getAdminSessionSigningKey();
 
-  const [payload, signature] = token.split(".");
+  const lastDot = token.lastIndexOf(".");
+  if (lastDot === -1) return false;
+  const payload = token.substring(0, lastDot);
+  const signature = token.substring(lastDot + 1);
   if (!payload || !signature) return false;
 
   // Enforce payload format and timestamp expiration (allowing optional user tag)
@@ -111,6 +116,30 @@ export function isValidAdminSessionToken(token: string): boolean {
   }
 
   return crypto.timingSafeEqual(sigBuf, expBuf);
+}
+
+/**
+ * Safely extracts the email embedded in a valid session token (if present).
+ */
+export function getAdminSessionEmail(token: string): string | null {
+  if (!isValidAdminSessionToken(token)) return null;
+  const lastDot = token.lastIndexOf(".");
+  const payload = token.substring(0, lastDot);
+  const match = payload.match(/^smn_admin_\d+_(.+)$/);
+  if (!match) return null;
+  const rawTag = match[1];
+  if (/^[0-9a-fA-F]+$/.test(rawTag)) {
+    try {
+      return Buffer.from(rawTag, "hex").toString("utf8");
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return decodeURIComponent(rawTag);
+  } catch {
+    return rawTag;
+  }
 }
 
 /**
