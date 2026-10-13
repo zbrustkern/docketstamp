@@ -53,7 +53,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log("[Handwrytten Webhook] Received payload:", JSON.stringify(payload));
+    // Optional webhook secret validation if configured
+    const webhookSecret = process.env.HANDWRYTTEN_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const urlToken = req.nextUrl.searchParams.get("token") || req.nextUrl.searchParams.get("secret");
+      const headerToken = req.headers.get("x-webhook-token") || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+      const incomingToken = urlToken || headerToken;
+      if (!incomingToken || incomingToken !== webhookSecret) {
+        return NextResponse.json({ error: "Unauthorized webhook caller" }, { status: 401 });
+      }
+    }
 
     // Flexible extraction of Handwrytten order ID
     const nestedOrder =
@@ -63,13 +72,15 @@ export async function POST(req: NextRequest) {
 
     const rawOrderId =
       payload.order_id ||
-      payload.orderId ||
       payload.id ||
       nestedOrder?.id ||
       nestedOrder?.order_id;
 
+    // Log sanitized metadata only (never log full payload to avoid customer PII leaks)
+    console.log("[Handwrytten Webhook] Received webhook event for HW ID:", rawOrderId ? String(rawOrderId) : "unknown");
+
     if (!rawOrderId) {
-      console.warn("[Handwrytten Webhook] Received event without identifiable order_id:", payload);
+      console.warn("[Handwrytten Webhook] Received event without identifiable order_id");
       return NextResponse.json({
         received: true,
         warning: "No order_id found in payload",

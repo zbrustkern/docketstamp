@@ -11,8 +11,7 @@ function maskEmail(email?: string): string {
 
 function maskZip(zip?: string): string {
   if (!zip) return "";
-  if (zip.length <= 3) return "•••";
-  return `${zip.substring(0, 3)}••`;
+  return "•••••";
 }
 
 function sanitizeOrderForPublicView(order: Order): Order {
@@ -88,6 +87,32 @@ export async function GET(
   }
 }
 
+// Throttles brute-force attempts on order verification (max 5 failed attempts per 15 min window)
+const failedUnlockAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function checkUnlockRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = failedUnlockAttempts.get(key);
+  if (!entry || now > entry.resetAt) {
+    return true;
+  }
+  return entry.count < 5;
+}
+
+function recordFailedUnlock(key: string) {
+  const now = Date.now();
+  const entry = failedUnlockAttempts.get(key);
+  if (!entry || now > entry.resetAt) {
+    failedUnlockAttempts.set(key, { count: 1, resetAt: now + 15 * 60 * 1000 });
+  } else {
+    entry.count++;
+  }
+}
+
+function clearFailedUnlock(key: string) {
+  failedUnlockAttempts.delete(key);
+}
+
 /**
  * Verification endpoint: Allows the customer or recipient to unlock full details
  * by confirming the delivery ZIP code or purchaser email.
@@ -100,6 +125,16 @@ export async function POST(
     const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: "Missing order ID" }, { status: 400 });
+    }
+
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const rateLimitKey = `${clientIp}_${id}`;
+
+    if (!checkUnlockRateLimit(rateLimitKey)) {
+      return NextResponse.json(
+        { error: "Too many failed verification attempts. Please try again in 15 minutes." },
+        { status: 429 }
+      );
     }
 
     const order = await getOrderById(id);
@@ -127,11 +162,14 @@ export async function POST(
     }
 
     if (!isMatch) {
+      recordFailedUnlock(rateLimitKey);
       return NextResponse.json(
         { error: "Verification failed. The entered email or ZIP code does not match this order." },
         { status: 401 }
       );
     }
+
+    clearFailedUnlock(rateLimitKey);
 
     return NextResponse.json({
       success: true,

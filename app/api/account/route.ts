@@ -1,130 +1,86 @@
 import { NextRequest, NextResponse } from "next/server";
-import { firestoreDb, getOrdersCollection, sanitizeFirestoreData } from "@/lib/firebase-admin";
+import {
+  firestoreDb,
+  getOrdersCollection,
+  sanitizeFirestoreData,
+  verifyFirebaseIdToken,
+} from "@/lib/firebase-admin";
 import { UserAccount, Order, SavedAddress } from "@/lib/types";
 
 const USERS_COLLECTION = "users";
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const uid = searchParams.get("uid");
-    const email = searchParams.get("email");
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
 
-    if (!uid && !email) {
-      return NextResponse.json({ error: "Missing uid or email parameter" }, { status: 400 });
+    if (!token) {
+      return NextResponse.json(
+        { error: "Unauthorized: Missing authentication token" },
+        { status: 401 }
+      );
+    }
+
+    const decoded = await verifyFirebaseIdToken(token);
+    if (!decoded) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid or expired authentication token" },
+        { status: 401 }
+      );
+    }
+
+    const verifiedUid = decoded.uid;
+    const verifiedEmail = decoded.email?.toLowerCase();
+
+    const { searchParams } = new URL(req.url);
+    const requestedUid = searchParams.get("uid");
+    const requestedEmail = searchParams.get("email");
+
+    // Guard: Prevent accessing another user's account records
+    if (requestedUid && requestedUid !== verifiedUid) {
+      return NextResponse.json(
+        { error: "Forbidden: You cannot access another user's account." },
+        { status: 403 }
+      );
+    }
+
+    if (requestedEmail && verifiedEmail && requestedEmail.toLowerCase() !== verifiedEmail) {
+      return NextResponse.json(
+        { error: "Forbidden: You cannot access another user's email records." },
+        { status: 403 }
+      );
     }
 
     let user: UserAccount | null = null;
-
-    if (uid) {
-      const doc = await firestoreDb.collection(USERS_COLLECTION).doc(uid).get();
-      if (doc.exists) {
-        user = doc.data() as UserAccount;
-      }
+    const doc = await firestoreDb.collection(USERS_COLLECTION).doc(verifiedUid).get();
+    if (doc.exists) {
+      user = doc.data() as UserAccount;
     }
 
-    // Lookup user's past orders
-    const emailToQuery = (email || user?.email || "").toLowerCase();
-    const ordersSnapshot = await getOrdersCollection().get();
+    // Lookup user's past orders scoped strictly to verified UID and verified email
     const orders: Order[] = [];
+    const uidOrdersSnapshot = await getOrdersCollection()
+      .where("userId", "==", verifiedUid)
+      .get();
 
-    ordersSnapshot.forEach((doc) => {
-      const order = doc.data() as Order;
-      if (
-        (uid && order.userId === uid) ||
-        (emailToQuery && order.customerEmail?.toLowerCase() === emailToQuery)
-      ) {
-        orders.push(order);
-      }
+    uidOrdersSnapshot.forEach((d) => {
+      orders.push(d.data() as Order);
     });
 
-    orders.sort((a, b) => b.createdAt - a.createdAt);
+    if (verifiedEmail && decoded.email_verified) {
+      const emailOrdersSnapshot = await getOrdersCollection()
+        .where("customerEmail", "==", verifiedEmail)
+        .get();
 
-    // Auto-sync recipient addresses from past orders into savedAddresses if missing
-    if (user && orders.length > 0) {
-      let addressesUpdated = false;
-      const currentSaved: SavedAddress[] = [...(user.savedAddresses || [])];
-
-      for (const order of orders) {
-        if (!order.recipientAddress || !order.recipientAddress.street1) continue;
-        const r = order.recipientAddress;
-        const alreadyExists = currentSaved.some(
-          (a) =>
-            a.street1?.trim().toLowerCase() === r.street1?.trim().toLowerCase() &&
-            a.zip?.trim().toLowerCase() === r.zip?.trim().toLowerCase() &&
-            a.firstName?.trim().toLowerCase() === r.firstName?.trim().toLowerCase()
-        );
-
-        if (!alreadyExists) {
-          currentSaved.push({
-            id: `addr_order_${order.id || Date.now()}`,
-            firstName: r.firstName,
-            lastName: r.lastName,
-            street1: r.street1,
-            street2: r.street2 || "",
-            city: r.city,
-            state: r.state,
-            zip: r.zip,
-            country: r.country || "US",
-            label: `${r.firstName}'s Address`,
-          });
-          addressesUpdated = true;
+      emailOrdersSnapshot.forEach((d) => {
+        const order = d.data() as Order;
+        if (!orders.some((existing) => existing.id === order.id)) {
+          orders.push(order);
         }
-      }
-
-      if (addressesUpdated && uid) {
-        user.savedAddresses = currentSaved;
-        user.updatedAt = Date.now();
-        await firestoreDb
-          .collection(USERS_COLLECTION)
-          .doc(uid)
-          .set(sanitizeFirestoreData(user), { merge: true });
-      }
-    } else if (!user && uid && orders.length > 0) {
-      // Auto-initialize account document for this user using addresses from their orders
-      const orderSaved: SavedAddress[] = [];
-      for (const order of orders) {
-        if (!order.recipientAddress || !order.recipientAddress.street1) continue;
-        const r = order.recipientAddress;
-        const alreadyExists = orderSaved.some(
-          (a) =>
-            a.street1?.trim().toLowerCase() === r.street1?.trim().toLowerCase() &&
-            a.zip?.trim().toLowerCase() === r.zip?.trim().toLowerCase() &&
-            a.firstName?.trim().toLowerCase() === r.firstName?.trim().toLowerCase()
-        );
-        if (!alreadyExists) {
-          orderSaved.push({
-            id: `addr_order_${order.id || Date.now()}`,
-            firstName: r.firstName,
-            lastName: r.lastName,
-            street1: r.street1,
-            street2: r.street2 || "",
-            city: r.city,
-            state: r.state,
-            zip: r.zip,
-            country: r.country || "US",
-            label: `${r.firstName}'s Address`,
-          });
-        }
-      }
-
-      const initialUser: UserAccount = {
-        uid,
-        email: email || emailToQuery,
-        displayName: "",
-        savedAddresses: orderSaved,
-        savedCovers: [],
-        creditsBalance: 0,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-
-      await firestoreDb
-        .collection(USERS_COLLECTION)
-        .doc(uid)
-        .set(sanitizeFirestoreData(initialUser));
-      user = initialUser;
+      });
     }
+
+    orders.sort((a, b) => b.createdAt - a.createdAt);
 
     return NextResponse.json({
       user,
@@ -132,20 +88,52 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error retrieving account";
+    console.error("[Account GET Error]:", err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Unauthorized: Missing authentication token" },
+        { status: 401 }
+      );
+    }
+
+    const decoded = await verifyFirebaseIdToken(token);
+    if (!decoded) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid or expired authentication token" },
+        { status: 401 }
+      );
+    }
+
+    const verifiedUid = decoded.uid;
+    const verifiedEmail = decoded.email?.toLowerCase();
+
     const body = await req.json();
     const { uid, email, displayName, savedAddresses, addressToAdd, defaultReturnAddress } = body;
 
-    if (!uid || !email) {
-      return NextResponse.json({ error: "UID and email are required" }, { status: 400 });
+    if (!uid || uid !== verifiedUid) {
+      return NextResponse.json(
+        { error: "Forbidden: UID must match verified identity" },
+        { status: 403 }
+      );
     }
 
-    const userRef = firestoreDb.collection(USERS_COLLECTION).doc(uid);
+    if (email && verifiedEmail && email.toLowerCase() !== verifiedEmail) {
+      return NextResponse.json(
+        { error: "Forbidden: Email must match verified identity" },
+        { status: 403 }
+      );
+    }
+
+    const userRef = firestoreDb.collection(USERS_COLLECTION).doc(verifiedUid);
     const existingDoc = await userRef.get();
     const existingData = existingDoc.exists ? (existingDoc.data() as UserAccount) : null;
 
@@ -191,8 +179,8 @@ export async function POST(req: NextRequest) {
     }
 
     const userRecord: UserAccount = {
-      uid,
-      email,
+      uid: verifiedUid,
+      email: verifiedEmail || email || "",
       displayName: displayName ?? existingData?.displayName ?? "",
       savedAddresses: finalAddresses,
       ...(defaultReturnAddress !== undefined
