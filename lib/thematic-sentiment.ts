@@ -26,21 +26,23 @@ export async function generateThematicSentiments(params: {
     process.env.GOOGLE_GENAI_API_KEY;
 
   if (geminiApiKey && !geminiApiKey.includes("your_gemini_api_key_here")) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiApiKey,
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `You are the lead greeting card writer for Aster & Blanche, an ultra-luxury bespoke card studio that prints custom front artwork and robotic-pens real ballpoint ink inside notes.
+    const textModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    for (const model of textModels) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": geminiApiKey,
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `You are the lead greeting card writer for SendMyNotes, an ultra-luxury bespoke card studio that prints custom front artwork and robotic-pens real ballpoint ink inside notes.
 A customer just had custom artwork painted for the front cover with prompt: "${prompt}" for occasion: "${occasion}".
 
 Commercial cards (like Hallmark and American Greetings) connect the front art directly to the inside note with clever puns, witty hooks, or thematic references on the inside top, followed by a sincere personal handwritten note on the inside right leaf.
@@ -107,6 +109,7 @@ Respond ONLY with valid JSON matching this schema:
       console.warn("[Thematic Sentiment] Gemini API fallback notice:", err);
     }
   }
+}
 
   // Graceful Rule-Based / Keyword Fallback Engine
   return generateHeuristicThematicSentiments(prompt, occasion);

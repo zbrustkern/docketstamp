@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Sparkles, X, Wand2, Loader2, AlertCircle, Check, ArrowRight } from "lucide-react";
 import { OCCASIONS } from "@/lib/card-presets";
+import { CardFrontPreview } from "@/components/CardFrontPreview";
 
 interface CustomAiCommissionDrawerProps {
   isOpen: boolean;
@@ -84,6 +85,7 @@ export function CustomAiCommissionDrawer({
     imageUrl: string;
     prompt: string;
     occasion: string;
+    isMock?: boolean;
   } | null>(null);
 
   if (!isOpen) return null;
@@ -118,6 +120,7 @@ export function CustomAiCommissionDrawer({
         imageUrl: data.imageUrl,
         prompt: prompt.trim(),
         occasion,
+        isMock: Boolean(data.isMock),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error generating custom art";
@@ -144,15 +147,15 @@ export function CustomAiCommissionDrawer({
         {/* Header */}
         <div className="p-5 border-b border-stone-200 bg-white sticky top-0 z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-800">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <h2 id="ai-commission-title" className="font-serif text-lg font-bold text-stone-900 leading-tight">
-                Studio AI Art Commission
+                Create Custom Artwork
               </h2>
               <p className="text-xs text-stone-500">
-                Custom artwork painted by neural watercolor models (~15 seconds)
+                Describe your vision and we&apos;ll create custom cover artwork (~15 seconds)
               </p>
             </div>
           </div>
@@ -240,13 +243,13 @@ export function CustomAiCommissionDrawer({
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                  <span>Studio AI is Painting (~15s)...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                  <span>Creating your artwork (~15s)...</span>
                 </>
               ) : (
                 <>
-                  <Wand2 className="w-4 h-4 text-amber-400" />
-                  <span>Paint Custom Cover Artwork</span>
+                  <Wand2 className="w-4 h-4 text-emerald-400" />
+                  <span>Create Custom Artwork</span>
                 </>
               )}
             </button>
@@ -263,27 +266,35 @@ export function CustomAiCommissionDrawer({
           {generatedArt && (
             <div className="bg-white p-4 rounded-2xl border border-stone-300 shadow-sm space-y-3">
               <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
-                <span className="flex items-center gap-1.5 text-emerald-700">
-                  <Check className="w-4 h-4" /> Painted Successfully
-                </span>
-                <span className="text-stone-400 text-[11px]">True A2 Leaf (5:7)</span>
+                {generatedArt.isMock ? (
+                  <span className="flex items-center gap-1.5 text-amber-800">
+                    <Sparkles className="w-4 h-4 text-amber-700" /> Ready-made design matched
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-emerald-700">
+                    <Check className="w-4 h-4" /> Artwork Created
+                  </span>
+                )}
               </div>
-              <div className="relative aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl overflow-hidden shadow-md border border-stone-200 bg-stone-100">
-                <Image
-                  src={generatedArt.imageUrl}
-                  alt={generatedArt.prompt}
-                  fill
-                  className="object-cover"
-                  unoptimized={generatedArt.imageUrl.startsWith("http")}
+              <div className="w-full max-w-[240px] mx-auto">
+                <CardFrontPreview
+                  artworkUrl={generatedArt.imageUrl}
+                  title={generatedArt.prompt}
+                  priority
                 />
               </div>
               <p className="text-xs text-stone-600 text-center italic line-clamp-2">
                 &ldquo;{generatedArt.prompt}&rdquo;
               </p>
+              {generatedArt.isMock && (
+                <p className="text-[11px] text-stone-500 text-center">
+                  Custom creation is briefly resting. We matched this card from our collection for your theme.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleSelect}
-                className="w-full py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span>Select &amp; Write Note →</span>
               </button>

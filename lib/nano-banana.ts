@@ -152,9 +152,68 @@ export async function generateCoverArt(params: GenerateCoverParams): Promise<Gen
 
   const errors: string[] = [];
 
-  // 1. Google Gemini Native Image Generation (Nano Banana / Gemini 3.1 & 2.5 Flash Image)
+  // 1. Google Gemini / Imagen Native Image Generation
   if (geminiApiKey) {
-    // Strategy A: Modern Interactions API (Google GenAI recommended standard)
+    // Strategy 1: Google Imagen 3 Predict API (Official Google AI Studio Imagen 3 models)
+    const imagenModels = [
+      "imagen-3.0-generate-002",
+      "imagen-3.0-fast-generate-001",
+    ];
+
+    for (const model of imagenModels) {
+      try {
+        const predictUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${geminiApiKey}`;
+        const response = await fetch(predictUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": geminiApiKey,
+          },
+          body: JSON.stringify({
+            instances: [{ prompt: refinedPrompt }],
+            parameters: {
+              sampleCount: 1,
+              aspectRatio: "3:4",
+              outputMimeType: "image/jpeg",
+              personGeneration: "ALLOW_ADULT",
+              negativePrompt: ANTI_MOCKUP_NEGATIVE_PROMPT,
+            },
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const dataUrl = extractImageDataUrl(data);
+          if (dataUrl) {
+            console.log(`[Google Imagen] Successfully generated artwork via ${model}`);
+            const optimizedUrl = await optimizeCoverImage(dataUrl);
+            return {
+              imageUrl: optimizedUrl,
+              prompt,
+              occasion,
+              isMock: false,
+              aspectRatio,
+              provider: "gemini_imagen",
+            };
+          }
+        } else {
+          const errText = await response.text();
+          let parsedMsg = errText;
+          try {
+            const parsed = JSON.parse(errText);
+            parsedMsg = parsed.error?.message || errText;
+          } catch {}
+          console.warn(`[Google Imagen ${model}] API error (${response.status}):`, parsedMsg);
+          errors.push(`Imagen ${model} (${response.status}): ${parsedMsg}`);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[Google Imagen ${model}] Exception:`, msg);
+        errors.push(`Imagen ${model} network error: ${msg}`);
+      }
+    }
+
+    // Strategy 2: Modern Interactions API (Google GenAI recommended standard)
     const interactionModels = [
       "gemini-3.1-flash-image",
       "gemini-2.5-flash-image",
