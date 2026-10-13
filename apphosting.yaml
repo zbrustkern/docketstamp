@@ -27,11 +27,6 @@ env:
     availability:
       - RUNTIME
 
-  - variable: NANO_BANANA_API_KEY
-    secret: nano-banana-api-key
-    availability:
-      - RUNTIME
-
   - variable: GEMINI_API_KEY
     secret: gemini-api-key
     availability:
