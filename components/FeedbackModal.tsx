@@ -183,7 +183,14 @@ export function FeedbackModal({
                 Email Address <span className="text-stone-400 font-normal normal-case">(optional, for replies)</span>
               </label>
               <input
+                id="feedback-email"
+                name="email"
                 type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
