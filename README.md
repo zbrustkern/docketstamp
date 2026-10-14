@@ -22,15 +22,11 @@ should read the [canonical project brief](docs/CANONICAL_PROJECT_BRIEF.md) and
   or redacted and the exported asset is visually reviewed.
 
 The [Handwrytten audit](docs/HANDWRYTTEN_INTEGRATION_AUDIT.md) records live catalog
-verification and required alignment. Older documents under `docs/` and
-`docs/factory/` are historical context when they conflict with these facts. The
-current UI still contains mismatches; documentation alignment is not a deployed
-redesign or a verified payment/fulfillment rollout.
+verification and required alignment. For full architecture, state machines, and commerce engine details, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-**Recommended next build:** [Conversion redesign builder plan](docs/CONVERSION_REDESIGN_BUILDER_PLAN.md)
-contains the executive change list, detailed screen behavior, implementation
-packages, acceptance criteria, and rollout protocol. It is a proposal, not a
-claim of implementation or conversion uplift.
+**Architecture & Technical Documentation:** [ARCHITECTURE.md](ARCHITECTURE.md)
+contains the authoritative system overview, order lifecycle, Stripe/wallet integration,
+environment secrets, and the "Clone & Carve" forking checklist.
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.1-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-blue?logo=react)](https://react.dev/)
