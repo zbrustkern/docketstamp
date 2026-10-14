@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     // Idempotency: If order is already completed, processing, or actively dispatching, return immediately
     if (
       order.status === "DISPATCHING" ||
+      order.status === "PROCESSING_DISPATCH" ||
       order.status === "PROCESSING_HANDWRYTTEN" ||
       order.status === "MAILED"
     ) {

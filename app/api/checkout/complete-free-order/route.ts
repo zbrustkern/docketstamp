@@ -8,7 +8,7 @@ import {
 } from "@/lib/firebase-admin";
 import { validateDiscount } from "@/lib/discount";
 import { CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
-import { fulfillHandwryttenOrder } from "@/lib/handwrytten";
+import { dispatchLetter } from "@/lib/fulfillment/lob";
 import { logIncident } from "@/lib/incident-logger";
 import { validatePersonalSender } from "@/lib/order-processor";
 import { Order, DiscountCode } from "@/lib/types";
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
 
         if (
           (existingOrder.status === "DISPATCHING" && !isStaleLock) ||
+          existingOrder.status === "PROCESSING_DISPATCH" ||
           existingOrder.status === "PROCESSING_HANDWRYTTEN" ||
           existingOrder.status === "MAILED"
         ) {
@@ -193,36 +194,60 @@ export async function POST(req: NextRequest) {
     let fulfillment: { success: boolean; order_id?: string; error?: string };
 
     if (order.isTest) {
-      console.log(`[Free Order] Test mode order ${orderId}. Skipping live Handwrytten dispatch.`);
+      console.log(`[Free Order] Test mode order ${orderId}. Skipping live Lob dispatch.`);
       fulfillment = {
         success: true,
-        order_id: `test_free_hw_${orderId}`,
+        order_id: `test_free_ds_${orderId}`,
       };
     } else {
-      fulfillment = await fulfillHandwryttenOrder({
+      const toName = `${order.recipientAddress.firstName || ""} ${order.recipientAddress.lastName || ""}`.trim() || "Receiving Party";
+      const fromName = `${order.returnAddress.firstName || ""} ${order.returnAddress.lastName || ""}`.trim() || "Filing Party";
+      const docketId = order.docketId || `DS-2026-${orderId.slice(-6).toUpperCase()}`;
+
+      const lobResult = await dispatchLetter({
         orderId,
-        imageUrl: order.frontImageUrl,
-        printedGreeting: order.printedMessage,
-        handwrittenMessage: order.handwrittenNote,
-        fontId: order.fontStyleId || "1",
-        recipient: order.recipientAddress,
-        returnAddress: order.returnAddress,
-        scheduledSendDate: order.scheduledSendDate,
+        docketId,
+        description: `DocketStamp Formal Notice: ${docketId} (Comp/Free)`,
+        serviceLevel: (order.serviceLevel as any) || "CERTIFIED",
+        to: {
+          name: toName,
+          address_line1: order.recipientAddress.street1,
+          address_line2: order.recipientAddress.street2,
+          address_city: order.recipientAddress.city,
+          address_state: order.recipientAddress.state,
+          address_zip: order.recipientAddress.zip,
+        },
+        from: {
+          name: fromName,
+          address_line1: order.returnAddress.street1,
+          address_line2: order.returnAddress.street2,
+          address_city: order.returnAddress.city,
+          address_state: order.returnAddress.state,
+          address_zip: order.returnAddress.zip,
+        },
+        file: order.documentHtml || order.printedMessage || `<html><body><h1>Formal Notice ${docketId}</h1><p>${order.handwrittenNote || ""}</p></body></html>`,
+        color: false,
       });
+
+      fulfillment = {
+        success: lobResult.success,
+        order_id: lobResult.letterId,
+        error: lobResult.error,
+      };
     }
 
     if (!fulfillment.success) {
-      console.error(`[Free Order] Handwrytten dispatch failed for ${orderId}:`, fulfillment.error);
+      console.error(`[Free Order] Lob dispatch failed for ${orderId}:`, fulfillment.error);
       await updateOrderStatus(orderId, {
         status: "QUEUED_FOR_FULFILLMENT",
-        fulfillmentError: fulfillment.error || "Awaiting studio fulfillment queue",
+        fulfillmentError: fulfillment.error || "Awaiting postal dispatch queue",
       });
 
       await logIncident({
         type: "HANDWRYTTEN",
         severity: "error",
-        summary: `Handwrytten robotic pen dispatch failed for Free Order ${orderId}`,
-        technicalDetails: fulfillment.error || "Handwrytten singleStepOrder API error",
+        summary: `Lob postal dispatch failed for Free Order ${orderId}`,
+        technicalDetails: fulfillment.error || "Lob letter API error",
         metadata: { orderId, discountCode: order.discountCode },
       });
 
@@ -230,14 +255,15 @@ export async function POST(req: NextRequest) {
         success: true,
         orderId,
         status: "QUEUED_FOR_FULFILLMENT",
-        warning: "Order placed, but fulfillment is queued for studio verification.",
+        warning: "Order placed, but fulfillment is queued for registry verification.",
       });
     }
 
-    // 5. Update order status to PROCESSING_HANDWRYTTEN
+    // 5. Update order status to PROCESSING_DISPATCH
     await updateOrderStatus(orderId, {
-      status: "PROCESSING_HANDWRYTTEN",
+      status: "PROCESSING_DISPATCH",
       handwryttenOrderId: fulfillment.order_id,
+      lobLetterId: fulfillment.order_id,
     });
 
     // 6. Mark image as CLAIMED in cache pool if matched

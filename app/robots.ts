@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/api/admin", "/api/cron"],
       },
     ],
-    sitemap: "https://sendmynotes.com/sitemap.xml",
+    sitemap: "https://docketstamp.com/sitemap.xml",
   };
 }

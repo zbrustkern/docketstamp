@@ -17,7 +17,14 @@ export function getStripeClient(): Stripe {
 // Export singleton for backward compatibility
 export const stripe = getStripeClient();
 
-export const CARD_FLAT_RATE_CENTS = 900; // $9.00 flat rate (Card + Robot Pen + Envelope + USPS Postage)
+export const DOCKETSTAMP_TIER_PRICES = {
+  FIRST_CLASS: 1295, // Tier 1: $12.95
+  CERTIFIED: 1995, // Tier 2: $19.95
+  CERTIFIED_RETURN_RECEIPT: 2795, // Tier 3: $27.95
+} as const;
+
+export const DEFAULT_DISPATCH_PRICE_CENTS = DOCKETSTAMP_TIER_PRICES.CERTIFIED; // $19.95
+export const CARD_FLAT_RATE_CENTS = DEFAULT_DISPATCH_PRICE_CENTS; // Backward compatibility
 
 export interface CreateIntentParams {
   orderId: string;
@@ -34,7 +41,7 @@ export interface PaymentIntentResult {
 
 export async function createCardPaymentIntent(params: CreateIntentParams): Promise<PaymentIntentResult> {
   const mode = resolvePaymentMode();
-  const amountToCharge = params.amountInCents !== undefined ? params.amountInCents : CARD_FLAT_RATE_CENTS;
+  const amountToCharge = params.amountInCents !== undefined ? params.amountInCents : DEFAULT_DISPATCH_PRICE_CENTS;
 
   if (mode === "local_mock") {
     console.log("[MOCK Stripe] Creating simulated PaymentIntent for order:", params.orderId, "amount:", amountToCharge);
@@ -52,7 +59,7 @@ export async function createCardPaymentIntent(params: CreateIntentParams): Promi
     receipt_email: params.customerEmail,
     metadata: {
       orderId: params.orderId,
-      product: "Folded A2 greeting card, written in pen and mailed",
+      product: "DocketStamp: Official Document & Certified Mail Dispatch",
       ...(params.metadata || {}),
     },
     automatic_payment_methods: {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { saveOrder, updateOrderStatus } from "@/lib/firebase-admin";
-import { fulfillHandwryttenOrder } from "@/lib/handwrytten";
+import { dispatchLetter } from "@/lib/fulfillment/lob";
 import { Order, MailingAddress } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -13,42 +13,40 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      frontImageUrl,
-      printedMessage,
-      handwrittenNote,
-      fontStyleId = "hwDavid",
+      printedMessage = "Formal Statutory Notice Specimen",
+      handwrittenNote = "This is an administrative test notice dispatched via DocketStamp.",
       recipientAddress,
-      returnAddress,
-      scheduledSendDate,
-      compReason = "Studio VIP",
+      returnAddress = {
+        firstName: "DocketStamp",
+        lastName: "Registry",
+        street1: "100 N LaSalle St, Suite 2000",
+        city: "Chicago",
+        state: "IL",
+        zip: "60602",
+        country: "US",
+      },
+      compReason = "Administrative Test",
     } = body;
 
-    if (!frontImageUrl) {
-      return NextResponse.json({ error: "Card cover image is required" }, { status: 400 });
-    }
     if (!recipientAddress || !recipientAddress.street1 || !recipientAddress.city || !recipientAddress.state || !recipientAddress.zip) {
       return NextResponse.json({ error: "Complete recipient address is required" }, { status: 400 });
     }
-    if (!returnAddress || !returnAddress.street1 || !returnAddress.city || !returnAddress.state || !returnAddress.zip) {
-      return NextResponse.json({ error: "Complete return address is required" }, { status: 400 });
-    }
 
-    const orderId = `order_comp_${crypto.randomBytes(12).toString("hex")}`;
+    const orderId = `order_admin_${crypto.randomBytes(12).toString("hex")}`;
+    const docketId = `DS-2026-${orderId.slice(-6).toUpperCase()}`;
     const viewToken = `tok_${crypto.randomBytes(12).toString("hex")}`;
 
     const orderRecord: Order = {
       id: orderId,
-      customerEmail: "studio@asterandblanche.com",
-      frontImageUrl,
-      printedMessage: printedMessage || "",
-      handwrittenNote: handwrittenNote || "",
-      fontStyleId,
+      docketId,
+      customerEmail: "admin@docketstamp.com",
+      printedMessage,
+      handwrittenNote,
       recipientAddress: recipientAddress as MailingAddress,
       returnAddress: returnAddress as MailingAddress,
-      ...(scheduledSendDate ? { scheduledSendDate } : {}),
       status: "PAYMENT_RECEIVED",
       amountInCents: 0,
-      originalAmountInCents: 900,
+      originalAmountInCents: 1995,
       paymentMethod: "STUDIO_COMP",
       viewToken,
       createdAt: Date.now(),
@@ -57,44 +55,53 @@ export async function POST(req: NextRequest) {
 
     await saveOrder(orderRecord);
 
-    console.log(`[Studio Comp] Dispatching comp order ${orderId} (${compReason}) to Handwrytten...`);
-
-    const fulfillment = await fulfillHandwryttenOrder({
-      imageUrl: frontImageUrl,
-      printedGreeting: printedMessage || "",
-      handwrittenMessage: handwrittenNote || "",
-      fontId: fontStyleId,
-      recipient: recipientAddress,
-      returnAddress,
-      scheduledSendDate,
+    const lobResult = await dispatchLetter({
+      orderId,
+      docketId,
+      description: `DocketStamp Admin Notice: ${docketId} (${compReason})`,
+      serviceLevel: "CERTIFIED",
+      to: {
+        name: `${recipientAddress.firstName || ""} ${recipientAddress.lastName || ""}`.trim() || "Recipient",
+        address_line1: recipientAddress.street1,
+        address_line2: recipientAddress.street2,
+        address_city: recipientAddress.city,
+        address_state: recipientAddress.state,
+        address_zip: recipientAddress.zip,
+      },
+      from: {
+        name: `${returnAddress.firstName || ""} ${returnAddress.lastName || ""}`.trim() || "DocketStamp Registry",
+        address_line1: returnAddress.street1,
+        address_line2: returnAddress.street2,
+        address_city: returnAddress.city,
+        address_state: returnAddress.state,
+        address_zip: returnAddress.zip,
+      },
+      file: `<html><body><h1>${printedMessage}</h1><p>${handwrittenNote}</p></body></html>`,
     });
 
-    if (!fulfillment.success) {
+    if (!lobResult.success) {
       await updateOrderStatus(orderId, {
-        status: "QUEUED_FOR_FULFILLMENT",
-        fulfillmentError: fulfillment.error || "Fulfillment queued",
+        status: "FAILED",
+        fulfillmentError: lobResult.error,
       });
-      return NextResponse.json({
-        success: true,
-        orderId,
-        status: "QUEUED_FOR_FULFILLMENT",
-        warning: fulfillment.error,
-      });
+      return NextResponse.json({ error: lobResult.error }, { status: 502 });
     }
 
     await updateOrderStatus(orderId, {
-      status: "PROCESSING_HANDWRYTTEN",
-      handwryttenOrderId: fulfillment.order_id,
+      status: "PROCESSING_DISPATCH",
+      lobLetterId: lobResult.letterId,
+      handwryttenOrderId: lobResult.letterId,
     });
 
     return NextResponse.json({
       success: true,
       orderId,
-      handwryttenOrderId: fulfillment.order_id,
-      status: "PROCESSING_HANDWRYTTEN",
+      docketId,
+      letterId: lobResult.letterId,
+      trackingNumber: lobResult.trackingNumber,
     });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error dispatching comp card";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (err: any) {
+    console.error("[Admin Dispatch Exception]", err);
+    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
   }
 }

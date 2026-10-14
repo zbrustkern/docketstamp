@@ -18,7 +18,6 @@ import {
   Calendar,
 } from "lucide-react";
 import confetti from "canvas-confetti";
-import { detectCardIntent } from "@/lib/card-intent";
 import { calculateDeliveryEstimate } from "@/lib/delivery-estimate";
 import { AddressData } from "./Step3EnvelopeAddressing";
 import { trackGoogleAdsPurchase } from "@/lib/google-ads";
@@ -104,22 +103,26 @@ export function Step5Confirmation({
     }
   }, [orderId, viewToken, fulfillmentStatus, amountInCents, customerEmail, cardTitle, sender.fullName, recipient.city, recipient.state, recipient.zip]);
 
-  // Occasion intent classification
+  // Statutory follow-up reminder configuration
   const intentConfig = useMemo(() => {
-    return detectCardIntent({
-      occasion,
-      printedMessage: "",
-      handwrittenNote: [salutation, bodyNote, signOff].filter(Boolean).join("\n\n"),
-      recipientAddress: {
-        firstName: recipient.fullName.split(" ")[0] || "Recipient",
-        lastName: recipient.fullName.split(" ").slice(1).join(" ") || "",
-        street1: recipient.street1,
-        city: recipient.city,
-        state: recipient.state,
-        zip: recipient.zip,
-      },
-    });
-  }, [occasion, salutation, bodyNote, signOff, recipient]);
+    const today = new Date();
+    return {
+      suggestedMonth: (today.getMonth() + 2) % 12 || 12,
+      suggestedDay: today.getDate(),
+      defaultOccasionType: "statutory_deadline" as const,
+      defaultOccasionTitle: "Statutory Response Window Follow-up",
+      interactionMode: "statutory_followup",
+      headline: "Track Statutory Response Deadline",
+      badgeEmoji: "⚖️",
+      badgeLabel: "USPS Certified Dispatch",
+      badgeClass: "bg-sky-100 text-sky-800 border-sky-300",
+      description: "Set an automated reminder for the 30-day statutory response window following physical USPS delivery confirmation.",
+      primaryButtonLabel: "Track 30-Day Deadline",
+      successTitle: "Statutory Follow-Up Scheduled",
+      successDescription: "We will email you when the statutory response period is expiring.",
+      allowDateAdjustment: true,
+    };
+  }, []);
 
   // Retention Reminder State
   const [reminderSaved, setReminderSaved] = useState(false);

@@ -55,7 +55,7 @@ export function AddressRetryModal({
       if (!res.ok || !data.success) {
         setError(data.error || "Fulfillment retry failed. Check address validity.");
       } else {
-        alert(`Order successfully dispatched to Handwrytten! HW Order ID: ${data.handwryttenOrderId}`);
+        alert(`Order successfully dispatched via Lob USPS! Letter ID: ${data.letterId || data.handwryttenOrderId}`);
         onSuccess();
         onClose();
       }

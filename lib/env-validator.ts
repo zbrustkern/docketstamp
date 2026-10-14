@@ -7,8 +7,9 @@ export interface EnvStatus {
   isProduction: boolean;
   stripeSecretConfigured: boolean;
   stripeWebhookConfigured: boolean;
-  handwryttenConfigured: boolean;
-  aiProviderConfigured: "gemini_imagen" | "nano_banana" | "mock_fallback";
+  lobConfigured: boolean;
+  handwryttenConfigured?: boolean; // Backward compatibility
+  aiProviderConfigured?: "gemini_imagen" | "nano_banana" | "mock_fallback";
   firebaseConfigured: boolean;
   leaksDetected: string[];
 }
@@ -24,6 +25,7 @@ export function validateEnvironment(): EnvStatus {
       if (
         lower.includes("secret") ||
         lower.includes("private") ||
+        (lower.includes("lob") && lower.includes("key")) ||
         (lower.includes("handwrytten") && lower.includes("key")) ||
         (lower.includes("gemini") && lower.includes("key"))
       ) {
@@ -52,17 +54,11 @@ export function validateEnvironment(): EnvStatus {
     stripeWebhook && !stripeWebhook.startsWith("whsec_placeholder")
   );
 
-  const handwryttenKey = process.env.HANDWRYTTEN_API_KEY;
-  const handwryttenConfigured = Boolean(
-    handwryttenKey && handwryttenKey.trim().length > 0
-  );
-
-  let aiProvider: EnvStatus["aiProviderConfigured"] = "mock_fallback";
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0) {
-    aiProvider = "gemini_imagen";
-  } else if (process.env.NANO_BANANA_API_KEY && process.env.NANO_BANANA_API_KEY.trim().length > 0) {
-    aiProvider = "nano_banana";
-  }
+  const lobKey =
+    process.env.LOB_API_KEY ||
+    process.env["lob-api-key"] ||
+    process.env.DOCKET_STAMP_SUPPLIER_API_KEY;
+  const lobConfigured = Boolean(lobKey && lobKey.trim().length > 0);
 
   const firebaseConfigured = Boolean(
     process.env.FIREBASE_PROJECT_ID || process.env.K_SERVICE // Cloud Run environment
@@ -72,8 +68,9 @@ export function validateEnvironment(): EnvStatus {
     isProduction,
     stripeSecretConfigured,
     stripeWebhookConfigured,
-    handwryttenConfigured,
-    aiProviderConfigured: aiProvider,
+    lobConfigured,
+    handwryttenConfigured: lobConfigured, // backward compatibility
+    aiProviderConfigured: "mock_fallback",
     firebaseConfigured,
     leaksDetected,
   };
