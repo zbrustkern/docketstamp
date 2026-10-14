@@ -12,7 +12,8 @@
     "test:flags": "tsx tests/feature-flags.test.ts",
     "test:meta": "tsx tests/meta-conversions-api.test.ts",
     "test:telemetry": "tsx tests/visitor-telemetry.test.ts",
-    "test": "npm run test:security && npm run test:payment-mode"
+    "test:docket": "tsx tests/docket-engine.test.ts",
+    "test": "npm run test:security && npm run test:payment-mode && npm run test:docket"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^3.1.1",
