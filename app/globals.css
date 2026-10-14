@@ -2,42 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Real Handwrytten Robotic Pen Fonts */
-@font-face {
-  font-family: 'HandwryttenAdam';
-  src: url('/fonts/hwAdam.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'HandwryttenCharity';
-  src: url('/fonts/hwCharity.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'HandwryttenChase';
-  src: url('/fonts/hwChase.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'HandwryttenDavid';
-  src: url('/fonts/hwDavid.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  --background: #FAF8F5;
-  --foreground: #1C2434;
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --sheet-bg: #FFFFFF;
+  --sheet-border: #CBD5E1;
+  --sheet-text: #0F172A;
 }
 
 body {
@@ -45,50 +15,66 @@ body {
   background: var(--background);
   font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* Subtle physical paper texture */
-.paper-texture {
-  background-color: #FFFFFF;
-  background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0);
-  background-size: 24px 24px;
+/* Elevated 8.5" x 11" Printable Document Sheet */
+.docket-sheet {
+  background-color: var(--sheet-bg);
+  color: var(--sheet-text);
+  border: 1px solid var(--sheet-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 816px; /* True 8.5" width at 96 DPI */
+  min-height: 1056px; /* True 11" height at 96 DPI */
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Tactile 3D card perspective */
-.perspective-card {
-  perspective: 1200px;
+/* DocuSign-Style Interactive Unfilled Variable Tag */
+.docusign-tag {
+  display: inline-flex;
+  align-items: center;
+  background-color: #FEF3C7;
+  border-left: 3px solid #D97706;
+  color: #B45309;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
 }
 
-.preserve-3d {
-  transform-style: preserve-3d;
+.docusign-tag:hover {
+  background-color: #FDE68A;
+  border-left-color: #B45309;
+  transform: translateY(-1px);
 }
 
-.backface-hidden {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+.docusign-tag-active {
+  box-shadow: 0 0 0 2px #0284C7;
+  background-color: #FEF08A;
 }
 
-.rotate-y-180 {
-  transform: rotateY(180deg);
-}
-
-/* Vending Machine Coin Slot & Badge Accents */
-.vending-metallic {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%);
-  border: 1px solid #d97706;
-}
-
-.vending-stamp {
-  border: 2px dashed #DC2626;
-  background: rgba(220, 38, 38, 0.04);
+/* Formal Top-Right Clerk's Docket Stamp Block */
+.docket-stamp-box {
+  border: 1.5px solid #0F172A;
+  background-color: rgba(248, 250, 252, 0.95);
+  font-family: var(--font-jetbrains-mono), monospace;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0F172A;
 }
 
 /* Smooth transitions */
 * {
   box-sizing: border-box;
-}
-
-/* Card crease fold effect */
-.card-crease {
-  box-shadow: inset 0 -3px 6px -2px rgba(0, 0, 0, 0.12), inset 0 3px 6px -2px rgba(255, 255, 255, 0.8);
 }

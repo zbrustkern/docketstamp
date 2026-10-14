@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { getOrderById } from "@/lib/firebase-admin";
-import { fetchHandwryttenOrderStatus } from "@/lib/handwrytten";
+import { fetchLobLetterStatus } from "@/lib/fulfillment/lob";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,19 +20,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    let hwLiveStatus: any = null;
-    if (order.handwryttenOrderId) {
+    let postalLiveStatus: any = null;
+    const letterId = order.lobLetterId || order.handwryttenOrderId;
+    if (letterId) {
       try {
-        hwLiveStatus = await fetchHandwryttenOrderStatus(order.handwryttenOrderId);
+        postalLiveStatus = await fetchLobLetterStatus(letterId);
       } catch (err) {
-        console.warn("[Order Proof] Notice querying Handwrytten live status:", err);
+        console.warn("[Order Proof] Notice querying Lob live status:", err);
       }
     }
 
     return NextResponse.json({
       order,
-      handwrytten: hwLiveStatus,
-      backplateUrl: "/aster-blanche-backplate.png",
+      postalStatus: postalLiveStatus,
+      handwrytten: postalLiveStatus,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Error fetching order proof";

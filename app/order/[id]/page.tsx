@@ -30,10 +30,10 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from "lucide-react";
 import { Order, OccasionType } from "@/lib/types";
 import { formatOccasionDate, getOccasionTypeDisplay, MONTH_SHORT_NAMES, MONTH_NAMES } from "@/lib/reminder-utils";
-import { detectCardIntent } from "@/lib/card-intent";
 import { useAuth } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
 import { trackGoogleAdsPurchase } from "@/lib/google-ads";
@@ -54,9 +54,26 @@ export default function OrderStatusPage() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  // Post-order occasion-tailored reminder prompt state
+  // Post-order statutory follow-up reminder prompt state
   const intentConfig = useMemo(() => {
-    return order ? detectCardIntent(order) : null;
+    if (!order) return null;
+    const today = new Date();
+    return {
+      suggestedMonth: (today.getMonth() + 2) % 12 || 12,
+      suggestedDay: today.getDate(),
+      defaultOccasionType: "statutory_deadline" as OccasionType,
+      defaultOccasionTitle: "Statutory Response Window Follow-up",
+      interactionMode: "statutory_followup",
+      headline: "Track Statutory Response Deadline",
+      badgeEmoji: "⚖️",
+      badgeLabel: "USPS Certified Mail®",
+      badgeClass: "bg-sky-100 text-sky-800 border-sky-300",
+      description: "Set an automated reminder for the 30-day statutory response window following physical USPS delivery.",
+      primaryButtonLabel: "Track 30-Day Deadline",
+      successTitle: "Statutory Follow-Up Scheduled",
+      successDescription: "We will email you when the statutory response period is expiring.",
+      allowDateAdjustment: true,
+    };
   }, [order]);
 
   const [postOrderReminderSet, setPostOrderReminderSet] = useState(false);
@@ -350,68 +367,60 @@ export default function OrderStatusPage() {
 
   const trackingSteps = [
     {
-      title: "Payment Confirmed ($9.00 Paid)",
-      description: "Transaction complete. Receipt delivered to email.",
+      title: `Filing & Payment Confirmed ($${((order.amountInCents || 1995) / 100).toFixed(2)})`,
+      description: "Transaction complete. Encrypted docket created and locked.",
       icon: CheckCircle2,
       status: "complete",
     },
     {
-      title: "Artwork Printed on Quality Cardstock",
-      description: "Folded card printed with rich front cover artwork.",
-      icon: Sparkles,
+      title: "CASS Address Verification & Docket Stamping",
+      description: "USPS Coding Accuracy Support System passed. Official Clerk's Docket Stamp applied.",
+      icon: ShieldCheck,
       status: "complete",
     },
     {
-      title: order.scheduledSendDate
-        ? `Scheduled Handwriting (${order.scheduledSendDate})`
-        : isMailed
-        ? "Real Ink Handwriting Complete"
-        : "Real Ink Handwriting In Progress",
-      description: order.scheduledSendDate
-        ? `Order confirmed. Queued to be penned with real ink and mailed for ${order.scheduledSendDate}.`
-        : isMailed
-        ? `Penned with real blue ballpoint ink. (Handwrytten Order ID: ${order.handwryttenOrderId || "confirmed"})`
-        : isInking
-        ? `Handwrytten robotic pen applying real blue ballpoint ink to inside right leaf. ${
-            order.handwryttenOrderId ? `(Order ID: ${order.handwryttenOrderId})` : ""
-          }`
-        : "Order confirmed. Queued for real ink handwriting in our studio.",
-      icon: order.scheduledSendDate ? Calendar : PenTool,
+      title: isMailed
+        ? "Document Certified & Executed"
+        : "Document Preparation & Execution",
+      description: isMailed
+        ? `Legal notice formally stamped and locked into dispatch registry. (Docket ID: ${order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`})`
+        : "Notice rendered with formal statutory citations and signature block.",
+      icon: FileText,
       status: isMailed ? "complete" : isQueuedOrPaid ? "current" : "upcoming",
     },
     {
-      title: "Enveloped & Stamped",
-      description: `Addressed to ${order.recipientAddress.firstName} ${order.recipientAddress.lastName} with USPS First Class postage.`,
+      title: "Enveloped & Metered with Official USPS Indicia",
+      description: `Addressed to ${order.recipientAddress.firstName} ${order.recipientAddress.lastName} with ${order.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "USPS Certified Mail® + Electronic Return Receipt" : order.serviceLevel === "CERTIFIED" ? "USPS Certified Mail®" : "USPS First-Class Mail®"} postage.`,
       icon: Mail,
       status: isMailed ? "complete" : "upcoming",
     },
     {
-      title: "Mailed via USPS First Class",
+      title: `Dispatched via ${order.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "USPS Certified Mail® + ERR" : order.serviceLevel === "CERTIFIED" ? "USPS Certified Mail®" : "USPS First-Class"}`,
       description: isMailed
         ? `Dispatched into USPS postal stream${
-            order.handwryttenMailedDate ? ` on ${order.handwryttenMailedDate}` : ""
+            order.lobMailedDate || order.handwryttenMailedDate ? ` on ${order.lobMailedDate || order.handwryttenMailedDate}` : ""
           }.${
-            order.handwryttenTrackingNumber
-              ? ` Tracking: ${order.handwryttenTrackingNumber}`
+            order.lobTrackingNumber || order.handwryttenTrackingNumber
+              ? ` Tracking: ${order.lobTrackingNumber || order.handwryttenTrackingNumber}`
               : " Estimated delivery: 2-4 business days."
           }`
-        : "Dispatched into postal stream. Estimated delivery: 2-4 business days.",
+        : "Transmitted to USPS postal dispatch gateway. Tracking will activate upon postal intake.",
       icon: Truck,
       status: isMailed ? "complete" : "upcoming",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] pb-20 text-stone-900">
+    <div className="min-h-screen bg-[#0F172A] pb-20 text-slate-100">
       {/* HEADER */}
-      <header className="border-b border-stone-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+      <header className="border-b border-slate-800 bg-[#0F172A]/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-2 text-xs font-semibold text-stone-600 hover:text-stone-900 transition"
+            className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Send Another Card</span>
+            <span>Dispatch Another Notice</span>
           </Link>
           <div className="flex items-center gap-3">
             {user ? (
@@ -463,26 +472,26 @@ export default function OrderStatusPage() {
           </div>
         )}
         {/* SUCCESS BANNER */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-md text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 shadow-inner">
+        <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md text-center space-y-3">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner">
             <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">
-            Order Confirmed & Queued for Inking!
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+            Filing Confirmed & Queued for Postal Dispatch!
           </h1>
-          <p className="text-stone-600 text-sm max-w-lg mx-auto">
-            Your card is queued for real ink writing. We will pen it with real ink, stamp it, and mail it directly to your recipient.
+          <p className="text-slate-300 text-sm max-w-lg mx-auto">
+            Your formal notice has been docketed and transmitted to the USPS dispatch gateway. We will meter it, attach official barcoding, and dispatch directly to the receiving party.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="bg-amber-50 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
+            <span className="bg-slate-800 text-slate-300 font-semibold px-3 py-1 rounded-full border border-slate-700">
               Receipt Sent: {order.customerEmail || "Delivered"}
             </span>
-            <span className="bg-indigo-50 text-indigo-800 font-semibold px-3 py-1 rounded-full border border-indigo-200">
-              Real Ink: Active
+            <span className="bg-sky-500/10 text-sky-400 font-semibold px-3 py-1 rounded-full border border-sky-500/20 font-mono">
+              Docket: {order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`}
             </span>
-            <span className="bg-emerald-50 text-emerald-800 font-semibold px-3 py-1 rounded-full border border-emerald-200">
-              USPS Postage: Included
+            <span className="bg-emerald-500/10 text-emerald-400 font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
+              USPS: {order.serviceLevel || "Certified Mail®"}
             </span>
           </div>
         </div>
@@ -721,12 +730,12 @@ export default function OrderStatusPage() {
           </div>
         )}
 
-        {/* ROBOTIC FULFILLMENT TIMELINE */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/80 shadow-md space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-            <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-              <PenTool className="w-4 h-4 text-indigo-600" />
-              Real Ink Fulfillment Tracker
+        {/* POSTAL DISPATCH TIMELINE */}
+        <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-sky-400" />
+              USPS Postal Dispatch Registry Tracker
             </h2>
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${statusDisplay.className}`}>
               {statusDisplay.label}
@@ -831,45 +840,65 @@ export default function OrderStatusPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card Preview Thumbnail */}
           <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-md flex flex-col justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              Physical Folded Card
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-sky-400" />
+              Executed Notice Document (8.5&quot; x 11&quot;)
             </h3>
-            <div className="relative aspect-[5/7] w-full rounded-2xl overflow-hidden shadow-md border-2 border-stone-100">
-              <Image
-                src={order.frontImageUrl}
-                alt="Front Cover"
-                fill
-                unoptimized={Boolean(order.frontImageUrl?.startsWith("data:"))}
-                className="object-cover"
-              />
+            <div className="relative aspect-[8.5/11] w-full rounded-2xl overflow-hidden shadow-md border border-slate-700 bg-white p-4 text-slate-900 font-serif text-[11px] leading-relaxed">
+              <div className="border border-slate-900/20 p-3 h-full flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start border-b border-slate-900 pb-2 mb-3">
+                    <div>
+                      <span className="font-sans font-bold text-[10px] tracking-wider text-slate-800 uppercase block">Formal Legal Notice</span>
+                      <span className="font-mono text-[9px] text-slate-600">Docket: {order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`}</span>
+                    </div>
+                    <div className="border border-slate-900 px-1.5 py-0.5 text-[8px] font-mono uppercase bg-slate-100 text-slate-800">
+                      CASS VERIFIED
+                    </div>
+                  </div>
+                  <p className="font-mono text-[9px] text-slate-500 mb-2">
+                    DISPATCH SERVICE: {order.serviceLevel || "USPS CERTIFIED MAIL®"}
+                  </p>
+                  <div className="text-slate-800 text-[10px] space-y-1">
+                    <p className="font-bold">TO: {order.recipientAddress.firstName} {order.recipientAddress.lastName}</p>
+                    <p>{order.recipientAddress.street1}, {order.recipientAddress.city}, {order.recipientAddress.state} {order.recipientAddress.zip}</p>
+                  </div>
+                  <div className="mt-3 text-[10px] text-slate-700">
+                    {order.isRedacted ? (
+                      <span className="italic text-slate-400 inline-flex items-center gap-1 text-[10px]">
+                        <Lock className="w-3 h-3 text-amber-600 inline" /> Notice contents shielded for privacy
+                      </span>
+                    ) : (
+                      <p className="line-clamp-6">{order.handwrittenNote || order.printedMessage || "Formal written demand pursuant to applicable statutory requirements."}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="border-t border-slate-900/30 pt-2 flex justify-between items-end font-mono text-[8px] text-slate-500">
+                  <span>/s/ {order.returnAddress.firstName} {order.returnAddress.lastName}</span>
+                  <span>USPS DISPATCH REGISTRY</span>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-stone-100 text-xs space-y-1 text-stone-600">
+            <div className="mt-4 pt-4 border-t border-slate-800 text-xs space-y-1 text-slate-300">
               <p>
-                <strong>Inside Top:</strong> &ldquo;{order.printedMessage}&rdquo;
+                <strong>Service Level:</strong> {order.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "USPS Certified Mail® + Electronic Return Receipt" : order.serviceLevel === "CERTIFIED" ? "USPS Certified Mail®" : "USPS First-Class Mail®"}
               </p>
-              <div className="text-indigo-800 font-medium">
-                <strong>Inside Right (Real Ink Handwriting):</strong>{" "}
-                {order.isRedacted ? (
-                  <span className="italic text-stone-400 inline-flex items-center gap-1 text-[11px]">
-                    <Lock className="w-3 h-3 text-amber-600 inline" /> Personal handwritten note shielded for privacy
-                  </span>
-                ) : (
-                  <span>&ldquo;{order.handwrittenNote.slice(0, 100)}...&rdquo;</span>
-                )}
+              <div className="text-sky-400 font-medium">
+                <strong>Postal Status:</strong>{" "}
+                <span>{order.handwryttenStatus || "Dispatched into postal intake queue"}</span>
               </div>
             </div>
           </div>
 
           {/* Recipient & Shipping Details */}
-          <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-md space-y-5">
+          <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-md space-y-5">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2.5 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-amber-600" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-sky-400" />
                 Mailing Destination
               </h3>
-              <div className="p-3.5 bg-stone-50 rounded-xl text-xs space-y-1 text-stone-800">
-                <p className="font-bold text-sm">
+              <div className="p-3.5 bg-slate-800/80 rounded-xl text-xs space-y-1 text-slate-200">
+                <p className="font-bold text-sm text-white">
                   {order.recipientAddress.firstName} {order.recipientAddress.lastName}
                 </p>
                 <p>{order.recipientAddress.street1}</p>
@@ -877,17 +906,17 @@ export default function OrderStatusPage() {
                 <p>
                   {order.recipientAddress.city}, {order.recipientAddress.state} {order.recipientAddress.zip}
                 </p>
-                <p className="text-stone-400 text-[11px] pt-1">United States of America</p>
+                <p className="text-slate-400 text-[11px] pt-1">United States of America</p>
               </div>
             </div>
 
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2.5 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-stone-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
                 Return Address
               </h3>
-              <div className="p-3.5 bg-stone-50 rounded-xl text-xs space-y-1 text-stone-600">
-                <p className="font-semibold">
+              <div className="p-3.5 bg-slate-800/80 rounded-xl text-xs space-y-1 text-slate-300">
+                <p className="font-semibold text-white">
                   {order.returnAddress.firstName} {order.returnAddress.lastName}
                 </p>
                 <p>{order.returnAddress.street1}</p>
@@ -897,9 +926,11 @@ export default function OrderStatusPage() {
               </div>
             </div>
 
-            <div className="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/60 text-xs flex items-center justify-between text-amber-900">
+            <div className="p-3.5 bg-sky-500/10 rounded-xl border border-sky-500/20 text-xs flex items-center justify-between text-sky-300">
               <span>Amount Paid</span>
-              <span className="font-serif font-bold text-base">$9.00 Flat Rate</span>
+              <span className="font-mono font-bold text-base text-white">
+                ${((order.amountInCents || 1995) / 100).toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
@@ -908,10 +939,10 @@ export default function OrderStatusPage() {
         <div className="text-center pt-4">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-xl shadow-amber-600/20 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-xl shadow-sky-600/20 transition-all cursor-pointer"
           >
-            <PenTool className="w-4 h-4 text-amber-100" />
-            <span>Send Another Card ($9.00)</span>
+            <FileText className="w-4 h-4 text-sky-100" />
+            <span>Dispatch Another Notice</span>
           </Link>
         </div>
       </main>

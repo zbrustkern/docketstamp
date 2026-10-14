@@ -12,9 +12,10 @@ import {
   AcquisitionSourceMetric,
   VisitorTelemetryMetrics,
 } from "./types";
-import { getAllScenarios } from "./seo-scenarios";
+import { getAllNoticeTemplates } from "./notices/registry";
 
-export const HANDWRYTTEN_COGS_PER_CARD_CENTS = 488; // $4.88 (Cardstock + Real Pen Inking + USPS First Class postage)
+export const USPS_DISPATCH_COGS_CENTS = 220; // ~$2.20 USPS First-Class + CASS print dispatch
+export const HANDWRYTTEN_COGS_PER_CARD_CENTS = 220; // Kept for backward compatibility
 
 export function calculateStripeFeeCents(amountInCents: number, paymentMethod?: string): number {
   if (paymentMethod === "PROMO_CODE" || paymentMethod === "STUDIO_COMP" || amountInCents === 0) {
@@ -941,14 +942,14 @@ export async function getScenarioPerformanceMetrics(): Promise<{
   totalViews: number;
   totalOrders: number;
 }> {
-  const allConfigured = getAllScenarios();
+  const allConfigured = getAllNoticeTemplates();
   const summary = await getTelemetrySummary();
 
   let totalViews = 0;
   let totalOrders = 0;
 
-  const scenarios: ScenarioPerformanceMetric[] = allConfigured.map((scenario) => {
-    const bucket = summary.scenarios[scenario.slug] || {
+  const scenarios: ScenarioPerformanceMetric[] = allConfigured.map((notice) => {
+    const bucket = summary.scenarios[notice.id] || {
       views: 0,
       customizations: 0,
       checkouts: 0,
@@ -992,11 +993,11 @@ export async function getScenarioPerformanceMetrics(): Promise<{
     }
 
     return {
-      slug: scenario.slug,
-      occasionSlug: scenario.occasionSlug,
-      path: `/send/${scenario.occasionSlug}/${scenario.slug}`,
-      title: scenario.h1Title,
-      category: scenario.category,
+      slug: notice.id,
+      occasionSlug: notice.category.toLowerCase(),
+      path: `/notices/${notice.id}`,
+      title: notice.title,
+      category: notice.category,
       views,
       customizations,
       checkouts,

@@ -362,7 +362,11 @@ export async function sendMetaCapiPurchaseEvent(params: {
   const customData: MetaCapiCustomData = {
     currency: "USD",
     value: valueInDollars,
-    content_name: order.occasion ? `${order.occasion} Card` : "Custom Handwritten Card",
+    content_name: order.noticeType
+      ? `${order.noticeType} Legal Notice`
+      : order.serviceLevel
+      ? `DocketStamp ${order.serviceLevel}`
+      : "DocketStamp USPS Legal Notice Dispatch",
     content_type: "product",
     content_ids: [order.id],
     contents: [

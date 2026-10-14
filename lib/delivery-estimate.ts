@@ -14,7 +14,13 @@
  * - Eliminates artificial 2 PM cutoffs and "same-day" dispatch promises.
  */
 
-import { PRODUCT_TIMING } from "./product-facts";
+export const DOCKET_POSTAL_TIMING = {
+  preparationBusinessDaysMin: 1,
+  preparationBusinessDaysMax: 2,
+  transitBusinessDaysMin: 2,
+  transitBusinessDaysMax: 5,
+  summaryGuidance: "Physical letter prepared and dispatched within 1–2 business days; domestic USPS transit typically takes 2–5 business days.",
+};
 
 /**
  * Standard fixed and floating US Federal Holidays (observed):
@@ -135,12 +141,12 @@ export function calculateDeliveryEstimate(scheduledDateString?: string): Deliver
 
   // Preparation window: typically 1 to 2 business days
   // If scheduled, the scheduled date is the targeted dispatch base date.
-  const earliestDispatch = isScheduled ? baseDate : addBusinessDays(baseDate, PRODUCT_TIMING.preparationBusinessDaysMin);
-  const latestDispatch = isScheduled ? addBusinessDays(baseDate, 1) : addBusinessDays(baseDate, PRODUCT_TIMING.preparationBusinessDaysMax);
+  const earliestDispatch = isScheduled ? baseDate : addBusinessDays(baseDate, DOCKET_POSTAL_TIMING.preparationBusinessDaysMin);
+  const latestDispatch = isScheduled ? addBusinessDays(baseDate, 1) : addBusinessDays(baseDate, DOCKET_POSTAL_TIMING.preparationBusinessDaysMax);
 
-  // Domestic Transit window: typically 2 to 7 business days from dispatch
-  const earliestDelivery = addBusinessDays(earliestDispatch, PRODUCT_TIMING.transitBusinessDaysMin);
-  const latestDelivery = addBusinessDays(latestDispatch, PRODUCT_TIMING.transitBusinessDaysMax);
+  // Domestic Transit window: typically 2 to 5 business days from dispatch
+  const earliestDelivery = addBusinessDays(earliestDispatch, DOCKET_POSTAL_TIMING.transitBusinessDaysMin);
+  const latestDelivery = addBusinessDays(latestDispatch, DOCKET_POSTAL_TIMING.transitBusinessDaysMax);
 
   const formatShort = (d: Date) =>
     d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -156,6 +162,6 @@ export function calculateDeliveryEstimate(scheduledDateString?: string): Deliver
     formattedRange,
     isScheduled,
     isEstimate: true,
-    guidanceText: PRODUCT_TIMING.summaryGuidance,
+    guidanceText: DOCKET_POSTAL_TIMING.summaryGuidance,
   };
 }

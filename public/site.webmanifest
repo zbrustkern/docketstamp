@@ -1,11 +1,11 @@
 {
-  "name": "sendmynotes - Real Handwritten Cards, Mailed for You",
-  "short_name": "sendmynotes",
-  "description": "Custom folded greeting cards written with real pen and ink. Mailed via USPS First Class.",
+  "name": "DocketStamp - Official Document & Certified Mail Dispatch Registry",
+  "short_name": "DocketStamp",
+  "description": "Deterministic legal notice preparation and USPS Certified Mail dispatch registry.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAF8F5",
-  "theme_color": "#FAF8F5",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
   "icons": [
     {
       "src": "/icon-192.png",

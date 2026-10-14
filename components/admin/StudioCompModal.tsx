@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import { X, Sparkles, PenTool, CheckCircle2, AlertTriangle, Send } from "lucide-react";
+import { X, FileText, CheckCircle2, AlertTriangle, Send } from "lucide-react";
 import { MailingAddress } from "@/lib/types";
 
 interface StudioCompModalProps {
@@ -10,314 +9,180 @@ interface StudioCompModalProps {
   onSuccess: () => void;
 }
 
-const PRESET_COVERS = [
-  {
-    title: "Celebration Garland",
-    url: "/presets/birthday-balloons.jpg",
-  },
-  {
-    title: "Wildflower Meadow",
-    url: "/presets/thank-you-botanical.jpg",
-  },
-  {
-    title: "Quiet Morning Still Life",
-    url: "/presets/thinking-of-you-coffee.jpg",
-  },
-  {
-    title: "Golden Cheers Coupes",
-    url: "/presets/congrats-champagne.jpg",
-  },
-  {
-    title: "Botanical Wreath",
-    url: "/presets/anniversary-monstera.jpg",
-  },
-  {
-    title: "Velvet Blossoms",
-    url: "/presets/love-roses.jpg",
-  },
-];
-
 export function StudioCompModal({ onClose, onSuccess }: StudioCompModalProps) {
-  const [coverUrl, setCoverUrl] = useState(PRESET_COVERS[0].url);
-  const [customCover, setCustomCover] = useState("");
-  const [fontStyleId, setFontStyleId] = useState("hwDavid");
-  const [printedGreeting, setPrintedGreeting] = useState("");
-  const [handwrittenNote, setHandwrittenNote] = useState(
-    "Dear Friend,\n\nSending our warmest wishes and warmest greetings from Aster & Blanche Press in Lake Forest. We are so honored to share our handcrafted stationery with you!\n\nWarmly,\nThe Atelier Team"
+  const [noticeTitle, setNoticeTitle] = useState("Tenant Notice of Intent to Vacate");
+  const [noticeBody, setNoticeBody] = useState(
+    "Please accept this formal written instrument as official notice pursuant to state tenancy law that the tenant will surrender possession on November 30, 2026."
   );
-  const [compReason, setCompReason] = useState("Studio VIP / Press");
+  const [compReason, setCompReason] = useState("Administrative / Testing");
 
   const [recipient, setRecipient] = useState<MailingAddress>({
-    firstName: "",
-    lastName: "",
-    street1: "",
+    firstName: "Property",
+    lastName: "Manager",
+    street1: "100 Main St, Suite 400",
     street2: "",
-    city: "",
-    state: "",
-    zip: "",
-  });
-
-  const [returnAddress, setReturnAddress] = useState<MailingAddress>({
-    firstName: "Aster & Blanche",
-    lastName: "Press",
-    street1: "1339 Lawrence Ave",
-    street2: "Suite 2",
-    city: "Lake Forest",
+    city: "Chicago",
     state: "IL",
-    zip: "60045",
+    zip: "60601",
+    country: "US",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalCover = customCover.trim() || coverUrl;
-
-    if (!finalCover) {
-      setError("Please select or provide a card cover image.");
-      return;
-    }
-    if (!recipient.firstName || !recipient.street1 || !recipient.city || !recipient.state || !recipient.zip) {
-      setError("Please fill out complete recipient mailing address.");
-      return;
-    }
-    if (!handwrittenNote.trim()) {
-      setError("Please provide a handwritten message.");
-      return;
-    }
-
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const res = await fetch("/api/admin/dispatch-comp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          frontImageUrl: finalCover,
-          printedMessage: printedGreeting,
-          handwrittenNote,
-          fontStyleId,
+          printedMessage: noticeTitle,
+          handwrittenNote: noticeBody,
           recipientAddress: recipient,
-          returnAddress,
-          compReason,
+          reason: compReason,
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.error || "Failed to dispatch comp card.");
-      } else {
-        alert(`Studio Comp Card successfully dispatched to Handwrytten! Order: ${data.orderId}`);
-        onSuccess();
-        onClose();
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to dispatch administrative notice");
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Network error";
-      setError(`Error dispatching comp card: ${msg}`);
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Dispatch error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200">
-        <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/70">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-slate-900 text-slate-100 rounded-2xl max-w-xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-slate-700">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-sky-950 text-sky-400 border border-sky-800 flex items-center justify-center">
+              <FileText className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-serif font-bold text-base text-stone-900">
-                Dispatch Complimentary Studio Card
-              </h3>
-              <p className="text-xs text-stone-400">
-                Bypass Stripe payment and send a physical card via Handwrytten on the house.
-              </p>
+              <h3 className="font-serif font-bold text-base text-white">Administrative Notice Dispatch</h3>
+              <p className="text-xs text-slate-400">Dispatch $0.00 test notice via postal registry</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-200 rounded-lg transition"
-          >
-            <X className="w-4 h-4" />
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs font-sans">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
+            <div className="p-3 bg-red-950/50 border border-red-800 text-red-300 rounded-lg flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* 1. Cover Selection */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-2">
-              1. Card Cover Selection
-            </label>
-            <div className="grid grid-cols-4 gap-2 mb-2">
-              {PRESET_COVERS.map((preset, idx) => (
-                <button
-                  type="button"
-                  key={idx}
-                  onClick={() => {
-                    setCoverUrl(preset.url);
-                    setCustomCover("");
-                  }}
-                  className={`relative aspect-[4.25/5.5] rounded-xl overflow-hidden border-2 transition ${
-                    coverUrl === preset.url && !customCover
-                      ? "border-stone-900 shadow-md ring-2 ring-stone-900/20"
-                      : "border-stone-200 opacity-70 hover:opacity-100"
-                  }`}
-                >
-                  <Image
-                    src={preset.url}
-                    alt={preset.title}
-                    fill
-                    sizes="120px"
-                    unoptimized
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-stone-900/70 p-1 text-[9px] text-white font-medium text-center truncate">
-                    {preset.title}
-                  </div>
-                </button>
-              ))}
-            </div>
+            <label className="font-mono text-slate-300 block mb-1">Notice Title / Instrument Type</label>
             <input
-              type="url"
-              value={customCover}
-              onChange={(e) => setCustomCover(e.target.value)}
-              placeholder="Or enter custom image URL (https://...)"
-              className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-stone-500"
+              type="text"
+              value={noticeTitle}
+              onChange={(e) => setNoticeTitle(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+              required
             />
           </div>
 
-          {/* 2. Handwriting Font */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">
-                2. Handwriting Font
-              </label>
-              <select
-                value={fontStyleId}
-                onChange={(e) => setFontStyleId(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-stone-500"
-              >
-                <option value="hwDavid">Casual David (Default &bull; Natural Hand)</option>
-                <option value="hwChase">Charming Chase (Flowing Script)</option>
-                <option value="hwKate">Carefree Kate (Playful)</option>
-                <option value="hwAdam">Executive Adam (Clean Print)</option>
-                <option value="hwWill">Dapper Will (Refined Architect)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">
-                Comp Reason / Reference
-              </label>
-              <input
-                type="text"
-                value={compReason}
-                onChange={(e) => setCompReason(e.target.value)}
-                placeholder="e.g. VIP Influencer, Sample for mom"
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-stone-500"
-              />
-            </div>
-          </div>
-
-          {/* 3. Message */}
           <div>
-            <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-1">
-              3. Inside Handwritten Note
-            </label>
+            <label className="font-mono text-slate-300 block mb-1">Notice Formal Text</label>
             <textarea
               rows={4}
-              value={handwrittenNote}
-              onChange={(e) => setHandwrittenNote(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-stone-500 font-mono leading-relaxed"
+              value={noticeBody}
+              onChange={(e) => setNoticeBody(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white font-serif"
+              required
             />
           </div>
 
-          {/* 4. Recipient Address */}
-          <div>
-            <label className="block text-[11px] font-semibold text-stone-600 uppercase mb-2">
-              4. Recipient Mailing Address
-            </label>
-            <div className="grid grid-cols-2 gap-3 mb-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-mono text-slate-300 block mb-1">Recipient Name</label>
               <input
                 type="text"
-                placeholder="First Name *"
-                value={recipient.firstName}
-                onChange={(e) => setRecipient({ ...recipient, firstName: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl"
-              />
-              <input
-                type="text"
-                placeholder="Last Name"
-                value={recipient.lastName}
-                onChange={(e) => setRecipient({ ...recipient, lastName: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl"
+                value={`${recipient.firstName} ${recipient.lastName}`}
+                onChange={(e) => {
+                  const parts = e.target.value.split(" ");
+                  setRecipient({ ...recipient, firstName: parts[0] || "", lastName: parts.slice(1).join(" ") || "" });
+                }}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                required
               />
             </div>
-            <div className="space-y-2">
+            <div>
+              <label className="font-mono text-slate-300 block mb-1">Street Address</label>
               <input
                 type="text"
-                placeholder="Street Address *"
                 value={recipient.street1}
                 onChange={(e) => setRecipient({ ...recipient, street1: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                required
               />
-              <div className="grid grid-cols-6 gap-2">
-                <input
-                  type="text"
-                  placeholder="City *"
-                  value={recipient.city}
-                  onChange={(e) => setRecipient({ ...recipient, city: e.target.value })}
-                  className="col-span-3 px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl"
-                />
-                <input
-                  type="text"
-                  placeholder="State *"
-                  maxLength={2}
-                  value={recipient.state}
-                  onChange={(e) => setRecipient({ ...recipient, state: e.target.value.toUpperCase() })}
-                  className="col-span-1 px-2 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-center uppercase"
-                />
-                <input
-                  type="text"
-                  placeholder="ZIP *"
-                  value={recipient.zip}
-                  onChange={(e) => setRecipient({ ...recipient, zip: e.target.value })}
-                  className="col-span-2 px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl font-mono"
-                />
-              </div>
             </div>
           </div>
 
-          <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-[11px] text-stone-500">
-            <strong>Return Address:</strong> Aster & Blanche Press, 1339 Lawrence Ave, Lake Forest, IL 60045 &bull; Handwrytten Backplate ID: 751314
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="font-mono text-slate-300 block mb-1">City</label>
+              <input
+                type="text"
+                value={recipient.city}
+                onChange={(e) => setRecipient({ ...recipient, city: e.target.value })}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="font-mono text-slate-300 block mb-1">State</label>
+              <input
+                type="text"
+                value={recipient.state}
+                onChange={(e) => setRecipient({ ...recipient, state: e.target.value })}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="font-mono text-slate-300 block mb-1">ZIP</label>
+              <input
+                type="text"
+                value={recipient.zip}
+                onChange={(e) => setRecipient({ ...recipient, zip: e.target.value })}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                required
+              />
+            </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-2">
+          <div className="pt-4 flex justify-end gap-3 border-t border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 text-xs font-semibold rounded-xl text-stone-600 hover:bg-stone-100 transition"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 text-xs font-semibold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-500 rounded-lg text-white font-bold flex items-center gap-1.5"
             >
-              <Send className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span>{loading ? "Dispatching to Plotter..." : "Dispatch Studio Card ($0.00)"}</span>
+              <Send className="w-3.5 h-3.5" />
+              <span>{loading ? "Dispatching..." : "Dispatch Test Notice"}</span>
             </button>
           </div>
         </form>

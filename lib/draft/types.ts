@@ -8,8 +8,16 @@
  */
 
 export const DRAFT_SCHEMA_VERSION = 1;
-export const DRAFT_STORAGE_KEY = "sendmynotes_draft_v1";
+export const DRAFT_STORAGE_KEY = "docketstamp_draft_v1";
 export const DRAFT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+export interface DocketNoticeDraft {
+  noticeId: string;
+  serviceLevel: "FIRST_CLASS" | "CERTIFIED" | "CERTIFIED_RETURN_RECEIPT";
+  variables: Record<string, string>;
+  docketId?: string;
+  signatureAdopted?: boolean;
+}
 
 export interface SelectedDesign {
   presetId?: string;
@@ -67,6 +75,7 @@ export interface DraftRequiredContent {
   note: NoteDraft;
   recipient: AddressDraft | null;
   sender: AddressDraft | null;
+  notice?: DocketNoticeDraft | null;
 }
 
 /**
@@ -90,6 +99,9 @@ export interface DraftState {
   updatedAt: number;
   draftRevision: number;
   experienceVersion: string;
+
+  // DocketStamp notice instrument
+  notice?: DocketNoticeDraft | null;
 
   // Required content fields
   selectedDesign: SelectedDesign | null;
@@ -117,6 +129,7 @@ export const ALLOWED_DRAFT_ROOT_KEYS: readonly (keyof DraftState)[] = [
   "updatedAt",
   "draftRevision",
   "experienceVersion",
+  "notice",
   "selectedDesign",
   "note",
   "recipient",

@@ -169,6 +169,10 @@ async function runSecurityTests() {
   // ---------------------------------------------------------------------------
   console.log("\n--- 3. Testing Vulnerability 3: Fulfillment Concurrency (Atomic Locking) ---");
 
+  process.env.ALLOW_LOCAL_MOCK_PAYMENTS = "true";
+  process.env.STRIPE_SECRET_KEY = "sk_test_mock_secret_key_12345";
+  (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+
   const raceOrderId = `order_race_${Date.now()}`;
   const raceOrder: Order = {
     ...baseOrder,
@@ -188,7 +192,10 @@ async function runSecurityTests() {
   const results = await Promise.all(concurrentCalls);
 
   const dispatchedCount = results.filter(
-    (r) => r.success && !r.alreadyProcessed && r.status === "PROCESSING_HANDWRYTTEN"
+    (r) =>
+      r.success &&
+      !r.alreadyProcessed &&
+      (r.status === "PROCESSING_DISPATCH" || r.status === "PROCESSING_HANDWRYTTEN")
   ).length;
 
   const deduplicatedCount = results.filter(
@@ -209,13 +216,13 @@ async function runSecurityTests() {
 
   const finalRaceOrder = await getOrderById(raceOrderId);
   assert(
-    finalRaceOrder?.status === "PROCESSING_HANDWRYTTEN",
-    `Final order status in database is PROCESSING_HANDWRYTTEN (Status: ${finalRaceOrder?.status})`
+    finalRaceOrder?.status === "PROCESSING_DISPATCH" || finalRaceOrder?.status === "PROCESSING_HANDWRYTTEN",
+    `Final order status in database is PROCESSING_DISPATCH (Status: ${finalRaceOrder?.status})`
   );
 
   assert(
-    !!finalRaceOrder?.handwryttenOrderId,
-    `Order has a valid Handwrytten Order ID recorded (HW ID: ${finalRaceOrder?.handwryttenOrderId})`
+    !!(finalRaceOrder?.lobLetterId || finalRaceOrder?.handwryttenOrderId),
+    `Order has a valid Postal Dispatch / Letter ID recorded (ID: ${finalRaceOrder?.lobLetterId || finalRaceOrder?.handwryttenOrderId})`
   );
 
   // 3B. Subsequent replay after fulfillment returns alreadyProcessed: true

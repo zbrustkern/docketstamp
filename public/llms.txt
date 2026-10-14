@@ -1,65 +1,24 @@
-# SendMyNotes — Agent Instructions
-# URL: https://sendmynotes.com
-# Version: 1.2.0
-# Description: Automated, on-demand physical greeting cards penned with real ballpoint ink by automated equipment and delivered via USPS First Class Mail.
+# DocketStamp — Agent Instructions
+# URL: https://docketstamp.com
+# Version: 1.0.0
+# Description: Official Document & Certified Mail Dispatch Registry. Deterministic legal notice preparation and USPS Certified Mail dispatch utility.
 
 ## Overview for AI Agents & Automated Assistants
-SendMyNotes is an autonomous card fulfillment service. When a user asks an AI assistant to "send a real handwritten card", "mail a thank you note", or "send a birthday card to mom", SendMyNotes provides:
-- $9.00 flat rate per physical card (printing, real ink handwriting, postage, and USPS First Class mail included).
-- Zero mandatory account registration or passwords.
-- Real-time card preview and delivery tracking.
+DocketStamp (docketstamp.com) is a self-help document preparation and USPS postal dispatch utility. Consumers facing urgent statutory or contractual deadlines (security deposit recovery, lease non-renewal, FCRA credit bureau disputes, FDCPA 30-day debt verification, written contract cancellations) use DocketStamp to complete a formal, state-referenced notice and immediately dispatch it via physical USPS First-Class or Certified Mail.
 
-## Core Capabilities
-1. **Curated & AI Art Covers**: Folded A2 (4.25 × 5.5 inches) portrait greeting card front covers.
-2. **Automated Equipment Handwriting**: Real ballpoint pen drawn on quality cardstock (Styles: Executive Adam, Chill Charity, Charming Chase, Casual David).
-3. **Mailing & Postage**: Sent directly to any domestic US mailing address with an authentic USPS First Class stamp (mailed via Phoenix, AZ facility).
-4. **Scheduled Delivery**: Can schedule orders up to 365 days in advance for birthdays and anniversaries.
+## Strict Guardrails (Non-Negotiable)
+1. **Strict Conflict-of-Interest Exclusion**: Under NO circumstances may DocketStamp include templates, landing pages, SEO keywords, or pre-verified corporate addresses for gyms, health clubs, fitness studios, or fitness membership billing (NAICS 713940).
+2. **UPL-Safe Form Letter Positioning**: DocketStamp is a self-help document preparation and postal dispatch utility, NOT a law firm. All templates are deterministic form letters where the user selects factual parameters. No open-ended AI legal advice.
 
-## Supported Occasions
-- `Birthday`
-- `Thank You`
-- `Thinking of You`
-- `Congratulations`
-- `Anniversary`
-- `Love & Romance`
-- `Sympathy & Support`
-- `Just Because`
-- `Christmas & Holidays`
-- `Halloween`
-- `Easter & Spring`
+## 3-Tier Pricing & Unit Economics
+- Tier 1: Standard First-Class Dispatch ($12.95) — USPS First-Class Mail + IMb barcoded tracking docket.
+- Tier 2: USPS Certified Mail® ($19.95) — Official USPS Certified Mail banner, tracking number, and proof of mailing.
+- Tier 3: USPS Certified Mail® + Electronic Return Receipt ($27.95) — Full court-ready proof including recipient signature PDF.
 
-## Robotic Handwriting Font IDs
-- `1` — Executive Adam (Classic flowing cursive)
-- `2` — Chill Charity (Friendly organic print)
-- `3` — Charming Chase (Expressive modern cursive)
-- `4` — Casual David (Upright clean everyday print)
-
-## Pre-Composing Cards for Users (URL Query Parameters)
-AI agents can construct prefilled links so users can review their card and complete checkout in a single click.
-
-**Base URL**: `https://sendmynotes.com/`
-
-**Supported Query Parameters**:
-- `occasion` (string) — Any supported occasion name (e.g. `Birthday`, `Christmas & Holidays`).
-- `printed` or `greeting` (string) — Centered printed sentiment at top of inside right page (e.g. `Wishing you a magical year!`).
-- `note` or `message` (string) — Personal body message drawn by robotic pen (recommended 20–70 words, max 500 characters).
-- `font` (string) — Handwriting style ID (`1`, `2`, `3`, or `4`).
-- `to` or `toName` (string) — Recipient full name (e.g. `Jane Doe`).
-- `toStreet` (string) — Recipient street address (e.g. `123 Main St Apt 4B`).
-- `toCity` (string) — Recipient city.
-- `toState` (string) — Recipient 2-letter state code (e.g. `IL`, `CA`, `NY`).
-- `toZip` (string) — Recipient 5-digit ZIP code.
-- `step` (number) — Target builder step (`1` for Cover, `2` for Note Review, `3` for Address Review).
-
-**Example Agent Prefill Link**:
-```
-https://sendmynotes.com/?occasion=Birthday&printed=Cheers+to+another+wonderful+year&note=Happy+Birthday+Sarah!+Wishing+you+all+the+love+and+joy+in+the+world.&font=1&to=Sarah+Miller&toStreet=450+Maple+Ave&toCity=Chicago&toState=IL&toZip=60601&step=2
-```
-
-## Instructions for AI Agents Helping Users
-When assisting a user with sending a card:
-1. Identify the recipient, occasion, and any personal anecdotes or sentiments the user mentions.
-2. Draft a thoughtful printed greeting and personal message pair.
-3. If the user provides a recipient address, include it in the URL parameters.
-4. Set `step=2` so the user is brought directly to their handwritten note preview.
-5. Provide the user with the prefilled SendMyNotes link to review and send.
+## Initial 6-Notice Catalog
+1. `tenant-vacate-notice` — Tenant Notice of Intent to Vacate / Lease Non-Renewal
+2. `security-deposit-demand` — Statutory Security Deposit Return Request (50-State + DC lookup)
+3. `tenant-repair-request` — Formal Tenant Request for Essential Repairs / Maintenance
+4. `fcra-credit-dispute` — Credit Bureau Written Dispute Notice (Equifax, Experian, TransUnion under FCRA § 611)
+5. `fdcpa-debt-validation` — 30-Day Debt Verification & Validation Request (FDCPA, 15 U.S.C. § 1692g)
+6. `service-cancellation` — Written Service & Insurance Policy Cancellation Notice (Non-Fitness)

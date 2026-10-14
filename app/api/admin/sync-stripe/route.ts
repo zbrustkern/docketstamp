@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (
+      order.status === "PROCESSING_DISPATCH" ||
       order.status === "PROCESSING_HANDWRYTTEN" ||
       order.status === "MAILED"
     ) {

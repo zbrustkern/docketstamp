@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrderStatus } from "@/lib/firebase-admin";
-import { fetchHandwryttenOrderStatus } from "@/lib/handwrytten";
+import { fetchLobLetterStatus } from "@/lib/fulfillment/lob";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { Order } from "@/lib/types";
 
@@ -24,22 +24,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    if (!order.handwryttenOrderId) {
+    const letterId = order.lobLetterId || order.handwryttenOrderId;
+    if (!letterId) {
       return NextResponse.json(
-        { error: "Order has no Handwrytten Order ID yet" },
+        { error: "Order has no Postal Dispatch / Letter ID yet" },
         { status: 400 }
       );
     }
 
     console.log(
-      `[Admin] Fetching live Handwrytten status for Order ${orderId} (HW: ${order.handwryttenOrderId})...`
+      `[Admin] Fetching live Lob USPS status for Order ${orderId} (Letter: ${letterId})...`
     );
 
-    const result = await fetchHandwryttenOrderStatus(order.handwryttenOrderId);
+    const result = await fetchLobLetterStatus(letterId);
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: result.error || "Failed to query Handwrytten" },
+        { success: false, error: result.error || "Failed to query Lob postal status" },
         { status: 400 }
       );
     }
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
       lowerStatus.includes("ship") ||
       lowerStatus.includes("complete") ||
       lowerStatus.includes("sent") ||
+      lowerStatus.includes("delivery") ||
+      lowerStatus === "processed_for_delivery" ||
       lowerStatus === "done"
     ) {
       updates.status = "MAILED";
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       orderId,
-      handwryttenOrderId: order.handwryttenOrderId,
+      handwryttenOrderId: letterId,
       status: updates.status || order.status,
       handwryttenStatus: result.status,
       trackingNumber: updates.handwryttenTrackingNumber,
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Sync status exception";
-    console.error("[Admin Sync Handwrytten Exception]:", msg);
+    console.error("[Admin Sync Postal Exception]:", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

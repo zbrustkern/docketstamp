@@ -304,7 +304,7 @@ export default function AdminDashboardPage() {
       if (!res.ok || !data.success) {
         alert(`Retry failed: ${data.error || "Unknown error"}`);
       } else {
-        alert(`Order successfully dispatched to Handwrytten! Order ID: ${data.handwryttenOrderId}`);
+        alert(`Order successfully dispatched via Lob USPS! Letter ID: ${data.letterId || data.handwryttenOrderId}`);
       }
       await fetchMetrics();
     } catch (err: unknown) {
@@ -328,7 +328,7 @@ export default function AdminDashboardPage() {
         alert(`Sync failed: ${data.error || "Unknown error"}`);
       } else {
         alert(
-          `Handwrytten status updated: ${data.handwryttenStatus || data.status}${
+          `Lob USPS postal status updated: ${data.handwryttenStatus || data.status}${
             data.mailedDate ? ` (Mailed: ${data.mailedDate})` : ""
           }`
         );
@@ -1473,15 +1473,21 @@ export default function AdminDashboardPage() {
 
                           {/* Middle Body: Thumbnail, Recipient & Price */}
                           <div className="flex items-start gap-3 min-w-0">
-                            <div className="relative w-12 h-16 rounded-xl overflow-hidden border border-stone-200 shadow-2xs bg-stone-100 shrink-0">
-                              <Image
-                                src={order.frontImageUrl}
-                                alt="Cover"
-                                fill
-                                sizes="48px"
-                                unoptimized
-                                className="object-cover"
-                              />
+                            <div className="relative w-12 h-16 rounded-xl overflow-hidden border border-stone-200 shadow-2xs bg-stone-100 shrink-0 flex items-center justify-center">
+                              {order.frontImageUrl ? (
+                                <Image
+                                  src={order.frontImageUrl}
+                                  alt="Cover"
+                                  fill
+                                  sizes="48px"
+                                  unoptimized
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-sky-400 font-mono text-[9px] font-bold">
+                                  <span>DS</span>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex-1 min-w-0 space-y-1">
@@ -1653,15 +1659,21 @@ export default function AdminDashboardPage() {
                           <React.Fragment key={order.id}>
                             <tr className="hover:bg-stone-50/50 transition">
                               <td className="py-3 px-4">
-                                <div className="relative w-10 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm bg-stone-100 flex-shrink-0">
-                                  <Image
-                                    src={order.frontImageUrl}
-                                    alt="Cover"
-                                    fill
-                                    sizes="40px"
-                                    unoptimized
-                                    className="object-cover"
-                                  />
+                                <div className="relative w-10 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm bg-stone-100 flex-shrink-0 flex items-center justify-center">
+                                  {order.frontImageUrl ? (
+                                    <Image
+                                      src={order.frontImageUrl}
+                                      alt="Cover"
+                                      fill
+                                      sizes="40px"
+                                      unoptimized
+                                      className="object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-slate-900 flex items-center justify-center text-sky-400 font-mono text-[8px] font-bold">
+                                      DS
+                                    </div>
+                                  )}
                                 </div>
                               </td>
                               <td className="py-3 px-4">

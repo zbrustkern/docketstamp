@@ -14,12 +14,15 @@ export type OrderStatus =
   | "PAYMENT_RECEIVED"
   | "DISPATCHING"
   | "PROCESSING_HANDWRYTTEN"
+  | "PROCESSING_DISPATCH"
   | "QUEUED_FOR_FULFILLMENT"
+  | "DISPATCHED_TO_USPS"
   | "MAILED"
+  | "DELIVERED"
   | "PAYMENT_VERIFICATION_FAILED"
   | "FAILED";
 
-export type OccasionType = "birthday" | "anniversary" | "holiday" | "milestone" | "custom";
+export type OccasionType = "birthday" | "anniversary" | "holiday" | "milestone" | "custom" | "statutory_deadline";
 
 export interface RecipientOccasion {
   occasionType: OccasionType;
@@ -90,11 +93,20 @@ export interface Order {
   stripePaymentId?: string;
   customerEmail: string;
   userId?: string;
-  occasion?: string;
-  frontImageUrl: string;
-  printedMessage: string;
-  handwrittenNote: string;
-  fontStyleId: string;
+  docketId?: string;
+  docketNumber?: string;
+  noticeId?: string;
+  noticeType?: string;
+  serviceLevel?: "FIRST_CLASS" | "CERTIFIED" | "CERTIFIED_RETURN_RECEIPT";
+  lobLetterId?: string;
+  lobTrackingNumber?: string;
+  lobTrackingUrl?: string;
+  returnReceiptUrl?: string;
+  documentHtml?: string;
+  frontImageUrl?: string;
+  printedMessage?: string;
+  handwrittenNote?: string;
+  fontStyleId?: string;
   recipientAddress: MailingAddress;
   returnAddress: MailingAddress;
   status: OrderStatus;
@@ -103,6 +115,7 @@ export interface Order {
   handwryttenTrackingNumber?: string;
   handwryttenTrackingUrl?: string;
   handwryttenMailedDate?: string;
+  lobMailedDate?: string;
   fulfillmentError?: string;
   scheduledSendDate?: string; // YYYY-MM-DD if scheduled
   dispatchStartedAt?: number;

@@ -465,10 +465,12 @@ async function runPaymentModeSafetyTests() {
 
     const processedOrder = (await getOrderById(testOrderId)) as any;
     assert(
-      processedOrder?.status === "PROCESSING_HANDWRYTTEN" &&
+      (processedOrder?.status === "PROCESSING_DISPATCH" ||
+        processedOrder?.status === "PROCESSING_HANDWRYTTEN") &&
         processedOrder?.isTest === true &&
         processedOrder?.paymentMode === "stripe_test" &&
-        processedOrder?.handwryttenOrderId?.startsWith("test_hw_"),
+        (processedOrder?.handwryttenOrderId?.startsWith("test_") ||
+          processedOrder?.lobLetterId?.startsWith("test_")),
       `Order is labelled as test order in database (isTest: ${processedOrder?.isTest}, paymentMode: ${processedOrder?.paymentMode}, HW ID: ${processedOrder?.handwryttenOrderId})`
     );
 

@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Tag,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import { Order } from "@/lib/types";
 
@@ -53,10 +54,15 @@ export function OrderJourneyDrawer({
     : attr?.utmSource || "Direct / Organic";
 
   // Financial unit calculation
-  const grossDollars = (order.amountInCents || 900) / 100;
+  const grossDollars = (order.amountInCents || 1995) / 100;
   const stripeFeeDollars = Number((grossDollars * 0.029 + 0.3).toFixed(2));
-  const handwryttenCogs = 4.88;
-  const netMarginDollars = Number((grossDollars - stripeFeeDollars - handwryttenCogs).toFixed(2));
+  const lobCogs =
+    order.serviceLevel === "CERTIFIED_RETURN_RECEIPT"
+      ? 10.95
+      : order.serviceLevel === "FIRST_CLASS"
+      ? 1.85
+      : 7.35;
+  const netMarginDollars = Number((grossDollars - stripeFeeDollars - lobCogs).toFixed(2));
   const marginPercent = grossDollars > 0 ? Math.round((netMarginDollars / grossDollars) * 100) : 0;
 
   return (
@@ -165,11 +171,11 @@ export function OrderJourneyDrawer({
         <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
             <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              Card Creative &amp; Note
+              <FileText className="w-3.5 h-3.5 text-sky-600" />
+              Notice Instrument &amp; Content
             </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 capitalize">
-              {order.occasion || "Greeting"}
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 uppercase">
+              {order.serviceLevel || "Formal Notice"}
             </span>
           </div>
 
@@ -237,8 +243,8 @@ export function OrderJourneyDrawer({
             </div>
 
             <div className="flex items-center justify-between text-stone-500 text-[11px]">
-              <span>Handwrytten Pen COGS</span>
-              <span className="text-indigo-600">-${handwryttenCogs.toFixed(2)}</span>
+              <span>Lob USPS Postage COGS</span>
+              <span className="text-indigo-600">-${lobCogs.toFixed(2)}</span>
             </div>
 
             {order.discountCode && (
@@ -249,7 +255,7 @@ export function OrderJourneyDrawer({
             )}
 
             <div className="pt-2 border-t border-stone-100 flex items-center justify-between font-bold">
-              <span className="text-stone-800">Net Studio Margin</span>
+              <span className="text-stone-800">Net Registry Margin</span>
               <span className="text-emerald-700 text-sm">
                 +${netMarginDollars.toFixed(2)}
               </span>
@@ -262,13 +268,13 @@ export function OrderJourneyDrawer({
           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
             <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1.5">
               <Package className="w-3.5 h-3.5 text-stone-600" />
-              Physical Dispatch
+              Postal Dispatch
             </span>
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                 order.status === "MAILED"
                   ? "bg-purple-50 text-purple-800 border border-purple-200"
-                  : order.status === "PROCESSING_HANDWRYTTEN" || order.status === "DISPATCHING"
+                  : order.status === "PROCESSING_DISPATCH" || order.status === "PROCESSING_HANDWRYTTEN" || order.status === "DISPATCHING"
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                   : order.status === "QUEUED_FOR_FULFILLMENT" || order.status === "PAYMENT_RECEIVED"
                   ? "bg-blue-50 text-blue-800 border border-blue-200"
@@ -280,19 +286,19 @@ export function OrderJourneyDrawer({
           </div>
 
           <div className="space-y-2 text-xs">
-            {order.handwryttenOrderId ? (
+            {order.lobLetterId || order.handwryttenOrderId ? (
               <div className="flex items-center justify-between bg-stone-50 p-2 rounded-xl border border-stone-200">
                 <div>
-                  <span className="text-[10px] text-stone-400 block font-medium">Handwrytten ID</span>
-                  <span className="font-mono font-bold text-stone-900 text-xs">#{order.handwryttenOrderId}</span>
+                  <span className="text-[10px] text-stone-400 block font-medium">Postal Dispatch ID</span>
+                  <span className="font-mono font-bold text-stone-900 text-xs">#{order.lobLetterId || order.handwryttenOrderId}</span>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold uppercase">
-                  {order.handwryttenStatus || "Writing"}
+                  {order.handwryttenStatus || "Dispatched"}
                 </span>
               </div>
             ) : (
               <div className="bg-amber-50 p-2 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
-                Pending dispatch to robot pen queue
+                Pending dispatch to USPS postal stream
               </div>
             )}
 

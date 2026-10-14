@@ -32,7 +32,6 @@ import { AddressData } from "./Step3EnvelopeAddressing";
 import { evaluatePaymentSubmission } from "@/lib/payment-mode";
 import { trackEvent } from "@/lib/telemetry";
 import { Sheet } from "@/components/flow/Sheet";
-import { CardPreview } from "@/components/CardPreview";
 
 export interface AppliedDiscountInfo {
   code: string;
@@ -829,23 +828,20 @@ function InnerPaymentForm({
         </button>
       </div>
 
-      {/* CARD PREVIEW SHEET */}
+      {/* DOCUMENT PREVIEW SHEET */}
       <Sheet
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
-        title="Card Preview"
-        description={cardTitle}
+        title="Official Instrument Review"
+        description={cardTitle || "Formal Legal Notice"}
       >
-        <div className="py-2">
-          <CardPreview
-            coverUrl={cardUrl}
-            printedGreeting={salutation}
-            handwrittenNote={[bodyNote, signOff].filter(Boolean).join("\n\n")}
-            fontStyleId={fontStyleId || "hwDavid"}
-            occasion={occasion || "Greeting Card"}
-            currentStep={4}
-            initialView="cover"
-          />
+        <div className="py-2 p-4 bg-white text-slate-900 border border-slate-300 rounded-lg font-serif text-xs leading-relaxed space-y-3 shadow-inner">
+          <div className="font-mono text-[10px] text-slate-500 border-b border-slate-200 pb-2 flex justify-between items-center">
+            <span>DOCKETSTAMP™ OFFICIAL NOTICE REGISTRY</span>
+            <span>USPS DISPATCH READY</span>
+          </div>
+          <div className="font-bold text-sm text-slate-900">{cardTitle || "Statutory Legal Notice"}</div>
+          <div className="whitespace-pre-wrap font-serif text-slate-800">{[salutation, bodyNote, signOff].filter(Boolean).join("\n\n")}</div>
         </div>
       </Sheet>
     </form>

@@ -7,7 +7,8 @@ import {
   recordDiscountUsage,
   resolveIncidentsForOrder,
 } from "./firebase-admin";
-import { fulfillHandwryttenOrder } from "./handwrytten";
+import { dispatchLetter, UspsServiceLevel } from "./fulfillment/lob";
+import { assertNotFitnessEntity } from "./data/verified-recipients";
 import { logIncident } from "./incident-logger";
 import { Order } from "./types";
 import { sendMetaCapiPurchaseEvent } from "./meta-conversions-api";
@@ -118,6 +119,7 @@ export async function processPaidOrder(
 
       if (
         (existingOrder.status === "DISPATCHING" && !isStaleLock) ||
+        existingOrder.status === "PROCESSING_DISPATCH" ||
         existingOrder.status === "PROCESSING_HANDWRYTTEN" ||
         existingOrder.status === "MAILED"
       ) {
@@ -243,34 +245,59 @@ export async function processPaidOrder(
   let fulfillment: { success: boolean; order_id?: string; error?: string; details?: unknown };
 
   if (isTestModePayment) {
-    // Test/Live safety boundary: Test payments must NEVER submit to live Handwrytten supplier
+    // Test/Live safety boundary: Test payments must NEVER submit to live postal gateway
     console.log(
-      `[OrderProcessor] Test payment mode active (${clientContext?.paymentMode || "stripe_test"}). Skipping live Handwrytten dispatch.`
+      `[OrderProcessor] Test payment mode active (${clientContext?.paymentMode || "stripe_test"}). Skipping live Lob USPS dispatch.`
     );
     fulfillment = {
       success: true,
-      order_id: `test_hw_${orderId}`,
+      order_id: `test_ds_${orderId}`,
     };
   } else {
-    // 5. Dispatch to Handwrytten robotic pen fulfillment with deterministic orderId for supplier idempotency
-    fulfillment = await fulfillHandwryttenOrder({
+    // 5. Dispatch to Lob programmatic USPS letter fulfillment with deterministic orderId for idempotency
+    const toName = `${order.recipientAddress.firstName || ""} ${order.recipientAddress.lastName || ""}`.trim() || "Receiving Party";
+    const fromName = `${order.returnAddress.firstName || ""} ${order.returnAddress.lastName || ""}`.trim() || "Filing Party";
+    const docketId = order.docketId || `DS-2026-${orderId.slice(-6).toUpperCase()}`;
+
+    const lobResult = await dispatchLetter({
       orderId,
-      imageUrl: order.frontImageUrl,
-      printedGreeting: order.printedMessage,
-      handwrittenMessage: order.handwrittenNote,
-      fontId: order.fontStyleId || "1",
-      recipient: order.recipientAddress,
-      returnAddress: order.returnAddress,
-      scheduledSendDate: order.scheduledSendDate,
+      docketId,
+      description: `DocketStamp Formal Notice: ${docketId}`,
+      serviceLevel: (order.serviceLevel as UspsServiceLevel) || "CERTIFIED",
+      to: {
+        name: toName,
+        address_line1: order.recipientAddress.street1,
+        address_line2: order.recipientAddress.street2,
+        address_city: order.recipientAddress.city,
+        address_state: order.recipientAddress.state,
+        address_zip: order.recipientAddress.zip,
+      },
+      from: {
+        name: fromName,
+        address_line1: order.returnAddress.street1,
+        address_line2: order.returnAddress.street2,
+        address_city: order.returnAddress.city,
+        address_state: order.returnAddress.state,
+        address_zip: order.returnAddress.zip,
+      },
+      file: order.documentHtml || order.printedMessage || `<html><body><h1>Formal Notice ${docketId}</h1><p>${order.handwrittenNote || ""}</p></body></html>`,
+      color: false,
     });
+
+    fulfillment = {
+      success: lobResult.success,
+      order_id: lobResult.letterId,
+      error: lobResult.error,
+      details: lobResult.rawResponse,
+    };
   }
 
   if (!fulfillment.success) {
     const rawError = fulfillment.error || "";
-    console.error(`[OrderProcessor] Handwrytten dispatch queued/failed for Order ${orderId}:`, rawError);
+    console.error(`[OrderProcessor] Lob USPS dispatch queued/failed for Order ${orderId}:`, rawError);
     await updateOrderStatus(orderId, {
       status: "QUEUED_FOR_FULFILLMENT",
-      fulfillmentError: rawError || "Awaiting studio fulfillment queue",
+      fulfillmentError: rawError || "Awaiting postal dispatch queue",
     });
 
     const isBillingError = /payment|card|balance|credit|funds/i.test(rawError);
@@ -283,17 +310,17 @@ export async function processPaidOrder(
       : "TRANSIENT";
 
     const summaryPrefix = isBillingError
-      ? "[Studio Wholesale Billing] Handwrytten wholesale charge declined"
+      ? "[Postal Supplier Billing] Lob wholesale account depleted"
       : isAddressError
-      ? "[Recipient Address Error] Recipient address rejected"
-      : "Handwrytten robotic pen dispatch failed";
+      ? "[Recipient Address Error] USPS address rejected"
+      : "USPS postal dispatch gateway failed";
 
     await logIncident({
-      type: "HANDWRYTTEN",
+      type: "SYSTEM",
       category,
       severity: isBillingError ? "error" : "warning",
       summary: `${summaryPrefix} for Order ${orderId}: ${rawError || "Fulfillment API error"}`,
-      technicalDetails: rawError || "Handwrytten singleStepOrder API error",
+      technicalDetails: rawError || "Lob letter API error",
       metadata: { orderId, details: fulfillment.details },
     });
 
@@ -323,10 +350,11 @@ export async function processPaidOrder(
     };
   }
 
-  // 6. Update Firestore Order to PROCESSING_HANDWRYTTEN
+  // 6. Update Firestore Order to PROCESSING_DISPATCH
   await updateOrderStatus(orderId, {
-    status: "PROCESSING_HANDWRYTTEN",
-    handwryttenOrderId: fulfillment.order_id,
+    status: "PROCESSING_DISPATCH",
+    lobLetterId: fulfillment.order_id,
+    handwryttenOrderId: fulfillment.order_id, // Backward compatibility
     fulfillmentError: undefined,
     ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
       ? {
@@ -406,7 +434,7 @@ export async function processPaidOrder(
 
   return {
     success: true,
-    status: "PROCESSING_HANDWRYTTEN",
+    status: "PROCESSING_DISPATCH",
     handwryttenOrderId: fulfillment.order_id,
   };
 }

@@ -1,22 +1,16 @@
 import { MetadataRoute } from "next";
-import { getAllScenarios } from "@/lib/seo-scenarios";
+import { getAllNoticeTemplates } from "@/lib/notices/registry";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://sendmynotes.com";
+  const baseUrl = "https://docketstamp.com";
   const lastModified = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified,
-      changeFrequency: "weekly",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/send`,
-      lastModified,
       changeFrequency: "daily",
-      priority: 0.9,
+      priority: 1.0,
     },
     {
       url: `${baseUrl}/privacy`,
@@ -38,12 +32,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const scenarioRoutes: MetadataRoute.Sitemap = getAllScenarios().map((s) => ({
-    url: `${baseUrl}/send/${s.occasionSlug}/${s.slug}`,
+  const noticeRoutes: MetadataRoute.Sitemap = getAllNoticeTemplates().map((n) => ({
+    url: `${baseUrl}/notices/${n.id}`,
     lastModified,
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...scenarioRoutes];
+  return [...staticRoutes, ...noticeRoutes];
 }

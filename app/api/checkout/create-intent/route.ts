@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const viewToken = `tok_${crypto.randomBytes(16).toString("hex")}`;
 
     // Evaluate discount code if provided
-    let finalAmountInCents = CARD_FLAT_RATE_CENTS; // 900
+    let finalAmountInCents: number = CARD_FLAT_RATE_CENTS;
     let discountAmountInCents = 0;
     let appliedCode: string | undefined = undefined;
 
