@@ -17,30 +17,27 @@ env:
     availability:
       - RUNTIME
 
-  - variable: STRIPE_WEBHOOK_SECRET
-    secret: stripe-webhook-secret
-    availability:
-      - RUNTIME
-
-  - variable: LOB_API_KEY
-    secret: lob-api-key
-    availability:
-      - RUNTIME
-
-  - variable: LOB_DISPATCH_API_KEY
-    secret: lob-api-key
-    availability:
-      - RUNTIME
-
-  - variable: LOB_ADDRESS_VERIFICATION_KEY
-    secret: lob-api-key
-    availability:
-      - RUNTIME
-
-  - variable: ADMIN_SECRET_KEY
-    secret: admin-secret-key
-    availability:
-      - RUNTIME
+  # Optional secrets to enable once created in Google Cloud Secret Manager:
+  # - variable: STRIPE_WEBHOOK_SECRET
+  #   secret: stripe-webhook-secret
+  #   availability:
+  #     - RUNTIME
+  # - variable: LOB_API_KEY
+  #   secret: lob-api-key
+  #   availability:
+  #     - RUNTIME
+  # - variable: LOB_DISPATCH_API_KEY
+  #   secret: lob-api-key
+  #   availability:
+  #     - RUNTIME
+  # - variable: LOB_ADDRESS_VERIFICATION_KEY
+  #   secret: lob-api-key
+  #   availability:
+  #     - RUNTIME
+  # - variable: ADMIN_SECRET_KEY
+  #   secret: admin-secret-key
+  #   availability:
+  #     - RUNTIME
 
   - variable: ENVIRONMENT
     value: production
@@ -60,34 +57,3 @@ env:
     availability:
       - BUILD
       - RUNTIME
-
-  - variable: NEXT_PUBLIC_GOOGLE_TAG_ID
-    value: GT-TNPN256B
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_GOOGLE_ADS_ID
-    value: AW-18474411963
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
-    value: ZzzVCMqAjoUdELvPpOlE
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_META_PIXEL_ID
-    value: "1773518093991339"
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_META_DOMAIN_VERIFICATION
-    value: "7j8rbkz9ktc5jzapl53uueqvute5et"
-    availability:
-      - BUILD
-      - RUNTIME
-
