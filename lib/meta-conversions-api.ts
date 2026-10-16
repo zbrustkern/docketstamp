@@ -233,7 +233,8 @@ export async function sendMetaCapiEvents(
       event_name: event.event_name,
       event_time: event.event_time || Math.floor(Date.now() / 1000),
       event_id: event.event_id,
-      event_source_url: event.event_source_url || "https://sendmynotes.com",
+      event_source_url:
+        event.event_source_url || process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com",
       action_source: event.action_source || "website",
       user_data: formattedUserData,
       custom_data: event.custom_data || {},
@@ -386,7 +387,7 @@ export async function sendMetaCapiPurchaseEvent(params: {
         event_name: "Purchase",
         event_time: Math.floor(Date.now() / 1000),
         event_id: order.id, // Exact match with browser pixel trackMetaPurchase { eventID: order.id }
-        event_source_url: `https://sendmynotes.com/order/${order.id}`,
+        event_source_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com"}/order/${order.id}`,
         action_source: "website",
         user_data: userData,
         custom_data: customData,

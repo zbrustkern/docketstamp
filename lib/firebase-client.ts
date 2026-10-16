@@ -23,11 +23,16 @@ export const STAGING_FIREBASE_CONFIG = {
 
 export function getClientFirebaseConfig() {
   const isStaging =
+    process.env.ENVIRONMENT === "staging" ||
     (typeof window !== "undefined" &&
-      (window.location.hostname.includes("sendmynotes-staging") ||
+      (window.location.hostname.includes("docketstamp-staging") ||
+        window.location.hostname.includes("sendmynotes-staging") ||
         window.location.hostname.includes("staging"))) ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
     process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging"));
 
   const baseDefaults = isStaging ? STAGING_FIREBASE_CONFIG : PROD_FIREBASE_CONFIG;

@@ -16,7 +16,9 @@ import {
   CreditCard,
   AlertTriangle,
 } from "lucide-react";
-import { getAllNoticeTemplates, STATUTORY_COMPLIANCE_DISCLOSURE } from "@/lib/notices/registry";
+import { STATUTORY_COMPLIANCE_DISCLOSURE } from "@/src/lib/docket/guardrails";
+import { HeroLookupSection } from "@/src/components/docket/HeroLookupSection";
+import { NoticeCatalogBrowser } from "@/src/components/docket/NoticeCatalogBrowser";
 
 export const metadata = {
   title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
@@ -25,8 +27,6 @@ export const metadata = {
 };
 
 export default function HomePage() {
-  const notices = getAllNoticeTemplates();
-
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-amber-100 selection:text-amber-900">
       {/* 1. Header / Navigation */}
@@ -73,6 +73,9 @@ export default function HomePage() {
           Complete highlighted fields directly on the instrument, adopt your formal signature, and
           immediately dispatch via USPS First-Class or Certified Mail with Electronic Return Receipt.
         </p>
+
+        {/* Primary CTAs & Docket ID Quick Lookup */}
+        <HeroLookupSection />
 
         {/* Quick Highlights Grid */}
         <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto text-left">
@@ -208,9 +211,12 @@ export default function HomePage() {
                   <p className="font-mono text-[10px] text-slate-500">Executed via DocketStamp™ Secure Registry &bull; Verified Timestamp</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-sans text-xs font-bold transition shadow-sm">
-                    Adopt Signature &amp; Stamp Notice &rarr;
-                  </button>
+                  <Link
+                    href="/notices/security-deposit-return-demand-letter"
+                    className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-sans text-xs font-bold transition shadow-sm inline-block"
+                  >
+                    Draft &amp; Stamp Notice &rarr;
+                  </Link>
                 </div>
               </div>
             </div>
@@ -218,8 +224,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Initial 6-Notice Catalog */}
-      <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto space-y-8 flex-1">
+      {/* 4. Notice Catalog (All 9 Cartridges & 38-Recipient Directory) */}
+      <section id="notice-catalog" className="py-16 px-4 sm:px-6 max-w-6xl mx-auto space-y-8 flex-1 scroll-mt-20">
         <div className="text-center space-y-2">
           <span className="text-xs font-mono uppercase tracking-widest text-sky-400 font-bold block">
             AUTHORITATIVE FORM LETTER REGISTRY
@@ -228,50 +234,12 @@ export default function HomePage() {
             Available Deterministic Statutory Notices
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-            Choose a verified notice template. Complete all factual fields in 60 seconds with instant
-            CASS address validation.
+            Choose a verified notice cartridge. Complete all factual fields in 60 seconds with instant
+            CASS address validation and court-ready postal proof.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {notices.map((notice) => (
-            <div
-              key={notice.id}
-              className="p-6 rounded-2xl bg-slate-800/60 border border-slate-700 hover:border-slate-600 transition flex flex-col justify-between space-y-4 shadow-lg group"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-sky-950 text-sky-400 border border-sky-800/80">
-                    {notice.badge}
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    {notice.fields.length} Required Fields
-                  </span>
-                </div>
-                <h3 className="font-serif text-lg font-bold text-white group-hover:text-sky-300 transition">
-                  {notice.title}
-                </h3>
-                <p className="font-mono text-[11px] text-slate-400 leading-relaxed">
-                  {notice.governingCitation}
-                </p>
-                <div className="text-[11px] font-sans text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-                  <span className="font-bold text-slate-400 font-mono block text-[10px] uppercase mb-0.5">Statutory Window:</span>
-                  {notice.statutoryWindow}
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-700/80 flex items-center justify-between">
-                <span className="text-[11px] font-mono text-slate-400">
-                  USPS: <span className="text-white font-semibold">{notice.recommendedServiceLevel.replace(/_/g, " ")}</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-400 hover:text-sky-300 font-sans cursor-pointer">
-                  <span>Prepare Docket</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <NoticeCatalogBrowser />
       </section>
 
       {/* 5. 3-Tier Pricing & Unit Economics */}
@@ -318,9 +286,12 @@ export default function HomePage() {
                   </li>
                 </ul>
               </div>
-              <button className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-sans transition">
+              <Link
+                href="#notice-catalog"
+                className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-sans transition text-center block"
+              >
                 Select First-Class ($12.95)
-              </button>
+              </Link>
             </div>
 
             {/* Tier 2 (Featured) */}
@@ -354,9 +325,12 @@ export default function HomePage() {
                   </li>
                 </ul>
               </div>
-              <button className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold font-sans transition shadow-md shadow-sky-900/50">
+              <Link
+                href="#notice-catalog"
+                className="w-full py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold font-sans transition shadow-md shadow-sky-900/50 text-center block"
+              >
                 Select Certified Mail ($19.95)
-              </button>
+              </Link>
             </div>
 
             {/* Tier 3 */}
@@ -387,9 +361,12 @@ export default function HomePage() {
                   </li>
                 </ul>
               </div>
-              <button className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-sans transition">
+              <Link
+                href="#notice-catalog"
+                className="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-sans transition text-center block"
+              >
                 Select Certified + ERR ($27.95)
-              </button>
+              </Link>
             </div>
           </div>
         </div>

@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
           event_name: "Purchase",
           event_time: Math.floor(Date.now() / 1000),
           event_id: testOrderId,
-          event_source_url: "https://sendmynotes.com/order/test-verification",
+          event_source_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com"}/order/test-verification`,
           action_source: "website",
           user_data: {
-            email: "test_verification@sendmynotes.com",
+            email: "test_verification@docketstamp.com",
             firstName: "Test",
             lastName: "Tester",
             city: "Lake Forest",

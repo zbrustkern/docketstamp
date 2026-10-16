@@ -335,17 +335,23 @@ export function sanitizeFirestoreData<T extends Record<string, any>>(data: T): T
 // Singleton check for Real vs Mock Firebase Admin
 function initializeFirebase() {
   const isStagingEnv =
+    process.env.ENVIRONMENT === "staging" ||
+    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
     process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging")) ||
-    (typeof process.env.FIREBASE_CONFIG === "string" && process.env.FIREBASE_CONFIG.includes("sendmynotes-staging"));
+    (typeof process.env.FIREBASE_CONFIG === "string" &&
+      (process.env.FIREBASE_CONFIG.includes("docketstamp-staging") ||
+        process.env.FIREBASE_CONFIG.includes("sendmynotes-staging")));
 
   const projectId =
     process.env.FIREBASE_PROJECT_ID ||
     process.env.GOOGLE_CLOUD_PROJECT ||
-    (isStagingEnv ? "sendmynotes-staging" : undefined) ||
+    (isStagingEnv ? "docketstamp-staging" : undefined) ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    "sendmynotes-2a417";
+    "docketstamp";
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
@@ -471,6 +477,12 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   const doc = await getOrdersCollection().doc(orderId).get();
   if (!doc.exists) return null;
   return doc.data() as Order;
+}
+
+export async function getOrderByDocketId(docketId: string): Promise<Order | null> {
+  const snapshot = await getOrdersCollection().where("docketId", "==", docketId).limit(1).get();
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].data() as Order;
 }
 
 export async function updateOrderStatus(

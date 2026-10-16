@@ -35,15 +35,19 @@ export function getAdminSecret(): string | null {
     return secret.trim();
   }
   if (process.env.NODE_ENV !== "production") {
-    return "sendmynotes2026";
+    return "ds_dev_admin_2026";
   }
   // If explicitly in staging environment, provide default staging passphrase
   if (
+    process.env.ENVIRONMENT === "staging" ||
+    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
     process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
+    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging"))
   ) {
-    return "smn_staging_admin_2026";
+    return "ds_staging_admin_2026";
   }
   console.error("[AdminAuth] ERROR: ADMIN_SECRET_KEY is not configured in production environment.");
   return null;

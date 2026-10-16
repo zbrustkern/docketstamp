@@ -1,0 +1,401 @@
+'use client';
+
+/**
+ * useAgentHydration Hook
+ *
+ * Implements Section 4.1 & 4.2 of docs/DOCKETSTAMP_AGENTIC_EXPANSION.md:
+ * - Reads URL parameters using next/navigation (useSearchParams) with fallback to window.location.search
+ * - Supports two hydration sources:
+ *   a. Server-staged draft (?stage=DS-STAGE-XXXXXX) via GET /api/docket/stage/[stageId]
+ *   b. Direct URL query params (?recipientId=..., ?tier=..., ?field.<key>=..., ?<fieldKey>=...)
+ * - Combines server-staged values and direct query param overrides deterministically
+ * - Computes missing required fields, first unfilled field, and signature-readiness
+ */
+
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  NoticeTemplateDefinition,
+  MailTierId,
+  PostalAddress,
+  DocketAddress,
+} from '@/lib/docket/types';
+import { getVerifiedRecipientById } from '@/lib/docket/data/verified-recipients';
+import { getStateStatute } from '@/lib/docket/data/state-statutes';
+
+export interface UseAgentHydrationOptions {
+  notice: NoticeTemplateDefinition;
+  initialValues?: Record<string, string>;
+  currentValues?: Record<string, string>;
+  isSignatureAdopted?: boolean;
+}
+
+export interface UseAgentHydrationResult {
+  isStaged: boolean;
+  stagedSource: 'stage' | 'url_params' | null;
+  stageId: string | null;
+  hydratedValues: Record<string, string>;
+  hydratedTier: MailTierId | null;
+  missingRequiredKeys: string[];
+  firstUnfilledKey: string | null;
+  shouldJumpToSignature: boolean;
+  isLoadingStage: boolean;
+  stageError: string | null;
+}
+
+const VALID_TIERS: Set<MailTierId> = new Set([
+  'first_class',
+  'certified',
+  'certified_return_receipt',
+]);
+
+function isValidTier(val: unknown): val is MailTierId {
+  return typeof val === 'string' && VALID_TIERS.has(val as MailTierId);
+}
+
+function isValueFilled(val: unknown): boolean {
+  if (typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  if (trimmed.length === 0) return false;
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) return false;
+  return true;
+}
+
+function extractAddressFields(
+  addr: Partial<PostalAddress | DocketAddress> | Record<string, any> | undefined | null
+): Record<string, string> {
+  if (!addr || typeof addr !== 'object') return {};
+  const a = addr as Record<string, any>;
+  const res: Record<string, string> = {};
+
+  const name = a.name || a.senderFullName || a.recipientFormalName || a.formalRecipientLine || a.company;
+  if (name && typeof name === 'string') res.name = name;
+
+  const line1 = a.addressLine1 || a.address_line1 || a.street;
+  if (line1 && typeof line1 === 'string') res.addressLine1 = line1;
+
+  const line2 = a.addressLine2 || a.address_line2;
+  if (line2 && typeof line2 === 'string') res.addressLine2 = line2;
+
+  const city = a.city || a.address_city;
+  if (city && typeof city === 'string') res.city = city;
+
+  const state = a.state || a.address_state;
+  if (state && typeof state === 'string') res.state = state;
+
+  const zip = a.zip || a.address_zip || a.postalCode;
+  if (zip && typeof zip === 'string') res.zip = zip;
+
+  return res;
+}
+
+export function useAgentHydration({
+  notice,
+  initialValues = {},
+  currentValues = {},
+  isSignatureAdopted = false,
+}: UseAgentHydrationOptions): UseAgentHydrationResult {
+  const nextSearchParams = useSearchParams();
+
+  const [isLoadingStage, setIsLoadingStage] = useState(false);
+  const [stageError, setStageError] = useState<string | null>(null);
+  const [serverStageData, setServerStageData] = useState<{
+    stageId: string;
+    fieldValues: Record<string, string>;
+    tier: MailTierId | null;
+  } | null>(null);
+
+  const fetchedStageIdRef = useRef<string | null>(null);
+
+  // Helper to safely get all query entries from searchParams or window fallback
+  const queryMap = useMemo<Map<string, string>>(() => {
+    const map = new Map<string, string>();
+
+    // 1. Next.js searchParams (if available)
+    if (nextSearchParams) {
+      nextSearchParams.forEach((value, key) => {
+        map.set(key, value);
+      });
+    }
+
+    // 2. Safe browser fallback if searchParams was empty but window.location has query
+    if (map.size === 0 && typeof window !== 'undefined' && window.location.search) {
+      try {
+        const raw = window.location.search.replace(/^\?/, '');
+        const usp = new URLSearchParams(raw);
+        usp.forEach((value, key) => {
+          map.set(key, value);
+        });
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    return map;
+  }, [nextSearchParams]);
+
+  // Stage ID detection
+  const stageId = useMemo<string | null>(() => {
+    return queryMap.get('stage') || queryMap.get('stageId') || null;
+  }, [queryMap]);
+
+  // Direct URL query param values extraction
+  const urlParamExtraction = useMemo(() => {
+    const values: Record<string, string> = {};
+    let tier: MailTierId | null = null;
+    let hasDirectParams = false;
+
+    // 1. Recipient ID lookup (?recipientId=leg_wth)
+    const recipientId = queryMap.get('recipientId') || queryMap.get('recipient');
+    if (recipientId) {
+      hasDirectParams = true;
+      const rec = getVerifiedRecipientById(recipientId);
+      if (rec) {
+        values.recipientFormalName = rec.formalRecipientLine || rec.brandName;
+        values.recipientAddressLine1 = rec.addressLine1;
+        values.recipientCity = rec.city;
+        values.recipientState = rec.state;
+        values.recipientZip = rec.zip;
+        if (notice.slug.includes('credit-bureau') || rec.category === 'credit_bureau') {
+          values.bureauEntityId = rec.id;
+        }
+        if (rec.recommendedTier && isValidTier(rec.recommendedTier)) {
+          tier = rec.recommendedTier;
+        }
+      }
+    }
+
+    // 2. Mail tier (?tier=certified_return_receipt)
+    const rawTier = queryMap.get('tier') || queryMap.get('serviceLevel');
+    if (rawTier && isValidTier(rawTier)) {
+      tier = rawTier;
+      hasDirectParams = true;
+    }
+
+    // 3. Field parameters (?field.<key>=<val> or direct notice field keys)
+    const noticeFieldKeys = new Set(notice.fields.map((f) => f.key));
+
+    // Common standard fields to check directly
+    const commonFieldKeys = new Set([
+      'senderFullName',
+      'senderAddressLine1',
+      'senderAddressLine2',
+      'senderCity',
+      'senderState',
+      'senderZip',
+      'recipientFormalName',
+      'recipientAddressLine1',
+      'recipientAddressLine2',
+      'recipientCity',
+      'recipientState',
+      'recipientZip',
+      'propertyState',
+      'statuteCitation',
+      'statuteDeadline',
+      'docketId',
+    ]);
+
+    queryMap.forEach((val, key) => {
+      if (!val) return;
+
+      // a. Dot notation (?field.productOrServiceName=...)
+      if (key.startsWith('field.')) {
+        const fieldKey = key.slice(6);
+        if (fieldKey) {
+          values[fieldKey] = val;
+          hasDirectParams = true;
+        }
+      } else if (noticeFieldKeys.has(key) || commonFieldKeys.has(key)) {
+        // b. Direct key match (?productOrServiceName=...)
+        values[key] = val;
+        hasDirectParams = true;
+      }
+    });
+
+    // Auto-resolve state statute if propertyState was passed
+    if (values.propertyState && notice.usesStateStatuteLookup) {
+      const statute = getStateStatute(values.propertyState);
+      if (statute) {
+        if (!values.statuteCitation) values.statuteCitation = statute.statuteCitation;
+        if (!values.statuteDeadline) values.statuteDeadline = statute.returnDeadlineLabel;
+      }
+    }
+
+    return { values, tier, hasDirectParams };
+  }, [queryMap, notice]);
+
+  // Fetch server-staged draft when stageId is present
+  useEffect(() => {
+    if (!stageId) {
+      setServerStageData(null);
+      setIsLoadingStage(false);
+      setStageError(null);
+      return;
+    }
+
+    // Avoid duplicate fetching if already fetched
+    if (fetchedStageIdRef.current === stageId) {
+      return;
+    }
+
+    let isMounted = true;
+    fetchedStageIdRef.current = stageId;
+    setIsLoadingStage(true);
+    setStageError(null);
+
+    async function fetchStagedDraft() {
+      try {
+        const res = await fetch(`/api/docket/stage/${encodeURIComponent(stageId!)}`);
+        if (!res.ok) {
+          throw new Error(`Draft staging returned status ${res.status}`);
+        }
+        const data = await res.json();
+        if (!isMounted) return;
+
+        // Support both direct structure and wrapped draft/payload structures
+        const payload = data.draft || data.payload || data.data || data;
+        const fieldValues: Record<string, string> = {
+          ...(payload.fieldValues || {}),
+        };
+
+        // Recipient resolution
+        const stageRecipientId = payload.recipientId || data.recipientId;
+        if (stageRecipientId) {
+          const rec = getVerifiedRecipientById(stageRecipientId);
+          if (rec) {
+            fieldValues.recipientFormalName = rec.formalRecipientLine || rec.brandName;
+            fieldValues.recipientAddressLine1 = rec.addressLine1;
+            fieldValues.recipientCity = rec.city;
+            fieldValues.recipientState = rec.state;
+            fieldValues.recipientZip = rec.zip;
+            if (notice.slug.includes('credit-bureau') || rec.category === 'credit_bureau') {
+              fieldValues.bureauEntityId = rec.id;
+            }
+          }
+        }
+
+        // Custom recipient address
+        const customRec = extractAddressFields(payload.customRecipient || data.customRecipient);
+        if (customRec.name && !fieldValues.recipientFormalName) fieldValues.recipientFormalName = customRec.name;
+        if (customRec.addressLine1 && !fieldValues.recipientAddressLine1) fieldValues.recipientAddressLine1 = customRec.addressLine1;
+        if (customRec.city && !fieldValues.recipientCity) fieldValues.recipientCity = customRec.city;
+        if (customRec.state && !fieldValues.recipientState) fieldValues.recipientState = customRec.state;
+        if (customRec.zip && !fieldValues.recipientZip) fieldValues.recipientZip = customRec.zip;
+
+        // Sender address
+        const sender = extractAddressFields(payload.sender || data.sender);
+        if (sender.name && !fieldValues.senderFullName) fieldValues.senderFullName = sender.name;
+        if (sender.addressLine1 && !fieldValues.senderAddressLine1) fieldValues.senderAddressLine1 = sender.addressLine1;
+        if (sender.city && !fieldValues.senderCity) fieldValues.senderCity = sender.city;
+        if (sender.state && !fieldValues.senderState) fieldValues.senderState = sender.state;
+        if (sender.zip && !fieldValues.senderZip) fieldValues.senderZip = sender.zip;
+
+        // Tier resolution
+        let stageTier: MailTierId | null = null;
+        const rawTier = payload.recommendedTier || payload.tier || data.recommendedTier || data.tier;
+        if (rawTier && isValidTier(rawTier)) {
+          stageTier = rawTier;
+        }
+
+        // Auto-resolve statute if propertyState was set
+        if (fieldValues.propertyState && notice.usesStateStatuteLookup) {
+          const statute = getStateStatute(fieldValues.propertyState);
+          if (statute) {
+            if (!fieldValues.statuteCitation) fieldValues.statuteCitation = statute.statuteCitation;
+            if (!fieldValues.statuteDeadline) fieldValues.statuteDeadline = statute.returnDeadlineLabel;
+          }
+        }
+
+        setServerStageData({
+          stageId: stageId!,
+          fieldValues,
+          tier: stageTier,
+        });
+      } catch (err: any) {
+        if (!isMounted) return;
+        console.warn('[useAgentHydration] Could not fetch server-staged draft:', err);
+        setStageError(err.message || 'Failed to load staged draft');
+      } finally {
+        if (isMounted) {
+          setIsLoadingStage(false);
+        }
+      }
+    }
+
+    fetchStagedDraft();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [stageId, notice]);
+
+  // Combine hydration layers:
+  // Initial -> Server Stage -> Direct URL Query Params (Query params take top priority)
+  const hydratedValues = useMemo<Record<string, string>>(() => {
+    return {
+      ...(serverStageData ? serverStageData.fieldValues : {}),
+      ...urlParamExtraction.values,
+    };
+  }, [serverStageData, urlParamExtraction.values]);
+
+  const hydratedTier = useMemo<MailTierId | null>(() => {
+    return urlParamExtraction.tier || (serverStageData ? serverStageData.tier : null);
+  }, [urlParamExtraction.tier, serverStageData]);
+
+  // Staged Source computation
+  const stagedSource = useMemo<'stage' | 'url_params' | null>(() => {
+    if (stageId && (serverStageData || isLoadingStage || stageError)) {
+      return 'stage';
+    }
+    if (urlParamExtraction.hasDirectParams || Object.keys(urlParamExtraction.values).length > 0) {
+      return 'url_params';
+    }
+    return null;
+  }, [stageId, serverStageData, isLoadingStage, stageError, urlParamExtraction]);
+
+  const isStaged = stagedSource !== null;
+
+  // Compute Missing Required Keys, First Unfilled Key & Signature Readiness
+  const { missingRequiredKeys, firstUnfilledKey, shouldJumpToSignature } = useMemo(() => {
+    const effectiveValues = {
+      ...initialValues,
+      ...hydratedValues,
+      ...currentValues,
+    };
+
+    const missingKeys: string[] = [];
+    let firstEmpty: string | null = null;
+
+    for (const field of notice.fields) {
+      const val = effectiveValues[field.key];
+      if (!isValueFilled(val)) {
+        missingKeys.push(field.key);
+        if (!firstEmpty) {
+          firstEmpty = field.key;
+        }
+      }
+    }
+
+    const allNoticeFieldsFilled = missingKeys.length === 0;
+    const jumpToSig = allNoticeFieldsFilled && !isSignatureAdopted;
+
+    return {
+      missingRequiredKeys: missingKeys,
+      firstUnfilledKey: firstEmpty,
+      shouldJumpToSignature: jumpToSig,
+    };
+  }, [notice.fields, initialValues, hydratedValues, currentValues, isSignatureAdopted]);
+
+  return {
+    isStaged,
+    stagedSource,
+    stageId,
+    hydratedValues,
+    hydratedTier,
+    missingRequiredKeys,
+    firstUnfilledKey,
+    shouldJumpToSignature,
+    isLoadingStage,
+    stageError,
+  };
+}

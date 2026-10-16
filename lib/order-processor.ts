@@ -8,7 +8,7 @@ import {
   resolveIncidentsForOrder,
 } from "./firebase-admin";
 import { dispatchLetter, UspsServiceLevel } from "./fulfillment/lob";
-import { assertNotFitnessEntity } from "./data/verified-recipients";
+import { assertNotFitnessEntity } from "@/src/lib/docket/guardrails";
 import { logIncident } from "./incident-logger";
 import { Order } from "./types";
 import { sendMetaCapiPurchaseEvent } from "./meta-conversions-api";
@@ -242,55 +242,55 @@ export async function processPaidOrder(
     clientContext?.paymentMode === "local_mock"
   );
 
-  let fulfillment: { success: boolean; order_id?: string; error?: string; details?: unknown };
+  let fulfillment: {
+    success: boolean;
+    order_id?: string;
+    trackingNumber?: string;
+    url?: string;
+    expectedDeliveryDate?: string;
+    error?: string;
+    details?: unknown;
+  };
 
-  if (isTestModePayment) {
-    // Test/Live safety boundary: Test payments must NEVER submit to live postal gateway
-    console.log(
-      `[OrderProcessor] Test payment mode active (${clientContext?.paymentMode || "stripe_test"}). Skipping live Lob USPS dispatch.`
-    );
-    fulfillment = {
-      success: true,
-      order_id: `test_ds_${orderId}`,
-    };
-  } else {
-    // 5. Dispatch to Lob programmatic USPS letter fulfillment with deterministic orderId for idempotency
-    const toName = `${order.recipientAddress.firstName || ""} ${order.recipientAddress.lastName || ""}`.trim() || "Receiving Party";
-    const fromName = `${order.returnAddress.firstName || ""} ${order.returnAddress.lastName || ""}`.trim() || "Filing Party";
-    const docketId = order.docketId || `DS-2026-${orderId.slice(-6).toUpperCase()}`;
+  // 5. Dispatch to Lob programmatic USPS letter fulfillment with deterministic orderId for idempotency
+  const toName = `${order.recipientAddress.firstName || ""} ${order.recipientAddress.lastName || ""}`.trim() || "Receiving Party";
+  const fromName = `${order.returnAddress.firstName || ""} ${order.returnAddress.lastName || ""}`.trim() || "Filing Party";
+  const docketId = order.docketId || `DS-2026-${orderId.slice(-6).toUpperCase()}`;
 
-    const lobResult = await dispatchLetter({
-      orderId,
-      docketId,
-      description: `DocketStamp Formal Notice: ${docketId}`,
-      serviceLevel: (order.serviceLevel as UspsServiceLevel) || "CERTIFIED",
-      to: {
-        name: toName,
-        address_line1: order.recipientAddress.street1,
-        address_line2: order.recipientAddress.street2,
-        address_city: order.recipientAddress.city,
-        address_state: order.recipientAddress.state,
-        address_zip: order.recipientAddress.zip,
-      },
-      from: {
-        name: fromName,
-        address_line1: order.returnAddress.street1,
-        address_line2: order.returnAddress.street2,
-        address_city: order.returnAddress.city,
-        address_state: order.returnAddress.state,
-        address_zip: order.returnAddress.zip,
-      },
-      file: order.documentHtml || order.printedMessage || `<html><body><h1>Formal Notice ${docketId}</h1><p>${order.handwrittenNote || ""}</p></body></html>`,
-      color: false,
-    });
+  const lobResult = await dispatchLetter({
+    orderId,
+    docketId,
+    description: `DocketStamp Formal Notice: ${docketId}`,
+    serviceLevel: (order.serviceLevel as UspsServiceLevel) || "CERTIFIED",
+    to: {
+      name: toName,
+      address_line1: order.recipientAddress.street1,
+      address_line2: order.recipientAddress.street2,
+      address_city: order.recipientAddress.city,
+      address_state: order.recipientAddress.state,
+      address_zip: order.recipientAddress.zip,
+    },
+    from: {
+      name: fromName,
+      address_line1: order.returnAddress.street1,
+      address_line2: order.returnAddress.street2,
+      address_city: order.returnAddress.city,
+      address_state: order.returnAddress.state,
+      address_zip: order.returnAddress.zip,
+    },
+    file: order.documentHtml || order.printedMessage || `<html><body><h1>Formal Notice ${docketId}</h1><p>${order.handwrittenNote || ""}</p></body></html>`,
+    color: false,
+  });
 
-    fulfillment = {
-      success: lobResult.success,
-      order_id: lobResult.letterId,
-      error: lobResult.error,
-      details: lobResult.rawResponse,
-    };
-  }
+  fulfillment = {
+    success: lobResult.success,
+    order_id: lobResult.letterId,
+    trackingNumber: lobResult.trackingNumber,
+    url: lobResult.url,
+    expectedDeliveryDate: lobResult.expectedDeliveryDate,
+    error: lobResult.error,
+    details: lobResult.rawResponse,
+  };
 
   if (!fulfillment.success) {
     const rawError = fulfillment.error || "";
@@ -354,6 +354,9 @@ export async function processPaidOrder(
   await updateOrderStatus(orderId, {
     status: "PROCESSING_DISPATCH",
     lobLetterId: fulfillment.order_id,
+    lobTrackingNumber: fulfillment.trackingNumber,
+    lobTrackingUrl: fulfillment.url,
+    expectedDeliveryDate: fulfillment.expectedDeliveryDate,
     handwryttenOrderId: fulfillment.order_id, // Backward compatibility
     fulfillmentError: undefined,
     ...(clientContext?.isTest !== undefined || clientContext?.paymentMode

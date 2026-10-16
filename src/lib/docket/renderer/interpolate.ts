@@ -1,13 +1,13 @@
 /**
  * Document Interpolation Engine
  *
- * Pure function: merges user form values + state statutory lookups into an
- * InterpolatedDocument AST ready for interactive React canvas preview
+ * Pure deterministic function: merges user form values + state statutory lookups
+ * into an InterpolatedDocument AST ready for interactive React canvas preview
  * and Lob 8.5x11 physical print rendering.
  *
  * Governing documents:
- * - docs/DOCKETSTAMP_SPEC.md (§2, §3, §5)
- * - docs/DESIGN_SYSTEM.md (§2, §3)
+ * - docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md (§1 Invariant 3 & 4, §3, §8)
+ * - ARCHITECTURE.md
  */
 
 import {
@@ -16,8 +16,9 @@ import {
   InterpolatedParagraphToken,
   DocketAddress,
   MailTierId,
+  PostalAddress,
 } from '../types';
-import { getSecurityDepositStatute } from '../data/state-statutes';
+import { getStateStatute } from '../data/state-statutes';
 import { CLERK_DOCKET_REGISTRY_TITLE } from '../guardrails';
 
 export interface InterpolateOptions {
@@ -27,21 +28,22 @@ export interface InterpolateOptions {
   serviceLevel?: MailTierId;
   cassStatus?: string;
   executionDate?: string;
-  senderAddress?: Partial<DocketAddress>;
-  recipientAddress?: Partial<DocketAddress>;
+  senderAddress?: Partial<PostalAddress | DocketAddress>;
+  recipientAddress?: Partial<PostalAddress | DocketAddress>;
 }
 
 /**
- * Generates a standard DocketStamp docket identifier: DS-2026-XXXXX
+ * Generates a standard DocketStamp docket identifier: DS-2026-[6 alphanumeric chars]
  */
-export function generateDocketId(seed?: string): string {
-  if (seed && seed.startsWith('DS-')) return seed;
+export function generateDocketId(seed?: string, stateSuffix?: string): string {
+  if (seed && seed.startsWith('DS-2026-')) return seed;
   const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let rand = '';
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     rand += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `DS-2026-${rand}`;
+  const suffix = stateSuffix ? `-${stateSuffix.trim().toUpperCase()}` : '';
+  return `DS-2026-${rand}${suffix}`;
 }
 
 /**
@@ -54,26 +56,140 @@ function resolveStatutoryValues(
   const result: Record<string, string> = {};
 
   if (notice.usesStateStatuteLookup) {
-    const rawState = userValues.rentalState || userValues.state || '';
+    const rawState =
+      userValues.leasedPremisesState ||
+      userValues.vacatedPremisesState ||
+      userValues.propertyState ||
+      userValues.rentalState ||
+      userValues.state ||
+      '';
     const stateCode = rawState.trim().toUpperCase();
-    const statute = getSecurityDepositStatute(stateCode);
+    const statute = getStateStatute(stateCode);
 
     if (statute) {
-      result.statutoryCitation = statute.statutoryCitation;
-      result.returnDeadlineDays = String(statute.returnDeadlineDays);
-      result.penaltyClause = statute.penaltyClause;
-      result.statuteSummary = statute.statuteSummary;
+      result.statuteCitation = statute.statuteCitation;
+      result.statutoryCitation = statute.statuteCitation;
+      result.statuteDeadline = statute.returnDeadlineLabel;
+      result.returnDeadlineDays = String(statute.returnDeadlineDays || 30);
+      result.returnDeadlineLabel = statute.returnDeadlineLabel;
+      result.statutoryNuance = statute.statutoryNuance;
+      result.penaltyClause = statute.penaltyClause || '';
+      result.statuteSummary = statute.statuteSummary || statute.statutoryNuance;
+      result.propertyState = statute.stateName;
       result.stateName = statute.stateName;
     } else {
-      result.statutoryCitation = 'Governing State Security Deposit Statute';
+      result.statuteCitation = 'Applicable State Security Deposit Statute';
+      result.statutoryCitation = 'Applicable State Security Deposit Statute';
+      result.statuteDeadline = 'the statutory deadline';
       result.returnDeadlineDays = '30';
-      result.penaltyClause = 'Statutory damages and bad-faith penalties provided under applicable state law';
-      result.statuteSummary = 'State statutory accounting and return regulations';
+      result.returnDeadlineLabel = '30 days';
+      result.statutoryNuance = 'Statutory notice period required under state residential tenancy act.';
+      result.penaltyClause = 'Statutory penalties provided under applicable state law';
+      result.statuteSummary = 'State residential security deposit regulations';
+      result.propertyState = stateCode || 'Governing Jurisdiction';
       result.stateName = stateCode || 'Governing Jurisdiction';
     }
   }
 
   return result;
+}
+
+function getAddressFields(addr?: Partial<PostalAddress | DocketAddress>) {
+  if (!addr) return { line1: '', line2: '', city: '', state: '', zip: '', name: '', company: '' };
+  const a = addr as Record<string, string | undefined>;
+  return {
+    line1: a.addressLine1 || a.address_line1 || '',
+    line2: a.addressLine2 || a.address_line2 || '',
+    city: a.city || a.address_city || '',
+    state: a.state || a.address_state || '',
+    zip: a.zip || a.address_zip || '',
+    name: a.name || '',
+    company: a.company || '',
+  };
+}
+
+/**
+ * Normalizes user form values with sensible defaults and cross-cartridge aliases.
+ */
+function normalizeValues(
+  userValues: Record<string, string>,
+  senderAddress: Partial<PostalAddress | DocketAddress>,
+  recipientAddress: Partial<PostalAddress | DocketAddress>,
+  docketId: string,
+  executionDate: string
+): Record<string, string> {
+  const s = getAddressFields(senderAddress);
+  const senderLine1 = s.line1 || userValues.senderAddressLine1 || userValues.leasedPremisesAddress || userValues.rentalPropertyAddress || '';
+  const senderCity = s.city || userValues.senderCity || userValues.rentalCity || '';
+  const senderState = s.state || userValues.senderState || userValues.rentalState || '';
+  const senderZip = s.zip || userValues.senderZip || userValues.rentalZip || '';
+
+  const senderFullAddress = [senderLine1, senderCity && `${senderCity}, ${senderState} ${senderZip}`]
+    .filter(Boolean)
+    .join(', ');
+
+  const r = getAddressFields(recipientAddress);
+  const recipientLine1 = r.line1 || userValues.recipientAddressLine1 || '';
+  const recipientCity = r.city || userValues.recipientCity || '';
+  const recipientState = r.state || userValues.recipientState || '';
+  const recipientZip = r.zip || userValues.recipientZip || '';
+
+  const recipientFullAddress = [recipientLine1, recipientCity && `${recipientCity}, ${recipientState} ${recipientZip}`]
+    .filter(Boolean)
+    .join(', ');
+
+  const senderFullName =
+    userValues.senderFullName ||
+    userValues.tenantFullName ||
+    userValues.consumerFullName ||
+    userValues.customerFullName ||
+    s.name ||
+    '';
+
+  const recipientFormalName =
+    userValues.recipientFormalName ||
+    userValues.landlordOrManagerName ||
+    userValues.targetBureau ||
+    userValues.collectionAgencyName ||
+    userValues.serviceProviderName ||
+    recipientAddress.name ||
+    '';
+
+  // Cross-cartridge field aliases
+  const leasedPremisesAddress =
+    userValues.leasedPremisesAddress ||
+    userValues.rentalPropertyAddress ||
+    userValues.servicePropertyAddress ||
+    '';
+
+  const vacatedPremisesAddress =
+    userValues.vacatedPremisesAddress ||
+    userValues.rentalPropertyAddress ||
+    leasedPremisesAddress ||
+    '';
+
+  const moveOutDate =
+    userValues.moveOutDate ||
+    userValues.effectiveVacateDate ||
+    userValues.surrenderDate ||
+    '';
+
+  return {
+    ...userValues,
+    docketId,
+    executionDate,
+    senderFullName,
+    recipientFormalName,
+    senderFullAddress: senderFullAddress || '[SENDER ADDRESS]',
+    recipientFullAddress: recipientFullAddress || '[RECIPIENT ADDRESS]',
+    leasedPremisesAddress,
+    vacatedPremisesAddress,
+    moveOutDate,
+    // Ensure aliases exist
+    rentalPropertyAddress: leasedPremisesAddress,
+    effectiveVacateDate: moveOutDate,
+    surrenderDate: moveOutDate,
+  };
 }
 
 /**
@@ -104,7 +220,7 @@ function evaluateConditionals(text: string, mergedValues: Record<string, string>
 }
 
 /**
- * Tokenizes a paragraph string into sequential text and variable tokens.
+ * Tokenizes a paragraph string into sequential text and variable tokens for preview and drawer focus.
  */
 function tokenizeParagraph(
   rawParagraph: string,
@@ -133,13 +249,13 @@ function tokenizeParagraph(
 
     const fieldConfig = fieldMap.get(variableKey);
     const userVal = mergedValues[variableKey];
-    const isFilled = typeof userVal === 'string' && userVal.trim().length > 0;
+    const isFilled = typeof userVal === 'string' && userVal.trim().length > 0 && !userVal.startsWith('[');
 
     tokens.push({
       type: 'variable',
       key: variableKey,
       content: isFilled ? userVal : '',
-      docusignTagLabel: fieldConfig?.docusignTagLabel || variableKey.toUpperCase(),
+      docusignTagLabel: fieldConfig?.docusignTagLabel || variableKey.replace(/([A-Z])/g, ' $1').toUpperCase().trim(),
       isFilled,
     });
 
@@ -162,20 +278,20 @@ function tokenizeParagraph(
  */
 function replaceTokens(template: string, values: Record<string, string>): string {
   return template.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (_, key) => {
-    return values[key] || `[${key.toUpperCase()}]`;
+    return values[key] || `[${key.replace(/([A-Z])/g, ' $1').toUpperCase().trim()}]`;
   });
 }
 
 /**
  * Primary Interpolation Entrypoint
  */
-export function interpolateDocument(options: InterpolateOptions): InterpolatedDocument {
+export function interpolateNotice(options: InterpolateOptions): InterpolatedDocument {
   const {
     notice,
     userValues,
-    docketId = generateDocketId(),
+    docketId = generateDocketId(undefined, userValues.propertyState || userValues.rentalState || userValues.state),
     serviceLevel = notice.recommendedTier,
-    cassStatus = 'CASS ADDRESS VERIFIED',
+    cassStatus = 'USPS CASS™ VERIFIED',
     executionDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
     senderAddress = {},
     recipientAddress = {},
@@ -183,9 +299,11 @@ export function interpolateDocument(options: InterpolateOptions): InterpolatedDo
 
   // 1. Merge statutory lookups with user values
   const statutoryValues = resolveStatutoryValues(notice, userValues);
+  const normalized = normalizeValues(userValues, senderAddress, recipientAddress, docketId, executionDate);
+
   const mergedValues: Record<string, string> = {
     ...statutoryValues,
-    ...userValues,
+    ...normalized,
   };
 
   // 2. Build RE line and subject
@@ -196,7 +314,6 @@ export function interpolateDocument(options: InterpolateOptions): InterpolatedDo
   const rawParagraphs: string[] = [];
 
   for (const paragraphTemplate of notice.bodyParagraphs) {
-    // Evaluate conditionals first
     const evaluated = evaluateConditionals(paragraphTemplate, mergedValues);
     if (!evaluated.trim()) continue;
 
@@ -209,27 +326,30 @@ export function interpolateDocument(options: InterpolateOptions): InterpolatedDo
     rawParagraphs.push(rawParagraph);
   }
 
-  // 4. Resolve sender and recipient addresses
+  // 4. Resolve addresses
+  const s = getAddressFields(senderAddress);
+  const r = getAddressFields(recipientAddress);
+
   const resolvedSender: DocketAddress = {
-    name: senderAddress.name || userValues.tenantFullName || userValues.consumerFullName || userValues.customerFullName || '[SENDER NAME]',
-    company: senderAddress.company,
-    address_line1: senderAddress.address_line1 || userValues.rentalPropertyAddress || userValues.consumerAddress || userValues.customerAddress || '[SENDER ADDRESS]',
-    address_line2: senderAddress.address_line2,
-    address_city: senderAddress.address_city || userValues.rentalCity || '',
-    address_state: senderAddress.address_state || userValues.rentalState || '',
-    address_zip: senderAddress.address_zip || userValues.rentalZip || '',
-    address_country: senderAddress.address_country || 'US',
+    name: mergedValues.senderFullName || s.name || '[SENDER NAME]',
+    company: s.company || senderAddress.company,
+    address_line1: s.line1 || userValues.senderAddressLine1 || mergedValues.leasedPremisesAddress || '[SENDER ADDRESS]',
+    address_line2: s.line2 || undefined,
+    address_city: s.city || userValues.senderCity || userValues.rentalCity || '',
+    address_state: s.state || userValues.senderState || userValues.rentalState || userValues.propertyState || '',
+    address_zip: s.zip || userValues.senderZip || userValues.rentalZip || '',
+    address_country: 'US',
   };
 
   const resolvedRecipient: DocketAddress = {
-    name: recipientAddress.name || userValues.landlordOrManagerName || userValues.targetBureau || userValues.collectionAgencyName || userValues.serviceProviderName || '[RECIPIENT NAME]',
-    company: recipientAddress.company,
-    address_line1: recipientAddress.address_line1 || '[RECIPIENT ADDRESS]',
-    address_line2: recipientAddress.address_line2,
-    address_city: recipientAddress.address_city || '',
-    address_state: recipientAddress.address_state || '',
-    address_zip: recipientAddress.address_zip || '',
-    address_country: recipientAddress.address_country || 'US',
+    name: mergedValues.recipientFormalName || r.name || '[RECIPIENT NAME]',
+    company: r.company || recipientAddress.company,
+    address_line1: r.line1 || userValues.recipientAddressLine1 || '[RECIPIENT ADDRESS]',
+    address_line2: r.line2 || undefined,
+    address_city: r.city || userValues.recipientCity || '',
+    address_state: r.state || userValues.recipientState || '',
+    address_zip: r.zip || userValues.recipientZip || '',
+    address_country: 'US',
   };
 
   const signerName = resolvedSender.name;
@@ -259,3 +379,5 @@ export function interpolateDocument(options: InterpolateOptions): InterpolatedDo
     },
   };
 }
+
+export const interpolateDocument = interpolateNotice;
