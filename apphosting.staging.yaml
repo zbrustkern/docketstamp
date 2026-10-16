@@ -1,0 +1,54 @@
+# Firebase App Hosting Configuration for Staging Environment
+# Documentation: https://firebase.google.com/docs/app-hosting/configure
+# This configuration is automatically merged over apphosting.yaml for staging backends.
+
+runConfig:
+  cpu: 1
+  memoryMiB: 1024
+  minInstances: 0
+  maxInstances: 5
+  concurrency: 80
+
+# Environment variables and Cloud Secret Manager bindings for Staging
+env:
+  # Sensitive Server-Only Secrets (Backed by Google Cloud Secret Manager)
+  # Uses test-scoped secrets to guarantee isolation from production financial and postal streams
+  - variable: STRIPE_SECRET_KEY
+    secret: stripe-secret-key-test
+    availability:
+      - RUNTIME
+
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: stripe-webhook-secret-test
+    availability:
+      - RUNTIME
+
+  - variable: LOB_DISPATCH_API_KEY
+    secret: lob-api-key-test
+    availability:
+      - RUNTIME
+
+  - variable: ADMIN_SECRET_KEY
+    secret: admin-secret-key-staging
+    availability:
+      - RUNTIME
+
+  # Invariant 6: Staging deterministic address verification / mock CASS
+  - variable: LOB_ENV
+    value: staging_mock_cass
+    availability:
+      - RUNTIME
+
+  # Environment identifier
+  - variable: ENVIRONMENT
+    value: staging
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Public client configuration for Staging
+  - variable: NEXT_PUBLIC_APP_URL
+    value: https://staging.docketstamp.com
+    availability:
+      - BUILD
+      - RUNTIME

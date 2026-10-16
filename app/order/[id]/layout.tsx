@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Order Tracker | sendmynotes",
-  description: "Track your handwritten card inking and USPS postal delivery status.",
+  title: "Order Tracker | DocketStamp",
+  description: "Track your USPS First-Class or Certified Mail dispatch and postal delivery status.",
   robots: {
     index: false,
     follow: false,

@@ -101,6 +101,8 @@ export interface Order {
   lobLetterId?: string;
   lobTrackingNumber?: string;
   lobTrackingUrl?: string;
+  expectedDeliveryDate?: string;
+  lobExpectedDeliveryDate?: string;
   returnReceiptUrl?: string;
   documentHtml?: string;
   frontImageUrl?: string;

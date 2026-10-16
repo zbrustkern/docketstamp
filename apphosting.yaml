@@ -22,24 +22,35 @@ env:
     availability:
       - RUNTIME
 
-  - variable: HANDWRYTTEN_API_KEY
-    secret: handwrytten-api-key
+  - variable: LOB_API_KEY
+    secret: lob-api-key
     availability:
       - RUNTIME
 
-  - variable: GEMINI_API_KEY
-    secret: gemini-api-key
+  - variable: LOB_DISPATCH_API_KEY
+    secret: lob-api-key
     availability:
       - RUNTIME
 
-  - variable: META_CONVERSIONS_API_ACCESS_TOKEN
-    secret: meta-conversions-api-access-token
+  - variable: LOB_ADDRESS_VERIFICATION_KEY
+    secret: lob-api-key
     availability:
+      - RUNTIME
+
+  - variable: ADMIN_SECRET_KEY
+    secret: admin-secret-key
+    availability:
+      - RUNTIME
+
+  - variable: ENVIRONMENT
+    value: production
+    availability:
+      - BUILD
       - RUNTIME
 
   # Public client configuration
   - variable: NEXT_PUBLIC_APP_URL
-    value: https://sendmynotes.com
+    value: https://docketstamp.com
     availability:
       - BUILD
       - RUNTIME

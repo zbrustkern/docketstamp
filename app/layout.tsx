@@ -25,8 +25,17 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com";
+const isStaging =
+  process.env.ENVIRONMENT === "staging" ||
+  appUrl.includes("staging") ||
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.includes("staging");
+
+const metaDomainVerification =
+  process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION || "7j8rbkz9ktc5jzapl53uueqvute5et";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://docketstamp.com"),
+  metadataBase: new URL(appUrl),
   title: {
     default: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
     template: "%s | DocketStamp",
@@ -49,14 +58,29 @@ export const metadata: Metadata = {
     "written contract cancellation",
   ],
   alternates: {
-    canonical: "https://docketstamp.com",
+    canonical: appUrl,
+  },
+  robots: isStaging
+    ? {
+        index: false,
+        follow: false,
+        nocache: true,
+      }
+    : {
+        index: true,
+        follow: true,
+      },
+  verification: {
+    other: {
+      "facebook-domain-verification": metaDomainVerification,
+    },
   },
   openGraph: {
     title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
     description:
       "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. State-specific statutory notices drafted and dispatched in 60 seconds.",
-    url: "https://docketstamp.com",
-    siteName: "docketstamp.com",
+    url: appUrl,
+    siteName: "DocketStamp",
     images: [
       {
         url: "/og-image.png",

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Scale, Shield, AlertTriangle } from "lucide-react";
-import { STATUTORY_COMPLIANCE_DISCLOSURE } from "@/lib/notices/registry";
+import { STATUTORY_COMPLIANCE_DISCLOSURE } from "@/src/lib/docket/guardrails";
 
 export const metadata = {
   title: "Terms of Service & UPL Notice — DocketStamp",

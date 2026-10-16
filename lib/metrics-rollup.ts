@@ -12,7 +12,7 @@ import {
   AcquisitionSourceMetric,
   VisitorTelemetryMetrics,
 } from "./types";
-import { getAllNoticeTemplates } from "./notices/registry";
+import { getAllNotices as getAllNoticeTemplates } from "@/src/lib/docket/notices";
 
 export const USPS_DISPATCH_COGS_CENTS = 220; // ~$2.20 USPS First-Class + CASS print dispatch
 export const HANDWRYTTEN_COGS_PER_CARD_CENTS = 220; // Kept for backward compatibility

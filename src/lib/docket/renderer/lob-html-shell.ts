@@ -1,32 +1,26 @@
 /**
  * Lob 8.5" x 11" Physical Letter HTML/CSS Print Shell
  *
- * Generates an exact court-ready 8.5" x 11" HTML/CSS document conforming to
- * USPS clear zone specifications for Lob programmatic dispatch:
- * - 3.5" top margin clear zone on Page 1 for Lob address window printing
- * - 0.625" bottom clear zone for USPS Intelligent Mail barcode (IMb)
- * - Top-right Clerk's Docket Stamp block (DS-2026-XXXXX, service tier, UTC timestamp, CASS status)
- * - Formal serif typography (Merriweather / Georgia), letter-spacing, line-height
- * - Mandatory 8pt UPL statutory footer disclosure
- *
- * Governing documents:
- * - docs/DOCKETSTAMP_SPEC.md (§3.2, §4, §6)
- * - docs/DESIGN_SYSTEM.md (§2, §3)
+ * Implements the exact 1-page court-ready geometry specified in Section 9 of
+ * docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md:
+ * - 0in to 1.80in top clear zone for USPS Certified Mail banner and window envelopes
+ * - Top-Right Clerk's Docket Stamp box at top: 1.85in; right: 0.60in; width: 3.15in
+ * - Letter body container starting strictly at top: 3.35in; left: 0.75in; right: 0.75in
+ * - Signature block with /s/ Full Name electronic signature line
+ * - Locked 6.8pt UPL compliance footer at bottom: 0.40in
  */
 
 import { InterpolatedDocument, MailTierId } from '../types';
-import { UPL_COMPLIANCE_DISCLOSURE } from '../guardrails';
+import { UPL_COMPLIANCE_FOOTER_TEXT } from '../guardrails';
 
-const TIER_DISPLAY_NAMES: Record<MailTierId, string> = {
-  first_class: 'USPS FIRST-CLASS MAIL® (IMb TRACKED)',
+const TIER_DISPATCH_LABELS: Record<MailTierId, string> = {
+  first_class: 'USPS FIRST-CLASS MAIL®',
   certified: 'USPS CERTIFIED MAIL®',
-  certified_return_receipt: 'USPS CERTIFIED MAIL® + ELECTRONIC RETURN RECEIPT',
+  certified_return_receipt: 'USPS CERTIFIED + RETURN RECEIPT',
 };
 
-/**
- * Escapes HTML characters to prevent XSS / broken layout.
- */
 function escapeHtml(str: string): string {
+  if (!str) return '';
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -36,304 +30,171 @@ function escapeHtml(str: string): string {
 }
 
 /**
- * Renders the complete HTML document string for Lob /v1/letters.
+ * Generates the self-contained 1-page 8.5in x 11in HTML string for Lob /v1/letters
  */
-export function renderLobHtmlShell(doc: InterpolatedDocument): string {
-  const tierName = TIER_DISPLAY_NAMES[doc.clerkStamp.serviceLevel] || doc.clerkStamp.serviceLevel.toUpperCase();
-  const safeDocketId = escapeHtml(doc.clerkStamp.docketId);
+export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
+  const safeDocketId = escapeHtml(doc.docketId);
   const safeHeaderTitle = escapeHtml(doc.headerTitle);
   const safeReLine = escapeHtml(doc.reLine);
   const safeTimestamp = escapeHtml(doc.clerkStamp.timestampUtc);
-  const safeCassStatus = escapeHtml(doc.clerkStamp.cassStatus);
+  const safeTier = escapeHtml(TIER_DISPATCH_LABELS[doc.clerkStamp.serviceLevel] || doc.clerkStamp.serviceLevel.toUpperCase());
+  const safeCassStatus = escapeHtml(doc.clerkStamp.cassStatus || 'USPS CASS™ VERIFIED');
   const safeSigner = escapeHtml(doc.signatureBlock.signerName);
   const safeFormalSig = escapeHtml(doc.signatureBlock.formalSignature);
   const safeExecDate = escapeHtml(doc.signatureBlock.executionDate);
+  const safeRecipient = escapeHtml(doc.recipientAddress.name || 'RECEIVING PARTY / MANAGEMENT ENTITY');
 
-  const renderedParagraphs = doc.rawParagraphs
-    .map((p) => `<p class="document-paragraph">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
-    .join('\n');
+  const paragraphsHtml = doc.rawParagraphs
+    .map((p) => `<p class="paragraph">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+    .join('\n      ');
 
-  const enclosuresMarkup = doc.enclosuresLine
-    ? `<div class="enclosures-block">${escapeHtml(doc.enclosuresLine)}</div>`
+  const enclosuresHtml = doc.enclosuresLine
+    ? `<div style="margin-top: 10px; font-size: 8.5pt; font-style: italic; color: #475569;">${escapeHtml(doc.enclosuresLine)}</div>`
     : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>${safeDocketId} - ${safeHeaderTitle}</title>
-  <style>
-    @page {
-      size: 8.5in 11in;
-      margin: 0;
-    }
-
-    *, *:before, *:after {
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Merriweather', 'Georgia', 'Times New Roman', serif;
-      font-size: 10.5pt;
-      line-height: 1.55;
-      color: #0f172a;
-      background-color: #ffffff;
-    }
-
-    /* 8.5in x 11in Page Canvas */
-    .page-sheet {
-      position: relative;
-      width: 8.5in;
-      height: 11in;
-      padding: 0.75in 0.85in 0.85in 0.85in;
-      box-sizing: border-box;
-      overflow: hidden;
-      page-break-after: always;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    /* Lob Top Address Placement:
-       When using address_placement: "top_first_page", Lob prints the address
-       window in the top 3.5 inches. We reserve the header & docket block,
-       ensuring clean clear spacing. */
-    .header-band {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #0f172a;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-    }
-
-    .header-titles {
-      max-width: 60%;
-    }
-
-    .header-main-title {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 13pt;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      color: #0f172a;
-      margin: 0 0 4px 0;
-      line-height: 1.25;
-      text-transform: uppercase;
-    }
-
-    .header-sub-tag {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 7.5pt;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      color: #475569;
-      text-transform: uppercase;
-    }
-
-    /* Clerk's Docket Stamp Block */
-    .clerk-docket-stamp {
-      border: 1.5px solid #0f172a;
-      padding: 6px 10px;
-      background-color: #f8fafc;
-      font-family: 'JetBrains Mono', 'Courier New', monospace;
-      font-size: 7.5pt;
-      line-height: 1.35;
-      color: #0f172a;
-      text-transform: uppercase;
-      min-width: 2.75in;
-      box-shadow: 1px 1px 0px #0f172a;
-    }
-
-    .stamp-title {
-      font-weight: 800;
-      font-size: 8pt;
-      text-align: center;
-      border-bottom: 1px solid #94a3b8;
-      padding-bottom: 3px;
-      margin-bottom: 4px;
-      letter-spacing: 0.5px;
-    }
-
-    .stamp-row {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .stamp-label {
-      color: #64748b;
-    }
-
-    .stamp-value {
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .stamp-verified {
-      color: #15803d;
-      font-weight: 800;
-      border-top: 1px solid #cbd5e1;
-      margin-top: 4px;
-      padding-top: 3px;
-      text-align: center;
-      letter-spacing: 0.5px;
-    }
-
-    /* Formal RE Docket Line */
-    .re-line-box {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 9.5pt;
-      font-weight: 700;
-      background-color: #f1f5f9;
-      border-left: 3.5px solid #0f172a;
-      padding: 7px 12px;
-      margin-bottom: 16px;
-      color: #0f172a;
-      line-height: 1.4;
-    }
-
-    /* Body Prose */
-    .document-body {
-      flex: 1 1 auto;
-    }
-
-    .document-paragraph {
-      margin: 0 0 12pt 0;
-      text-align: justify;
-      text-justify: inter-word;
-    }
-
-    /* Enclosures */
-    .enclosures-block {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 8pt;
-      font-weight: 600;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 10px;
-      margin-bottom: 16px;
-    }
-
-    /* Signature & Execution Block */
-    .signature-section {
-      margin-top: 14pt;
-      padding-top: 8pt;
-      border-top: 1px dashed #cbd5e1;
-      font-family: 'Merriweather', 'Georgia', serif;
-    }
-
-    .formal-signature {
-      font-family: 'JetBrains Mono', 'Courier New', monospace;
-      font-size: 12pt;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
-    }
-
-    .signer-title {
-      font-size: 9pt;
-      color: #334155;
-      font-style: italic;
-    }
-
-    .execution-date {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 8pt;
-      color: #64748b;
-      margin-top: 3px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* Mandatory 8pt UPL Statutory Footer & IMb Clear Zone */
-    .footer-band {
-      margin-top: auto;
-      padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
-      /* 0.625in bottom margin required by USPS for IMb barcode clear zone */
-      margin-bottom: 0.625in;
-    }
-
-    .footer-upl-text {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 7.5pt;
-      line-height: 1.35;
-      color: #64748b;
-      text-align: center;
-      margin: 0;
-    }
-
-    .footer-docket-id {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 7pt;
-      font-weight: 700;
-      color: #475569;
-      text-align: center;
-      margin-top: 3px;
-      letter-spacing: 1px;
-    }
-  </style>
+<meta charset="utf-8" />
+<title>${safeDocketId} - ${safeHeaderTitle}</title>
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    width: 8.5in;
+    height: 11in;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #0F172A;
+    background: #FFFFFF;
+    overflow: hidden;
+  }
+  /* Top-Right Clerk's Docket Stamp Box (Clears left window & top certified banner) */
+  .docket-stamp-box {
+    position: absolute;
+    top: 1.85in;
+    right: 0.60in;
+    width: 3.15in;
+    border: 1.5px solid #0F172A;
+    background-color: #F8FAFC;
+    padding: 7px 9px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 7.5pt;
+    line-height: 1.35;
+  }
+  .docket-stamp-header {
+    font-weight: bold;
+    border-bottom: 1px solid #0F172A;
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+  /* Formal Letter Content Zone */
+  .letter-body-container {
+    position: absolute;
+    top: 3.35in;
+    left: 0.75in;
+    right: 0.75in;
+    bottom: 0.80in;
+  }
+  .doc-header-title {
+    font-size: 10.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid #0F172A;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+  }
+  .re-docket-block {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8.5pt;
+    font-weight: bold;
+    background-color: #F1F5F9;
+    border-left: 3px solid #0284C7;
+    padding: 6px 10px;
+    margin-bottom: 14px;
+  }
+  .salutation {
+    font-size: 9.5pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .paragraph {
+    font-size: 9.5pt;
+    line-height: 1.50;
+    text-align: justify;
+    margin: 0 0 10px 0;
+  }
+  .signature-block {
+    margin-top: 16px;
+  }
+  .signature-line {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11pt;
+    font-weight: bold;
+    border-bottom: 1px solid #334155;
+    display: inline-block;
+    min-width: 2.8in;
+    padding-bottom: 2px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .compliance-footer {
+    position: absolute;
+    bottom: 0.40in;
+    left: 0.75in;
+    right: 0.75in;
+    border-top: 1px solid #CBD5E1;
+    padding-top: 4px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 6.8pt;
+    color: #64748B;
+    text-align: center;
+    line-height: 1.3;
+  }
+</style>
 </head>
 <body>
-  <div class="page-sheet">
-    <div>
-      <div class="header-band">
-        <div class="header-titles">
-          <h1 class="header-main-title">${safeHeaderTitle}</h1>
-          <div class="header-sub-tag">OFFICIAL STATUTORY DISPATCH INSTRUMENT • USPS POSTAL RECORD</div>
-        </div>
+  <!-- Top-Right Clerk's Docket Stamp Box -->
+  <div class="docket-stamp-box">
+    <div class="docket-stamp-header">DOCKETSTAMP™ OFFICIAL DISPATCH REGISTRY</div>
+    <div><strong>DOCKET ID:</strong>  ${safeDocketId}</div>
+    <div><strong>FILED UTC:</strong>  ${safeTimestamp}</div>
+    <div><strong>DISPATCH:</strong>   ${safeTier}</div>
+    <div><strong>ROUTING:</strong>    ${safeCassStatus}</div>
+  </div>
 
-        <div class="clerk-docket-stamp">
-          <div class="stamp-title">DOCKETSTAMP™ DISPATCH REGISTRY</div>
-          <div class="stamp-row">
-            <span class="stamp-label">DOCKET ID:</span>
-            <span class="stamp-value">${safeDocketId}</span>
-          </div>
-          <div class="stamp-row">
-            <span class="stamp-label">DISPATCH TIER:</span>
-            <span class="stamp-value">${escapeHtml(tierName)}</span>
-          </div>
-          <div class="stamp-row">
-            <span class="stamp-label">TIMESTAMP:</span>
-            <span class="stamp-value">${safeTimestamp}</span>
-          </div>
-          <div class="stamp-verified">
-            ✓ ${safeCassStatus}
-          </div>
-        </div>
-      </div>
+  <!-- Letter Body Content Zone -->
+  <div class="letter-body-container">
+    <div class="doc-header-title">${safeHeaderTitle}</div>
+    <div class="re-docket-block">${safeReLine}</div>
+    <div class="salutation">TO: ${safeRecipient}</div>
 
-      <div class="re-line-box">
-        ${safeReLine}
-      </div>
+    <div class="letter-paragraphs">
+      ${paragraphsHtml}
+    </div>
 
-      <div class="document-body">
-        ${renderedParagraphs}
-        ${enclosuresMarkup}
-      </div>
-
-      <div class="signature-section">
-        <div class="formal-signature">${safeFormalSig}</div>
-        <div class="signer-title">${safeSigner}, Executing Party of Record</div>
-        <div class="execution-date">Executed on: ${safeExecDate} • Dispatched via DocketStamp Postal Registry</div>
+    <!-- Formal Signature Block -->
+    <div class="signature-block">
+      <div style="font-size: 9pt;">Respectfully submitted,</div>
+      <div class="signature-line">${safeFormalSig}</div>
+      <div style="font-size: 8pt; color: #475569;">
+        ${safeSigner} &bull; Executed on ${safeExecDate} &bull; Docket ID: ${safeDocketId}
       </div>
     </div>
 
-    <div class="footer-band">
-      <p class="footer-upl-text">
-        ${escapeHtml(UPL_COMPLIANCE_DISCLOSURE)}
-      </p>
-      <div class="footer-docket-id">
-        OFFICIAL DISPATCH REGISTRY • RECORD ID: ${safeDocketId} • WESTERN AMALGAMATED
-      </div>
-    </div>
+    ${enclosuresHtml}
+  </div>
+
+  <!-- Locked UPL Compliance Footer (0.40in from bottom) -->
+  <div class="compliance-footer">
+    ${UPL_COMPLIANCE_FOOTER_TEXT(doc.docketId)}
   </div>
 </body>
 </html>`;
 }
+
+export const renderLobHtmlShell = renderLobHtmlPayload;

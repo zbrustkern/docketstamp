@@ -1,22 +1,20 @@
 /**
- * Master Notice Cartridge Registry
+ * Master Notice Cartridge Registry & Pricing Tier Metadata
  *
- * Exports all deterministic Notice Cartridges for DocketStamp.
- * Adding Notice #7 requires creating a single file in notices/ and adding one line here,
- * without touching UI or checkout plumbing.
- *
- * Governing documents:
- * - docs/DOCKETSTAMP_SPEC.md (§5)
- * - docs/DESIGN_SYSTEM.md (§1)
+ * Exports all deterministic Notice Cartridges for DocketStamp and their 3-tier USPS pricing.
+ * Conforms to Sections 2 and 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
  */
 
-import { NoticeTemplateDefinition } from '../types';
+import { NoticeTemplateDefinition, MailTierId, PricingTierMetadata } from '../types';
 import { intentToVacateNotice } from './01-intent-to-vacate';
 import { securityDepositNotice } from './02-security-deposit-return';
 import { tenantRepairNotice } from './03-tenant-repair-request';
 import { creditBureauDisputeNotice } from './04-credit-bureau-dispute';
 import { debtValidationNotice } from './05-debt-validation-request';
 import { serviceCancellationNotice } from './06-service-policy-cancellation';
+import { preArbitrationDisputeNotice } from './07-pre-arbitration-dispute';
+import { arbitrationOptOutNotice } from './08-arbitration-opt-out';
+import { biometricPrivacyDeletionNotice } from './09-biometric-privacy-deletion';
 
 export {
   intentToVacateNotice,
@@ -25,6 +23,9 @@ export {
   creditBureauDisputeNotice,
   debtValidationNotice,
   serviceCancellationNotice,
+  preArbitrationDisputeNotice,
+  arbitrationOptOutNotice,
+  biometricPrivacyDeletionNotice,
 };
 
 export const ALL_NOTICE_CARTRIDGES: NoticeTemplateDefinition[] = [
@@ -34,14 +35,37 @@ export const ALL_NOTICE_CARTRIDGES: NoticeTemplateDefinition[] = [
   creditBureauDisputeNotice,
   debtValidationNotice,
   serviceCancellationNotice,
+  preArbitrationDisputeNotice,
+  arbitrationOptOutNotice,
+  biometricPrivacyDeletionNotice,
 ];
 
+export const NOTICE_REGISTRY: Record<string, NoticeTemplateDefinition> = {
+  [intentToVacateNotice.slug]: intentToVacateNotice,
+  [securityDepositNotice.slug]: securityDepositNotice,
+  [tenantRepairNotice.slug]: tenantRepairNotice,
+  [creditBureauDisputeNotice.slug]: creditBureauDisputeNotice,
+  [debtValidationNotice.slug]: debtValidationNotice,
+  [serviceCancellationNotice.slug]: serviceCancellationNotice,
+  [preArbitrationDisputeNotice.slug]: preArbitrationDisputeNotice,
+  [arbitrationOptOutNotice.slug]: arbitrationOptOutNotice,
+  [biometricPrivacyDeletionNotice.slug]: biometricPrivacyDeletionNotice,
+};
+
+// Internal lookup maps supporting canonical slugs, IDs, and aliases
 const NOTICES_BY_SLUG = new Map<string, NoticeTemplateDefinition>();
 const NOTICES_BY_ID = new Map<string, NoticeTemplateDefinition>();
 
 for (const notice of ALL_NOTICE_CARTRIDGES) {
   NOTICES_BY_SLUG.set(notice.slug, notice);
   NOTICES_BY_ID.set(notice.id, notice);
+
+  if (notice.aliases) {
+    for (const alias of notice.aliases) {
+      NOTICES_BY_SLUG.set(alias, notice);
+      NOTICES_BY_ID.set(alias, notice);
+    }
+  }
 }
 
 /**
@@ -52,17 +76,19 @@ export function getAllNotices(): NoticeTemplateDefinition[] {
 }
 
 /**
- * Resolves a notice cartridge by URL slug (e.g., "intent-to-vacate", "security-deposit-return").
+ * Resolves a notice cartridge by canonical slug or alias.
  */
 export function getNoticeBySlug(slug: string): NoticeTemplateDefinition | undefined {
-  return NOTICES_BY_SLUG.get(slug);
+  if (!slug) return undefined;
+  return NOTICES_BY_SLUG.get(slug.trim());
 }
 
 /**
- * Resolves a notice cartridge by internal ID (e.g., "tenant-vacate-notice", "security-deposit-demand").
+ * Resolves a notice cartridge by internal ID or alias.
  */
 export function getNoticeById(id: string): NoticeTemplateDefinition | undefined {
-  return NOTICES_BY_ID.get(id);
+  if (!id) return undefined;
+  return NOTICES_BY_ID.get(id.trim());
 }
 
 /**
@@ -73,3 +99,55 @@ export function getNoticesByCategory(
 ): NoticeTemplateDefinition[] {
   return ALL_NOTICE_CARTRIDGES.filter((n) => n.category === category);
 }
+
+/**
+ * Official 3-Tier USPS Pricing Model (Section 2)
+ */
+export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
+  first_class: {
+    id: 'first_class',
+    name: 'Standard First-Class Dispatch',
+    priceCents: 1295,
+    formattedPrice: '$12.95',
+    lobExtraService: undefined,
+    description: 'Standard USPS First-Class Mail with Intelligent Mail barcode tracking',
+    features: [
+      'Official Clerk\'s Docket Stamp registry recording',
+      'USPS CASS™ address verification & standardization',
+      'Standard USPS First-Class transit (1–5 business days)',
+      'USPS Intelligent Mail® Barcode (IMb) tracking',
+      'Digital PDF Certificate of Dispatch archive',
+    ],
+  },
+  certified: {
+    id: 'certified',
+    name: 'USPS Certified Mail®',
+    priceCents: 1995,
+    formattedPrice: '$19.95',
+    lobExtraService: 'certified',
+    description: 'USPS Certified Mail with official proof of mailing and chain of custody tracking',
+    features: [
+      'Official Clerk\'s Docket Stamp registry recording',
+      'USPS Certified Mail® barcode banner & tracking number',
+      'USPS electronic proof of acceptance and delivery scan',
+      'Admissible in court & administrative proceedings',
+      'USPS CASS™ address standardization',
+      'Permanent digital docket record & PDF proof',
+    ],
+  },
+  certified_return_receipt: {
+    id: 'certified_return_receipt',
+    name: 'USPS Certified Mail® + Return Receipt',
+    priceCents: 2795,
+    formattedPrice: '$27.95',
+    lobExtraService: 'certified_return_receipt',
+    description: 'USPS Certified Mail with Electronic Return Receipt green card signature proof',
+    features: [
+      'Everything in USPS Certified Mail®',
+      'Electronic Return Receipt (ERR) signed recipient proof',
+      'Legally conclusive delivery signature & date verification',
+      'Highest evidentiary standard for landlord & bureau notices',
+      'Official USPS signature certificate archived in docket',
+    ],
+  },
+};

@@ -1,117 +1,136 @@
 /**
- * Notice Cartridge 05: 30-Day Debt Verification & Validation Request (FDCPA § 809)
+ * Cartridge 05: FDCPA 30-Day Debt Verification & Validation Notice
  *
- * Mandatory statutory verification demand under 15 U.S.C. § 1692g.
- * Compels third-party collection agencies to immediately cease collection activities
- * until verified proof of debt and assignment is mailed to the consumer.
- *
- * Governing documents:
- * - docs/DOCKETSTAMP_SPEC.md (§5.5)
- * - docs/DESIGN_SYSTEM.md (§1, §3)
+ * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
  */
 
 import { z } from 'zod';
 import { NoticeTemplateDefinition } from '../types';
 
-export const fdcpaValidationSchema = z.object({
-  consumerFullName: z.string().min(2, 'Consumer legal name is required'),
-  consumerAddress: z.string().min(5, 'Consumer mailing address is required'),
-  collectionAgencyName: z.string().min(2, 'Collection agency name is required'),
-  debtReferenceNumber: z.string().min(2, 'Account reference number is required'),
-  originalCreditor: z.string().optional(),
-  disputeStatement: z.string().min(5, 'Dispute statement is required'),
+export const debtValidationSchema = z.object({
+  senderFullName: z.string().min(2, 'Consumer full legal name is required'),
+  recipientFormalName: z.string().min(2, 'Collection agency or debt buyer name is required'),
+  collectorReferenceNumber: z.string().min(1, 'Collection reference/file number is required').max(40),
+  allegedOriginalCreditor: z.string().min(2, 'Original creditor name is required').max(60),
+  allegedBalance: z.string().min(1, 'Alleged balance amount is required'),
+  initialContactDate: z.string().min(4, 'Date of initial communication is required'),
+  communicationPreference: z.enum([
+    'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+    'Please forward written verification documentation to the mailing address listed above',
+  ]),
 });
 
 export const debtValidationNotice: NoticeTemplateDefinition = {
-  id: 'fdcpa-debt-validation',
-  slug: 'debt-validation-request',
+  id: 'fdcpa-30-day-debt-validation-letter',
+  slug: 'fdcpa-30-day-debt-validation-letter',
+  aliases: ['debt-validation', 'debt-validation-request', 'fdcpa-debt-validation'],
   category: 'credit_debt',
-  title: '30-Day Debt Verification & Validation Request (FDCPA § 809)',
-  documentHeaderTitle: 'FORMAL DEMAND FOR VALIDATION OF DEBT PURSUANT TO FDCPA § 809',
-  reLineTemplate: 'RE: Written Dispute and Demand for Debt Validation (Account / Reference #{{debtReferenceNumber}})',
+  title: 'FDCPA 30-Day Debt Verification & Validation Notice',
+  shortDescription: 'Statutory 15 U.S.C. § 1692g dispute demanding debt validation, proof of claim authority, and cessation of collection activities.',
+  documentHeaderTitle: 'STATUTORY NOTICE OF DISPUTE AND REQUEST FOR DEBT VALIDATION',
+  reLineTemplate: 'RE: Debt Validation Request Pursuant to 15 U.S.C. § 1692g — Reference No: {{collectorReferenceNumber}}',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_or_manual_debt',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'FDCPA Debt Validation Letter | Cease Collection Demand | DocketStamp',
-    description: 'Demand debt validation under 15 U.S.C. § 1692g and trigger an immediate mandatory statutory cease of collection activities via USPS Certified Mail.',
+    title: 'FDCPA Debt Validation Letter | Send via USPS Certified Mail | DocketStamp',
+    description: 'Demand statutory debt validation under 15 U.S.C. § 1692g with cease-and-desist instructions via USPS Certified Mail with Return Receipt proof.',
     targetKeywords: [
-      'fdcpa debt validation letter',
-      'debt validation request certified mail',
-      '30 day debt validation demand',
-      'cease and desist debt collector letter',
-      'debt collector verification letter'
+      'debt validation letter',
+      'fdcpa 30 day validation request',
+      'debt verification demand certified mail',
+      'dispute debt collection agency letter',
+      '15 usc 1692g validation notice',
     ],
   },
   fields: [
     {
-      key: 'consumerFullName',
+      key: 'senderFullName',
       stepGroup: 'sender',
       label: 'Consumer Full Legal Name',
-      docusignTagLabel: 'CONSUMER LEGAL NAME',
+      docusignTagLabel: 'CONSUMER NAME',
       inputType: 'text',
-      placeholder: 'e.g., Robert T. Miller',
-      helperText: 'Your full legal name as it appears in correspondence.',
+      placeholder: 'e.g., Morgan L. Davis',
+      helperText: 'Your full legal name as addressed on collection communications.',
       maxLength: 70,
     },
     {
-      key: 'consumerAddress',
-      stepGroup: 'sender',
-      label: 'Current Mailing Address',
-      docusignTagLabel: 'CONSUMER MAILING ADDRESS',
-      inputType: 'text',
-      placeholder: 'e.g., 2400 Peachtree Rd NW, Atlanta, GA 30305',
-      helperText: 'Address where validation proof must be physically delivered.',
-      maxLength: 120,
-    },
-    {
-      key: 'collectionAgencyName',
+      key: 'recipientFormalName',
       stepGroup: 'recipient',
-      label: 'Collection Agency / Debt Buyer Name',
-      docusignTagLabel: 'COLLECTION AGENCY NAME',
+      label: 'Debt Collector / Agency Name',
+      docusignTagLabel: 'COLLECTOR ENTITY NAME',
       inputType: 'text',
-      placeholder: 'e.g., Portfolio Recovery Associates LLC',
-      helperText: 'The name of the collection agency that contacted you or sent an initial notice.',
+      placeholder: 'e.g., Portfolio Recovery Associates, LLC',
+      helperText: 'The legal collection agency or debt buyer contacting you.',
       maxLength: 80,
     },
     {
-      key: 'debtReferenceNumber',
+      key: 'collectorReferenceNumber',
       stepGroup: 'instrument_details',
-      label: 'Collection Account / File Reference Number',
-      docusignTagLabel: 'ACCOUNT / REFERENCE #',
+      label: 'Collector File / Reference Number',
+      docusignTagLabel: 'COLLECTION REF #',
       inputType: 'text',
-      placeholder: 'e.g., PRA-9918237',
-      helperText: 'The account or file number printed on the collection letter.',
+      placeholder: 'e.g., PRA-90214-X8',
+      helperText: 'The account or file reference number on the collection notice.',
       maxLength: 40,
     },
     {
-      key: 'originalCreditor',
+      key: 'allegedOriginalCreditor',
       stepGroup: 'instrument_details',
-      label: 'Original Creditor (if known)',
+      label: 'Alleged Original Creditor',
       docusignTagLabel: 'ORIGINAL CREDITOR',
       inputType: 'text',
-      placeholder: 'e.g., Citibank, N.A.',
-      helperText: 'The original bank or merchant who originated the account.',
+      placeholder: 'e.g., Synchrony Bank / Amazon Store Card',
+      helperText: 'The original bank, lender, or merchant who originated the obligation.',
       maxLength: 60,
     },
     {
-      key: 'disputeStatement',
+      key: 'allegedBalance',
       stepGroup: 'instrument_details',
-      label: 'Statement of Dispute',
-      docusignTagLabel: 'DISPUTE STATEMENT',
-      inputType: 'textarea_short',
-      placeholder: 'e.g., I dispute the validity of this entire debt and the accuracy of the claimed balance. Provide proof of authority and original signed agreement.',
-      helperText: 'A formal statement disputing the validity, assignment, or claimed balance of the debt.',
-      maxLength: 350,
+      label: 'Alleged Amount Demanded',
+      docusignTagLabel: 'ALLEGED AMOUNT',
+      inputType: 'currency',
+      placeholder: 'e.g., $1,420.50',
+      helperText: 'The total balance claimed in the collection communication.',
+      maxLength: 20,
+    },
+    {
+      key: 'initialContactDate',
+      stepGroup: 'instrument_details',
+      label: 'Date of Initial Collection Communication',
+      docusignTagLabel: 'DATE OF INITIAL NOTICE',
+      inputType: 'date',
+      placeholder: 'YYYY-MM-DD',
+      helperText: 'Date of the collection letter or first contact triggering the 30-day window.',
+      maxLength: 30,
+    },
+    {
+      key: 'communicationPreference',
+      stepGroup: 'instrument_details',
+      label: 'Communication Directives',
+      docusignTagLabel: 'COMMUNICATION PREFERENCE',
+      inputType: 'select',
+      placeholder: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+      options: [
+        {
+          label: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+          value: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+        },
+        {
+          label: 'Please forward written verification documentation to the mailing address listed above',
+          value: 'Please forward written verification documentation to the mailing address listed above',
+        },
+      ],
+      helperText: 'Specifies lawful communication constraints under FDCPA § 805(c).',
+      maxLength: 100,
     },
   ],
-  zodSchema: fdcpaValidationSchema,
+  zodSchema: debtValidationSchema,
   bodyParagraphs: [
-    'This letter serves as formal written notice pursuant to 15 U.S.C. § 1692g of the Fair Debt Collection Practices Act (FDCPA) that the undersigned consumer disputes the validity of the alleged debt referenced under Account / File #{{debtReferenceNumber}}{{#originalCreditor}} allegedly originated with {{originalCreditor}}{{/originalCreditor}}.',
-    'STATEMENT OF DISPUTE:\n{{disputeStatement}}',
-    'STATUTORY CEASE-AND-DESIST DEMAND:\nPursuant to 15 U.S.C. § 1692g(b), you are federally mandated to IMMEDIATELY CEASE ALL COLLECTION ACTIVITIES, including telephone calls, written demands, and credit bureau reporting, until you obtain verification of the debt or a copy of a judgment and mail a copy of such verification to the consumer.',
-    'Please provide: (1) competent written evidence that your agency possesses lawful standing and unbroken assignment to collect this debt, (2) an itemized calculation of all claimed principal, interest, attorney fees, and collection charges from the original creditor, and (3) a copy of the original agreement bearing the consumer\'s signature.',
-    'FDCPA PENALTY ADMONITION:\nFailure to cease collection activities prior to mailing verified proof constitutes a direct violation of federal law under 15 U.S.C. § 1692k, subjecting the collector to civil liability, statutory damages, and reasonable attorney fees.',
+    'This letter serves as formal written notice pursuant to the Fair Debt Collection Practices Act (FDCPA), 15 U.S.C. § 1692g, in response to your communication dated {{initialContactDate}} referencing Account/File No. {{collectorReferenceNumber}} (Alleged Original Creditor: {{allegedOriginalCreditor}}; Alleged Balance: {{allegedBalance}}).',
+    'PLEASE TAKE NOTICE that I formally dispute the validity and amount of the alleged debt referenced above in its entirety and request full statutory verification.',
+    'Please provide documentary verification of this obligation, including: (a) the name and address of the original creditor; (b) an itemized accounting of the principal balance and any interest or fees assessed; and (c) documentation establishing your organization\'s legal authority to collect this alleged obligation.',
+    'Pursuant to 15 U.S.C. § 1692g(b), please cease collection activities on this disputed account until written verification is mailed to {{senderFullAddress}}. Furthermore: {{communicationPreference}}.',
   ],
-  enclosuresLine: 'Enclosure: Copy of Initial Collection Notice / Billing Statement',
+  enclosuresLine: 'Enclosure: Copy of Initial Collection Communication (Front Page)',
 };

@@ -1,8 +1,8 @@
 import { MetadataRoute } from "next";
-import { getAllNoticeTemplates } from "@/lib/notices/registry";
+import { getAllNotices } from "@/src/lib/docket/notices";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://docketstamp.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com";
   const lastModified = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -32,8 +32,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const noticeRoutes: MetadataRoute.Sitemap = getAllNoticeTemplates().map((n) => ({
-    url: `${baseUrl}/notices/${n.id}`,
+  const noticeRoutes: MetadataRoute.Sitemap = getAllNotices().map((n) => ({
+    url: `${baseUrl}/notices/${n.slug}`,
     lastModified,
     changeFrequency: "weekly",
     priority: 0.8,
