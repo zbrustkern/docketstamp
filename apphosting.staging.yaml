@@ -12,24 +12,8 @@ runConfig:
 # Environment variables and Cloud Secret Manager bindings for Staging
 env:
   # Sensitive Server-Only Secrets (Backed by Google Cloud Secret Manager)
-  # Uses test-scoped secrets to guarantee isolation from production financial and postal streams
   - variable: STRIPE_SECRET_KEY
-    secret: stripe-secret-key-test
-    availability:
-      - RUNTIME
-
-  - variable: STRIPE_WEBHOOK_SECRET
-    secret: stripe-webhook-secret-test
-    availability:
-      - RUNTIME
-
-  - variable: LOB_DISPATCH_API_KEY
-    secret: lob-api-key-test
-    availability:
-      - RUNTIME
-
-  - variable: ADMIN_SECRET_KEY
-    secret: admin-secret-key-staging
+    secret: stripe-secret-key
     availability:
       - RUNTIME
 
