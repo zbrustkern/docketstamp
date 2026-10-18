@@ -13,6 +13,9 @@ import { logIncident } from "./incident-logger";
 import { Order } from "./types";
 import { sendMetaCapiPurchaseEvent } from "./meta-conversions-api";
 import { recordServerTelemetry } from "./metrics-rollup";
+import { sendDocketDispatchReceiptEmail } from "./email-alerts";
+import { getStripeClient } from "./stripe";
+import { resolvePaymentMode } from "./payment-mode";
 
 export interface ProcessPaidOrderResult {
   success: boolean;
@@ -53,15 +56,19 @@ export function validatePersonalSender(
     return { valid: false, error: "Personal sender first name is required." };
   }
 
+  const lowerFirst = firstName.toLowerCase();
+  const lowerLast = lastName.toLowerCase();
   const isBrandSender =
-    firstName.toLowerCase() === "aster & blanche" ||
-    (firstName.toLowerCase() === "aster" && lastName.toLowerCase() === "blanche");
+    lowerFirst.includes("docketstamp") ||
+    lowerFirst.includes("western amalgamated") ||
+    lowerLast.includes("docketstamp") ||
+    lowerLast.includes("western amalgamated");
 
   if (isBrandSender) {
     return {
       valid: false,
       isBrandSender: true,
-      error: "Return address must use personal sender name, not brand name Aster & Blanche.",
+      error: "Return address must use personal sender name, not brand name DocketStamp or Western Amalgamated.",
     };
   }
 
@@ -221,7 +228,7 @@ export async function processPaidOrder(
     });
 
     await logIncident({
-      type: "HANDWRYTTEN",
+      type: "SYSTEM",
       category: "OPERATOR_ACTION",
       severity: "error",
       summary: `Invalid/Missing Sender Address on Order ${orderId}`,
@@ -367,11 +374,61 @@ export async function processPaidOrder(
       : {}),
   } as any);
 
+  // 6b. Best-effort update Stripe PaymentIntent metadata with docket_id & lob_letter_id
+  if (paymentIntentId && paymentIntentId.startsWith("pi_") && !paymentIntentId.startsWith("pi_mock_")) {
+    try {
+      const pMode = resolvePaymentMode();
+      if (pMode === "live" || pMode === "stripe_test") {
+        const stripeClient = getStripeClient();
+        await stripeClient.paymentIntents.update(paymentIntentId, {
+          metadata: {
+            docket_id: docketId,
+            lob_letter_id: fulfillment.order_id || lobResult.letterId || "",
+            order_id: orderId,
+          },
+        });
+        console.log(`[OrderProcessor] Patched Stripe PaymentIntent ${paymentIntentId} metadata with Lob Letter ID ${fulfillment.order_id || lobResult.letterId}`);
+      }
+    } catch (stripeErr) {
+      console.warn(`[OrderProcessor] Best-effort Stripe PaymentIntent metadata patch skipped:`, stripeErr);
+    }
+  }
+
+  // 6c. Send customer transactional dispatch receipt email
+  const recipientEmail = customerEmail || order.customerEmail;
+  if (recipientEmail) {
+    try {
+      const serviceLevelLabel =
+        order.serviceLevel === "CERTIFIED_RETURN_RECEIPT"
+          ? "USPS Certified Mail® + Return Receipt"
+          : order.serviceLevel === "FIRST_CLASS"
+          ? "Standard First-Class Dispatch"
+          : "USPS Certified Mail®";
+
+      const recipientStreet = [order.recipientAddress?.street1, order.recipientAddress?.street2].filter(Boolean).join(", ");
+      const recipientCityStateZip = `${order.recipientAddress?.city || ""}, ${order.recipientAddress?.state || ""} ${order.recipientAddress?.zip || ""}`.trim();
+      const recipientSummary = `${toName} — ${recipientStreet}, ${recipientCityStateZip}`;
+
+      await sendDocketDispatchReceiptEmail({
+        toEmail: recipientEmail,
+        docketId,
+        serviceLevelLabel,
+        recipientName: toName,
+        recipientAddressSummary: recipientSummary,
+        trackingNumber: fulfillment.trackingNumber,
+        orderId,
+      });
+      console.log(`[OrderProcessor] Sent official docket dispatch receipt email to ${recipientEmail} (Docket: ${docketId})`);
+    } catch (receiptEmailErr) {
+      console.warn(`[OrderProcessor] Notice sending dispatch receipt email to ${recipientEmail}:`, receiptEmailErr);
+    }
+  }
+
   // 7. Auto-resolve any prior incidents for this order
   try {
     await resolveIncidentsForOrder(
       orderId,
-      `Self-resolved via successful robotic pen dispatch (HW ID: ${fulfillment.order_id})`
+      `Self-resolved via successful Lob USPS postal dispatch (Letter ID: ${fulfillment.order_id})`
     );
   } catch (resolveErr) {
     console.warn("[OrderProcessor] Notice auto-resolving prior incidents:", resolveErr);
@@ -433,7 +490,7 @@ export async function processPaidOrder(
     console.warn("[OrderProcessor] Notice recording fulfillment_submitted telemetry:", telErr);
   }
 
-  console.log(`[OrderProcessor] Order ${orderId} successfully dispatched! HW ID: ${fulfillment.order_id}`);
+  console.log(`[OrderProcessor] Order ${orderId} successfully dispatched! Lob Letter ID: ${fulfillment.order_id}`);
 
   return {
     success: true,

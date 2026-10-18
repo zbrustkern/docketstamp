@@ -98,7 +98,7 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "sendmynotes_contacts_template.csv");
+    link.setAttribute("download", "docketstamp_contacts_template.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -337,14 +337,11 @@ function initializeFirebase() {
   const isStagingEnv =
     process.env.ENVIRONMENT === "staging" ||
     process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging")) ||
     (typeof process.env.FIREBASE_CONFIG === "string" &&
-      (process.env.FIREBASE_CONFIG.includes("docketstamp-staging") ||
-        process.env.FIREBASE_CONFIG.includes("sendmynotes-staging")));
+      process.env.FIREBASE_CONFIG.includes("docketstamp-staging"));
 
   const projectId =
     process.env.FIREBASE_PROJECT_ID ||
@@ -482,6 +479,16 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 export async function getOrderByDocketId(docketId: string): Promise<Order | null> {
   const snapshot = await getOrdersCollection().where("docketId", "==", docketId).limit(1).get();
   if (snapshot.empty) return null;
+  return snapshot.docs[0].data() as Order;
+}
+
+export async function getOrderByLobLetterId(letterId: string): Promise<Order | null> {
+  const snapshot = await getOrdersCollection().where("lobLetterId", "==", letterId).limit(1).get();
+  if (snapshot.empty) {
+    const legacySnapshot = await getOrdersCollection().where("handwryttenOrderId", "==", letterId).limit(1).get();
+    if (legacySnapshot.empty) return null;
+    return legacySnapshot.docs[0].data() as Order;
+  }
   return snapshot.docs[0].data() as Order;
 }
 

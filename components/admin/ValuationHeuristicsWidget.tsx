@@ -687,7 +687,7 @@ export function ValuationHeuristicsWidget({
       <div className="bg-stone-50 rounded-3xl p-6 sm:p-8 border border-stone-200/80 space-y-4">
         <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          The Economics of sendmynotes: Why Handwritten Gifting Scales Profitably
+          The Economics of DocketStamp: Why Programmatic Certified Mail Scales Profitably
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-stone-600 leading-relaxed">
           <div className="p-4 bg-white rounded-2xl border border-stone-200/70 space-y-1.5">
@@ -695,7 +695,7 @@ export function ValuationHeuristicsWidget({
               <span>Zero Physical Inventory Waste</span>
             </span>
             <p>
-              Unlike traditional stationery retailers who risk unsold holiday stock, every single card is manufactured and robotic-inked on-demand after customer payment.
+              Unlike traditional mail processing facilities who risk high overhead, every statutory instrument is verified via CASS and dispatched on-demand after customer payment.
             </p>
           </div>
 
@@ -704,7 +704,7 @@ export function ValuationHeuristicsWidget({
               <span>The Address Book Flywheel</span>
             </span>
             <p>
-              When a customer checks &ldquo;Save address to my book&rdquo;, sendmynotes captures calendar occasion dates. Automated reminders generate high-margin re-orders with $0 marginal ad spend.
+              When a customer dispatches a notice, DocketStamp securely logs the instrument. Automated status tracking and follow-up notices generate high-margin re-orders with $0 marginal ad spend.
             </p>
           </div>
 

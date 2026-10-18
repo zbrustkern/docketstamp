@@ -18,8 +18,8 @@ export function AuthModal({
   onClose,
   defaultEmail = "",
   onSuccess,
-  title = "Sign In to sendmynotes",
-  subtitle = "Save cards, access your address book, and track your card delivery.",
+  title = "Sign In to DocketStamp",
+  subtitle = "Save dockets, access your address book, and track your certified mail delivery.",
 }: AuthModalProps) {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
 
@@ -42,7 +42,7 @@ export function AuthModal({
       const msg = err instanceof Error ? err.message : "Google sign-in error";
       if (msg.includes("auth/unauthorized-domain")) {
         setError(
-          "This domain (e.g. sendmynotes.com) is not yet listed under Authorized Domains in Firebase Authentication. Please add it in Firebase Console → Authentication → Settings → Authorized domains."
+          "This domain (e.g. docketstamp.com) is not yet listed under Authorized Domains in Firebase Authentication. Please add it in Firebase Console → Authentication → Settings → Authorized domains."
         );
       } else {
         setError(msg);

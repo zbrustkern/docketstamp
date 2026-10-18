@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         type: "SYSTEM",
         severity: "error",
         summary: "Studio Test Alert — Verified System Notification",
-        technicalDetails: "This is a simulated high-priority diagnostic alert dispatched from the Aster & Blanche Admin Panel to verify real-time email notifications.",
+        technicalDetails: "This is a simulated high-priority diagnostic alert dispatched from the DocketStamp Admin Panel to verify real-time email notifications.",
         resolved: false,
         createdAt: Date.now(),
       };

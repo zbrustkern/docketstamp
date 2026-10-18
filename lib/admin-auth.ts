@@ -4,7 +4,7 @@ import crypto from "crypto";
 export const ADMIN_COOKIE_NAME = "smn_admin_session";
 
 /**
- * Verified user accounts authorized to access the SendMyNotes admin portal.
+ * Verified user accounts authorized to access the DocketStamp admin portal.
  */
 export const AUTHORIZED_ADMIN_EMAILS: string[] = [
   "zbrustkern@gmail.com",
@@ -41,9 +41,7 @@ export function getAdminSecret(): string | null {
   if (
     process.env.ENVIRONMENT === "staging" ||
     process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging"))
   ) {

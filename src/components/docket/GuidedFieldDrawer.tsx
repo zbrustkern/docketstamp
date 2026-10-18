@@ -55,6 +55,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
     userValues.senderFullName || userValues.tenantFullName || ''
   );
   const [fitnessWarning, setFitnessWarning] = useState<string | null>(null);
+  const [isAffirmed, setIsAffirmed] = useState(false);
 
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>>({});
 
@@ -449,6 +450,19 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
               className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono placeholder-slate-600"
             />
 
+            {/* Self-Representation & Irreversibility Affirmation Checkbox */}
+            <label className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800 text-xs text-slate-300 cursor-pointer hover:bg-slate-850 transition">
+              <input
+                type="checkbox"
+                checked={isAffirmed}
+                onChange={(e) => setIsAffirmed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-800 text-sky-600 focus:ring-sky-500 focus:ring-offset-slate-900 cursor-pointer shrink-0"
+              />
+              <span className="leading-relaxed select-none">
+                I affirm that I am the self-represented individual executing this notice on my own behalf, I understand DocketStamp is an automated self-help document preparation and USPS dispatch utility (not a law firm and does not provide legal advice), and I acknowledge that physical USPS mail dispatches are irreversible once submitted to the postal stream.
+              </span>
+            </label>
+
             <div className="p-3 bg-slate-900 rounded border border-slate-800 flex items-center justify-between">
               <div>
                 <div className="text-[10px] uppercase font-mono text-slate-500">
@@ -461,15 +475,15 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (signatureInput.trim()) {
+                  if (signatureInput.trim() && isAffirmed) {
                     onAdoptSignature(signatureInput.trim());
                   }
                 }}
-                disabled={!signatureInput.trim()}
+                disabled={!signatureInput.trim() || !isAffirmed}
                 className={`px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition ${
                   isSignatureAdopted
                     ? 'bg-emerald-700 text-white'
-                    : signatureInput.trim()
+                    : signatureInput.trim() && isAffirmed
                     ? 'bg-sky-600 hover:bg-sky-500 text-white'
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}

@@ -30,6 +30,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.4,
     },
+    {
+      url: `${baseUrl}/disclaimer`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
   ];
 
   const noticeRoutes: MetadataRoute.Sitemap = getAllNotices().map((n) => ({

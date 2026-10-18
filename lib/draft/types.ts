@@ -1,5 +1,5 @@
 /**
- * Versioned Draft State & Content Model for SendMyNotes.
+ * Versioned Draft State & Content Model for DocketStamp.
  * Implements S1-01 requirements:
  * - Versioned schema (schemaVersion)
  * - Required content separated from optional preferences

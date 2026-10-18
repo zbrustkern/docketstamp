@@ -1,4 +1,5 @@
 import { SystemIncident } from "./types";
+import { UPL_COMPLIANCE_FOOTER_TEXT } from "@/src/lib/docket/guardrails";
 
 export interface SendAlertEmailParams {
   incident: SystemIncident;
@@ -134,8 +135,9 @@ ${adminUrl}
   };
 }
 
-function escapeHtml(text: string): string {
-  return text
+function escapeHtml(text?: string | null): string {
+  if (!text) return "";
+  return String(text)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -261,5 +263,183 @@ DocketStamp Registry | docketstamp.com
 
   // Development simulation
   console.log(`[Reminder Email Sim] (RESEND_API_KEY not configured) -> Would send reminder to: ${toEmail} for ${occasionTitle} (${occasionDateFormatted})`);
+  return { success: true };
+}
+
+export interface SendDocketDispatchReceiptEmailParams {
+  toEmail: string;
+  docketId: string;
+  serviceLevelLabel?: string;
+  recipientName?: string;
+  recipientAddressSummary?: string;
+  recipientSummary?: string;
+  trackingNumber?: string;
+  orderId?: string;
+}
+
+/**
+ * Dispatches an official customer transactional dispatch receipt email.
+ * Dark-slate / institutional style containing docket record, service level,
+ * recipient summary, tracking link, and mandatory UPL compliance footer.
+ */
+export async function sendDocketDispatchReceiptEmail({
+  toEmail,
+  docketId,
+  serviceLevelLabel = "USPS Certified Mail®",
+  recipientName,
+  recipientAddressSummary,
+  recipientSummary,
+  trackingNumber,
+  orderId,
+}: SendDocketDispatchReceiptEmailParams): Promise<{ success: boolean; error?: string }> {
+  if (!toEmail || !toEmail.includes("@")) {
+    return { success: false, error: "Invalid recipient email address" };
+  }
+
+  const effectiveRecipientName =
+    recipientName ||
+    (recipientSummary ? recipientSummary.split("—")[0].trim() : "Designated Recipient");
+  const effectiveAddressSummary =
+    recipientAddressSummary ||
+    (recipientSummary ? (recipientSummary.split("—")[1] || recipientSummary).trim() : "");
+
+  const subject = `Official Docket Dispatched: ${docketId} (${serviceLevelLabel})`;
+  const docketUrl = `https://docketstamp.com/docket/${docketId}`;
+  const uplFooter = UPL_COMPLIANCE_FOOTER_TEXT(docketId);
+
+  const textBody = `
+DocketStamp Official Dispatch Registry
+======================================
+Official Dispatch Certification & Receipt
+
+DOCKET ID:       ${docketId}
+SERVICE LEVEL:   ${serviceLevelLabel}
+RECIPIENT:       ${effectiveRecipientName}
+DESTINATION:     ${effectiveAddressSummary}
+${trackingNumber ? `USPS TRACKING:   ${trackingNumber}\n` : ""}${orderId ? `ORDER ID:        ${orderId}\n` : ""}
+LIVE DOCKET TRACKING & PROOF RECORD:
+${docketUrl}
+
+--------------------------------------
+${uplFooter}
+`.trim();
+
+  const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0F172A; margin: 0; padding: 24px; color: #F8FAFC; }
+    .card { background: #1E293B; border: 1px solid #334155; border-radius: 16px; max-width: 600px; margin: 0 auto; padding: 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .header { border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 24px; }
+    .badge { display: inline-block; background-color: #0284C7; color: #FFFFFF; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; font-family: ui-monospace, Menlo, monospace; }
+    .title { font-size: 22px; font-weight: 700; color: #F8FAFC; margin: 16px 0 6px 0; }
+    .docket-id { font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: #38BDF8; font-weight: bold; }
+    .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .details-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #334155; }
+    .details-table td.label { width: 35%; color: #94A3B8; font-family: ui-monospace, Menlo, monospace; text-transform: uppercase; font-size: 11px; }
+    .details-table td.value { color: #F8FAFC; font-weight: 500; }
+    .btn { display: inline-block; background-color: #0284C7; color: #FFFFFF; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 20px 0; font-family: ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer { font-size: 10px; color: #94A3B8; margin-top: 32px; border-top: 1px solid #334155; padding-top: 20px; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="badge">Official USPS Dispatch</span>
+      <h1 class="title">Formal Legal Notice Dispatched</h1>
+      <div class="docket-id">DOCKET ID: ${escapeHtml(docketId)}</div>
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #CBD5E1; margin: 0 0 16px 0;">
+      Your administrative instrument has been processed, verified via USPS CASS™, and inducted into the postal stream.
+    </p>
+
+    <table class="details-table">
+      <tr>
+        <td class="label">Docket ID</td>
+        <td class="value" style="font-family: ui-monospace, Menlo, monospace; color: #38BDF8;">${escapeHtml(docketId)}</td>
+      </tr>
+      <tr>
+        <td class="label">Service Level</td>
+        <td class="value">${escapeHtml(serviceLevelLabel)}</td>
+      </tr>
+      <tr>
+        <td class="label">Recipient</td>
+        <td class="value">${escapeHtml(effectiveRecipientName)}</td>
+      </tr>
+      <tr>
+        <td class="label">Destination</td>
+        <td class="value">${escapeHtml(effectiveAddressSummary)}</td>
+      </tr>
+      ${
+        trackingNumber
+          ? `<tr>
+        <td class="label">USPS Tracking</td>
+        <td class="value" style="font-family: ui-monospace, Menlo, monospace; color: #10B981; font-weight: bold;">${escapeHtml(
+          trackingNumber
+        )}</td>
+      </tr>`
+          : ""
+      }
+    </table>
+
+    <div style="text-align: center;">
+      <a href="${escapeHtml(docketUrl)}" class="btn" style="color: #ffffff;">View Official Docket Record &rarr;</a>
+    </div>
+
+    <div class="footer">
+      <strong>STATUTORY DOCKET NOTICE:</strong> ${escapeHtml(uplFooter)}
+      <br/><br/>
+      DocketStamp Official Registry &bull; Dispatched via Western Amalgamated &bull; <a href="https://docketstamp.com" style="color: #38BDF8; text-decoration: none;">docketstamp.com</a>
+    </div>
+  </div>
+</body>
+</html>
+`.trim();
+
+  const resendApiKey =
+    process.env.RESEND_API_KEY ||
+    process.env["RESEND_API_KEY"] ||
+    process.env["resend-api-key"];
+
+  const fromEmail = process.env.RESEND_DISPATCH_FROM_EMAIL || "dispatch@docketstamp.com";
+  const fromHeader = `DocketStamp Official Registry <${fromEmail}>`;
+
+  if (resendApiKey) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromHeader,
+          to: [toEmail],
+          subject,
+          text: textBody,
+          html: htmlBody,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("[Dispatch Receipt Email] Resend API error:", data);
+        return { success: false, error: data.message || "Resend error" };
+      }
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Dispatch Receipt Email] Exception sending email:", msg);
+      return { success: false, error: msg };
+    }
+  }
+
+  // Development / Mock mode
+  console.log(
+    `[Dispatch Receipt Email Sim] (RESEND_API_KEY not configured) -> Would send to: ${toEmail}\nFrom: ${fromHeader}\nSubject: ${subject}\n${textBody}`
+  );
   return { success: true };
 }

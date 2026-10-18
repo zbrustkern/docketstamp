@@ -31,13 +31,13 @@ export function FlowHeader({ showClearDraft = false, onClearDraft }: FlowHeaderP
           <Link
             href="/"
             className="flex items-center gap-2 text-stone-900 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-md py-1 px-1.5 -ml-1.5"
-            aria-label="SendMyNotes Home"
+            aria-label="DocketStamp Home"
           >
             <span className="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center shadow-xs">
               <PenTool className="w-4 h-4 text-emerald-50" aria-hidden="true" />
             </span>
             <span className="font-serif font-bold text-lg tracking-tight text-stone-900">
-              SendMyNotes
+              DocketStamp
             </span>
           </Link>
 

@@ -80,7 +80,7 @@ export function FeedbackModal({
                 Send Us Your Feedback
               </h3>
               <p className="text-[11px] text-stone-500">
-                Help shape the future of Aster &amp; Blanche Press / sendmynotes.com
+                Help shape the future of DocketStamp (docketstamp.com)
               </p>
             </div>
           </div>

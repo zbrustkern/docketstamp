@@ -131,14 +131,11 @@ export function resolvePaymentMode(
     env.ALLOW_STRIPE_TEST_IN_PRODUCTION === "true" ||
     env.ENVIRONMENT === "staging" ||
     env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     (typeof env.NEXT_PUBLIC_APP_URL === "string" && env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof env.K_SERVICE === "string" && env.K_SERVICE.includes("staging")) ||
     (typeof env.FIREBASE_CONFIG === "string" &&
-      (env.FIREBASE_CONFIG.includes("docketstamp-staging") ||
-        env.FIREBASE_CONFIG.includes("sendmynotes-staging")));
+      env.FIREBASE_CONFIG.includes("docketstamp-staging"));
 
   const allowTestInProduction = isStagingEnvironment;
 

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Truck, CheckCircle2, ShieldCheck, RefreshCw } from "lucide-react";
 
-export function HandwryttenStatusWidget() {
+export function LobStatusWidget() {
   const [isTestMode] = useState(process.env.NODE_ENV !== "production");
 
   return (
@@ -39,3 +39,4 @@ export function HandwryttenStatusWidget() {
     </div>
   );
 }
+export const HandwryttenStatusWidget = LobStatusWidget;

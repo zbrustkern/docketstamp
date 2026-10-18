@@ -58,6 +58,18 @@ export async function POST(req: NextRequest) {
       if (userValues.serviceTypeLabel) {
         assertNonFitnessEntity(userValues.serviceTypeLabel);
       }
+      if (userValues.creditorName) {
+        assertNonFitnessEntity(userValues.creditorName);
+      }
+      if (userValues.disputedAccountName) {
+        assertNonFitnessEntity(userValues.disputedAccountName);
+      }
+      if (recipientAddress?.name) {
+        assertNonFitnessEntity(recipientAddress.name);
+      }
+      if (recipientAddress?.company) {
+        assertNonFitnessEntity(recipientAddress.company);
+      }
     } catch (err: unknown) {
       if (err instanceof ConflictOfInterestError) {
         return NextResponse.json(

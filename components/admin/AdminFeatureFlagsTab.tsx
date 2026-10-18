@@ -142,10 +142,10 @@ export function AdminFeatureFlagsTab() {
             </div>
 
             <h2 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight leading-tight">
-              SendMyNotes Rework V3 Switchboard
+              DocketStamp Experience Switchboard
             </h2>
             <p className="text-xs sm:text-sm text-stone-300 font-light leading-relaxed">
-              Instant zero-downtime toggle between legacy V2 Vending Machine and the modern Aster &amp; Blanche Atelier experience.
+              Instant zero-downtime toggle for feature flags and experimental flows.
             </p>
           </div>
 
@@ -229,11 +229,11 @@ export function AdminFeatureFlagsTab() {
               </span>
               {isV3Active ? (
                 <p>
-                  Incoming visitors to <code className="bg-stone-900/80 px-1.5 py-0.5 rounded text-emerald-300 font-mono">sendmynotes.com/</code> immediately receive the Rework V3 Atelier experience (11 Occasions, A2 proportions, return address, Stripe Express).
+                  Incoming visitors to <code className="bg-stone-900/80 px-1.5 py-0.5 rounded text-emerald-300 font-mono">docketstamp.com/</code> immediately receive the modern DocketStamp experience.
                 </p>
               ) : (
                 <p>
-                  Root visitors receive the legacy V2 interface. The new V3 experience is accessible for canary testing at <code className="bg-stone-900/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">/new</code> or <code className="bg-stone-900/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">/?v3=1</code>.
+                  Root visitors receive the standard interface. Experimental flows are accessible for canary testing at <code className="bg-stone-900/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">/new</code> or <code className="bg-stone-900/80 px-1.5 py-0.5 rounded text-amber-300 font-mono">/?v3=1</code>.
                 </p>
               )}
             </div>
@@ -360,11 +360,11 @@ export function AdminFeatureFlagsTab() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
               <h3 className="text-base font-serif font-bold text-stone-900">
-                SendMyNotes Rework V3 Architectural Specification
+                DocketStamp Experience Architectural Specification
               </h3>
             </div>
             <p className="text-xs text-stone-500 mt-0.5">
-              The 5 core pillars delivered in the V3 experience to elevate SendMyNotes into an elite stationery atelier.
+              The core architectural pillars delivering the DocketStamp dispatch experience.
             </p>
           </div>
           <span className="self-start sm:self-auto px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
@@ -389,7 +389,7 @@ export function AdminFeatureFlagsTab() {
                 1. 11 Ready-Made Occasions
               </h4>
               <p className="text-[11px] text-stone-600 leading-relaxed mt-0.5 font-light">
-                Direct browsing for Birthday, Anniversary, Sympathy, Thank You, Thinking of You, Congratulations, New Baby, Get Well, Romance, Father&apos;s Day, and Mother&apos;s Day with curated backplates.
+                Direct browsing for statutory and legal notices with curated backplates.
               </p>
             </div>
           </div>
@@ -406,10 +406,10 @@ export function AdminFeatureFlagsTab() {
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-serif font-bold text-stone-900">
-                2. True A2 Proportions
+                2. True 8.5x11 Proportions
               </h4>
               <p className="text-[11px] text-stone-600 leading-relaxed mt-0.5 font-light">
-                Exact physical stationery dimensions (5.5&quot; × 4.25&quot;, 1.294 ratio) rendered in CSS and canvas, perfectly matching physical postal cards and envelopes.
+                Exact physical document dimensions (8.5&quot; × 11&quot;) rendered in CSS and canvas, perfectly matching physical Lob postal print output.
               </p>
             </div>
           </div>
