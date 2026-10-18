@@ -9,17 +9,21 @@ export const AUTHORITY_EVENTS = new Set<string>([
   "purchase_verified",
   "fulfillment_submitted",
   "fulfillment_failed",
+  "order_paid_confirmed",
+  "order_fulfilled",
 ]);
 
 /**
  * Evaluates whether an event name represents an authority event.
  * Checks against the explicit set and adheres to the naming rule:
- * fulfillment_*, purchase_*, payment-success-like names.
+ * fulfillment_*, purchase_*, order_paid_*, order_fulfill_*, payment-success-like names.
  */
 export function isAuthorityEvent(eventName: string): boolean {
   if (AUTHORITY_EVENTS.has(eventName)) return true;
   if (eventName.startsWith("fulfillment_")) return true;
   if (eventName.startsWith("purchase_")) return true;
+  if (eventName.startsWith("order_paid")) return true;
+  if (eventName.startsWith("order_fulfill")) return true;
   if (/^(payment|order)_succeed(ed)?$/i.test(eventName)) return true;
   if (/^payment_success$/i.test(eventName)) return true;
   return false;
@@ -58,6 +62,14 @@ export const ALLOWED_BROWSER_EVENT_NAMES = new Set<TelemetryEventName>([
   "payment_failed",
   "reminder_opt_in",
   "card_abandoned",
+  // DocketStamp v2 Funnel Events (Browser permitted):
+  "landing_view",
+  "product_select",
+  "letter_select",
+  "editor_start",
+  "editor_complete",
+  "checkout_view",
+  "payment_submitted",
 ]);
 
 export type AllowedFieldType = "string" | "number" | "boolean";
@@ -74,7 +86,57 @@ export const COMMON_METADATA_RULES: Record<string, FieldRule> = {
   experienceVersion: { type: "string", maxLength: 50 },
   draftRevision: { type: "number" },
   elapsedMs: { type: "number" },
+  entrySource: { type: "string", maxLength: 50 },
+  noticeSlug: { type: "string", maxLength: 100 },
+  recipientId: { type: "string", maxLength: 100 },
+  tier: { type: "string", maxLength: 50 },
+  deviceCategory: { type: "string", maxLength: 20 },
+  dedupeKey: { type: "string", maxLength: 100 },
+  step: { type: "number" },
+  orderId: { type: "string", maxLength: 100 },
+  isTest: { type: "boolean" },
+  paymentMode: { type: "string", maxLength: 50 },
+  amountInCents: { type: "number" },
 };
+
+/**
+ * Explicit forbidden metadata keys to prevent accidental capture of
+ * personal data, search queries, stage tokens, secrets, or raw errors.
+ */
+export const FORBIDDEN_METADATA_KEYS = new Set<string>([
+  "senderFullName",
+  "senderAddressLine1",
+  "senderAddressLine2",
+  "senderCity",
+  "senderState",
+  "senderZip",
+  "recipientFormalName",
+  "recipientAddressLine1",
+  "recipientAddressLine2",
+  "recipientCity",
+  "recipientState",
+  "recipientZip",
+  "email",
+  "customerEmail",
+  "depositAmount",
+  "balanceRequested",
+  "signatureInput",
+  "fieldValues",
+  "userValues",
+  "searchQuery",
+  "query",
+  "search",
+  "stageId",
+  "stageToken",
+  "statusAccessToken",
+  "viewToken",
+  "token",
+  "secret",
+  "clientSecret",
+  "rawError",
+  "error",
+  "errorMessage",
+]);
 
 /**
  * Per-event metadata allowlist schemas.
@@ -205,16 +267,86 @@ export const EVENT_METADATA_SCHEMAS: Record<string, Record<string, FieldRule>> =
     lastStep: { type: "number" },
     reason: { type: "string", maxLength: 50 },
   },
+  // DocketStamp v2 Funnel Event Schemas (Sprint S6)
+  landing_view: {
+    entryRoute: { type: "string", maxLength: 100 },
+    source: { type: "string", maxLength: 50 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+  },
+  product_select: {
+    noticeSlug: { type: "string", maxLength: 100 },
+    recipientId: { type: "string", maxLength: 100 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+  },
+  letter_select: {
+    noticeSlug: { type: "string", maxLength: 100 },
+    recipientId: { type: "string", maxLength: 100 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+  },
+  editor_start: {
+    noticeSlug: { type: "string", maxLength: 100 },
+    recipientId: { type: "string", maxLength: 100 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+  },
+  editor_complete: {
+    noticeSlug: { type: "string", maxLength: 100 },
+    draftRevision: { type: "number" },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+  },
+  checkout_view: {
+    noticeSlug: { type: "string", maxLength: 100 },
+    tier: { type: "string", maxLength: 50 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+    amountInCents: { type: "number" },
+  },
+  payment_submitted: {
+    noticeSlug: { type: "string", maxLength: 100 },
+    tier: { type: "string", maxLength: 50 },
+    orderId: { type: "string", maxLength: 100 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+    amountInCents: { type: "number" },
+  },
   // Server-only authority event schemas (for recordServerTelemetry)
+  order_paid_confirmed: {
+    orderId: { type: "string", maxLength: 100 },
+    paymentIntentId: { type: "string", maxLength: 100 },
+    amountInCents: { type: "number" },
+    customerType: { type: "string", maxLength: 50 },
+    isTest: { type: "boolean" },
+    paymentMode: { type: "string", maxLength: 50 },
+    noticeSlug: { type: "string", maxLength: 100 },
+    tier: { type: "string", maxLength: 50 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
+  },
+  order_fulfilled: {
+    orderId: { type: "string", maxLength: 100 },
+    lobLetterId: { type: "string", maxLength: 100 },
+    serviceLevel: { type: "string", maxLength: 50 },
+  },
   purchase_verified: {
     orderId: { type: "string", maxLength: 100 },
     paymentIntentId: { type: "string", maxLength: 100 },
     amountInCents: { type: "number" },
     customerType: { type: "string", maxLength: 50 },
+    isTest: { type: "boolean" },
+    paymentMode: { type: "string", maxLength: 50 },
+    noticeSlug: { type: "string", maxLength: 100 },
+    tier: { type: "string", maxLength: 50 },
+    entrySource: { type: "string", maxLength: 50 },
+    experienceVersion: { type: "string", maxLength: 50 },
   },
   fulfillment_submitted: {
     orderId: { type: "string", maxLength: 100 },
     handwryttenOrderId: { type: "string", maxLength: 100 },
+    lobLetterId: { type: "string", maxLength: 100 },
   },
   fulfillment_failed: {
     orderId: { type: "string", maxLength: 100 },
@@ -223,12 +355,14 @@ export const EVENT_METADATA_SCHEMAS: Record<string, Record<string, FieldRule>> =
 };
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+const SECRET_TOKEN_REGEX = /(?:tok_|pi_|cs_|sec_)[a-zA-Z0-9_-]{12,}/i;
 
 /**
  * Sanitizes an event's metadata according to its allowlist schema.
  * - Unknown keys are dropped.
+ * - Explicitly forbidden keys (personal values, search query, stage tokens, secrets, errors) are dropped.
  * - Nested objects and arrays are rejected/dropped so no personal values can be stored.
- * - String values are stripped of emails and length-bounded.
+ * - String values are stripped of emails, secrets, and raw URL query strings, and length-bounded.
  */
 export function sanitizeMetadata(
   eventName: string,
@@ -247,6 +381,11 @@ export function sanitizeMetadata(
   const sanitized: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(raw)) {
+    // Drop explicitly forbidden keys
+    if (FORBIDDEN_METADATA_KEYS.has(key)) {
+      continue;
+    }
+
     // If value is a nested object or array, drop it
     if (value !== null && typeof value === "object") {
       continue;
@@ -261,7 +400,13 @@ export function sanitizeMetadata(
     if (rule.type === "string") {
       if (typeof value === "string") {
         // Strip any email pattern
-        const stripped = value.replace(new RegExp(EMAIL_REGEX, "g"), "").trim();
+        let stripped = value.replace(new RegExp(EMAIL_REGEX, "g"), "").trim();
+        // Redact any secret or auth token pattern
+        stripped = stripped.replace(new RegExp(SECRET_TOKEN_REGEX, "g"), "[REDACTED_TOKEN]").trim();
+        // If string contains URL query string or hash, strip it
+        if (stripped.includes("?") || stripped.includes("#")) {
+          stripped = stripped.split(/[?#]/)[0].trim();
+        }
         const maxLen = rule.maxLength || 100;
         sanitized[key] = stripped.slice(0, maxLen);
       }

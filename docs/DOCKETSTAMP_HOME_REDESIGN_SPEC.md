@@ -1,6 +1,10 @@
-# DocketStamp Main Page Redesign Specification (`app/page.tsx`)
+# Superseded homepage specification
 
-**Status:** Canonical Implementation Spec  
+**Superseded October 18, 2026:** Use [Homepage and purchase experience v2](DOCKETSTAMP_HOME_CONVERSION_DESIGN_SPEC.md), its [sprint plan](DOCKETSTAMP_HOME_REDESIGN_SPRINTS.md), and [builder prompt](DOCKETSTAMP_HOME_BUILDER_PROMPT.md). The historical requirements below for overlapping selectors, homepage form entry, duplicate catalogs, and expanded company cards are no longer implementation instructions. The Master Build and Agentic Expansion specifications remain authoritative for architecture and invariants.
+
+## Historical specification (reference only)
+
+**Status:** Superseded; reference only
 **Target Files:**
 - `app/page.tsx` (Complete replacement — target `< 220` lines, zero dead marketing sections)
 - `src/components/docket/InteractiveHomeWorkbench.tsx` (New — Live above-the-fold conversion & preview engine)

@@ -14,8 +14,9 @@
     "test:telemetry": "tsx tests/visitor-telemetry.test.ts",
     "test:docket": "tsx tests/docket-engine.test.ts",
     "test:stripe-bootstrap": "tsx --test tests/bootstrap-stripe.test.ts",
+    "test:admin-auth": "tsx tests/admin-account-binding.test.ts",
     "test:go-live": "tsx tests/go-live-readiness.test.ts",
-    "test": "npm run test:security && npm run test:payment-mode && npm run test:docket && npm run test:stripe-bootstrap && npm run test:go-live",
+    "test": "npm run test:security && npm run test:payment-mode && npm run test:docket && npm run test:stripe-bootstrap && npm run test:admin-auth && npm run test:go-live",
     "stripe:bootstrap": "tsx scripts/bootstrap-stripe.ts"
   },
   "dependencies": {

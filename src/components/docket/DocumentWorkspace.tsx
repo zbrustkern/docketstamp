@@ -3,22 +3,23 @@
 /**
  * DocumentWorkspace: DocuSign-Style Interactive Document Preparation Workspace
  *
- * Implements Section 3 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md & Section 4 of DOCKETSTAMP_AGENTIC_EXPANSION.md:
- * - Dark Slate Workspace (#0F172A) framing elevated 8.5 x 11 live paper sheet
- * - Sticky Top Execution Bar with live field completion counter and Next Required Field action
- * - Clickable DocuSign-style inline Amber Tags on paper sheet that focus guided drawer inputs
- * - Live real-time interpolation of user parameters, statutory citations, and institutional recipients
- * - Electronic signature and Clerk's Docket Stamp adoption
- * - Mobile responsive drawer toggle and keyboard ergonomics
- * - Agentic hydration via URL parameters (?field.*, ?recipientId, ?tier) and server-staged drafts (?stage=)
- * - Chrome 149+ WebMCP client-side tool integration (fill_docket_fields)
- * - Institutional AgentStagedBanner alert
+ * Implements Section 3 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md, Section 4 of DOCKETSTAMP_AGENTIC_EXPANSION.md,
+ * and Sprint S4 of docs/DOCKETSTAMP_HOME_REDESIGN_SPRINTS.md:
+ * - 3-stage customer progression: 1. Letter details -> 2. Review and sign -> 3. Delivery and payment
+ * - Real validation, honest progress counts, and first-invalid-field focus
+ * - Session-scoped draft recovery with strict URL prefill precedence
+ * - User-edit protection: late hydration never overwrites user edits
+ * - Revision-tied signature invalidation and address re-verification invalidation
+ * - Preview token clicks focus drawer inputs and open mobile drawer
+ * - Verbatim statutory affirmations and UPL disclosures
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   NoticeTemplateDefinition,
   MailTierId,
+  AddressVerificationStatus,
 } from '@/lib/docket/types';
 import { getNoticeBySlug } from '@/lib/docket/notices';
 import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/interpolate';
@@ -29,6 +30,14 @@ import { CheckoutModal } from './CheckoutModal';
 import { AgentStagedBanner } from './AgentStagedBanner';
 import { useAgentHydration } from '@/hooks/useAgentHydration';
 import { useWebMcpTools } from '@/hooks/useWebMcpTools';
+import {
+  validateNoticeDraft,
+  saveNoticeDraft,
+  clearNoticeDraft,
+  resolveInitialWorkspaceDraft,
+} from '@/lib/docket/draft-recovery';
+import { trackFunnelEvent } from '@/lib/telemetry';
+import { EntrySource } from '@/lib/types';
 
 export interface DocumentWorkspaceProps {
   notice?: NoticeTemplateDefinition;
@@ -71,17 +80,40 @@ const DocumentWorkspaceInner: React.FC<{
   notice: NoticeTemplateDefinition;
   initialValues?: Record<string, string>;
 }> = ({ notice, initialValues = {} }) => {
-  const [docketId] = useState(() => generateDocketId());
+  const searchParams = useSearchParams();
+
+  // 1. Resolve initial draft values with strict URL prefill precedence
+  const initialResolved = useMemo(
+    () => resolveInitialWorkspaceDraft({ notice, initialValues, searchParams }),
+    [notice, initialValues, searchParams]
+  );
+
+  const [docketId] = useState(() => initialResolved.userValues.docketId || generateDocketId());
   const [userValues, setUserValues] = useState<Record<string, string>>(() => ({
-    ...initialValues,
+    ...initialResolved.userValues,
     docketId,
   }));
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
   const [isSignatureAdopted, setIsSignatureAdopted] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<MailTierId>(notice.recommendedTier);
+  const [signatureInvalidatedByEdit, setSignatureInvalidatedByEdit] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<MailTierId>(initialResolved.selectedTier);
+  const [verificationStatus, setVerificationStatus] = useState<AddressVerificationStatus>('unverified');
   const [mobileView, setMobileView] = useState<'document' | 'drawer'>('drawer');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const hasAutoAdvancedRef = useRef(false);
+
+  // Track keys edited by user to ensure hydration NEVER overwrites user edits
+  const userEditedKeysRef = useRef<Set<string>>(new Set());
+  const draftRevisionRef = useRef<number>(1);
+
+  // URL ?focus= parameter detection
+  useEffect(() => {
+    const focusParam = searchParams?.get('focus');
+    if (focusParam) {
+      setActiveFieldKey(focusParam);
+      setMobileView('drawer');
+    }
+  }, [searchParams]);
 
   // Hook 1: Agent Hydration (URL parameters + Server-staged draft)
   const hydration = useAgentHydration({
@@ -89,59 +121,130 @@ const DocumentWorkspaceInner: React.FC<{
     initialValues,
     currentValues: userValues,
     isSignatureAdopted,
+    userEditedKeys: userEditedKeysRef.current,
   });
+
+  // Safe entrySource computation (§11)
+  const entrySource: EntrySource = useMemo(() => {
+    const srcParam = searchParams?.get('source');
+    if (srcParam === 'home_chooser') return 'home_chooser';
+    if (srcParam === 'companies_directory') return 'companies_directory';
+
+    if (typeof document !== 'undefined') {
+      const ref = (document.referrer || '').toLowerCase();
+      if (ref.includes('/companies')) return 'companies_directory';
+      if (ref.endsWith('/') || ref.includes('docketstamp.com/?') || ref.includes('localhost:3000/?')) {
+        return 'home_chooser';
+      }
+    }
+
+    if (hydration.isStaged) {
+      return 'staged_draft';
+    }
+
+    const hasPrefill =
+      Boolean(searchParams?.get('recipientId')) ||
+      Array.from(searchParams?.keys() || []).some((k) => k.startsWith('field.'));
+    if (hasPrefill) {
+      return 'recipient_prefill';
+    }
+
+    return 'direct_notice';
+  }, [searchParams, hydration.isStaged]);
+
+  // Funnel Event: editor_start on workspace mount
+  useEffect(() => {
+    trackFunnelEvent({
+      eventName: 'editor_start',
+      step: 3,
+      noticeSlug: notice.slug,
+      recipientId: initialResolved.selectedRecipientId || undefined,
+      tier: selectedTier,
+      entrySource,
+      experienceVersion: 'home_v2',
+    });
+  }, [notice.slug, initialResolved.selectedRecipientId, selectedTier, entrySource]);
 
   // Hook 2: Chrome 149+ WebMCP in-browser agent tool integration
   useWebMcpTools({
     notice,
     onUpdateValues: (fields) => {
-      setUserValues((prev) => ({
-        ...prev,
-        ...fields,
-      }));
+      setUserValues((prev) => {
+        for (const k of Object.keys(fields)) {
+          userEditedKeysRef.current.add(k);
+        }
+        return {
+          ...prev,
+          ...fields,
+        };
+      });
     },
     onSelectTier: (tier) => setSelectedTier(tier),
   });
 
-  // Synchronize hydrated values when ready
+  // Synchronize hydrated values when ready without overwriting subsequent user edits
   useEffect(() => {
     if (Object.keys(hydration.hydratedValues).length > 0) {
       setUserValues((prev) => {
         const next = { ...prev };
+        let changed = false;
         for (const [k, v] of Object.entries(hydration.hydratedValues)) {
-          // If empty, unset, or still a placeholder, populate with hydrated value
-          if (!next[k] || next[k].startsWith('[')) {
-            next[k] = v;
+          // Rule: Hydration NEVER overwrites keys that the user manually edited
+          if (userEditedKeysRef.current.has(k)) {
+            continue;
+          }
+          // If empty, unset, placeholder, or explicitly passed via URL
+          if (!next[k] || next[k].startsWith('[') || hydration.explicitKeys?.includes(k)) {
+            if (next[k] !== v) {
+              next[k] = v;
+              changed = true;
+            }
           }
         }
-        return next;
+        return changed ? next : prev;
       });
     }
-  }, [hydration.hydratedValues]);
+  }, [hydration.hydratedValues, hydration.explicitKeys]);
 
   // Synchronize hydrated tier if provided by query param, stage, or verified recipient
   useEffect(() => {
-    if (hydration.hydratedTier) {
+    if (hydration.hydratedTier && !hydration.explicitKeys?.includes('tier')) {
       setSelectedTier(hydration.hydratedTier);
     }
-  }, [hydration.hydratedTier]);
+  }, [hydration.hydratedTier, hydration.explicitKeys]);
+
+  // Deterministic real validation
+  const validation = useMemo(() => {
+    return validateNoticeDraft(notice, userValues);
+  }, [notice, userValues]);
+
+  // Session-scoped draft persistence (tab-scoped, no permanent sensitive data in localStorage)
+  useEffect(() => {
+    saveNoticeDraft(notice.slug, {
+      userValues,
+      selectedRecipientId: userValues.bureauEntityId || hydration.explicitRecipientId,
+      selectedTier,
+      docketId,
+    });
+  }, [notice.slug, userValues, selectedTier, docketId, hydration.explicitRecipientId]);
 
   // Automatically advance drawer stepper upon hydration completion
   useEffect(() => {
     if (!hydration.isLoadingStage && hydration.isStaged && !hasAutoAdvancedRef.current) {
       hasAutoAdvancedRef.current = true;
-      if (hydration.shouldJumpToSignature) {
+      if (validation.isValid && !isSignatureAdopted) {
         // All fields are filled; focus signature adoption step
-        setActiveFieldKey('senderFullName');
-      } else if (hydration.firstUnfilledKey) {
-        setActiveFieldKey(hydration.firstUnfilledKey);
+        setActiveFieldKey('signature');
+      } else if (validation.firstInvalidFieldKey) {
+        setActiveFieldKey(validation.firstInvalidFieldKey);
       }
     }
   }, [
     hydration.isLoadingStage,
     hydration.isStaged,
-    hydration.shouldJumpToSignature,
-    hydration.firstUnfilledKey,
+    validation.isValid,
+    validation.firstInvalidFieldKey,
+    isSignatureAdopted,
   ]);
 
   // Real-time pure deterministic interpolation
@@ -154,42 +257,63 @@ const DocumentWorkspaceInner: React.FC<{
     });
   }, [notice, userValues, docketId, selectedTier]);
 
-  // Compute field completion count
-  const { completedCount, totalCount, nextEmptyKey } = useMemo(() => {
-    const requiredKeys = notice.fields.map((f) => f.key);
-    let count = 0;
-    let nextEmpty: string | null = null;
-
-    for (const key of requiredKeys) {
-      const val = userValues[key];
-      if (typeof val === 'string' && val.trim().length > 0 && !val.startsWith('[')) {
-        count++;
-      } else if (!nextEmpty) {
-        nextEmpty = key;
-      }
-    }
-
-    return {
-      completedCount: count,
-      totalCount: requiredKeys.length,
-      nextEmptyKey: nextEmpty,
-    };
-  }, [notice.fields, userValues]);
-
   const handleFieldValueChange = (key: string, value: string) => {
+    draftRevisionRef.current += 1;
+    userEditedKeysRef.current.add(key);
     setUserValues((prev) => ({
       ...prev,
       [key]: value,
     }));
+
+    // Invalidate signature on any content edit
+    if (isSignatureAdopted) {
+      setIsSignatureAdopted(false);
+      setSignatureInvalidatedByEdit(true);
+    }
+
+    // Invalidate address verification upon editing any address or entity field
+    const addressKeys = [
+      'senderFullName',
+      'senderAddressLine1',
+      'senderAddressLine2',
+      'senderCity',
+      'senderState',
+      'senderZip',
+      'recipientFormalName',
+      'recipientAddressLine1',
+      'recipientAddressLine2',
+      'recipientCity',
+      'recipientState',
+      'recipientZip',
+      'leasedPremisesAddress',
+      'vacatedPremisesAddress',
+      'rentalPropertyAddress',
+      'servicePropertyAddress',
+      'forwardingAddress',
+      'propertyState',
+    ];
+    if (addressKeys.includes(key)) {
+      setVerificationStatus('unverified');
+    }
   };
 
   const handleNextRequiredField = () => {
-    if (nextEmptyKey) {
-      setActiveFieldKey(nextEmptyKey);
-      setMobileView('drawer');
+    if (!validation.isValid) {
+      if (validation.firstInvalidFieldKey) {
+        setActiveFieldKey(validation.firstInvalidFieldKey);
+        setMobileView('drawer');
+      }
     } else if (!isSignatureAdopted) {
-      setActiveFieldKey('senderFullName');
+      setActiveFieldKey('signature');
       setMobileView('drawer');
+      const sigEl = document.getElementById('signature-adoption-control');
+      if (sigEl) {
+        sigEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      const sigInput = document.querySelector('[data-testid="signature-input"]') as HTMLInputElement;
+      if (sigInput) {
+        sigInput.focus();
+      }
     } else {
       setIsCheckoutOpen(true);
     }
@@ -197,36 +321,75 @@ const DocumentWorkspaceInner: React.FC<{
 
   const handleAdoptSignature = (signerName: string) => {
     setIsSignatureAdopted(true);
+    setSignatureInvalidatedByEdit(false);
     setUserValues((prev) => ({
       ...prev,
       senderFullName: signerName,
     }));
   };
 
+  // Funnel Event: editor_complete when all required fields are valid and signature is adopted
+  useEffect(() => {
+    if (validation.isValid && isSignatureAdopted) {
+      trackFunnelEvent({
+        eventName: 'editor_complete',
+        step: 4,
+        noticeSlug: notice.slug,
+        draftRevision: draftRevisionRef.current,
+        tier: selectedTier,
+        entrySource,
+        experienceVersion: 'home_v2',
+      });
+    }
+  }, [validation.isValid, isSignatureAdopted, notice.slug, selectedTier, entrySource]);
+
   const handleTokenClick = (fieldKey: string) => {
-    setActiveFieldKey(fieldKey);
+    let targetKey = fieldKey;
+    if (fieldKey === 'senderFullAddress') {
+      targetKey = 'senderAddressLine1';
+    } else if (fieldKey === 'recipientFullAddress') {
+      targetKey = 'recipientAddressLine1';
+    }
+    setActiveFieldKey(targetKey);
     setMobileView('drawer');
   };
 
   const handleJumpToNextAction = () => {
-    if (hydration.shouldJumpToSignature) {
-      setActiveFieldKey('senderFullName');
+    if (validation.isValid && !isSignatureAdopted) {
+      setActiveFieldKey('signature');
       setMobileView('drawer');
-    } else if (hydration.firstUnfilledKey) {
-      setActiveFieldKey(hydration.firstUnfilledKey);
+    } else if (validation.firstInvalidFieldKey) {
+      setActiveFieldKey(validation.firstInvalidFieldKey);
       setMobileView('drawer');
     } else {
       handleNextRequiredField();
     }
   };
 
+  const handleResetDraft = () => {
+    clearNoticeDraft(notice.slug);
+    userEditedKeysRef.current.clear();
+    setIsSignatureAdopted(false);
+    setSignatureInvalidatedByEdit(false);
+    setVerificationStatus('unverified');
+    const freshResolved = resolveInitialWorkspaceDraft({ notice, initialValues, searchParams });
+    const freshDocketId = generateDocketId();
+    setUserValues({
+      ...freshResolved.userValues,
+      docketId: freshDocketId,
+    });
+    setSelectedTier(freshResolved.selectedTier);
+    setActiveFieldKey(notice.fields[0]?.key || null);
+  };
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       {/* Sticky Execution Bar */}
       <StickyExecutionBar
-        completedFieldsCount={completedCount}
-        totalFieldsCount={totalCount}
+        completedFieldsCount={validation.completedCount}
+        totalFieldsCount={validation.totalCount}
         isSignatureAdopted={isSignatureAdopted}
+        isValid={validation.isValid}
         onNextRequiredField={handleNextRequiredField}
         onProceedToCheckout={() => setIsCheckoutOpen(true)}
         mobileView={mobileView}
@@ -252,11 +415,14 @@ const DocumentWorkspaceInner: React.FC<{
                   isStaged={hydration.isStaged}
                   stageId={hydration.stageId}
                   stagedSource={hydration.stagedSource}
-                  preStagedFieldCount={completedCount}
-                  remainingActionCount={totalCount - completedCount + (isSignatureAdopted ? 0 : 1)}
-                  isReadyForSignature={hydration.shouldJumpToSignature}
+                  preStagedFieldCount={validation.completedCount}
+                  remainingActionCount={validation.missingOrInvalidFields.length + (isSignatureAdopted ? 0 : 1)}
+                  isReadyForSignature={validation.isValid && !isSignatureAdopted}
                   isLoadingStage={hydration.isLoadingStage}
+                  stageError={hydration.stageError}
                   onJumpToNextAction={handleJumpToNextAction}
+                  onRetryStageLoad={hydration.retryStageLoad}
+                  onStartFresh={hydration.startFresh}
                 />
               </div>
             )}
@@ -268,7 +434,7 @@ const DocumentWorkspaceInner: React.FC<{
                 Click any amber tag on paper to focus corresponding input
               </span>
               <span className="hidden lg:inline text-slate-500">
-                1-Page USPS Lob Print Geometry Enforced
+                Standard single-page letter format
               </span>
             </div>
 
@@ -279,6 +445,7 @@ const DocumentWorkspaceInner: React.FC<{
               activeFieldKey={activeFieldKey}
               isSignatureAdopted={isSignatureAdopted}
               selectedTier={selectedTier}
+              verificationStatus={verificationStatus}
             />
           </div>
         </main>
@@ -296,9 +463,12 @@ const DocumentWorkspaceInner: React.FC<{
             activeFieldKey={activeFieldKey}
             onFieldFocus={(key) => setActiveFieldKey(key)}
             isSignatureAdopted={isSignatureAdopted}
+            signatureInvalidatedByEdit={signatureInvalidatedByEdit}
+            validation={validation}
             onAdoptSignature={handleAdoptSignature}
             onNextRequiredField={handleNextRequiredField}
             onCompleteDrawer={() => setIsCheckoutOpen(true)}
+            onResetDraft={handleResetDraft}
           />
         </aside>
       </div>
@@ -311,6 +481,8 @@ const DocumentWorkspaceInner: React.FC<{
         selectedTier={selectedTier}
         onSelectTier={(tier) => setSelectedTier(tier)}
         userValues={userValues}
+        isSignatureAdopted={isSignatureAdopted}
+        entrySource={entrySource}
       />
     </div>
   );

@@ -144,9 +144,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updatedAddresses = [...currentAddresses, newAddress];
     }
 
+    const idToken = await user.getIdToken();
     const res = await fetch("/api/account", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
       body: JSON.stringify({
         uid: user.uid,
         email: user.email || account?.email || "",

@@ -186,25 +186,52 @@ export async function processPaidOrder(
     throw err;
   }
 
-  // Record server authority telemetry for verified purchase
+  // Record server authority telemetry for verified purchase (order_paid_confirmed + purchase_verified)
   try {
     const rawSessionId =
-      (order.attribution as any)?.sessionId ||
       order.sessionId ||
+      (order.attribution as any)?.sessionId ||
+      order.telemetrySessionId ||
       `sess_${orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+
+    const expVersion = order.experienceVersion || "home_v2";
+    const entrySrc = (order as any).entrySource || "unknown";
+
+    // 1. Authoritative order_paid_confirmed event for v2 funnel correlation
+    await recordServerTelemetry({
+      eventName: "order_paid_confirmed",
+      sessionId: rawSessionId,
+      orderId,
+      metadata: {
+        amountInCents: order.finalAmountInCents || order.amountInCents || 1995,
+        isTest: Boolean(clientContext?.isTest || order.isTest),
+        paymentMode: clientContext?.paymentMode || order.paymentMode || "stripe_test",
+        noticeSlug: order.noticeType,
+        tier: order.serviceLevel,
+        entrySource: entrySrc,
+        experienceVersion: expVersion,
+      },
+      experienceVersion: expVersion,
+    });
+
+    // 2. purchase_verified event for historical rollup compatibility
     await recordServerTelemetry({
       eventName: "purchase_verified",
       sessionId: rawSessionId,
       orderId,
       metadata: {
-        amountInCents: order.finalAmountInCents || order.amountInCents || 900,
+        amountInCents: order.finalAmountInCents || order.amountInCents || 1995,
         isTest: Boolean(clientContext?.isTest || order.isTest),
         paymentMode: clientContext?.paymentMode || order.paymentMode || "stripe_test",
+        noticeSlug: order.noticeType,
+        tier: order.serviceLevel,
+        entrySource: entrySrc,
+        experienceVersion: expVersion,
       },
-      experienceVersion: order.experienceVersion,
+      experienceVersion: expVersion,
     });
   } catch (telErr) {
-    console.warn("[OrderProcessor] Notice recording purchase_verified telemetry:", telErr);
+    console.warn("[OrderProcessor] Notice recording order_paid_confirmed telemetry:", telErr);
   }
 
   // 4. Record discount code usage metrics if applicable

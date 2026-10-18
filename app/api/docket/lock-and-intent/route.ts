@@ -5,7 +5,7 @@ import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/inter
 import { renderLobHtmlPayload } from '@/lib/docket/renderer/lob-html-shell';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/lib/docket/guardrails';
 import { MailTierId, PostalAddress, DocketAddress } from '@/lib/docket/types';
-import { saveOrder, updateOrderStatus, getDiscountCode } from '@/lib/firebase-admin';
+import { saveOrder, updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
 import { createCardPaymentIntent } from '@/lib/stripe';
 import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
@@ -25,6 +25,11 @@ export async function POST(req: NextRequest) {
       senderAddress,
       recipientAddress,
       discountCode: rawDiscountCode,
+      userId,
+      telemetrySessionId,
+      sessionId: altSessionId,
+      experienceVersion,
+      entrySource,
     } = body;
 
     const noticeKey = slug || noticeSlug;
@@ -143,11 +148,50 @@ export async function POST(req: NextRequest) {
     const frozenHtmlPayload = renderLobHtmlPayload(interpolatedDoc);
 
     // 7. Invariant 5: Freeze-Before-Pay Snapshot Persistence
+    let authenticatedUserId = typeof userId === 'string' && userId.trim() ? userId.trim() : undefined;
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7).trim();
+      if (token) {
+        try {
+          const decoded = await verifyFirebaseIdToken(token);
+          if (decoded?.uid) {
+            authenticatedUserId = decoded.uid;
+          }
+        } catch (authErr) {
+          console.warn('[lock-and-intent] Failed to verify Authorization Bearer token:', authErr);
+        }
+      }
+    }
+
     const orderId = `order_${crypto.randomBytes(16).toString('hex')}`;
     const viewToken = `tok_${crypto.randomBytes(16).toString('hex')}`;
 
+    const cleanSessionId = typeof telemetrySessionId === 'string' && telemetrySessionId.trim()
+      ? telemetrySessionId.trim().slice(0, 100)
+      : typeof altSessionId === 'string' && altSessionId.trim()
+      ? altSessionId.trim().slice(0, 100)
+      : undefined;
+
+    const cleanExpVersion = typeof experienceVersion === 'string' && experienceVersion.trim()
+      ? experienceVersion.trim().slice(0, 50)
+      : 'home_v2';
+
+    const ALLOWED_ENTRY_SOURCES = new Set([
+      'home_chooser',
+      'companies_directory',
+      'recipient_prefill',
+      'staged_draft',
+      'direct_notice',
+      'unknown',
+    ]);
+    const cleanEntrySource = typeof entrySource === 'string' && ALLOWED_ENTRY_SOURCES.has(entrySource.trim())
+      ? entrySource.trim()
+      : 'unknown';
+
     const orderRecord: Order = {
       id: orderId,
+      userId: authenticatedUserId || undefined,
       customerEmail,
       docketId,
       docketNumber: docketId,
@@ -167,6 +211,14 @@ export async function POST(req: NextRequest) {
       discountAmountInCents,
       documentHtml: frozenHtmlPayload,
       viewToken,
+      experienceVersion: cleanExpVersion,
+      sessionId: cleanSessionId,
+      telemetrySessionId: cleanSessionId,
+      entrySource: cleanEntrySource,
+      attribution: {
+        sessionId: cleanSessionId,
+        utmSource: cleanEntrySource,
+      },
       recipientAddress: {
         firstName: interpolatedDoc.recipientAddress.name,
         lastName: '',

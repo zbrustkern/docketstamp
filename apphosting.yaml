@@ -45,6 +45,18 @@ env:
       - BUILD
       - RUNTIME
 
+  - variable: FIREBASE_PROJECT_ID
+    value: docketstamp
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: docketstamp
+    availability:
+      - BUILD
+      - RUNTIME
+
   # Public client configuration
   - variable: NEXT_PUBLIC_APP_URL
     value: https://docketstamp.com

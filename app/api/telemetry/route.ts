@@ -81,6 +81,12 @@ export async function POST(req: NextRequest) {
       path,
       experienceVersion,
       draftRevision,
+      entrySource,
+      noticeSlug,
+      recipientId,
+      tier,
+      deviceCategory,
+      dedupeKey,
       utmSource,
       utmMedium,
       utmCampaign,
@@ -138,9 +144,42 @@ export async function POST(req: NextRequest) {
     const cleanGclid = sanitizeAttribution(gclid, 255);
     const cleanFbclid = sanitizeAttribution(fbclid, 255);
 
-    // 8. Common context
-    const cleanExpVersion = typeof experienceVersion === "string" ? experienceVersion.trim().slice(0, 50) : undefined;
-    const cleanDraftRev = typeof draftRevision === "number" && Number.isFinite(draftRevision) ? draftRevision : undefined;
+    // 8. Common context & Funnel Metadata
+    const cleanExpVersion = typeof experienceVersion === "string"
+      ? experienceVersion.trim().slice(0, 50)
+      : typeof sanitizedMetadata.experienceVersion === "string"
+      ? (sanitizedMetadata.experienceVersion as string).trim().slice(0, 50)
+      : undefined;
+
+    const cleanDraftRev = typeof draftRevision === "number" && Number.isFinite(draftRevision)
+      ? draftRevision
+      : typeof sanitizedMetadata.draftRevision === "number" && Number.isFinite(sanitizedMetadata.draftRevision)
+      ? (sanitizedMetadata.draftRevision as number)
+      : undefined;
+
+    const ALLOWED_ENTRY_SOURCES = new Set([
+      "home_chooser",
+      "companies_directory",
+      "recipient_prefill",
+      "staged_draft",
+      "direct_notice",
+      "unknown",
+    ]);
+    const rawEntrySource = entrySource || sanitizedMetadata.entrySource;
+    const cleanEntrySource = typeof rawEntrySource === "string" && ALLOWED_ENTRY_SOURCES.has(rawEntrySource.trim())
+      ? rawEntrySource.trim()
+      : undefined;
+
+    const rawNoticeSlug = noticeSlug || sanitizedMetadata.noticeSlug;
+    const cleanNoticeSlug = typeof rawNoticeSlug === "string" ? rawNoticeSlug.trim().slice(0, 100) : undefined;
+
+    const rawRecipientId = recipientId || sanitizedMetadata.recipientId;
+    const cleanRecipientId = typeof rawRecipientId === "string" ? rawRecipientId.trim().slice(0, 100) : undefined;
+
+    const rawTier = tier || sanitizedMetadata.tier;
+    const cleanTier = typeof rawTier === "string" ? rawTier.trim().slice(0, 50) : undefined;
+
+    const cleanDedupeKey = typeof dedupeKey === "string" ? dedupeKey.trim().slice(0, 100) : undefined;
 
     const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
@@ -183,6 +222,12 @@ export async function POST(req: NextRequest) {
       createdAt: Date.now(),
       experienceVersion: cleanExpVersion,
       draftRevision: cleanDraftRev,
+      entrySource: cleanEntrySource,
+      noticeSlug: cleanNoticeSlug,
+      recipientId: cleanRecipientId,
+      tier: cleanTier,
+      deviceCategory: validateDeviceType(deviceCategory || deviceType),
+      dedupeKey: cleanDedupeKey,
       // Attribution
       utmSource: cleanUtmSource,
       utmMedium: cleanUtmMedium,

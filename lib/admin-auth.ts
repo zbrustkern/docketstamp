@@ -61,14 +61,16 @@ export function getAdminSessionSigningKey(): string {
 }
 
 /**
- * Creates a signed session token derived from the signing key and current timestamp.
+ * Creates a signed session token derived from the signing key, timestamp, and authorized admin email.
  */
-export function generateAdminSessionToken(adminEmail?: string): string {
+export function generateAdminSessionToken(adminEmail: string = "zbrustkern@gmail.com"): string {
+  const cleanEmail = adminEmail.toLowerCase().trim();
+  if (!isAuthorizedAdminEmail(cleanEmail)) {
+    throw new Error(`Cannot generate admin session token for unauthorized email: ${cleanEmail}`);
+  }
   const signingKey = getAdminSessionSigningKey();
   const timestamp = Date.now();
-  const userTag = adminEmail
-    ? `_${Buffer.from(adminEmail.toLowerCase().trim()).toString("hex")}`
-    : "";
+  const userTag = `_${Buffer.from(cleanEmail).toString("hex")}`;
   const payload = `smn_admin_${timestamp}${userTag}`;
   const signature = crypto
     .createHmac("sha256", signingKey)
@@ -80,7 +82,8 @@ export function generateAdminSessionToken(adminEmail?: string): string {
 /**
  * Validates the admin session token from the cookie or header.
  * Enforces payload format, server-side timestamp expiration (8 hours max),
- * and safe constant-time HMAC signature verification.
+ * constant-time HMAC signature verification, and STRICT authorization check
+ * against authorized admin accounts (zbrustkern@gmail.com, sentral@gmail.com).
  */
 export function isValidAdminSessionToken(token: string): boolean {
   if (!token || typeof token !== "string" || !token.includes(".")) return false;
@@ -92,7 +95,7 @@ export function isValidAdminSessionToken(token: string): boolean {
   const signature = token.substring(lastDot + 1);
   if (!payload || !signature) return false;
 
-  // Enforce payload format and timestamp expiration (allowing optional user tag)
+  // Enforce payload format and timestamp expiration with user tag
   const match = payload.match(/^smn_admin_(\d+)(?:_.*)?$/);
   if (!match) return false;
 
@@ -117,14 +120,20 @@ export function isValidAdminSessionToken(token: string): boolean {
     return false;
   }
 
-  return crypto.timingSafeEqual(sigBuf, expBuf);
+  if (!crypto.timingSafeEqual(sigBuf, expBuf)) {
+    return false;
+  }
+
+  // Enforce account-bound admin authorization
+  const email = getAdminSessionEmail(token);
+  return Boolean(email && isAuthorizedAdminEmail(email));
 }
 
 /**
  * Safely extracts the email embedded in a valid session token (if present).
  */
 export function getAdminSessionEmail(token: string): string | null {
-  if (!isValidAdminSessionToken(token)) return null;
+  if (!token || typeof token !== "string" || !token.includes(".")) return null;
   const lastDot = token.lastIndexOf(".");
   const payload = token.substring(0, lastDot);
   const match = payload.match(/^smn_admin_\d+_(.+)$/);
@@ -159,7 +168,7 @@ export function verifyAdminAuth(req: NextRequest): boolean {
     }
   }
 
-  // 2. Cookie session check (HMAC-verified admin session)
+  // 2. Cookie session check (HMAC-verified admin session bound to authorized email)
   const sessionCookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
   if (sessionCookie && isValidAdminSessionToken(sessionCookie)) {
     return true;
@@ -168,6 +177,10 @@ export function verifyAdminAuth(req: NextRequest): boolean {
   return false;
 }
 
+/**
+ * Timing-safe passphrase verification helper.
+ * (Note: Passphrase login is disabled on /admin in favor of account-bound Google auth).
+ */
 export function verifyAdminPassphrase(passphrase: string): boolean {
   if (!passphrase || typeof passphrase !== "string") return false;
   const secret = getAdminSecret();

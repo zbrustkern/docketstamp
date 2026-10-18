@@ -71,6 +71,8 @@ export interface SavedAddress extends MailingAddress {
 }
 
 export interface OrderAttribution {
+  sessionId?: string;
+  entrySource?: string;
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
@@ -142,6 +144,8 @@ export interface Order {
   finalAmountInCents?: number;
   experienceVersion?: string;
   sessionId?: string;
+  entrySource?: string;
+  telemetrySessionId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -279,7 +283,27 @@ export type TelemetryEventName =
   // Server-only authority events (§10):
   | "purchase_verified"
   | "fulfillment_submitted"
-  | "fulfillment_failed";
+  | "fulfillment_failed"
+  // DocketStamp v2 Funnel Events (Sprint S6):
+  | "landing_view"
+  | "product_select"
+  | "letter_select"
+  | "editor_start"
+  | "editor_complete"
+  | "checkout_view"
+  | "payment_submitted"
+  | "order_paid_confirmed"
+  | "order_fulfilled";
+
+export type VisitorTelemetryEventType = TelemetryEventName;
+
+export type EntrySource =
+  | "home_chooser"
+  | "companies_directory"
+  | "recipient_prefill"
+  | "staged_draft"
+  | "direct_notice"
+  | "unknown";
 
 export interface TelemetryEvent {
   id: string;
@@ -291,9 +315,15 @@ export interface TelemetryEvent {
   path: string;
   timestamp: number;
   createdAt: number;
-  // Common context (§10)
+  // Common context (§10 & S6)
   experienceVersion?: string;
   draftRevision?: number;
+  entrySource?: EntrySource | string;
+  noticeSlug?: string;
+  recipientId?: string;
+  tier?: string;
+  deviceCategory?: "mobile" | "tablet" | "desktop";
+  dedupeKey?: string;
   // Enriched visitor attribution & tech telemetry
   utmSource?: string;
   utmMedium?: string;
@@ -313,6 +343,8 @@ export interface TelemetryEvent {
   userAgent?: string;
   isBot?: boolean;
 }
+
+export type VisitorEvent = TelemetryEvent;
 
 // Programmatic SEO Scenario Types
 export interface ScenarioEtiquetteTip {

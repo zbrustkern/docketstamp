@@ -113,7 +113,15 @@ export default function AccountDashboardPage() {
     const fetchOrders = async () => {
       setOrdersLoading(true);
       try {
-        const res = await fetch(`/api/account?uid=${user.uid}&email=${encodeURIComponent(user.email || "")}`);
+        const idToken = await user.getIdToken();
+        const res = await fetch(
+          `/api/account?uid=${user.uid}&email=${encodeURIComponent(user.email || "")}`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
         if (res.ok) {
           const data = await res.json();
           setOrders(data.orders || []);

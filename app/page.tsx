@@ -1,183 +1,368 @@
 import React from 'react';
 import Link from 'next/link';
-import { CheckCircle2, FileText, MailCheck, ShieldCheck } from 'lucide-react';
-import { STATUTORY_COMPLIANCE_DISCLOSURE } from '@/src/lib/docket/guardrails';
+import {
+  CheckCircle2,
+  FileText,
+  MailCheck,
+  ShieldCheck,
+  Building2,
+  ArrowRight,
+  HelpCircle,
+} from 'lucide-react';
+import {
+  STATUTORY_COMPLIANCE_DISCLOSURE,
+  UPL_COMPLIANCE_FOOTER_TEXT,
+} from '@/src/lib/docket/guardrails';
+import { DOCKET_PRICING_TIERS } from '@/src/lib/docket/notices';
 import { HeaderDocketLookup } from '@/src/components/docket/HeaderDocketLookup';
+import { HeaderUserNav } from '@/src/components/docket/HeaderUserNav';
 import { InteractiveHomeWorkbench } from '@/src/components/docket/InteractiveHomeWorkbench';
-import { NoticeCatalogBrowser } from '@/src/components/docket/NoticeCatalogBrowser';
 
 export const metadata = {
-  title: 'DocketStamp | Send Formal Legal Notices via USPS Certified Mail® in 60 Seconds',
+  title: 'DocketStamp | Prepare and Mail Formal Legal Notices via USPS',
   description:
-    'Fill in the blanks on state-specific legal notices for security deposits, credit disputes, debt collectors, and contract cancellations. Printed and mailed via official USPS Certified Mail®.',
+    'Choose a legal notice, add your details, and review your single-page letter before paying. Printed and mailed via USPS First-Class or Certified Mail®.',
 };
 
 export default function HomePage() {
+  const pricingTiers = [
+    {
+      id: 'first_class',
+      name: 'USPS First-Class Mail',
+      price: DOCKET_PRICING_TIERS.first_class.formattedPrice,
+      tag: 'Standard Dispatch',
+      description:
+        'Physical printing on crisp 8.5" × 11" paper, envelope, postage, and Intelligent Mail® barcode tracking included.',
+      features: [
+        'Single-page 8.5" × 11" physical print',
+        'USPS CASS™ address standardization',
+        'Intelligent Mail® barcode tracking',
+        'Permanent digital PDF docket record',
+        'Standard transit: 1–5 business days',
+      ],
+      isRecommended: false,
+    },
+    {
+      id: 'certified',
+      name: 'USPS Certified Mail®',
+      price: DOCKET_PRICING_TIERS.certified.formattedPrice,
+      tag: 'Recommended for Legal Notices',
+      description:
+        'Official USPS Certified Mail banner, USPS tracking number, and electronic proof of acceptance and delivery.',
+      features: [
+        'Official USPS Certified green banner',
+        'Dedicated USPS Certified tracking number',
+        'Chain-of-custody USPS scan history',
+        'Electronic proof of delivery scan',
+        'Admissible in formal proceedings',
+      ],
+      isRecommended: true,
+    },
+    {
+      id: 'certified_return_receipt',
+      name: 'Certified Mail® + Return Receipt',
+      price: DOCKET_PRICING_TIERS.certified_return_receipt.formattedPrice,
+      tag: 'Signed Delivery Record',
+      description:
+        'Includes everything in Certified Mail plus official USPS Electronic Return Receipt with recipient signature PDF.',
+      features: [
+        'Everything in USPS Certified Mail®',
+        'Official USPS Electronic Return Receipt (ERR)',
+        'Recipient signature PDF record',
+        'Delivery date, time, and address proof',
+        'Permanent legal record archive',
+      ],
+      isRecommended: false,
+    },
+  ];
+
+  const faqs = [
+    {
+      question: 'What is included in the price?',
+      answer:
+        'Every mailing includes single-page physical printing on 8.5" × 11" paper, professional envelope, USPS postage, address verification, and a digital PDF copy with permanent tracking records. There are no subscriptions or hidden fees.',
+    },
+    {
+      question: 'How does USPS Certified Mail® differ from First-Class Mail?',
+      answer:
+        'USPS First-Class Mail includes Intelligent Mail® barcode transit tracking. USPS Certified Mail® provides official proof of mailing with a dedicated USPS tracking number, chain-of-custody scans, and delivery confirmation. Certified Mail with Return Receipt also includes an Electronic Return Receipt with recipient signature record.',
+    },
+    {
+      question: 'Do I need an account to send a letter?',
+      answer:
+        'No. DocketStamp supports full guest checkout—you can prepare, review, pay, and dispatch without creating an account. If you choose to sign in, your dockets and tracking records are automatically saved to your account.',
+    },
+    {
+      question: 'How do pre-addressed corporate recipients work?',
+      answer:
+        'DocketStamp maintains official legal department notice addresses for 38 major companies (credit reporting agencies, debt collectors, and connected hardware manufacturers). When you select a company, its address is populated automatically. You can also enter any custom recipient address manually.',
+    },
+    {
+      question: 'Is DocketStamp a law firm?',
+      answer:
+        'No. DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, not a law firm. We do not provide legal advice, representation, or outcome guarantees. All notices use standardized statutory templates.',
+    },
+    {
+      question: 'Can I review my letter before paying?',
+      answer:
+        'Yes. You can review the exact 8.5" × 11" document with all your details filled in before entering payment information. Your letter is only printed and dispatched after your final review and payment confirmation.',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-amber-100 selection:text-amber-900">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-amber-100 selection:text-amber-900 overflow-x-hidden">
       {/* 1. Sticky Navigation Header */}
       <header className="border-b border-slate-800 bg-slate-900/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center text-white font-mono font-bold text-sm shadow-md shadow-sky-900/40">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-600 flex items-center justify-center text-white font-mono font-bold text-xs sm:text-sm shadow-md shadow-sky-900/40">
               DS
             </div>
             <div>
-              <span className="font-mono text-sm font-bold tracking-wider text-white">
+              <span className="font-mono text-xs sm:text-sm font-bold tracking-wider text-white">
                 DOCKETSTAMP<span className="text-sky-400">™</span>
               </span>
-              <span className="hidden sm:inline-block ml-2.5 px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-slate-800 text-slate-300 border border-slate-700">
+              <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-sans font-medium bg-slate-800 text-slate-300 border border-slate-700">
                 USPS Certified Mail® Service
               </span>
             </div>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-6 text-xs font-sans font-medium text-slate-300">
-            <a href="#workbench" className="hover:text-sky-400 transition">
-              Build Your Letter
-            </a>
             <a href="#how-it-works" className="hover:text-sky-400 transition">
-              How It Works &amp; Pricing
+              How It Works
             </a>
-            <a href="#notice-catalog" className="hover:text-sky-400 transition">
-              All 9 Legal Notices
+            <a href="#pricing" className="hover:text-sky-400 transition">
+              Pricing
             </a>
-            <a href="#verified-directory" className="hover:text-sky-400 transition">
-              38 Pre-Addressed Companies
+            <a href="#faq" className="hover:text-sky-400 transition">
+              FAQ
             </a>
+            <Link href="/companies" className="hover:text-sky-400 transition">
+              Company Directory
+            </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <HeaderDocketLookup />
+            <HeaderUserNav />
           </div>
         </div>
       </header>
 
-      {/* 2. Above the Fold: Live Interactive Letter Builder & Preview */}
+      {/* 2. Hero Section: Focused Chooser & Shared-Renderer Paper Preview */}
       <main>
         <InteractiveHomeWorkbench />
       </main>
 
-      {/* 3. How It Works & Transparent USPS Pricing Strip */}
+      {/* 3. Three-Step Process Strip */}
       <section
         id="how-it-works"
-        className="border-b border-slate-800 bg-slate-950 py-10 px-4 sm:px-6 scroll-mt-16"
+        className="border-y border-slate-800 bg-slate-950 py-10 sm:py-12 px-4 sm:px-6 scroll-mt-16"
       >
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* 3 Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 shrink-0 mt-0.5">
-                <FileText className="w-4 h-4" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="font-sans text-sm font-bold text-white">
-                  1. Fill in the Blanks in 60 Seconds
-                </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Your state&apos;s security deposit laws, federal credit &amp; debt statutes, and
-                  corporate legal addresses are already built into the template.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 shrink-0 mt-0.5">
-                <MailCheck className="w-4 h-4" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="font-sans text-sm font-bold text-white">
-                  2. We Print, Stamp &amp; Mail via Official USPS
-                </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  No printer, envelopes, or Post Office lines. We print your signed letter on crisp
-                  8.5&quot; &times; 11&quot; paper and induct it directly into the U.S. Mail stream.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 shrink-0 mt-0.5">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="font-sans text-sm font-bold text-white">
-                  3. Get Instant PDF Proof &amp; USPS Tracking
-                </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Download your timestamped PDF copy immediately, track every USPS scan online, and
-                  keep court-ready proof that your notice was delivered.
-                </p>
-              </div>
-            </div>
+          <div className="text-center space-y-1.5 max-w-2xl mx-auto">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              How DocketStamp Works
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400">
+              From digital draft to official USPS physical delivery in three simple steps.
+            </p>
           </div>
 
-          {/* 3 Flat-Rate USPS Options */}
-          <div className="pt-6 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
               <div className="space-y-1">
-                <div className="font-sans font-bold text-white flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>USPS First-Class Mail</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Physical printing, envelope, postage, barcode tracking &amp; PDF copy
+                <h3 className="font-sans text-sm font-bold text-white">
+                  1. Choose your letter
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Pick from 9 formal notice templates or search 38 pre-addressed corporate recipients.
                 </p>
               </div>
-              <span className="font-mono text-base font-bold text-white shrink-0">$12.95</span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900 border border-sky-500/70 flex items-center justify-between gap-3 shadow-md shadow-sky-950/40">
+            <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 shrink-0">
+                <MailCheck className="w-5 h-5" />
+              </div>
               <div className="space-y-1">
-                <div className="font-sans font-bold text-white flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-sky-400" />
-                  <span>USPS Certified Mail®</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-400 text-slate-950 font-bold">
-                    Most Popular
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300">
-                  Official USPS Certified green banner, tracking number &amp; mailing proof
+                <h3 className="font-sans text-sm font-bold text-white">
+                  2. Add your details and review
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Fill in the highlighted fields and review the exact single-page 8.5&quot; &times; 11&quot; letter before paying.
                 </p>
               </div>
-              <span className="font-mono text-base font-bold text-sky-400 shrink-0">$19.95</span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-3">
+            <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
               <div className="space-y-1">
-                <div className="font-sans font-bold text-white flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Certified Mail® + Return Receipt</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Includes official Electronic Return Receipt with recipient signature PDF
+                <h3 className="font-sans text-sm font-bold text-white">
+                  3. We print and mail via USPS
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Your letter is printed, enveloped, and dispatched via USPS First-Class or Certified Mail®.
                 </p>
               </div>
-              <span className="font-mono text-base font-bold text-white shrink-0">$27.95</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. All 9 Legal Notices & 38 Pre-Addressed Companies */}
+      {/* 4. Transparent Informational USPS Pricing Section */}
       <section
-        id="notice-catalog"
-        className="py-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 flex-1 scroll-mt-16"
+        id="pricing"
+        className="py-12 sm:py-16 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 scroll-mt-16"
       >
-        <div className="text-center space-y-2 max-w-3xl mx-auto">
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
-            What Do You Need to Send?
+        <div className="text-center space-y-1.5 max-w-2xl mx-auto">
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Transparent USPS Pricing
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-pretty">
-            Choose any legal notice below to start filling in the blanks, or preview it in the live
-            editor above.
+          <p className="text-xs sm:text-sm text-slate-400">
+            Every order includes single-page physical printing, envelope, USPS postage, and tracking. No subscriptions.
           </p>
         </div>
 
-        <NoticeCatalogBrowser />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {pricingTiers.map((tier) => (
+            <div
+              key={tier.id}
+              className={`p-6 rounded-2xl flex flex-col justify-between transition ${
+                tier.isRecommended
+                  ? 'bg-slate-900 border-2 border-sky-500/80 shadow-xl shadow-sky-950/40 relative'
+                  : 'bg-slate-900/70 border border-slate-800'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      tier.isRecommended
+                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    }`}
+                  >
+                    {tier.tag}
+                  </span>
+                </div>
+
+                <h3 className="font-sans text-lg font-bold text-white">
+                  {tier.name}
+                </h3>
+                <div className="mt-2 mb-3 flex items-baseline gap-1">
+                  <span className="font-mono text-3xl font-bold text-white">
+                    {tier.price}
+                  </span>
+                  <span className="text-xs text-slate-400">/ mailing</span>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed mb-5">
+                  {tier.description}
+                </p>
+
+                <div className="border-t border-slate-800 pt-4 space-y-2.5">
+                  <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">
+                    What&apos;s Included:
+                  </span>
+                  <ul className="space-y-2 text-xs text-slate-300">
+                    {tier.features.map((feature, fIdx) => (
+                      <li key={fIdx} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
+                <a
+                  href="#workbench"
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition ${
+                    tier.isRecommended
+                      ? 'bg-sky-600 hover:bg-sky-500 text-white'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700'
+                  }`}
+                >
+                  <span>Select in workspace</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-center text-xs text-slate-400 max-w-xl mx-auto">
+          Delivery options and postage tiers are selected after reviewing your letter in the workspace. All prices include printing, envelope, and USPS postage.
+        </p>
       </section>
 
-      {/* 5. Footer & Mandatory Statutory UPL Compliance Disclosure */}
+      {/* 5. Company Directory Callout & Hash Anchor Aliases */}
+      <section
+        id="verified-directory"
+        className="border-y border-slate-800 bg-slate-950/70 py-8 px-4 sm:px-6 scroll-mt-16"
+      >
+        <div id="notice-catalog" className="scroll-mt-16" />
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="font-sans font-bold text-white text-sm flex items-center justify-center sm:justify-start gap-2">
+              <Building2 className="w-4 h-4 text-sky-400" />
+              <span>Looking for a specific corporate legal department?</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              DocketStamp maintains pre-addressed legal notice destinations for 38 major credit bureaus, debt collectors, and hardware OEMs.
+            </p>
+          </div>
+          <Link
+            href="/companies"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 hover:border-slate-600 transition shrink-0"
+          >
+            <span>Browse all 38 companies</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </section>
+
+      {/* 6. Verified FAQ Section */}
+      <section
+        id="faq"
+        className="py-12 sm:py-16 px-4 sm:px-6 max-w-4xl mx-auto space-y-8 scroll-mt-16 w-full"
+      >
+        <div className="text-center space-y-1.5">
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400">
+            Honest information about our document preparation and USPS postal dispatch service.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div
+              key={idx}
+              className="p-5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2"
+            >
+              <h3 className="font-sans text-sm sm:text-base font-bold text-white flex items-start gap-2">
+                <HelpCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                <span>{faq.question}</span>
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 pl-6 leading-relaxed">
+                {faq.answer}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 7. Footer & Mandatory Statutory UPL Compliance Disclosure */}
       <footer className="border-t border-slate-800 bg-slate-950 py-10 px-4 sm:px-6 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -195,6 +380,9 @@ export default function HomePage() {
               </p>
             </div>
             <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-sans">
+              <Link href="/companies" className="hover:text-slate-200 transition">
+                Company Directory
+              </Link>
               <Link href="/privacy" className="hover:text-slate-200 transition">
                 Privacy Policy
               </Link>
@@ -213,6 +401,9 @@ export default function HomePage() {
               >
                 Sample Tracking Record
               </Link>
+              <Link href="/account" className="hover:text-slate-200 transition">
+                My Account
+              </Link>
               <Link href="/llms.txt" className="text-slate-500 hover:text-slate-300 transition">
                 API / LLMs
               </Link>
@@ -222,9 +413,12 @@ export default function HomePage() {
             </nav>
           </div>
 
-          <div className="pt-4 border-t border-slate-900 text-[11px] leading-relaxed text-slate-400 font-sans max-w-5xl">
+          <div className="pt-4 border-t border-slate-900 text-[11px] leading-relaxed text-slate-400 font-sans max-w-5xl space-y-2">
             <p>
               <strong>SELF-HELP COMPLIANCE DISCLOSURE:</strong> {STATUTORY_COMPLIANCE_DISCLOSURE}
+            </p>
+            <p className="font-mono text-[10px] text-slate-500">
+              {UPL_COMPLIANCE_FOOTER_TEXT('DS-2026-OFFICIAL')}
             </p>
           </div>
 

@@ -425,7 +425,12 @@ async function executeIngest(event: TelemetryEvent): Promise<void> {
  * Webhooks and backend order processors call this directly, completely bypassing /api/telemetry.
  */
 export async function recordServerTelemetry(params: {
-  eventName: "purchase_verified" | "fulfillment_submitted" | "fulfillment_failed";
+  eventName:
+    | "purchase_verified"
+    | "fulfillment_submitted"
+    | "fulfillment_failed"
+    | "order_paid_confirmed"
+    | "order_fulfilled";
   sessionId: string;
   orderId?: string;
   metadata?: Record<string, unknown>;

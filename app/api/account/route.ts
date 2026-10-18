@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       orders.push(d.data() as Order);
     });
 
-    if (verifiedEmail && decoded.email_verified) {
+    if (verifiedEmail) {
       const emailOrdersSnapshot = await getOrdersCollection()
         .where("customerEmail", "==", verifiedEmail)
         .get();

@@ -30,6 +30,18 @@ env:
       - BUILD
       - RUNTIME
 
+  - variable: FIREBASE_PROJECT_ID
+    value: docketstamp-staging
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: docketstamp-staging
+    availability:
+      - BUILD
+      - RUNTIME
+
   # Public client configuration for Staging
   - variable: NEXT_PUBLIC_APP_URL
     value: https://staging.docketstamp.com

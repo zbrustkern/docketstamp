@@ -59,7 +59,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
       });
 
   const trackingNumber = order?.lobTrackingNumber;
-  const proofUrl = order?.lobTrackingUrl || (order?.id ? `https://docketstamp.com/mock-proof/${order.id}.pdf` : undefined);
+  const proofUrl = order?.lobTrackingUrl || undefined;
   const serviceLevelLabel =
     order?.serviceLevel === 'CERTIFIED_RETURN_RECEIPT'
       ? 'USPS Certified Mail® w/ Electronic Return Receipt'
@@ -67,13 +67,35 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
       ? 'USPS Certified Mail®'
       : 'USPS First-Class Mail®';
 
+  const isPaid = Boolean(
+    order &&
+      order.status !== 'PENDING_PAYMENT' &&
+      order.status !== 'PAYMENT_VERIFICATION_FAILED'
+  );
+
+  const isSubmittedForMailing =
+    order?.status === 'PAYMENT_RECEIVED' ||
+    order?.status === 'DISPATCHING' ||
+    order?.status === 'QUEUED_FOR_FULFILLMENT';
+
   const isDispatched =
-    order?.status === 'PROCESSING_DISPATCH' ||
     order?.status === 'DISPATCHED_TO_USPS' ||
     order?.status === 'MAILED' ||
     order?.status === 'DELIVERED';
 
   const isDelivered = order?.status === 'DELIVERED';
+
+  const displayStatus = order
+    ? isDelivered
+      ? 'DELIVERED'
+      : isDispatched
+      ? 'DISPATCHED_TO_USPS'
+      : isSubmittedForMailing
+      ? 'SUBMITTED_FOR_MAILING'
+      : order.status === 'PENDING_PAYMENT'
+      ? 'PENDING_PAYMENT'
+      : order.status
+    : 'RECORDED';
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 font-sans pb-16">
@@ -157,7 +179,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 <div>
                   <span className="font-semibold text-amber-950">STATUS: </span>
                   <span className="text-emerald-800 font-bold">
-                    {order ? 'DISPATCHED_TO_USPS' : 'RECORDED'}
+                    {displayStatus}
                   </span>
                 </div>
               </div>
@@ -173,22 +195,46 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
             {/* Step 1 */}
-            <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold mb-1">
-                <CheckCircle2 className="w-4 h-4" /> 1. Frozen & Signed
+            <div
+              className={`border rounded-lg p-4 ${
+                isPaid
+                  ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+                  : 'border-slate-800 bg-slate-950/50 text-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-mono text-xs font-bold mb-1">
+                {isPaid ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Clock className="w-4 h-4 text-amber-400" />
+                )}
+                1. Payment Confirmed
               </div>
               <div className="text-[11px] text-slate-400">
-                Payload snapshot locked with /s/ electronic signature.
+                {isPaid
+                  ? 'Payment confirmed and immutable snapshot frozen with /s/ signature.'
+                  : 'Awaiting customer payment confirmation.'}
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold mb-1">
-                <CheckCircle2 className="w-4 h-4" /> 2. CASS Standardized
+            <div
+              className={`border rounded-lg p-4 ${
+                isPaid
+                  ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+                  : 'border-slate-800 bg-slate-950/50 text-slate-500'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-mono text-xs font-bold mb-1">
+                {isPaid ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Clock className="w-4 h-4" />
+                )}
+                2. CASS Standardized
               </div>
               <div className="text-[11px] text-slate-400">
-                USPS Coding Accuracy Support System certified.
+                USPS Coding Accuracy Support System certified delivery point.
               </div>
             </div>
 
@@ -197,19 +243,25 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
               className={`border rounded-lg p-4 ${
                 isDispatched
                   ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+                  : isSubmittedForMailing
+                  ? 'border-sky-500/30 bg-sky-500/5 text-sky-400'
                   : 'border-slate-800 bg-slate-950/50 text-slate-500'
               }`}
             >
               <div className="flex items-center gap-2 font-mono text-xs font-bold mb-1">
                 {isDispatched ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 ) : (
                   <Clock className="w-4 h-4" />
                 )}
-                3. Dispatched to USPS
+                {isDispatched ? '3. Dispatched to USPS' : '3. Submitted for Mailing'}
               </div>
               <div className="text-[11px] text-slate-400">
-                Physical letter printed and injected into USPS mailstream.
+                {isDispatched
+                  ? 'Physical letter printed and injected into USPS mailstream.'
+                  : isSubmittedForMailing
+                  ? 'Queued for commercial print and USPS carrier deposit.'
+                  : 'Pending submission to mailing pipeline.'}
               </div>
             </div>
 
@@ -230,9 +282,11 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 4. Physical Delivery
               </div>
               <div className="text-[11px] text-slate-400">
-                {order?.expectedDeliveryDate
+                {isDelivered
+                  ? 'Confirmed delivered by postal carrier.'
+                  : order?.expectedDeliveryDate
                   ? `Est. Delivery: ${order.expectedDeliveryDate}`
-                  : 'Awaiting postal delivery scan'}
+                  : 'Awaiting postal delivery scan. Return Receipt PDF captured after delivery.'}
               </div>
             </div>
           </div>
@@ -299,8 +353,14 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                   <Download className="w-4 h-4" /> Download Certified PDF Proof
                 </a>
               ) : (
-                <div className="text-xs font-mono text-slate-500 bg-slate-950 p-3 rounded text-center border border-slate-800">
-                  PDF Proof generation in progress
+                <div className="text-xs font-mono text-slate-400 bg-slate-950 p-3 rounded text-center border border-slate-800">
+                  PDF Proof generation in progress — available once processed into the USPS mailstream
+                </div>
+              )}
+              {order?.serviceLevel === 'CERTIFIED_RETURN_RECEIPT' && (
+                <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-800/80 mt-3">
+                  <span className="font-semibold text-slate-300">Electronic Return Receipt:</span>{' '}
+                  Signed carrier delivery record PDF is generated following physical delivery.
                 </div>
               )}
             </div>

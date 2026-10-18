@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { InterpolatedDocument, MailTierId } from '@/lib/docket/types';
+import { InterpolatedDocument, MailTierId, AddressVerificationStatus } from '@/lib/docket/types';
 import { UPL_COMPLIANCE_FOOTER_TEXT } from '@/lib/docket/guardrails';
 
 export interface LivePaperSheetProps {
@@ -23,6 +23,7 @@ export interface LivePaperSheetProps {
   activeFieldKey?: string | null;
   isSignatureAdopted?: boolean;
   selectedTier?: MailTierId;
+  verificationStatus?: AddressVerificationStatus;
 }
 
 export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
@@ -31,6 +32,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
   activeFieldKey,
   isSignatureAdopted = false,
   selectedTier = 'certified',
+  verificationStatus = 'unverified',
 }) => {
   const tierLabels: Record<MailTierId, string> = {
     first_class: 'USPS FIRST-CLASS MAIL®',
@@ -169,10 +171,37 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
             </div>
             <div className="grid grid-cols-[76px_1fr] gap-x-1 py-0.5 border-t border-slate-300 mt-1 pt-1">
               <span className="text-slate-600">ADDRESS:</span>
-              <span className="text-emerald-700 font-bold flex items-center">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1" />
-                USPS VERIFIED
-              </span>
+              {verificationStatus === 'confirmed' ? (
+                <span className="text-emerald-700 font-bold flex items-center">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1" />
+                  USPS CASS™ VERIFIED
+                </span>
+              ) : verificationStatus === 'simulated' ? (
+                <span className="text-indigo-700 font-semibold flex items-center">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 mr-1" />
+                  Simulated check (staging)
+                </span>
+              ) : verificationStatus === 'checking' ? (
+                <span className="text-sky-600 font-medium flex items-center animate-pulse">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-500 mr-1" />
+                  Checking address...
+                </span>
+              ) : verificationStatus === 'failed' ? (
+                <span className="text-rose-700 font-semibold flex items-center">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 mr-1" />
+                  Address unconfirmed
+                </span>
+              ) : verificationStatus === 'unavailable' ? (
+                <span className="text-slate-500 font-medium flex items-center">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1" />
+                  Verification unavailable
+                </span>
+              ) : (
+                <span className="text-slate-500 font-medium flex items-center">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1" />
+                  Not yet verified
+                </span>
+              )}
             </div>
           </div>
         </div>

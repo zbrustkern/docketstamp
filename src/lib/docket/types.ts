@@ -16,6 +16,14 @@ export type RecipientMode =
   | 'verified_or_manual_debt'  // Autocomplete from top debt collectors + manual fallback
   | 'verified_or_manual_corp'; // Autocomplete from non-fitness telco/home/insurance + manual fallback
 
+export type AddressVerificationStatus =
+  | 'unverified'
+  | 'checking'
+  | 'confirmed'
+  | 'simulated'
+  | 'failed'
+  | 'unavailable';
+
 export interface PostalAddress {
   name: string;
   company?: string;

@@ -12,7 +12,7 @@
  * - Computes missing required fields, first unfilled field, and signature-readiness
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   NoticeTemplateDefinition,
@@ -28,6 +28,7 @@ export interface UseAgentHydrationOptions {
   initialValues?: Record<string, string>;
   currentValues?: Record<string, string>;
   isSignatureAdopted?: boolean;
+  userEditedKeys?: Set<string>;
 }
 
 export interface UseAgentHydrationResult {
@@ -36,11 +37,15 @@ export interface UseAgentHydrationResult {
   stageId: string | null;
   hydratedValues: Record<string, string>;
   hydratedTier: MailTierId | null;
+  explicitKeys: string[];
+  explicitRecipientId: string | null;
   missingRequiredKeys: string[];
   firstUnfilledKey: string | null;
   shouldJumpToSignature: boolean;
   isLoadingStage: boolean;
   stageError: string | null;
+  retryStageLoad: () => void;
+  startFresh: () => void;
 }
 
 const VALID_TIERS: Set<MailTierId> = new Set([
@@ -94,11 +99,14 @@ export function useAgentHydration({
   initialValues = {},
   currentValues = {},
   isSignatureAdopted = false,
+  userEditedKeys,
 }: UseAgentHydrationOptions): UseAgentHydrationResult {
   const nextSearchParams = useSearchParams();
 
   const [isLoadingStage, setIsLoadingStage] = useState(false);
   const [stageError, setStageError] = useState<string | null>(null);
+  const [isStageDismissed, setIsStageDismissed] = useState(false);
+  const [fetchCount, setFetchCount] = useState(0);
   const [serverStageData, setServerStageData] = useState<{
     stageId: string;
     fieldValues: Record<string, string>;
@@ -134,14 +142,39 @@ export function useAgentHydration({
     return map;
   }, [nextSearchParams]);
 
-  // Stage ID detection
-  const stageId = useMemo<string | null>(() => {
+  // Stage ID detection (nullified if user chose to start fresh)
+  const activeStageId = useMemo<string | null>(() => {
+    if (isStageDismissed) return null;
     return queryMap.get('stage') || queryMap.get('stageId') || null;
-  }, [queryMap]);
+  }, [isStageDismissed, queryMap]);
+
+  const retryStageLoad = useCallback(() => {
+    fetchedStageIdRef.current = null;
+    setStageError(null);
+    setFetchCount((c) => c + 1);
+  }, []);
+
+  const startFresh = useCallback(() => {
+    setIsStageDismissed(true);
+    setStageError(null);
+    setServerStageData(null);
+    if (typeof window !== 'undefined' && window.location) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('stage');
+        url.searchParams.delete('stageId');
+        window.history.replaceState({}, '', url.toString());
+      } catch {
+        // Safe fallback
+      }
+    }
+  }, []);
 
   // Direct URL query param values extraction
   const urlParamExtraction = useMemo(() => {
     const values: Record<string, string> = {};
+    const explicitKeys: string[] = [];
+    let explicitRecipientId: string | null = null;
     let tier: MailTierId | null = null;
     let hasDirectParams = false;
 
@@ -149,6 +182,8 @@ export function useAgentHydration({
     const recipientId = queryMap.get('recipientId') || queryMap.get('recipient');
     if (recipientId) {
       hasDirectParams = true;
+      explicitRecipientId = recipientId;
+      explicitKeys.push('recipientId');
       const rec = getVerifiedRecipientById(recipientId);
       if (rec) {
         values.recipientFormalName = rec.formalRecipientLine || rec.brandName;
@@ -156,8 +191,16 @@ export function useAgentHydration({
         values.recipientCity = rec.city;
         values.recipientState = rec.state;
         values.recipientZip = rec.zip;
+        explicitKeys.push(
+          'recipientFormalName',
+          'recipientAddressLine1',
+          'recipientCity',
+          'recipientState',
+          'recipientZip'
+        );
         if (notice.slug.includes('credit-bureau') || rec.category === 'credit_bureau') {
           values.bureauEntityId = rec.id;
+          explicitKeys.push('bureauEntityId');
         }
         if (rec.recommendedTier && isValidTier(rec.recommendedTier)) {
           tier = rec.recommendedTier;
@@ -170,6 +213,7 @@ export function useAgentHydration({
     if (rawTier && isValidTier(rawTier)) {
       tier = rawTier;
       hasDirectParams = true;
+      explicitKeys.push('tier');
     }
 
     // 3. Field parameters (?field.<key>=<val> or direct notice field keys)
@@ -204,11 +248,13 @@ export function useAgentHydration({
         if (fieldKey) {
           values[fieldKey] = val;
           hasDirectParams = true;
+          explicitKeys.push(fieldKey);
         }
       } else if (noticeFieldKeys.has(key) || commonFieldKeys.has(key)) {
         // b. Direct key match (?productOrServiceName=...)
         values[key] = val;
         hasDirectParams = true;
+        explicitKeys.push(key);
       }
     });
 
@@ -221,31 +267,31 @@ export function useAgentHydration({
       }
     }
 
-    return { values, tier, hasDirectParams };
+    return { values, tier, hasDirectParams, explicitKeys, explicitRecipientId };
   }, [queryMap, notice]);
 
-  // Fetch server-staged draft when stageId is present
+  // Fetch server-staged draft when activeStageId is present
   useEffect(() => {
-    if (!stageId) {
+    if (!activeStageId) {
       setServerStageData(null);
       setIsLoadingStage(false);
       setStageError(null);
       return;
     }
 
-    // Avoid duplicate fetching if already fetched
-    if (fetchedStageIdRef.current === stageId) {
+    // Avoid duplicate fetching if already fetched and no error
+    if (fetchedStageIdRef.current === activeStageId && !stageError) {
       return;
     }
 
     let isMounted = true;
-    fetchedStageIdRef.current = stageId;
+    fetchedStageIdRef.current = activeStageId;
     setIsLoadingStage(true);
     setStageError(null);
 
     async function fetchStagedDraft() {
       try {
-        const res = await fetch(`/api/docket/stage/${encodeURIComponent(stageId!)}`);
+        const res = await fetch(`/api/docket/stage/${encodeURIComponent(activeStageId!)}`);
         if (!res.ok) {
           throw new Error(`Draft staging returned status ${res.status}`);
         }
@@ -307,14 +353,14 @@ export function useAgentHydration({
         }
 
         setServerStageData({
-          stageId: stageId!,
+          stageId: activeStageId!,
           fieldValues,
           tier: stageTier,
         });
       } catch (err: any) {
         if (!isMounted) return;
-        console.warn('[useAgentHydration] Could not fetch server-staged draft:', err);
-        setStageError(err.message || 'Failed to load staged draft');
+        console.warn('[useAgentHydration] Could not load saved draft:', err);
+        setStageError(err.message || 'Failed to load saved draft');
       } finally {
         if (isMounted) {
           setIsLoadingStage(false);
@@ -327,7 +373,7 @@ export function useAgentHydration({
     return () => {
       isMounted = false;
     };
-  }, [stageId, notice]);
+  }, [activeStageId, notice, fetchCount]);
 
   // Combine hydration layers:
   // Initial -> Server Stage -> Direct URL Query Params (Query params take top priority)
@@ -344,14 +390,14 @@ export function useAgentHydration({
 
   // Staged Source computation
   const stagedSource = useMemo<'stage' | 'url_params' | null>(() => {
-    if (stageId && (serverStageData || isLoadingStage || stageError)) {
+    if (activeStageId && (serverStageData || isLoadingStage || stageError)) {
       return 'stage';
     }
     if (urlParamExtraction.hasDirectParams || Object.keys(urlParamExtraction.values).length > 0) {
       return 'url_params';
     }
     return null;
-  }, [stageId, serverStageData, isLoadingStage, stageError, urlParamExtraction]);
+  }, [activeStageId, serverStageData, isLoadingStage, stageError, urlParamExtraction]);
 
   const isStaged = stagedSource !== null;
 
@@ -362,6 +408,14 @@ export function useAgentHydration({
       ...hydratedValues,
       ...currentValues,
     };
+
+    if (userEditedKeys && userEditedKeys.size > 0) {
+      userEditedKeys.forEach((key) => {
+        if (currentValues[key] !== undefined) {
+          effectiveValues[key] = currentValues[key];
+        }
+      });
+    }
 
     const missingKeys: string[] = [];
     let firstEmpty: string | null = null;
@@ -384,18 +438,22 @@ export function useAgentHydration({
       firstUnfilledKey: firstEmpty,
       shouldJumpToSignature: jumpToSig,
     };
-  }, [notice.fields, initialValues, hydratedValues, currentValues, isSignatureAdopted]);
+  }, [notice.fields, initialValues, hydratedValues, currentValues, isSignatureAdopted, userEditedKeys]);
 
   return {
     isStaged,
     stagedSource,
-    stageId,
+    stageId: activeStageId,
     hydratedValues,
     hydratedTier,
+    explicitKeys: urlParamExtraction.explicitKeys,
+    explicitRecipientId: urlParamExtraction.explicitRecipientId,
     missingRequiredKeys,
     firstUnfilledKey,
     shouldJumpToSignature,
     isLoadingStage,
     stageError,
+    retryStageLoad,
+    startFresh,
   };
 }

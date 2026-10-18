@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     template: "%s | DocketStamp",
   },
   description:
-    "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. State-specific statutory notices drafted and dispatched in 60 seconds.",
+    "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
   applicationName: "DocketStamp",
   authors: [{ name: "Western Amalgamated" }],
   creator: "Western Amalgamated",
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
     description:
-      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. State-specific statutory notices drafted and dispatched in 60 seconds.",
+      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
     url: appUrl,
     siteName: "DocketStamp",
     images: [
@@ -97,7 +97,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
     description:
-      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. State-specific statutory notices drafted and dispatched in 60 seconds.",
+      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
     images: ["/og-image.png"],
   },
   icons: {
