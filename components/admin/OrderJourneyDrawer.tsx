@@ -274,7 +274,7 @@ export function OrderJourneyDrawer({
               className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                 order.status === "MAILED"
                   ? "bg-purple-50 text-purple-800 border border-purple-200"
-                  : order.status === "PROCESSING_DISPATCH" || order.status === "PROCESSING_HANDWRYTTEN" || order.status === "DISPATCHING"
+                  : order.status === "PROCESSING_DISPATCH" || order.status === "DISPATCHING"
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                   : order.status === "QUEUED_FOR_FULFILLMENT" || order.status === "PAYMENT_RECEIVED"
                   ? "bg-blue-50 text-blue-800 border border-blue-200"

@@ -133,7 +133,7 @@ export type FeatureFlagRequest =
   | undefined;
 
 /**
- * Helper to inspect if the SendMyNotes Rework V3 experience should be served.
+ * Helper to inspect if the DocketStamp Rework V3 experience should be served.
  * Priority:
  * 1. Query override: ?v3=1 -> true, ?v3=0 -> false
  * 2. Cookie override: smn_rework_v3=1 -> true, smn_rework_v3=0 -> false

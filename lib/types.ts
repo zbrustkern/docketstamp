@@ -18,7 +18,9 @@ export type OrderStatus =
   | "QUEUED_FOR_FULFILLMENT"
   | "DISPATCHED_TO_USPS"
   | "MAILED"
+  | "IN_TRANSIT"
   | "DELIVERED"
+  | "RETURNED_TO_SENDER"
   | "PAYMENT_VERIFICATION_FAILED"
   | "FAILED";
 
@@ -99,10 +101,13 @@ export interface Order {
   noticeType?: string;
   serviceLevel?: "FIRST_CLASS" | "CERTIFIED" | "CERTIFIED_RETURN_RECEIPT";
   lobLetterId?: string;
+  lobStatus?: string;
   lobTrackingNumber?: string;
   lobTrackingUrl?: string;
   expectedDeliveryDate?: string;
   lobExpectedDeliveryDate?: string;
+  lobMailedDate?: string;
+  lobTrackingEvents?: any[];
   returnReceiptUrl?: string;
   documentHtml?: string;
   frontImageUrl?: string;
@@ -117,7 +122,6 @@ export interface Order {
   handwryttenTrackingNumber?: string;
   handwryttenTrackingUrl?: string;
   handwryttenMailedDate?: string;
-  lobMailedDate?: string;
   fulfillmentError?: string;
   scheduledSendDate?: string; // YYYY-MM-DD if scheduled
   dispatchStartedAt?: number;

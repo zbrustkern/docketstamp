@@ -3,9 +3,9 @@ import { getAuth, Auth } from "firebase/auth";
 
 export const PROD_FIREBASE_CONFIG = {
   apiKey: "AIzaSyB4xhUJaAELK5Ann4O-Ypyq5gu6CJwQ7K8",
-  authDomain: "sendmynotes-2a417.firebaseapp.com",
-  projectId: "sendmynotes-2a417",
-  storageBucket: "sendmynotes-2a417.firebasestorage.app",
+  authDomain: "docketstamp.firebaseapp.com",
+  projectId: "docketstamp",
+  storageBucket: "docketstamp.firebasestorage.app",
   messagingSenderId: "486379422282",
   appId: "1:486379422282:web:a236cfa24ef6bf8d7cdcb3",
   measurementId: "G-5DV25FZ7Q8",
@@ -13,9 +13,9 @@ export const PROD_FIREBASE_CONFIG = {
 
 export const STAGING_FIREBASE_CONFIG = {
   apiKey: "AIzaSyCBeHnEVyysxI_ZL7gQmg0a8Yw-N0xceE0",
-  authDomain: "sendmynotes-staging.firebaseapp.com",
-  projectId: "sendmynotes-staging",
-  storageBucket: "sendmynotes-staging.firebasestorage.app",
+  authDomain: "docketstamp-staging.firebaseapp.com",
+  projectId: "docketstamp-staging",
+  storageBucket: "docketstamp-staging.firebasestorage.app",
   messagingSenderId: "910796604705",
   appId: "1:910796604705:web:34244d4b29bd7ea8362a60",
   measurementId: "G-YL7ZK51DTQ",
@@ -26,12 +26,9 @@ export function getClientFirebaseConfig() {
     process.env.ENVIRONMENT === "staging" ||
     (typeof window !== "undefined" &&
       (window.location.hostname.includes("docketstamp-staging") ||
-        window.location.hostname.includes("sendmynotes-staging") ||
         window.location.hostname.includes("staging"))) ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.FIREBASE_PROJECT_ID === "sendmynotes-staging" ||
     (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging"));
 

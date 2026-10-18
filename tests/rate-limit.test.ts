@@ -4,7 +4,7 @@ import {
   clearAdminFailedAttempts,
   MAX_ADMIN_ATTEMPTS,
 } from "../lib/admin-rate-limit";
-import { verifyAdminPassphrase } from "../lib/admin-auth";
+import { verifyAdminPassphrase, getAdminSecret } from "../lib/admin-auth";
 
 async function runTests() {
   console.log("=================================================");
@@ -55,7 +55,8 @@ async function runTests() {
   console.log("✅ PASS: clearAdminFailedAttempts restores full access");
 
   // 6. Test timing-safe passphrase comparison
-  const correct = verifyAdminPassphrase("sendmynotes2026");
+  const defaultSecret = getAdminSecret() || "ds_dev_admin_2026";
+  const correct = verifyAdminPassphrase(defaultSecret);
   const incorrect = verifyAdminPassphrase("wrongpassword");
   const short = verifyAdminPassphrase("short");
   const empty = verifyAdminPassphrase("");

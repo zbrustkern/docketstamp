@@ -33,7 +33,7 @@ export function HighIntentCartsWidget({ metrics }: HighIntentCartsWidgetProps) {
   );
 
   const handleCopyLink = (code: string, id: string) => {
-    const link = `https://sendmynotes.com?promo=${code}&utm_source=cart_recovery&utm_medium=email`;
+    const link = `https://docketstamp.com?promo=${code}&utm_source=cart_recovery&utm_medium=email`;
     navigator.clipboard.writeText(link);
     setCopiedLink(id);
     setTimeout(() => setCopiedLink(null), 2500);

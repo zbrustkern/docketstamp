@@ -77,7 +77,7 @@ export function AddressRetryModal({
             </div>
             <div>
               <h3 className="font-serif font-bold text-base text-stone-900">
-                Correct Address &amp; Retry Inking
+                Correct Address &amp; Retry Dispatch
               </h3>
               <p className="text-xs text-stone-400 font-mono">{order.id}</p>
             </div>
@@ -186,7 +186,7 @@ export function AddressRetryModal({
           </div>
 
           <p className="text-[11px] text-stone-400">
-            Updating will write the corrected address to the database and re-dispatch the physical card order to Handwrytten.
+            Updating will write the corrected address to the database and re-dispatch the physical instrument via Lob USPS.
           </p>
 
           <div className="pt-2 flex items-center justify-end gap-2">
@@ -203,7 +203,7 @@ export function AddressRetryModal({
               className="px-4 py-2 text-xs font-semibold rounded-xl bg-stone-900 hover:bg-black text-white transition disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span>{loading ? "Dispatching..." : "Update & Retry Inking"}</span>
+              <span>{loading ? "Dispatching..." : "Update & Retry Dispatch"}</span>
             </button>
           </div>
         </form>

@@ -273,7 +273,7 @@ async function runFeatureFlagsTests() {
 
     // 6B. Authorized GET
     const authGetReq = new NextRequest("http://localhost:3000/api/admin/feature-flags", {
-      headers: { "x-admin-key": "sendmynotes2026" },
+      headers: { "x-admin-key": "ds_dev_admin_2026" },
     });
     const authGetRes = await adminGet(authGetReq);
     assert(
@@ -301,7 +301,7 @@ async function runFeatureFlagsTests() {
     const invalidPostReq = new NextRequest("http://localhost:3000/api/admin/feature-flags", {
       method: "POST",
       headers: {
-        "x-admin-key": "sendmynotes2026",
+        "x-admin-key": "ds_dev_admin_2026",
         "content-type": "application/json",
       },
       body: JSON.stringify({ flagKey: "", enabled: "yes" }),
@@ -316,7 +316,7 @@ async function runFeatureFlagsTests() {
     const validPostReq = new NextRequest("http://localhost:3000/api/admin/feature-flags", {
       method: "POST",
       headers: {
-        "x-admin-key": "sendmynotes2026",
+        "x-admin-key": "ds_dev_admin_2026",
         "content-type": "application/json",
       },
       body: JSON.stringify({ flagKey: "reworkV3Experience", enabled: false }),

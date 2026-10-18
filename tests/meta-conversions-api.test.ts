@@ -197,7 +197,7 @@ async function runTests() {
   );
   assert(eventPayload.action_source === "website", "action_source is 'website'");
   assert(
-    eventPayload.event_source_url === `https://sendmynotes.com/order/${mockOrder.id}`,
+    eventPayload.event_source_url === `https://docketstamp.com/order/${mockOrder.id}`,
     "event_source_url correctly populated"
   );
 
@@ -228,7 +228,7 @@ async function runTests() {
   const customData = eventPayload.custom_data;
   assert(customData.value === 9.0, "custom_data value is 9.0");
   assert(customData.currency === "USD", "custom_data currency is USD");
-  assert(customData.content_name === "birthday Card", "custom_data content_name populated");
+  assert(customData.content_name === "DocketStamp USPS Legal Notice Dispatch", "custom_data content_name populated");
   assert(customData.content_ids[0] === mockOrder.id, "custom_data content_ids contains order ID");
   assert(customData.contents[0].id === mockOrder.id, "custom_data contents array contains order ID");
   assert(customData.contents[0].item_price === 9.0, "custom_data contents item_price is 9.0");

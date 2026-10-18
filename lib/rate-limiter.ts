@@ -1,17 +1,24 @@
 /**
- * Sliding Window Rate Limiter for AI Art Generation
- * Protects against token abuse while providing a smooth developer and user experience.
+ * Sliding Window Rate Limiter for DocketStamp API Protection
+ * Protects live CASS address verification keys and AI endpoints against abuse.
  */
 
 interface RateLimitRecord {
   timestamps: number[];
 }
 
-const WINDOW_MS = 10 * 60 * 1000; // 10 minutes sliding window
-const MAX_REQUESTS = 5; // 5 AI image generations per window
+const DEFAULT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes sliding window
+const DEFAULT_MAX_REQUESTS = 5;
 
 // In-memory store (cleans up stale keys automatically)
 const ipStore = new Map<string, RateLimitRecord>();
+
+export interface RateLimitOptions {
+  windowMs?: number;
+  maxRequests?: number;
+  bucket?: string;
+  message?: string;
+}
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -21,9 +28,16 @@ export interface RateLimitResult {
   message?: string;
 }
 
-export function checkRateLimit(clientId: string): RateLimitResult {
+export function checkRateLimit(
+  clientId: string,
+  options?: RateLimitOptions
+): RateLimitResult {
+  const windowMs = options?.windowMs ?? DEFAULT_WINDOW_MS;
+  const maxRequests = options?.maxRequests ?? DEFAULT_MAX_REQUESTS;
+  const storeKey = options?.bucket ? `${options.bucket}:${clientId}` : clientId;
+
   const now = Date.now();
-  const windowStart = now - WINDOW_MS;
+  const windowStart = now - windowMs;
 
   // Cleanup old records periodically
   if (ipStore.size > 2000) {
@@ -35,39 +49,41 @@ export function checkRateLimit(clientId: string): RateLimitResult {
     }
   }
 
-  const record = ipStore.get(clientId) || { timestamps: [] };
+  const record = ipStore.get(storeKey) || { timestamps: [] };
   // Filter out timestamps outside the active sliding window
   record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
 
-  if (record.timestamps.length >= MAX_REQUESTS) {
+  if (record.timestamps.length >= maxRequests) {
     const oldestTimestamp = record.timestamps[0];
     const retryAfterSeconds = Math.max(
       1,
-      Math.ceil((oldestTimestamp + WINDOW_MS - now) / 1000)
+      Math.ceil((oldestTimestamp + windowMs - now) / 1000)
     );
     const minutes = Math.ceil(retryAfterSeconds / 60);
 
     return {
       allowed: false,
       remaining: 0,
-      limit: MAX_REQUESTS,
+      limit: maxRequests,
       retryAfterSeconds,
-      message: `You've used all 5 AI card generations for now. Please wait ${minutes} minute${
-        minutes > 1 ? "s" : ""
-      } to generate more, or choose from our curated designs below!`,
+      message:
+        options?.message ||
+        `Rate limit exceeded (${maxRequests} requests per ${Math.round(
+          windowMs / 60000
+        )} minutes). Please retry in ${retryAfterSeconds}s.`,
     };
   }
 
-  // Record this generation
+  // Record this request
   record.timestamps.push(now);
-  ipStore.set(clientId, record);
+  ipStore.set(storeKey, record);
 
-  const remaining = MAX_REQUESTS - record.timestamps.length;
+  const remaining = maxRequests - record.timestamps.length;
 
   return {
     allowed: true,
     remaining,
-    limit: MAX_REQUESTS,
+    limit: maxRequests,
     retryAfterSeconds: 0,
   };
 }
@@ -76,10 +92,18 @@ export function checkRateLimit(clientId: string): RateLimitResult {
  * Refunds a single request timestamp from the client's rate limit quota
  * if their prompt was rejected by a provider policy filter (non-punitive UX).
  */
-export function refundRateLimit(clientId: string): void {
-  const record = ipStore.get(clientId);
+export function refundRateLimit(clientId: string, bucket?: string): void {
+  const storeKey = bucket ? `${bucket}:${clientId}` : clientId;
+  const record = ipStore.get(storeKey);
   if (record && record.timestamps.length > 0) {
     record.timestamps.pop();
-    ipStore.set(clientId, record);
+    ipStore.set(storeKey, record);
   }
+}
+
+/**
+ * Clears in-memory rate limit store for testing purposes.
+ */
+export function resetRateLimits(): void {
+  ipStore.clear();
 }

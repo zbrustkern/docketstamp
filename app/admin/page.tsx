@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AdminMetrics, Order, SystemIncident, DiscountCode, DiscountType, ScenarioPerformanceMetric } from "@/lib/types";
-import { HandwryttenStatusWidget } from "@/components/admin/HandwryttenStatusWidget";
+import { LobStatusWidget, HandwryttenStatusWidget } from "@/components/admin/HandwryttenStatusWidget";
 import { ProofInspectorModal } from "@/components/admin/ProofInspectorModal";
 import { AddressRetryModal } from "@/components/admin/AddressRetryModal";
 import { StudioCompModal } from "@/components/admin/StudioCompModal";
@@ -315,10 +315,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSyncHandwrytten = async (orderId: string) => {
+  const handleSyncLob = async (orderId: string) => {
     setSyncingId(orderId);
     try {
-      const res = await fetch("/api/admin/sync-handwrytten", {
+      const res = await fetch("/api/admin/sync-lob", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId }),
@@ -328,7 +328,7 @@ export default function AdminDashboardPage() {
         alert(`Sync failed: ${data.error || "Unknown error"}`);
       } else {
         alert(
-          `Lob USPS postal status updated: ${data.handwryttenStatus || data.status}${
+          `Lob USPS postal status updated: ${data.lobStatus || data.handwryttenStatus || data.status}${
             data.mailedDate ? ` (Mailed: ${data.mailedDate})` : ""
           }`
         );
@@ -336,11 +336,12 @@ export default function AdminDashboardPage() {
       await fetchMetrics();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";
-      alert(`Error syncing status from Handwrytten: ${msg}`);
+      alert(`Error syncing status from Lob USPS: ${msg}`);
     } finally {
       setSyncingId(null);
     }
   };
+  const handleSyncHandwrytten = handleSyncLob;
 
   const handleSyncStripe = async (orderId: string) => {
     setSyncingStripeId(orderId);
@@ -713,7 +714,7 @@ export default function AdminDashboardPage() {
               )}
             </div>
             <h1 className="text-2xl font-serif font-bold text-stone-900">
-              sendmynotes Admin Portal
+              DocketStamp Admin Portal
             </h1>
             <p className="text-xs text-stone-500">
               Sign in with your authorized Google administrator account or enter an admin passphrase.
@@ -988,14 +989,14 @@ export default function AdminDashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-serif text-lg font-bold text-stone-900">
-                    sendmynotes Admin
+                    DocketStamp Admin
                   </span>
                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300/60">
                     Live Operations
                   </span>
                 </div>
                 <p className="text-xs text-stone-400">
-                  Customer telemetry, revenue analytics, and robotic fulfillment monitoring.
+                  Customer telemetry, revenue analytics, and USPS postal dispatch monitoring.
                 </p>
               </div>
             </div>
@@ -1071,13 +1072,13 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between pb-3 border-b border-stone-200">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-stone-900 text-amber-400 font-bold text-xs flex items-center justify-center">
-                    SMN
+                    DS
                   </div>
                   <div>
                     <span className="font-serif font-bold text-sm text-stone-900 block leading-tight">
                       Operator Tools
                     </span>
-                    <span className="text-[10px] text-stone-400">sendmynotes Admin</span>
+                    <span className="text-[10px] text-stone-400">DocketStamp Admin</span>
                   </div>
                 </div>
                 <button
@@ -1282,7 +1283,7 @@ export default function AdminDashboardPage() {
                   ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-amber-600 sm:text-amber-900 sm:shadow-none sm:ring-0 font-semibold"
                   : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
               }`}
-              title="Configure SendMyNotes Rework V3 Feature Flags"
+              title="Configure DocketStamp Feature Flags"
             >
               <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 shrink-0" />
               <span>Flags</span>
@@ -1299,8 +1300,8 @@ export default function AdminDashboardPage() {
       </div>
 
       <main className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-8 space-y-4 sm:space-y-8 min-w-0">
-        {/* LIVE HANDWRYTTEN STATUS & BALANCE WIDGET */}
-        <HandwryttenStatusWidget />
+        {/* LIVE LOB USPS STATUS & BALANCE WIDGET */}
+        <LobStatusWidget />
         {/* ===================== TAB: ORDERS & OPERATIONS ===================== */}
         {activeTab === "orders" && (
           <div className="space-y-5 sm:space-y-8">
@@ -1317,13 +1318,13 @@ export default function AdminDashboardPage() {
 
               <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Inking Queue</span>
+                  <span>Dispatch Queue</span>
                   <PenTool className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" />
                 </div>
                 <p className="font-serif text-xl sm:text-2xl font-bold text-indigo-900">
                   {metrics?.ordersByStatus.processing || 0}
                 </p>
-                <p className="text-[10px] sm:text-[11px] text-indigo-600 font-medium">Dispatched to HW</p>
+                <p className="text-[10px] sm:text-[11px] text-indigo-600 font-medium">Dispatched to Lob</p>
               </div>
 
               <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
@@ -1374,7 +1375,7 @@ export default function AdminDashboardPage() {
                     <span>Physical Orders &amp; Fulfillment Logs</span>
                   </h2>
                   <p className="text-xs text-stone-500">
-                    Real-time Handwrytten order IDs and recipient destinations.
+                    Real-time Lob USPS dispatch IDs and recipient destinations.
                   </p>
                 </div>
 
@@ -1396,7 +1397,7 @@ export default function AdminDashboardPage() {
                     className="px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none"
                   >
                     <option value="ALL">All Statuses</option>
-                    <option value="PROCESSING_HANDWRYTTEN">Processing / Inked</option>
+                    <option value="PROCESSING_DISPATCH">Processing / Dispatched</option>
                     <option value="PENDING_PAYMENT">Pending Draft</option>
                     <option value="FAILED">Failed</option>
                   </select>
@@ -1413,7 +1414,7 @@ export default function AdminDashboardPage() {
                   <div className="md:hidden space-y-3 w-full min-w-0">
                     {filteredOrders.map((order) => {
                       const isMailed = order.status === "MAILED";
-                      const isProcessing = order.status === "PROCESSING_HANDWRYTTEN";
+                      const isProcessing = order.status === "PROCESSING_DISPATCH" || order.status === "PROCESSING_HANDWRYTTEN";
                       const isPending = order.status === "PENDING_PAYMENT";
                       const isQueued = order.status === "QUEUED_FOR_FULFILLMENT";
                       const isFailed = order.status === "FAILED" || order.status === "PAYMENT_VERIFICATION_FAILED";
@@ -1426,7 +1427,7 @@ export default function AdminDashboardPage() {
                         statusLabel = "Mailed";
                         statusStyle = "bg-purple-50 text-purple-700 border-purple-200";
                       } else if (isProcessing) {
-                        statusLabel = "Inking (Robot)";
+                        statusLabel = "Dispatched";
                         statusStyle = "bg-emerald-50 text-emerald-800 border-emerald-200";
                       } else if (isPending) {
                         statusLabel = "Pending";
@@ -1504,9 +1505,9 @@ export default function AdminDashboardPage() {
                                   <span className="font-serif font-bold text-stone-900 text-sm">
                                     ${((order.amountInCents || 900) / 100).toFixed(2)}
                                   </span>
-                                  {order.handwryttenOrderId && (
+                                  {(order.lobLetterId || order.handwryttenOrderId) && (
                                     <span className="font-mono text-[9px] text-indigo-700 block mt-0.5">
-                                      HW: {order.handwryttenOrderId}
+                                      Lob: {order.lobLetterId || order.handwryttenOrderId}
                                     </span>
                                   )}
                                 </div>
@@ -1591,10 +1592,10 @@ export default function AdminDashboardPage() {
                               <span>View Proof</span>
                             </button>
 
-                            {order.handwryttenOrderId ? (
+                            {(order.lobLetterId || order.handwryttenOrderId) ? (
                               <button
                                 type="button"
-                                onClick={() => handleSyncHandwrytten(order.id)}
+                                onClick={() => handleSyncLob(order.id)}
                                 disabled={syncingId === order.id}
                                 className="py-2.5 text-center text-xs font-semibold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 active:scale-98 rounded-xl border border-indigo-200 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
@@ -1749,24 +1750,24 @@ export default function AdminDashboardPage() {
                                       ? "QUEUED"
                                       : order.status}
                                   </span>
-                                  {order.handwryttenOrderId && (
+                                  {(order.lobLetterId || order.handwryttenOrderId) && (
                                     <p className="font-mono text-[9px] text-indigo-700">
-                                      HW: {order.handwryttenOrderId}
+                                      Lob: {order.lobLetterId || order.handwryttenOrderId}
                                     </p>
                                   )}
-                                  {order.handwryttenStatus && (
+                                  {(order.lobStatus || order.handwryttenStatus) && (
                                     <p className="text-[10px] font-medium text-stone-600">
-                                      HW: <span className="capitalize font-semibold text-stone-900">{order.handwryttenStatus}</span>
+                                      Lob: <span className="capitalize font-semibold text-stone-900">{order.lobStatus || order.handwryttenStatus}</span>
                                     </p>
                                   )}
-                                  {order.handwryttenMailedDate && (
+                                  {(order.lobMailedDate || order.handwryttenMailedDate) && (
                                     <p className="text-[9px] text-purple-700 font-medium">
-                                      Mailed: {order.handwryttenMailedDate}
+                                      Mailed: {order.lobMailedDate || order.handwryttenMailedDate}
                                     </p>
                                   )}
-                                  {order.handwryttenTrackingNumber && (
+                                  {(order.lobTrackingNumber || order.handwryttenTrackingNumber) && (
                                     <p className="text-[9px] text-stone-500 font-mono">
-                                      Trk: {order.handwryttenTrackingNumber}
+                                      Trk: {order.lobTrackingNumber || order.handwryttenTrackingNumber}
                                     </p>
                                   )}
                                 </div>
@@ -1844,11 +1845,11 @@ export default function AdminDashboardPage() {
                                       </button>
                                     </div>
                                   )}
-                                  {order.handwryttenOrderId && (
+                                  {(order.lobLetterId || order.handwryttenOrderId) && (
                                     <button
-                                      onClick={() => handleSyncHandwrytten(order.id)}
+                                      onClick={() => handleSyncLob(order.id)}
                                       disabled={syncingId === order.id}
-                                      title="Check latest order and postal status directly from Handwrytten API"
+                                      title="Check latest order and postal status directly from Lob API"
                                       className="px-2 py-0.5 text-[10px] font-medium text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
                                     >
                                       <RefreshCw
@@ -1856,7 +1857,7 @@ export default function AdminDashboardPage() {
                                           syncingId === order.id ? "animate-spin" : ""
                                         }`}
                                       />
-                                      {syncingId === order.id ? "Checking..." : "Sync HW"}
+                                      {syncingId === order.id ? "Checking..." : "Sync Lob"}
                                     </button>
                                   )}
                                   {isMailed && (
@@ -1880,7 +1881,7 @@ export default function AdminDashboardPage() {
                                       {syncingStripeId === order.id ? "Verifying..." : "Verify Stripe"}
                                     </button>
                                   )}
-                                  {!isPending && !canRetry && !order.handwryttenOrderId && (
+                                  {!isPending && !canRetry && !(order.lobLetterId || order.handwryttenOrderId) && (
                                     <span className="text-stone-300">—</span>
                                   )}
                                 </div>
@@ -2176,7 +2177,7 @@ export default function AdminDashboardPage() {
                   Unit Economics Anatomy: The $9.00 Card Waterfall
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Every standard card sent on sendmynotes is structured around deterministic, ultra-predictable unit economics.
+                  Every standard notice sent on DocketStamp is structured around deterministic, ultra-predictable unit economics.
                 </p>
               </div>
 
@@ -2213,7 +2214,7 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                   <p className="text-xs text-stone-500 leading-relaxed">
-                    Handwrytten robotic pen drawing, custom 120 lb cardstock, envelope inking, and USPS First Class postage.
+                    Lob programmatic letter printing, 24 lb paper, certified/first-class envelope, and USPS postal induction.
                   </p>
                 </div>
 
@@ -2366,7 +2367,7 @@ export default function AdminDashboardPage() {
                   Auto-Tagging &amp; UTM Tracking Template
                 </h3>
                 <p className="text-xs text-stone-300">
-                  Paste this tracking template into your Google Ads Campaign or Account settings. sendmynotes will automatically detect every ad click, keyword, and creative variant.
+                  Paste this tracking template into your Google Ads Campaign or Account settings. DocketStamp will automatically detect every ad click, keyword, and creative variant.
                 </p>
               </div>
 
@@ -3168,7 +3169,7 @@ export default function AdminDashboardPage() {
                     )}
                   </div>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    Real-time incident log for Stripe checkout, AI image generation, and Handwrytten robot fulfillment.
+                    Real-time incident log for Stripe checkout, document generation, and Lob USPS dispatch.
                   </p>
                 </div>
 
@@ -3300,7 +3301,7 @@ export default function AdminDashboardPage() {
                     <ShieldCheck className="w-10 h-10 text-emerald-600 mx-auto" />
                     <p className="font-bold text-sm text-emerald-900">All Systems Healthy &amp; Operational</p>
                     <p className="text-xs text-emerald-700 max-w-md mx-auto">
-                      No active or unresolved alerts. Third-party API calls (Stripe, Imagen, Handwrytten) are executing smoothly without errors.
+                      No active or unresolved alerts. Third-party API calls (Stripe, Lob) are executing smoothly without errors.
                     </p>
                     {resolvedIncidents.length > 0 && (
                       <div className="pt-2">
@@ -3325,7 +3326,7 @@ export default function AdminDashboardPage() {
                     <ShieldCheck className="w-8 h-8 text-emerald-500 mx-auto mb-1 opacity-80" />
                     <p className="font-semibold text-stone-700">No Incidents Recorded</p>
                     <p className="text-[11px] text-stone-400">
-                      Third-party API calls (Stripe, Imagen, Handwrytten) are executing smoothly without errors.
+                      Third-party API calls (Stripe, Lob) are executing smoothly without errors.
                     </p>
                   </div>
                 )
@@ -3338,7 +3339,7 @@ export default function AdminDashboardPage() {
                         ? "bg-purple-100 text-purple-800 border-purple-200"
                         : incident.type === "IMAGE_GEN"
                         ? "bg-amber-100 text-amber-800 border-amber-200"
-                        : incident.type === "HANDWRYTTEN"
+                        : incident.type === "HANDWRYTTEN" || incident.type === "SYSTEM"
                         ? "bg-indigo-100 text-indigo-800 border-indigo-200"
                         : "bg-stone-100 text-stone-800 border-stone-200";
 
