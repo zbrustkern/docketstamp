@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Passphrase access has been permanently disabled. Administrator access requires signing in with an authorized Google account (zbrustkern@gmail.com or sentral@gmail.com).",
+            "Passphrase access has been permanently disabled. Administrator access requires signing in with an authorized Google account.",
         },
         { status: 400 }
       );

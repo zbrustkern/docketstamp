@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
 
       if (!currentUser.email || !isAuthorizedAdminEmail(currentUser.email)) {
         throw new Error(
-          `Access denied. The account (${currentUser.email || currentUser.uid}) is not authorized for administrator access. Permitted accounts: ${AUTHORIZED_ADMIN_EMAILS.join(", ")}.`
+          `Access denied. Your account is not authorized for administrator access.`
         );
       }
 
@@ -667,9 +667,7 @@ export default function AdminDashboardPage() {
               DocketStamp Admin Portal
             </h1>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Administrative access is strictly restricted to authorized accounts:{" "}
-              <span className="font-mono font-medium text-stone-700">zbrustkern@gmail.com</span> and{" "}
-              <span className="font-mono font-medium text-stone-700">sentral@gmail.com</span>.
+              Administrative credentials required. Please sign in with an authorized Google account to continue.
             </p>
           </div>
 
