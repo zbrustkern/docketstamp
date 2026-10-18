@@ -21,19 +21,13 @@ import {
 } from '@/src/lib/docket/types';
 import {
   Search,
-  CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  ExternalLink,
-  ShieldCheck,
-  Building2,
-  Scale,
-  Sparkles,
-  FileCheck,
-  PenTool,
   Check,
-  Building,
-  Info,
+  Sparkles,
+  RotateCcw,
+  CheckCircle2,
+  Building2,
 } from 'lucide-react';
 
 export interface InteractiveHomeWorkbenchProps {
@@ -46,17 +40,16 @@ interface QuickChip {
   recipientId?: string;
 }
 
-const QUICK_SELECT_CHIPS: QuickChip[] = [
-  { label: 'Security Deposit (50-State)', slug: 'security-deposit-return-demand-letter' },
-  { label: 'Equifax', slug: 'fcra-credit-bureau-written-dispute-letter', recipientId: 'cra_eqf' },
-  { label: 'Experian', slug: 'fcra-credit-bureau-written-dispute-letter', recipientId: 'cra_exp' },
-  { label: 'TransUnion', slug: 'fcra-credit-bureau-written-dispute-letter', recipientId: 'cra_tu' },
-  { label: 'Portfolio Recovery', slug: 'fdcpa-30-day-debt-validation-letter', recipientId: 'col_pra' },
-  { label: 'ADT Security', slug: 'written-contract-and-policy-cancellation-letter', recipientId: 'srv_adt' },
-  { label: 'Comcast', slug: 'written-contract-and-policy-cancellation-letter', recipientId: 'srv_cmc' },
-  { label: 'Withings', slug: 'pre-arbitration-notice-of-dispute-and-refund-request', recipientId: 'leg_wth' },
-  { label: 'Sonos', slug: 'pre-arbitration-notice-of-dispute-and-refund-request', recipientId: 'leg_sns' },
-  { label: 'Samsung', slug: '30-day-mandatory-arbitration-opt-out-notice', recipientId: 'leg_sam' },
+const POPULAR_SCENARIO_CHIPS: QuickChip[] = [
+  { label: 'Get Security Deposit Back', slug: 'security-deposit-return-demand-letter' },
+  { label: '30-Day Move-Out Notice', slug: 'tenant-notice-of-intent-to-vacate' },
+  { label: 'Equifax Dispute', slug: 'fcra-credit-bureau-written-dispute-letter', recipientId: 'cra_eqf' },
+  { label: 'Experian Dispute', slug: 'fcra-credit-bureau-written-dispute-letter', recipientId: 'cra_exp' },
+  { label: 'TransUnion Dispute', slug: 'fcra-credit-bureau-written-dispute-letter', recipientId: 'cra_tru' },
+  { label: 'Stop Debt Collector', slug: 'fdcpa-30-day-debt-validation-letter', recipientId: 'col_pra' },
+  { label: 'Cancel ADT Security', slug: 'written-contract-and-policy-cancellation-letter', recipientId: 'srv_adt' },
+  { label: 'Cancel Comcast / Xfinity', slug: 'written-contract-and-policy-cancellation-letter', recipientId: 'tel_cmcst' },
+  { label: 'Withings / Sonos Refund', slug: 'pre-arbitration-notice-of-dispute-and-refund-request', recipientId: 'leg_wth' },
 ];
 
 const DEFAULT_RECIPIENT_IDS_BY_SLUG: Record<string, string> = {
@@ -68,329 +61,241 @@ const DEFAULT_RECIPIENT_IDS_BY_SLUG: Record<string, string> = {
   'statutory-health-and-biometric-data-deletion-demand': 'leg_wth',
 };
 
-const CARTRIDGE_CATEGORIES = [
-  { id: 'all', label: 'All Cartridges (9)' },
-  { id: 'tenant', label: 'Housing & Tenant (3)' },
-  { id: 'credit_debt', label: 'Credit & Debt (2)' },
-  { id: 'cancellation', label: 'Cancellations (1)' },
-  { id: 'consumer_rights', label: 'Tech & Privacy (3)' },
+const NOTICE_CATEGORIES = [
+  { id: 'all', label: 'All Notices (9)' },
+  { id: 'tenant', label: 'Landlord & Tenant' },
+  { id: 'credit_debt', label: 'Credit & Debt' },
+  { id: 'cancellation', label: 'Cancel a Contract' },
+  { id: 'consumer_rights', label: 'Refunds & Privacy' },
 ] as const;
 
-type CartridgeCategoryFilter = (typeof CARTRIDGE_CATEGORIES)[number]['id'];
+type NoticeCategoryFilter = (typeof NOTICE_CATEGORIES)[number]['id'];
 
-interface QuickInputField {
+interface EditableFieldItem {
   key: string;
   label: string;
   placeholder: string;
-  isAmberRequired?: boolean;
 }
 
-function getQuickInputFields(notice: NoticeTemplateDefinition): QuickInputField[] {
+function getCoreEditableFields(
+  notice: NoticeTemplateDefinition,
+  hasVerifiedRecipientDropdown: boolean
+): EditableFieldItem[] {
+  const base: EditableFieldItem[] = [
+    {
+      key: 'senderFullName',
+      label: 'Your Full Name',
+      placeholder: 'Type your full name (e.g. Jordan Taylor)...',
+    },
+  ];
+
+  if (!hasVerifiedRecipientDropdown) {
+    base.push({
+      key: 'recipientFormalName',
+      label: 'Landlord or Management Company Name',
+      placeholder: 'e.g. Oakridge Property Management LLC',
+    });
+  }
+
   switch (notice.slug) {
     case 'security-deposit-return-demand-letter':
       return [
+        ...base,
         {
           key: 'depositAmount',
-          label: 'Deposit Amount',
-          placeholder: '$2,450.00',
+          label: 'Security Deposit Amount',
+          placeholder: 'e.g. $2,450.00',
         },
         {
           key: 'vacatedPremisesAddress',
-          label: 'Vacated Property Address',
+          label: 'Apartment / Property Address',
           placeholder: 'e.g. 1420 Ocean Ave, Apt 4B, Santa Monica, CA',
-          isAmberRequired: true,
         },
         {
           key: 'moveOutDate',
-          label: 'Move-Out Date',
+          label: 'Date You Moved Out',
           placeholder: 'e.g. September 30, 2026',
-          isAmberRequired: true,
         },
       ];
 
     case 'tenant-notice-of-intent-to-vacate':
       return [
+        ...base,
         {
           key: 'leasedPremisesAddress',
-          label: 'Leased Property Address',
-          placeholder: 'e.g. 742 Evergreen Terrace, Springfield',
-          isAmberRequired: true,
+          label: 'Your Apartment / Rental Address',
+          placeholder: 'e.g. 512 Elm St, Apt 2B, Chicago, IL',
         },
         {
           key: 'moveOutDate',
-          label: 'Vacate Date',
+          label: 'Planned Move-Out Date',
           placeholder: 'e.g. November 30, 2026',
-          isAmberRequired: true,
         },
         {
-          key: 'leaseNoticePeriod',
-          label: 'Notice Period',
-          placeholder: '30 days',
+          key: 'forwardingAddress',
+          label: 'New Forwarding Address (for Deposit Check)',
+          placeholder: 'e.g. 800 Lake Shore Dr, Apt 9A, Chicago, IL',
         },
       ];
 
     case 'tenant-repair-and-maintenance-notice':
       return [
+        ...base,
         {
           key: 'leasedPremisesAddress',
-          label: 'Leased Premises Address',
-          placeholder: 'e.g. 1044 Market Street, Apt 5',
-          isAmberRequired: true,
+          label: 'Your Apartment / Rental Address',
+          placeholder: 'e.g. 1044 Market St, Apt 5, San Francisco, CA',
         },
         {
           key: 'defectDescription',
-          label: 'Defect / Repair Needed',
-          placeholder: 'e.g. Water heater leaking into living area',
-          isAmberRequired: true,
+          label: 'What Needs to Be Repaired?',
+          placeholder: 'e.g. Heating unit has been broken since October 10',
         },
       ];
 
     case 'fcra-credit-bureau-written-dispute-letter':
       return [
+        ...base,
         {
           key: 'furnisherName',
-          label: 'Furnisher / Creditor Name',
-          placeholder: 'e.g. Chase Card Services / Synchrony',
-          isAmberRequired: true,
+          label: 'Creditor or Account Name on Credit Report',
+          placeholder: 'e.g. Chase Card Services / Synchrony Bank',
         },
         {
           key: 'partialAccountNumber',
-          label: 'Account Reference (Last 4)',
-          placeholder: 'e.g. Ending in ...4829',
-          isAmberRequired: true,
+          label: 'Account Number (Last 4 Digits)',
+          placeholder: 'e.g. XXXX-4829',
         },
         {
           key: 'factualExplanation',
-          label: 'Dispute Summary',
-          placeholder: 'e.g. Account was settled in full on March 15',
+          label: 'Why Is This Account Inaccurate?',
+          placeholder: 'e.g. Account was paid in full on March 15, 2026',
         },
       ];
 
     case 'fdcpa-30-day-debt-validation-letter':
       return [
+        ...base,
         {
           key: 'collectorReferenceNumber',
-          label: 'Collector Reference / File #',
+          label: 'Collection Letter Account / Reference #',
           placeholder: 'e.g. File #PRA-98214',
-          isAmberRequired: true,
+        },
+        {
+          key: 'allegedOriginalCreditor',
+          label: 'Original Creditor Name',
+          placeholder: 'e.g. Citibank, N.A. / Capital One',
         },
         {
           key: 'allegedBalance',
-          label: 'Alleged Balance Amount',
+          label: 'Amount They Claim You Owe',
           placeholder: 'e.g. $1,420.50',
-        },
-        {
-          key: 'initialContactDate',
-          label: 'Initial Written Notice Date',
-          placeholder: 'e.g. October 5, 2026',
-          isAmberRequired: true,
         },
       ];
 
     case 'written-contract-and-policy-cancellation-letter':
       return [
+        ...base,
         {
           key: 'accountOrPolicyNumber',
-          label: 'Account / Policy Number',
+          label: 'Account or Policy Number to Cancel',
           placeholder: 'e.g. Account #ADT-8839201',
-          isAmberRequired: true,
         },
         {
           key: 'servicePropertyAddress',
-          label: 'Service Property Address',
-          placeholder: 'e.g. 410 Broadway, Suite 200, Santa Monica, CA',
-          isAmberRequired: true,
+          label: 'Service Address on Account',
+          placeholder: 'e.g. 410 Broadway, Santa Monica, CA 90401',
+        },
+        {
+          key: 'effectiveCancellationDate',
+          label: 'Effective Cancellation Date',
+          placeholder: 'e.g. Immediately / October 31, 2026',
         },
       ];
 
     case 'pre-arbitration-notice-of-dispute-and-refund-request':
       return [
+        ...base,
         {
-          key: 'accountOrSerialIdentifier',
-          label: 'Device Serial / Account ID',
-          placeholder: 'e.g. Serial #SN-994827104',
-          isAmberRequired: true,
-        },
-        {
-          key: 'factualSummary',
-          label: 'Defect / Breach Summary',
-          placeholder: 'e.g. Optical sensor glass failed within 12 months',
-          isAmberRequired: true,
+          key: 'productOrServiceName',
+          label: 'Product or Device Name',
+          placeholder: 'e.g. Withings Body Scan / Sonos Speaker',
         },
         {
           key: 'requestedResolutionAmount',
-          label: 'Requested Refund Amount',
-          placeholder: 'e.g. $499.95',
+          label: 'Refund Amount Requested',
+          placeholder: 'e.g. $399.95',
+        },
+        {
+          key: 'factualSummary',
+          label: 'What Feature Was Removed or Broken?',
+          placeholder: 'e.g. Advertised features were placed behind a monthly paywall after purchase',
         },
       ];
 
     case '30-day-mandatory-arbitration-opt-out-notice':
       return [
-        {
-          key: 'accountIdentifier',
-          label: 'Account Email / Device ID',
-          placeholder: 'e.g. user@example.com or Device Serial',
-          isAmberRequired: true,
-        },
+        ...base,
         {
           key: 'productOrPlatformName',
-          label: 'Platform / Product Name',
-          placeholder: 'e.g. Roku Streaming Stick & Smart TV OS',
+          label: 'Product, App, or Service Name',
+          placeholder: 'e.g. Roku Smart TV / Samsung Account',
+        },
+        {
+          key: 'accountIdentifier',
+          label: 'Account Email or Device Serial Number',
+          placeholder: 'e.g. alex@example.com or Serial #SN-99482',
         },
       ];
 
     case 'statutory-health-and-biometric-data-deletion-demand':
       return [
+        ...base,
         {
           key: 'accountEmailOrId',
-          label: 'Registered Account Email',
-          placeholder: 'e.g. user@example.com',
-          isAmberRequired: true,
-        },
-        {
-          key: 'deviceOrAppCategory',
-          label: 'Device / Telemetry Scope',
-          placeholder: 'e.g. Connected Health Metrics & Biometric Telemetry',
+          label: 'Account Email Address to Erase',
+          placeholder: 'e.g. alex@example.com',
         },
       ];
 
     default:
-      return [];
+      return base;
   }
 }
 
-function getDefaultValuesForNotice(
+/**
+ * Clean starting state: leaves personal names, dates, and addresses EMPTY
+ * so they appear as unmistakable Amber [ FILL IN ] tags on the letter preview.
+ */
+function getInitialBlankValues(
   slug: string,
   recipient?: VerifiedRecipientEntry | null
 ): Record<string, string> {
-  const baseSender = {
-    senderFullName: 'Marcus Vance',
-    senderAddressLine1: '410 Broadway, Suite 200',
-    senderCity: 'Santa Monica',
-    senderState: 'CA',
-    senderZip: '90401',
-  };
+  const values: Record<string, string> = {};
 
-  let values: Record<string, string> = { ...baseSender };
-
-  switch (slug) {
-    case 'security-deposit-return-demand-letter':
-      values = {
-        ...values,
-        recipientFormalName: 'Pacific Coast Property Management LLC',
-        recipientAddressLine1: '100 Wilshire Blvd, Suite 1200',
-        recipientCity: 'Santa Monica',
-        recipientState: 'CA',
-        recipientZip: '90401',
-        propertyState: 'CA',
-        depositAmount: '$2,450.00',
-        amountReceivedToDate: '$0.00',
-        balanceRequested: '$2,450.00',
-        responseDays: '10 business days',
-        vacatedPremisesAddress: '',
-        moveOutDate: '',
-      };
-      break;
-
-    case 'tenant-notice-of-intent-to-vacate':
-      values = {
-        ...values,
-        recipientFormalName: 'Pacific Coast Property Management LLC',
-        recipientAddressLine1: '100 Wilshire Blvd, Suite 1200',
-        recipientCity: 'Santa Monica',
-        recipientState: 'CA',
-        recipientZip: '90401',
-        leaseNoticePeriod: '30 days',
-        forwardingAddress: '410 Broadway, Suite 200, Santa Monica, CA 90401',
-        leasedPremisesAddress: '',
-        moveOutDate: '',
-      };
-      break;
-
-    case 'tenant-repair-and-maintenance-notice':
-      values = {
-        ...values,
-        recipientFormalName: 'Pacific Coast Property Management LLC',
-        recipientAddressLine1: '100 Wilshire Blvd, Suite 1200',
-        recipientCity: 'Santa Monica',
-        recipientState: 'CA',
-        recipientZip: '90401',
-        issueCategory: 'plumbing',
-        accessAuthorization: 'Tenant provides permission to enter with 24 hours written notice',
-        dateFirstObserved: 'October 1, 2026',
-        leasedPremisesAddress: '',
-        defectDescription: '',
-      };
-      break;
-
-    case 'fcra-credit-bureau-written-dispute-letter':
-      values = {
-        ...values,
-        bureauEntityId: recipient?.id || 'cra_eqf',
-        senderDob: '1984-06-15',
-        ssnLast4: '4819',
-        disputeReason: 'inaccurate_status',
-        furnisherName: '',
-        partialAccountNumber: '',
-        factualExplanation:
-          'This account was paid in full and should not reflect delinquent or charged-off status.',
-      };
-      break;
-
-    case 'fdcpa-30-day-debt-validation-letter':
-      values = {
-        ...values,
-        allegedOriginalCreditor: 'Citibank, N.A.',
-        allegedBalance: '$1,420.50',
-        communicationPreference:
-          'Written USPS postal correspondence only; cease all telephone contact',
-        collectorReferenceNumber: '',
-        initialContactDate: '',
-      };
-      break;
-
-    case 'written-contract-and-policy-cancellation-letter':
-      values = {
-        ...values,
-        serviceTypeLabel: 'Residential Home Security Monitoring',
-        effectiveCancellationDate: 'Immediately upon statutory receipt',
-        accountOrPolicyNumber: '',
-        servicePropertyAddress: '',
-      };
-      break;
-
-    case 'pre-arbitration-notice-of-dispute-and-refund-request':
-      values = {
-        ...values,
-        productOrServiceName: 'ScanWatch Horizon',
-        purchaseDate: 'October 12, 2025',
-        disputeTriggerCategory: 'hardware_failure',
-        requestedResolutionAmount: '$499.95',
-        accountOrSerialIdentifier: '',
-        factualSummary: '',
-      };
-      break;
-
-    case '30-day-mandatory-arbitration-opt-out-notice':
-      values = {
-        ...values,
-        productOrPlatformName: 'Roku Streaming Stick & Smart TV OS',
-        termsEffectiveOrPurchaseDate: 'Within 30 days of updated Terms of Service',
-        accountIdentifier: '',
-      };
-      break;
-
-    case 'statutory-health-and-biometric-data-deletion-demand':
-      values = {
-        ...values,
-        deviceOrAppCategory: 'Connected Health Metrics & Biometric Telemetry',
-        applicablePrivacyFramework: 'CCPA / CPRA & State Comprehensive Privacy Laws',
-        accountEmailOrId: '',
-      };
-      break;
-
-    default:
-      break;
+  if (slug === 'security-deposit-return-demand-letter') {
+    values.propertyState = 'CA';
+    values.amountReceivedToDate = '$0.00';
+    values.responseDays = '10 business days';
+  } else if (slug === 'tenant-notice-of-intent-to-vacate') {
+    values.leaseNoticePeriod = '30-Day';
+  } else if (slug === 'tenant-repair-and-maintenance-notice') {
+    values.issueCategory = 'Heating / HVAC Failure';
+    values.accessAuthorization = 'Tenant grants maintenance entry with 24-hour advance notice';
+  } else if (slug === 'fcra-credit-bureau-written-dispute-letter') {
+    values.bureauEntityId = recipient?.id || 'cra_eqf';
+    values.disputeReason = 'Account was paid/settled in full but reflects open balance';
+  } else if (slug === 'fdcpa-30-day-debt-validation-letter') {
+    values.communicationPreference =
+      'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail';
+  } else if (slug === 'written-contract-and-policy-cancellation-letter') {
+    values.serviceTypeLabel = 'Home Security & Monitoring Agreement';
+  } else if (slug === 'pre-arbitration-notice-of-dispute-and-refund-request') {
+    values.disputeTriggerCategory = 'Post-Purchase Removal or Paywalling of Advertised Feature';
+  } else if (slug === 'statutory-health-and-biometric-data-deletion-demand') {
+    values.deviceOrAppCategory = 'Connected Health & Biometric Sensor Device';
+    values.applicablePrivacyFramework =
+      'Applicable State Consumer Data & Biometric Privacy Statutes (including CCPA/CPRA, MHMDA, TDPSA, and BIPA)';
   }
 
   if (recipient) {
@@ -406,6 +311,104 @@ function getDefaultValuesForNotice(
   }
 
   return values;
+}
+
+/**
+ * Optional 1-click sample data for visitors who want to see a filled example.
+ */
+function getSampleExampleValues(
+  slug: string,
+  recipient?: VerifiedRecipientEntry | null
+): Record<string, string> {
+  const base = getInitialBlankValues(slug, recipient);
+  const sample: Record<string, string> = {
+    ...base,
+    senderFullName: 'Jordan Taylor',
+    senderAddressLine1: '410 Broadway, Apt 4B',
+    senderCity: 'Santa Monica',
+    senderState: 'CA',
+    senderZip: '90401',
+  };
+
+  if (!recipient) {
+    sample.recipientFormalName = 'Oakridge Property Management LLC';
+    sample.recipientAddressLine1 = '100 Wilshire Blvd, Suite 1200';
+    sample.recipientCity = 'Santa Monica';
+    sample.recipientState = 'CA';
+    sample.recipientZip = '90401';
+  }
+
+  switch (slug) {
+    case 'security-deposit-return-demand-letter':
+      return {
+        ...sample,
+        depositAmount: '$2,450.00',
+        balanceRequested: '$2,450.00',
+        vacatedPremisesAddress: '1420 Ocean Ave, Apt 4B, Santa Monica, CA 90401',
+        moveOutDate: 'September 30, 2026',
+      };
+    case 'tenant-notice-of-intent-to-vacate':
+      return {
+        ...sample,
+        leasedPremisesAddress: '1420 Ocean Ave, Apt 4B, Santa Monica, CA 90401',
+        moveOutDate: 'November 30, 2026',
+        forwardingAddress: '410 Broadway, Apt 4B, Santa Monica, CA 90401',
+      };
+    case 'tenant-repair-and-maintenance-notice':
+      return {
+        ...sample,
+        leasedPremisesAddress: '1420 Ocean Ave, Apt 4B, Santa Monica, CA 90401',
+        dateFirstObserved: 'October 10, 2026',
+        defectDescription: 'Central heating system is non-functional with indoor temperatures dropping below 58°F.',
+      };
+    case 'fcra-credit-bureau-written-dispute-letter':
+      return {
+        ...sample,
+        senderDob: '06/15/1988',
+        ssnLast4: '4829',
+        furnisherName: 'Synchrony Bank / Retail Card',
+        partialAccountNumber: 'XXXX-4829',
+        factualExplanation: 'This account was paid and settled in full on March 15, 2026, with $0 balance remaining.',
+      };
+    case 'fdcpa-30-day-debt-validation-letter':
+      return {
+        ...sample,
+        collectorReferenceNumber: 'PRA-994821',
+        allegedOriginalCreditor: 'Citibank, N.A.',
+        allegedBalance: '$1,420.50',
+        initialContactDate: 'October 5, 2026',
+      };
+    case 'written-contract-and-policy-cancellation-letter':
+      return {
+        ...sample,
+        accountOrPolicyNumber: 'ADT-8839201',
+        servicePropertyAddress: '410 Broadway, Apt 4B, Santa Monica, CA 90401',
+        effectiveCancellationDate: 'October 31, 2026',
+      };
+    case 'pre-arbitration-notice-of-dispute-and-refund-request':
+      return {
+        ...sample,
+        productOrServiceName: `${recipient?.brandName || 'Withings'} Connected Smart Scale`,
+        accountOrSerialIdentifier: 'SN-994827104',
+        purchaseDate: 'November 15, 2025',
+        requestedResolutionAmount: '$399.95',
+        factualSummary: 'Core health metrics advertised as included at purchase were locked behind a recurring subscription paywall.',
+      };
+    case '30-day-mandatory-arbitration-opt-out-notice':
+      return {
+        ...sample,
+        productOrPlatformName: `${recipient?.brandName || 'Roku'} Smart TV & Streaming Account`,
+        accountIdentifier: 'jordan.taylor@example.com',
+        termsEffectiveOrPurchaseDate: 'October 10, 2026',
+      };
+    case 'statutory-health-and-biometric-data-deletion-demand':
+      return {
+        ...sample,
+        accountEmailOrId: 'jordan.taylor@example.com',
+      };
+    default:
+      return sample;
+  }
 }
 
 function getSlugForRecipient(rec: VerifiedRecipientEntry): string {
@@ -448,7 +451,6 @@ export function InteractiveHomeWorkbench({
 }: InteractiveHomeWorkbenchProps = {}) {
   const router = useRouter();
 
-  // 1. Notice selection state
   const [activeSlug, setActiveSlug] = useState<string>(() => {
     const found = getNoticeBySlug(initialSlug);
     return found ? found.slug : 'security-deposit-return-demand-letter';
@@ -458,7 +460,6 @@ export function InteractiveHomeWorkbench({
     return getNoticeBySlug(activeSlug) || ALL_NOTICE_CARTRIDGES[1];
   }, [activeSlug]);
 
-  // 2. Verified recipient state
   const [selectedRecipient, setSelectedRecipient] = useState<VerifiedRecipientEntry | null>(() => {
     const defaultRecipientId = DEFAULT_RECIPIENT_IDS_BY_SLUG[initialSlug];
     if (defaultRecipientId) {
@@ -467,29 +468,23 @@ export function InteractiveHomeWorkbench({
     return null;
   });
 
-  // 3. User form values state (pre-seeded with realistic specimen data)
   const [userValues, setUserValues] = useState<Record<string, string>>(() => {
     const defaultRecipientId = DEFAULT_RECIPIENT_IDS_BY_SLUG[initialSlug];
     const rec = defaultRecipientId
       ? VERIFIED_RECIPIENTS.find((r) => r.id === defaultRecipientId) || null
       : null;
-    return getDefaultValuesForNotice(initialSlug, rec);
+    return getInitialBlankValues(initialSlug, rec);
   });
 
-  // 4. Dispatch tier state
   const [selectedTier, setSelectedTier] = useState<MailTierId>(() => {
     return activeNotice.recommendedTier || 'certified';
   });
 
-  // 5. Active focused field key & electronic signature preview toggle
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
-  const [isSignatureAdoptedPreview, setIsSignatureAdoptedPreview] = useState<boolean>(false);
-
-  // 6. Omnibox search & category filter state
+  const [isSampleFilled, setIsSampleFilled] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [categoryFilter, setCategoryFilter] = useState<CartridgeCategoryFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<NoticeCategoryFilter>('all');
 
-  // Input element refs for smooth focus scrolling
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Invariant 1: Hard NAICS 713940 Fitness Blocker check
@@ -498,8 +493,7 @@ export function InteractiveHomeWorkbench({
     return isFitnessEntity(searchQuery.trim());
   }, [searchQuery]);
 
-  // Cartridge switching helper
-  const selectCartridge = useCallback(
+  const selectNoticeTemplate = useCallback(
     (slug: string, explicitRecipientId?: string) => {
       const notice = getNoticeBySlug(slug);
       if (!notice) return;
@@ -511,26 +505,27 @@ export function InteractiveHomeWorkbench({
         : null;
 
       setSelectedRecipient(recipient);
-      setUserValues(getDefaultValuesForNotice(notice.slug, recipient));
+      setUserValues(getInitialBlankValues(notice.slug, recipient));
       setSelectedTier(notice.recommendedTier || 'certified');
       setActiveFieldKey(null);
+      setIsSampleFilled(false);
     },
     []
   );
 
-  // Cross-Component Event Listener: docketstamp:select-notice
+  // Listen for selection events from the catalog below the fold
   useEffect(() => {
     const handleSelectNoticeEvent = (event: Event) => {
       const customEvent = event as CustomEvent<{ slug?: string; recipientId?: string }>;
       if (customEvent.detail) {
         const { slug, recipientId } = customEvent.detail;
         if (slug) {
-          selectCartridge(slug, recipientId);
+          selectNoticeTemplate(slug, recipientId);
         } else if (recipientId) {
           const foundRecipient = VERIFIED_RECIPIENTS.find((r) => r.id === recipientId);
           if (foundRecipient) {
             const targetSlug = getSlugForRecipient(foundRecipient);
-            selectCartridge(targetSlug, recipientId);
+            selectNoticeTemplate(targetSlug, recipientId);
           }
         }
         const el = document.getElementById('workbench');
@@ -544,18 +539,42 @@ export function InteractiveHomeWorkbench({
     return () => {
       window.removeEventListener('docketstamp:select-notice', handleSelectNoticeEvent);
     };
-  }, [selectCartridge]);
+  }, [selectNoticeTemplate]);
 
-  // Handle individual field edits
   const handleValueChange = (key: string, value: string) => {
-    setUserValues((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setUserValues((prev) => {
+      const next = { ...prev, [key]: value };
+      // Keep balanceRequested synced with depositAmount on homepage unless user overrides
+      if (key === 'depositAmount' && activeNotice.slug === 'security-deposit-return-demand-letter') {
+        next.balanceRequested = value;
+      }
+      return next;
+    });
   };
 
-  // Handle verified recipient dropdown selection
+  const handleToggleSample = () => {
+    if (isSampleFilled) {
+      setUserValues(getInitialBlankValues(activeNotice.slug, selectedRecipient));
+      setIsSampleFilled(false);
+    } else {
+      setUserValues(getSampleExampleValues(activeNotice.slug, selectedRecipient));
+      setIsSampleFilled(true);
+    }
+  };
+
   const handleRecipientChange = (recipientId: string) => {
+    if (!recipientId) {
+      setSelectedRecipient(null);
+      setUserValues((prev) => ({
+        ...prev,
+        recipientFormalName: '',
+        recipientAddressLine1: '',
+        recipientCity: '',
+        recipientState: '',
+        recipientZip: '',
+      }));
+      return;
+    }
     const recipient = VERIFIED_RECIPIENTS.find((r) => r.id === recipientId) || null;
     setSelectedRecipient(recipient);
     if (recipient) {
@@ -573,7 +592,6 @@ export function InteractiveHomeWorkbench({
     }
   };
 
-  // Omnibox search results
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q || isRestrictedFitness) return { recipients: [], notices: [] };
@@ -597,41 +615,51 @@ export function InteractiveHomeWorkbench({
 
   const handleSelectRecipientMatch = (rec: VerifiedRecipientEntry) => {
     const targetSlug = getSlugForRecipient(rec);
-    selectCartridge(targetSlug, rec.id);
+    selectNoticeTemplate(targetSlug, rec.id);
     setSearchQuery('');
   };
 
-  // Filtered notice cartridges by category filter tab
   const filteredNotices = useMemo(() => {
     if (categoryFilter === 'all') return ALL_NOTICE_CARTRIDGES;
     return ALL_NOTICE_CARTRIDGES.filter((n) => n.category === categoryFilter);
   }, [categoryFilter]);
 
-  // Verified recipients compatible with active notice
   const compatibleRecipients = useMemo(() => {
     return getRecipientsForNotice(activeNotice);
   }, [activeNotice]);
 
-  // 50-State list sorted alphabetically
   const stateStatutesList = useMemo(() => {
     return Object.values(STATE_STATUTES).sort((a, b) => a.stateName.localeCompare(b.stateName));
   }, []);
 
-  // Currently resolved state statute (for Cartridge #02)
   const currentStatute: StateStatuteEntry = useMemo(() => {
     const code = (userValues.propertyState || 'CA').toUpperCase();
     return STATE_STATUTES[code] || STATE_STATUTES['CA'];
   }, [userValues.propertyState]);
 
-  // Unfilled required fields counter
-  const unfilledCount = useMemo(() => {
-    return activeNotice.fields.filter((field) => {
-      const val = userValues[field.key];
-      return !val || val.trim().length === 0;
-    }).length;
-  }, [activeNotice, userValues]);
+  const editableFields = useMemo(() => {
+    const baseFields = getCoreEditableFields(activeNotice, compatibleRecipients.length > 0);
+    // If user clicked a field on the letter that isn't in the default short list, surface it dynamically!
+    if (
+      activeFieldKey &&
+      !baseFields.some((f) => f.key === activeFieldKey) &&
+      activeFieldKey !== 'propertyState'
+    ) {
+      const noticeField = activeNotice.fields.find((f) => f.key === activeFieldKey);
+      if (noticeField) {
+        return [
+          ...baseFields,
+          {
+            key: noticeField.key,
+            label: noticeField.label,
+            placeholder: noticeField.placeholder || `Enter ${noticeField.label.toLowerCase()}...`,
+          },
+        ];
+      }
+    }
+    return baseFields;
+  }, [activeNotice, compatibleRecipients.length, activeFieldKey]);
 
-  // Build hydration URL with current state
   const buildHydrationUrl = useCallback(
     (focusField?: string) => {
       const searchParams = new URLSearchParams();
@@ -652,49 +680,53 @@ export function InteractiveHomeWorkbench({
     [selectedTier, selectedRecipient, userValues, activeNotice.slug]
   );
 
-  // Handle token click on paper sheet
-  const handleTokenClick = useCallback(
-    (fieldKey: string) => {
-      setActiveFieldKey(fieldKey);
-      const targetEl = inputRefs.current[fieldKey];
+  // When a user clicks ANY highlighted tag or name on the letter preview:
+  // Focus the matching input box in the left column (creating it if needed)
+  const handleTokenClick = useCallback((fieldKey: string) => {
+    const mappedKey =
+      fieldKey === 'senderFullAddress'
+        ? 'senderFullName'
+        : fieldKey === 'recipientFullAddress'
+        ? 'recipientFormalName'
+        : fieldKey;
+
+    setActiveFieldKey(mappedKey);
+    setTimeout(() => {
+      const targetEl = inputRefs.current[mappedKey];
       if (targetEl) {
         targetEl.focus();
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        router.push(buildHydrationUrl(fieldKey));
       }
-    },
-    [buildHydrationUrl, router]
-  );
+    }, 30);
+  }, []);
 
-  // Submit to workspace
   const handleOpenWorkspace = (e: React.FormEvent) => {
     e.preventDefault();
     router.push(buildHydrationUrl());
   };
 
-  // Pricing metadata
   const tierPrices: Record<MailTierId, string> = {
     first_class: '$12.95',
     certified: '$19.95',
     certified_return_receipt: '$27.95',
   };
 
-  // Interpolated document for <LivePaperSheet />
+  // Real-time document interpolation — no fake hardcoded names when userValues are blank!
   const interpolatedDoc = useMemo(() => {
     const stateSuffix = (
       userValues.propertyState ||
+      selectedRecipient?.state ||
       userValues.recipientState ||
-      'CA'
+      'US'
     ).toUpperCase();
     const docketId = `DS-2026-88419-${stateSuffix}`;
 
     const senderAddress = {
-      name: userValues.senderFullName || 'Marcus Vance',
-      address_line1: userValues.senderAddressLine1 || '410 Broadway, Suite 200',
-      address_city: userValues.senderCity || 'Santa Monica',
-      address_state: userValues.senderState || 'CA',
-      address_zip: userValues.senderZip || '90401',
+      name: userValues.senderFullName || '',
+      address_line1: userValues.senderAddressLine1 || '',
+      address_city: userValues.senderCity || '',
+      address_state: userValues.senderState || '',
+      address_zip: userValues.senderZip || '',
       address_country: 'US',
     };
 
@@ -713,11 +745,11 @@ export function InteractiveHomeWorkbench({
           address_country: 'US',
         }
       : {
-          name: userValues.recipientFormalName || 'Pacific Coast Property Management LLC',
-          address_line1: userValues.recipientAddressLine1 || '100 Wilshire Blvd, Suite 1200',
-          address_city: userValues.recipientCity || 'Santa Monica',
-          address_state: userValues.recipientState || 'CA',
-          address_zip: userValues.recipientZip || '90401',
+          name: userValues.recipientFormalName || '',
+          address_line1: userValues.recipientAddressLine1 || '',
+          address_city: userValues.recipientCity || '',
+          address_state: userValues.recipientState || '',
+          address_zip: userValues.recipientZip || '',
           address_country: 'US',
         };
 
@@ -731,39 +763,35 @@ export function InteractiveHomeWorkbench({
     });
   }, [activeNotice, userValues, selectedRecipient, selectedTier]);
 
-  const quickFields = useMemo(() => {
-    return getQuickInputFields(activeNotice);
-  }, [activeNotice]);
-
   return (
     <section
       id="workbench"
-      className="relative w-full bg-[#0F172A] text-slate-100 py-8 lg:py-12 border-b border-slate-800"
+      className="relative w-full bg-[#0F172A] text-slate-100 py-8 lg:py-10 border-b border-slate-800"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ========================================================= */}
-          {/* LEFT COLUMN: Conversion Funnel & Live Controls (lg:col-span-5) */}
+          {/* LEFT COLUMN: Step-by-Step Interactive Builder (5 Cols)    */}
           {/* ========================================================= */}
           <div className="lg:col-span-5 space-y-5">
-            {/* 1. Eyebrow & Headline */}
+            {/* 1. Customer Value Proposition Headline */}
             <div className="space-y-2.5">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-wider bg-sky-950/80 text-sky-400 border border-sky-800/80 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                <span>OFFICIAL DOCUMENT &amp; USPS CERTIFIED MAIL® REGISTRY</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-sans font-semibold bg-sky-950/90 text-sky-300 border border-sky-800/80">
+                <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
+                <span>Printed &amp; Mailed via Official USPS Certified Mail®</span>
               </div>
-              <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight text-balance leading-tight">
-                Execute Statutory Legal Notices in 60 Seconds.
+              <h1 className="font-serif text-2xl sm:text-3xl lg:text-[34px] font-bold text-white tracking-tight text-balance leading-[1.18]">
+                Send Formal Legal Notices They Can&apos;t Ignore.
               </h1>
               <p className="text-pretty text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Pick a verified corporate recipient or statutory template below. Watch your state
-                citations, USPS CASS™ routing, and variables snap onto the 8.5&quot; × 11&quot;
-                instrument in real time.
+                Landlords, credit bureaus, and corporations routinely ignore emails and phone calls.
+                Fill in the blanks below—we cite the law, print your letter, and mail it via
+                tracked USPS Certified Mail® in 60 seconds without a trip to the Post Office.
               </p>
             </div>
 
-            {/* 2. Instant Recipient & Situation Omnibox */}
-            <div className="space-y-2.5">
+            {/* 2. Company & Situation Search Bar + Popular Chips */}
+            <div className="space-y-2">
               <div className="relative">
                 <div className="relative flex items-center">
                   <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
@@ -771,42 +799,42 @@ export function InteractiveHomeWorkbench({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search 38 corporate legal depts (Equifax, ADT, Withings, Tesla) or notice type..."
-                    className="w-full pl-10 pr-12 py-2.5 bg-slate-950/90 border border-slate-700/80 rounded-xl text-xs sm:text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-inner"
+                    placeholder="Search 38 companies (Equifax, ADT, Comcast, Withings) or topic..."
+                    className="w-full pl-10 pr-14 py-2.5 bg-slate-950/90 border border-slate-700 rounded-xl text-xs sm:text-sm font-sans text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-inner"
                   />
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 text-xs font-mono text-slate-400 hover:text-white transition"
+                      className="absolute right-3 text-xs font-sans text-slate-400 hover:text-white transition"
                     >
                       Clear
                     </button>
                   )}
                 </div>
 
-                {/* Invariant 1: NAICS 713940 Restricted Fitness Entity Compliance Card */}
+                {/* Invariant 1: NAICS 713940 Restricted Fitness Entity Alert */}
                 {isRestrictedFitness && (
-                  <div className="mt-2.5 p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/60 text-amber-200 text-xs font-mono space-y-1 shadow-lg">
-                    <div className="flex items-center gap-2 font-bold text-amber-400">
+                  <div className="mt-2.5 p-3.5 rounded-xl bg-amber-950/50 border border-amber-500/70 text-amber-200 text-xs space-y-1 shadow-lg">
+                    <div className="flex items-center gap-2 font-bold text-amber-300">
                       <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>NAICS 713940 Compliance Exclusion</span>
+                      <span>Gym &amp; Fitness Club Memberships Not Supported</span>
                     </div>
-                    <p className="text-[11px] leading-relaxed text-amber-300/90 font-sans">
-                      NAICS 713940 Exclusion: Physical gyms, health clubs, and fitness studio
-                      memberships are not supported on DocketStamp. Consumer electronics &amp;
-                      hardware OEMs (Withings, Garmin, Sonos, LG, Apple) are fully supported.
+                    <p className="text-[11px] leading-relaxed text-amber-200/90 font-sans">
+                      DocketStamp does not process cancellations for gyms, health clubs, or fitness
+                      studios (NAICS 713940). Connected consumer electronics and smart hardware
+                      brands (Withings, Garmin, Sonos, LG, Samsung, Apple) are fully supported.
                     </p>
                   </div>
                 )}
 
-                {/* Omnibox Search Results Dropdown */}
+                {/* Search Results Dropdown */}
                 {searchQuery.trim().length > 0 && !isRestrictedFitness && (
-                  <div className="mt-2 p-2 rounded-xl bg-slate-950/95 border border-slate-700 shadow-2xl max-h-72 overflow-y-auto space-y-2 font-mono text-xs z-20">
+                  <div className="mt-2 p-2 rounded-xl bg-slate-950 border border-slate-700 shadow-2xl max-h-72 overflow-y-auto space-y-2 text-xs z-20">
                     {searchResults.recipients.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-[10px] text-slate-400 uppercase tracking-wider font-bold">
-                          Verified Corporate Legal Recipients
+                        <div className="px-2 py-1 text-[11px] text-slate-400 font-semibold">
+                          Pre-Addressed Company Legal Departments
                         </div>
                         <div className="space-y-1">
                           {searchResults.recipients.map((rec) => (
@@ -822,18 +850,18 @@ export function InteractiveHomeWorkbench({
                                 <div className="font-semibold text-white group-hover:text-sky-300 flex items-center gap-1.5">
                                   <span>{rec.brandName}</span>
                                   <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-800/60">
-                                    CASS™
+                                    ✓ Official Legal Dept
                                   </span>
                                 </div>
-                                <div className="text-[10px] text-slate-400 truncate max-w-[260px]">
-                                  {rec.formalRecipientLine}
+                                <div className="text-[11px] text-slate-400 truncate max-w-[260px]">
+                                  {rec.formalRecipientLine} ({rec.city}, {rec.state})
                                 </div>
                               </button>
                               <Link
                                 href={`/notices/${getSlugForRecipient(rec)}?recipientId=${rec.id}&tier=${selectedTier}`}
-                                className="px-2 py-1 text-[10px] rounded bg-sky-600/30 hover:bg-sky-600 text-sky-200 hover:text-white transition shrink-0 ml-2"
+                                className="px-2.5 py-1 text-[11px] font-semibold rounded bg-sky-600 hover:bg-sky-500 text-white transition shrink-0 ml-2"
                               >
-                                Draft &amp; Dispatch &rarr;
+                                Start &rarr;
                               </Link>
                             </div>
                           ))}
@@ -843,8 +871,8 @@ export function InteractiveHomeWorkbench({
 
                     {searchResults.notices.length > 0 && (
                       <div className="border-t border-slate-800 pt-1.5">
-                        <div className="px-2 py-1 text-[10px] text-slate-400 uppercase tracking-wider font-bold">
-                          Notice Cartridges
+                        <div className="px-2 py-1 text-[11px] text-slate-400 font-semibold">
+                          Matching Legal Notices
                         </div>
                         <div className="space-y-1">
                           {searchResults.notices.map((n) => (
@@ -852,7 +880,7 @@ export function InteractiveHomeWorkbench({
                               key={n.slug}
                               type="button"
                               onClick={() => {
-                                selectCartridge(n.slug);
+                                selectNoticeTemplate(n.slug);
                                 setSearchQuery('');
                               }}
                               className="w-full p-2 rounded-lg hover:bg-slate-800 transition text-left flex items-center justify-between group"
@@ -861,12 +889,12 @@ export function InteractiveHomeWorkbench({
                                 <div className="font-semibold text-white group-hover:text-sky-300">
                                   {n.title}
                                 </div>
-                                <div className="text-[10px] text-slate-400 line-clamp-1 font-sans">
+                                <div className="text-[11px] text-slate-400 line-clamp-1">
                                   {n.shortDescription}
                                 </div>
                               </div>
-                              <span className="text-[10px] text-sky-400 group-hover:translate-x-0.5 transition-transform">
-                                Load &rarr;
+                              <span className="text-xs font-semibold text-sky-400 shrink-0 ml-2">
+                                Select &rarr;
                               </span>
                             </button>
                           ))}
@@ -877,74 +905,70 @@ export function InteractiveHomeWorkbench({
                     {searchResults.recipients.length === 0 &&
                       searchResults.notices.length === 0 && (
                         <div className="p-3 text-center text-slate-400 text-xs">
-                          No matches found for &quot;{searchQuery}&quot;. Try Equifax, ADT, Withings,
-                          or Security Deposit.
+                          No matches for &quot;{searchQuery}&quot;. You can enter any custom landlord
+                          or company address below.
                         </div>
                       )}
                   </div>
                 )}
               </div>
 
-              {/* Quick Select Preset Chips */}
-              <div className="space-y-1.5">
-                <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Quick-Select Presets:</span>
-                  <span className="text-[10px] text-slate-500">1-Click Routing</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_SELECT_CHIPS.map((chip) => {
-                    const isChipActive =
-                      activeNotice.slug === chip.slug &&
-                      (!chip.recipientId || selectedRecipient?.id === chip.recipientId);
-                    return (
-                      <button
-                        key={chip.label}
-                        type="button"
-                        onClick={() => selectCartridge(chip.slug, chip.recipientId)}
-                        className={`px-2.5 py-1 text-xs font-mono rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
-                          isChipActive
-                            ? 'bg-sky-500/20 border-sky-400 text-sky-200 font-semibold shadow-sm shadow-sky-500/20'
-                            : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700 hover:text-white'
-                        }`}
-                      >
-                        <span>{chip.label}</span>
-                        {isChipActive && <Check className="w-3 h-3 text-sky-400" />}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Popular 1-Click Scenario Chips */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[11px] font-sans text-slate-400 font-medium mr-1">
+                  Popular:
+                </span>
+                {POPULAR_SCENARIO_CHIPS.map((chip) => {
+                  const isChipActive =
+                    activeNotice.slug === chip.slug &&
+                    (!chip.recipientId || selectedRecipient?.id === chip.recipientId);
+                  return (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => selectNoticeTemplate(chip.slug, chip.recipientId)}
+                      className={`px-2.5 py-1 text-xs font-sans rounded-lg border transition cursor-pointer flex items-center gap-1 ${
+                        isChipActive
+                          ? 'bg-sky-500 text-slate-950 border-sky-400 font-bold shadow-sm'
+                          : 'bg-slate-900/90 border-slate-700/80 text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <span>{chip.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* 3. Interactive Cartridge Switcher & Live Micro-Editor */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-xl">
-              {/* Cartridge Selection Header & Category Filter Tabs */}
+            {/* 3. Step 1 & Step 2 Card: Choose Notice + Fill In Your Blanks */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+              {/* STEP 1: Choose What You Need to Send */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label
-                    htmlFor="cartridge-selector"
-                    className="text-xs font-mono text-slate-300 uppercase tracking-wider font-semibold"
+                    htmlFor="notice-template-selector"
+                    className="text-xs font-sans font-bold uppercase tracking-wider text-sky-400"
                   >
-                    Select Notice Cartridge (9 Ready):
+                    Step 1 &bull; Choose Your Notice
                   </label>
-                  <span className="text-[11px] font-mono text-sky-400 font-medium">
+                  <span className="text-[11px] font-sans text-slate-400">
                     {activeNotice.usesStateStatuteLookup
-                      ? '50-State Statutory Engine'
-                      : 'Federal / Corporate Matrix'}
+                      ? 'Includes 50-State Law Citations'
+                      : 'Includes Federal & Contract Citations'}
                   </span>
                 </div>
 
-                {/* Category Pills */}
-                <div className="flex flex-wrap gap-1 pb-1">
-                  {CARTRIDGE_CATEGORIES.map((cat) => (
+                {/* Category Filter Pills */}
+                <div className="flex flex-wrap gap-1">
+                  {NOTICE_CATEGORIES.map((cat) => (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => setCategoryFilter(cat.id)}
-                      className={`px-2 py-0.5 text-[11px] font-mono rounded transition cursor-pointer ${
+                      className={`px-2.5 py-1 text-[11px] font-sans rounded-md transition cursor-pointer ${
                         categoryFilter === cat.id
-                          ? 'bg-slate-800 text-sky-300 font-semibold border border-slate-700'
-                          : 'text-slate-400 hover:text-slate-200 bg-slate-950/40 border border-transparent'
+                          ? 'bg-slate-800 text-white font-semibold border border-slate-600'
+                          : 'text-slate-400 hover:text-slate-200 bg-slate-950/50 border border-transparent'
                       }`}
                     >
                       {cat.label}
@@ -952,107 +976,136 @@ export function InteractiveHomeWorkbench({
                   ))}
                 </div>
 
-                {/* Cartridge Dropdown Selector */}
                 <select
-                  id="cartridge-selector"
+                  id="notice-template-selector"
                   value={activeNotice.slug}
-                  onChange={(e) => selectCartridge(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-mono bg-slate-950/90 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition cursor-pointer"
+                  onChange={(e) => selectNoticeTemplate(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs sm:text-sm font-sans font-semibold bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-sky-500 transition cursor-pointer"
                 >
                   {filteredNotices.map((n) => (
                     <option key={n.slug} value={n.slug}>
-                      {n.title} {n.usesStateStatuteLookup ? '• (50-State Law)' : ''}
+                      {n.title}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Live Interactive Inputs Box */}
-              <div className="space-y-3 pt-2 border-t border-slate-800">
-                {/* A. 50-State Selector if usesStateStatuteLookup */}
+              {/* STEP 2: Fill In the Highlighted Blanks */}
+              <div className="space-y-3 pt-3 border-t border-slate-800">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-sans font-bold uppercase tracking-wider text-amber-400 block">
+                      Step 2 &bull; Fill In Your Details
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Type below or click any highlighted box on the letter to edit
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleSample}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-sans font-medium text-slate-200 hover:text-white transition flex items-center gap-1 shrink-0 cursor-pointer"
+                  >
+                    {isSampleFilled ? (
+                      <>
+                        <RotateCcw className="w-3 h-3 text-amber-400" />
+                        <span>Clear Sample</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 text-sky-400" />
+                        <span>See Filled Example</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* A. 50-State Selector (When Notice Uses State Law) */}
                 {activeNotice.usesStateStatuteLookup && (
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                     <label
                       htmlFor="state-statute-select"
-                      className="text-xs font-mono text-slate-300 flex items-center justify-between"
+                      className="text-xs font-sans font-semibold text-slate-200 flex items-center justify-between"
                     >
-                      <span className="font-semibold text-slate-200">
-                        Governing State Jurisdiction:
+                      <span>Which State Is the Rental Property In?</span>
+                      <span className="text-[11px] text-emerald-400 font-medium">
+                        Auto-Cites State Law
                       </span>
-                      <span className="text-[11px] text-sky-400">50 States + DC</span>
                     </label>
                     <select
                       id="state-statute-select"
                       value={userValues.propertyState || 'CA'}
                       onChange={(e) => handleValueChange('propertyState', e.target.value)}
-                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition cursor-pointer"
+                      className="w-full px-3 py-2 text-xs font-sans font-medium bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition cursor-pointer"
                     >
                       {stateStatutesList.map((st) => (
                         <option key={st.stateCode} value={st.stateCode}>
-                          {st.stateName} ({st.stateCode}) — Deadline: {st.returnDeadlineLabel}
+                          {st.stateName} — Statutory Deadline: {st.returnDeadlineLabel} (
+                          {st.statuteCitation})
                         </option>
                       ))}
                     </select>
-                    {/* Live statutory citation badge */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] font-mono">
-                      <span className="px-2 py-0.5 rounded bg-sky-950/80 border border-sky-800 text-sky-300 font-semibold">
-                        {currentStatute.statuteCitation}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                        {currentStatute.returnDeadlineLabel}
-                      </span>
-                    </div>
                   </div>
                 )}
 
-                {/* B. Verified Recipient Dropdown if applicable */}
+                {/* B. Pre-Addressed Company Legal Department Selector (or Custom Company) */}
                 {compatibleRecipients.length > 0 && (
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <div className="space-y-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                     <label
                       htmlFor="verified-recipient-select"
-                      className="text-xs font-mono text-slate-300 flex items-center justify-between"
+                      className="text-xs font-sans font-semibold text-slate-200 flex items-center justify-between"
                     >
-                      <span className="font-semibold text-slate-200">
-                        Verified Corporate Recipient:
+                      <span>Who Are You Sending This To?</span>
+                      <span className="text-[11px] text-emerald-400 font-medium">
+                        Official Legal Dept Pre-Addressed
                       </span>
-                      <span className="text-[11px] text-emerald-400">CASS™ Address Engine</span>
                     </label>
                     <select
                       id="verified-recipient-select"
                       value={selectedRecipient?.id || ''}
                       onChange={(e) => handleRecipientChange(e.target.value)}
-                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition cursor-pointer"
+                      className="w-full px-3 py-2 text-xs font-sans font-medium bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition cursor-pointer"
                     >
                       {compatibleRecipients.map((rec) => (
                         <option key={rec.id} value={rec.id}>
-                          {rec.brandName} — {rec.city}, {rec.state}
+                          {rec.brandName} — {rec.formalRecipientLine}
                         </option>
                       ))}
+                      {activeNotice.slug !== 'fcra-credit-bureau-written-dispute-letter' && (
+                        <option value="">+ Enter a Different Company Name...</option>
+                      )}
                     </select>
 
-                    {/* Live CASS Verified address badge */}
-                    {selectedRecipient && (
-                      <div className="text-[11px] font-mono text-emerald-400 flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/60 rounded px-2.5 py-1 mt-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {selectedRecipient ? (
+                      <div className="text-[11px] font-sans text-emerald-300 flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/50 rounded-lg px-2.5 py-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span className="truncate">
-                          CASS™ VERIFIED: {selectedRecipient.addressLine1}, {selectedRecipient.city}
-                          , {selectedRecipient.state} {selectedRecipient.zip}
+                          Pre-addressed to: <strong>{selectedRecipient.addressLine1}</strong>,{' '}
+                          {selectedRecipient.city}, {selectedRecipient.state}{' '}
+                          {selectedRecipient.zip}
                         </span>
                       </div>
+                    ) : (
+                      <input
+                        id="workbench-input-recipientFormalName"
+                        ref={(el) => {
+                          inputRefs.current['recipientFormalName'] = el;
+                        }}
+                        type="text"
+                        value={userValues.recipientFormalName || ''}
+                        onChange={(e) => handleValueChange('recipientFormalName', e.target.value)}
+                        onFocus={() => setActiveFieldKey('recipientFormalName')}
+                        onBlur={() => setActiveFieldKey(null)}
+                        placeholder="Type company or recipient name..."
+                        className="w-full px-3 py-2 text-xs font-sans bg-slate-900 rounded-lg border border-amber-500/60 text-white placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                      />
                     )}
                   </div>
                 )}
 
-                {/* C. Quick Variable Inputs (Includes Glowing Amber Unfilled Tags) */}
-                <div className="space-y-2.5 pt-1">
-                  <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                    <span>Live Instrument Parameters:</span>
-                    <span className="text-[10px] text-amber-400 font-bold">
-                      Amber Tags on Sheet Update Live
-                    </span>
-                  </div>
-
-                  {quickFields.map((field) => {
+                {/* C. Editable Blank Inputs (Your Name + Recipient + Notice Blanks) */}
+                <div className="space-y-2.5">
+                  {editableFields.map((field) => {
                     const isFilled =
                       typeof userValues[field.key] === 'string' &&
                       userValues[field.key].trim().length > 0;
@@ -1063,19 +1116,18 @@ export function InteractiveHomeWorkbench({
                         <div className="flex items-center justify-between">
                           <label
                             htmlFor={`workbench-input-${field.key}`}
-                            className="text-xs font-mono text-slate-300 flex items-center gap-1.5"
+                            className="text-xs font-sans font-medium text-slate-200 flex items-center gap-1.5"
                           >
                             <span>{field.label}</span>
-                            {field.isAmberRequired && !isFilled && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#FEF3C7] border border-[#D97706] text-[#92400E] uppercase animate-pulse">
-                                Required Tag
-                              </span>
-                            )}
                           </label>
-                          {isFilled && (
-                            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                          {isFilled ? (
+                            <span className="text-[11px] font-sans text-emerald-400 flex items-center gap-1 font-medium">
                               <Check className="w-3 h-3" />
-                              Filled
+                              Added to letter
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-sans font-bold bg-[#FEF3C7] text-[#92400E]">
+                              Highlighted on letter
                             </span>
                           )}
                         </div>
@@ -1090,12 +1142,12 @@ export function InteractiveHomeWorkbench({
                           onFocus={() => setActiveFieldKey(field.key)}
                           onBlur={() => setActiveFieldKey(null)}
                           placeholder={field.placeholder}
-                          className={`w-full px-3 py-2 text-xs font-mono bg-slate-950/80 rounded-lg border transition text-white placeholder-slate-500 focus:outline-none ${
+                          className={`w-full px-3 py-2 text-xs sm:text-sm font-sans bg-slate-950/90 rounded-lg border transition text-white placeholder-slate-500 focus:outline-none ${
                             isFocused
-                              ? 'border-sky-500 ring-1 ring-sky-500'
-                              : field.isAmberRequired && !isFilled
+                              ? 'border-sky-400 ring-2 ring-sky-500/40'
+                              : !isFilled
                               ? 'border-amber-500/60 hover:border-amber-400'
-                              : 'border-slate-700/80 hover:border-slate-600'
+                              : 'border-slate-700 hover:border-slate-600'
                           }`}
                         />
                       </div>
@@ -1105,21 +1157,23 @@ export function InteractiveHomeWorkbench({
               </div>
             </div>
 
-            {/* 4. Inline 3-Tier USPS Dispatch Selector */}
+            {/* 4. Step 3: Choose USPS Mail Option */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-300 uppercase tracking-wider font-semibold">
-                  USPS Dispatch Mail Tier:
+              <div className="flex items-center justify-between text-xs font-sans">
+                <span className="text-slate-200 font-bold uppercase tracking-wider">
+                  Step 3 &bull; Choose USPS Delivery &amp; Proof
                 </span>
-                <span className="text-[11px] text-slate-400">Updates Docket Stamp Live</span>
+                <span className="text-[11px] text-slate-400">
+                  Includes printing, envelope &amp; USPS postage
+                </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {(['first_class', 'certified', 'certified_return_receipt'] as MailTierId[]).map(
                   (tierId) => {
                     const tier = DOCKET_PRICING_TIERS[tierId];
                     const isSelected = selectedTier === tierId;
-                    const isCourtStandard = tierId === 'certified';
-                    const isMaxProof = tierId === 'certified_return_receipt';
+                    const isPopular = tierId === 'certified';
+                    const isBestProof = tierId === 'certified_return_receipt';
 
                     return (
                       <button
@@ -1128,43 +1182,43 @@ export function InteractiveHomeWorkbench({
                         onClick={() => setSelectedTier(tierId)}
                         className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between relative ${
                           isSelected
-                            ? 'bg-slate-800/95 border-sky-400 ring-1 ring-sky-400 shadow-md shadow-sky-500/15'
+                            ? 'bg-slate-800 border-sky-400 ring-1 ring-sky-400 shadow-md'
                             : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
                         }`}
                       >
-                        {isCourtStandard && (
-                          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-400 text-slate-950 uppercase shadow-sm">
-                            Court Standard
+                        {isPopular && (
+                          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[9px] font-sans font-bold bg-sky-400 text-slate-950 uppercase">
+                            Most Popular
                           </span>
                         )}
-                        {isMaxProof && (
-                          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-400 text-slate-950 uppercase shadow-sm">
-                            Max Proof
+                        {isBestProof && (
+                          <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[9px] font-sans font-bold bg-emerald-400 text-slate-950 uppercase">
+                            Court Proof
                           </span>
                         )}
                         <div>
-                          <div className="font-mono text-xs font-bold text-white flex items-center justify-between">
+                          <div className="font-sans text-xs font-bold text-white flex items-center justify-between">
                             <span>
                               {tierId === 'first_class'
                                 ? 'First-Class'
                                 : tierId === 'certified'
                                 ? 'Certified Mail®'
-                                : 'Certified + Return'}
+                                : 'Certified + Signature'}
                             </span>
                             <span
-                              className={`text-xs ${
-                                isSelected ? 'text-sky-300' : 'text-slate-400'
+                              className={`font-mono text-xs font-bold ${
+                                isSelected ? 'text-sky-300' : 'text-slate-300'
                               }`}
                             >
                               {tier.formattedPrice}
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-400 font-sans mt-0.5 line-clamp-1">
+                          <div className="text-[11px] text-slate-400 font-sans mt-0.5 line-clamp-1">
                             {tierId === 'first_class'
-                              ? 'Standard tracking'
+                              ? 'Standard tracked delivery'
                               : tierId === 'certified'
-                              ? 'Chain of custody proof'
-                              : 'Signed green card PDF'}
+                              ? 'Official USPS proof of mailing'
+                              : 'Includes signed receipt PDF'}
                           </div>
                         </div>
                       </button>
@@ -1174,7 +1228,7 @@ export function InteractiveHomeWorkbench({
               </div>
             </div>
 
-            {/* 5. Primary Conversion CTA Button */}
+            {/* 5. Primary Conversion Button */}
             <form
               {...({
                 toolname: 'stage_homepage_notice',
@@ -1182,101 +1236,54 @@ export function InteractiveHomeWorkbench({
                   'Launch pre-populated statutory notice workspace on DocketStamp',
               } as any)}
               onSubmit={handleOpenWorkspace}
-              className="pt-1"
             >
               <button
                 type="submit"
-                className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-emerald-400 hover:from-sky-400 hover:to-emerald-300 p-0.5 font-sans font-bold text-slate-950 shadow-xl shadow-sky-500/20 active:scale-[0.99] transition duration-200 cursor-pointer"
+                className="w-full group rounded-xl bg-sky-500 hover:bg-sky-400 px-5 py-3.5 font-sans font-bold text-slate-950 shadow-xl shadow-sky-500/20 active:scale-[0.99] transition cursor-pointer flex flex-col items-center justify-center"
               >
-                <div className="px-5 py-3.5 rounded-[10px] bg-slate-950/20 group-hover:bg-transparent flex flex-col items-center justify-center transition">
-                  <div className="flex items-center gap-2 text-sm sm:text-base text-slate-950 font-bold tracking-tight">
-                    <span>Open Full Workspace &amp; Stamp Notice</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </div>
-                  <div className="text-[11px] font-mono text-slate-900/80 font-medium mt-0.5">
-                    {tierPrices[selectedTier]} all-inclusive USPS dispatch &bull;{' '}
-                    {unfilledCount === 0
-                      ? 'All fields ready'
-                      : `${unfilledCount} required field${
-                          unfilledCount === 1 ? '' : 's'
-                        } remaining`}
-                  </div>
+                <div className="flex items-center gap-2 text-sm sm:text-base font-bold">
+                  <span>Continue to Finalize &amp; Mail Letter ({tierPrices[selectedTier]})</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+                <div className="text-[11px] text-slate-900/80 font-medium mt-0.5">
+                  Review your full letter, add your return address, and sign on the next screen
                 </div>
               </button>
             </form>
           </div>
 
           {/* ========================================================= */}
-          {/* RIGHT COLUMN: Live Interactive 8.5" x 11" Paper Sheet (lg:col-span-7) */}
+          {/* RIGHT COLUMN: Live Interactive Letter Preview (7 Cols)    */}
           {/* ========================================================= */}
           <div className="lg:col-span-7 space-y-3">
-            {/* Top Preview Control & Status Bar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 px-4 py-3 rounded-xl backdrop-blur-md shadow-lg">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>LIVE WYSIWYG INSTRUMENT PREVIEW</span>
-                </div>
-                <span className="text-slate-600 text-xs hidden sm:inline">&bull;</span>
-                <span className="text-xs font-mono text-amber-400 font-medium hidden sm:inline">
-                  CLICK ANY AMBER TAG TO EDIT
+            {/* Simple, Self-Evident Header Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 px-4 py-2.5 rounded-xl">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-sans">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="font-bold text-white">Your Live Letter Preview</span>
+                <span className="text-slate-500 hidden sm:inline">&bull;</span>
+                <span className="text-amber-300 font-medium">
+                  Click any highlighted box on the page to edit it
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setIsSignatureAdoptedPreview(!isSignatureAdoptedPreview)}
-                  className={`px-2.5 py-1 text-xs font-mono rounded border transition flex items-center gap-1.5 cursor-pointer ${
-                    isSignatureAdoptedPreview
-                      ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300 font-semibold'
-                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
-                  }`}
-                  title="Toggle electronic signature and official clerk stamp preview"
-                >
-                  <PenTool className="w-3 h-3" />
-                  <span>
-                    {isSignatureAdoptedPreview ? '/s/ Signed & Stamped' : 'Preview /s/ Signature'}
-                  </span>
-                </button>
-
-                <Link
-                  href={buildHydrationUrl()}
-                  className="px-3 py-1 text-xs font-mono font-medium rounded bg-sky-600 hover:bg-sky-500 text-white transition flex items-center gap-1 shadow-sm"
-                >
-                  <span>Full Screen Editor</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
+              <Link
+                href={buildHydrationUrl()}
+                className="px-3 py-1.5 text-xs font-sans font-bold rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition flex items-center gap-1 shrink-0"
+              >
+                <span>Finish &amp; Mail Letter</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            {/* Secondary Docket ID & CASS Verification Status Strip */}
-            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-2">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500">DOCKET ID:</span>
-                <span className="font-bold text-slate-200">{interpolatedDoc.docketId}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500">ROUTING:</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  {activeNotice.usesStateStatuteLookup
-                    ? `${currentStatute.stateCode} CASS™ VERIFIED`
-                    : selectedRecipient
-                    ? `${selectedRecipient.state} CASS™ VERIFIED`
-                    : 'USPS CASS™ VERIFIED'}
-                </span>
-              </div>
-            </div>
-
-            {/* Live Paper Sheet Canvas Container */}
-            <div className="w-full flex justify-center overflow-x-auto p-2 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800 shadow-2xl backdrop-blur-sm">
-              <div className="w-full max-w-[850px] transform-gpu transition-transform origin-top">
+            {/* Live Paper Sheet Container */}
+            <div className="w-full flex justify-center overflow-x-auto p-2 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800 shadow-2xl">
+              <div className="w-full max-w-[850px]">
                 <LivePaperSheet
                   doc={interpolatedDoc}
                   onTokenClick={handleTokenClick}
                   activeFieldKey={activeFieldKey}
-                  isSignatureAdopted={isSignatureAdoptedPreview}
+                  isSignatureAdopted={isSampleFilled}
                   selectedTier={selectedTier}
                 />
               </div>
