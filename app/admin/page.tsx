@@ -801,11 +801,11 @@ export default function AdminDashboardPage() {
     return true; // "ALL"
   });
 
-  const revenueDollars = ((metrics?.totalRevenueCents || 0) / 100).toFixed(2);
-  const conversionRate =
-    metrics && metrics.funnel.totalSessions > 0
-      ? ((metrics.funnel.paid / metrics.funnel.totalSessions) * 100).toFixed(1)
-      : "0.0";
+  const revenueDollars = metrics && metrics.totalRevenueCents > 0
+    ? `$${(metrics.totalRevenueCents / 100).toFixed(2)}`
+    : metrics
+    ? "No positive amount found"
+    : "Unavailable";
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#FAF8F5] pb-24 md:pb-20 text-stone-900">
@@ -823,10 +823,10 @@ export default function AdminDashboardPage() {
                   <span className="font-serif font-bold text-sm text-stone-900 leading-tight">
                     Admin Console
                   </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 </div>
-                <span className="text-[10px] text-stone-400 font-medium block leading-none">
-                  Live Operations
+                <span className="text-[10px] text-amber-700 font-medium block leading-none">
+                  Interim Rollup &bull; Unverified
                 </span>
               </div>
             </div>
@@ -836,10 +836,10 @@ export default function AdminDashboardPage() {
                 type="button"
                 onClick={() => setShowCompModal(true)}
                 className="text-xs font-bold text-stone-950 bg-amber-500 hover:bg-amber-600 active:scale-95 px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-2xs transition cursor-pointer"
-                title="Dispatch Complimentary Card"
+                title="Complimentary Dispatch (Held in S0)"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Comp</span>
+                <span>Comp (Held)</span>
               </button>
 
               <button
@@ -883,12 +883,12 @@ export default function AdminDashboardPage() {
                   <span className="font-serif text-lg font-bold text-stone-900">
                     DocketStamp Admin
                   </span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300/60">
-                    Live Operations
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300/80">
+                    Interim Reporting &bull; Probe Unverified
                   </span>
                 </div>
-                <p className="text-xs text-stone-400">
-                  Customer telemetry, revenue analytics, and USPS postal dispatch monitoring.
+                <p className="text-xs text-stone-500">
+                  Observed order &amp; session rollup (unverified legacy economics; direct provider mutations held).
                 </p>
               </div>
             </div>
@@ -897,10 +897,10 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowCompModal(true)}
-                className="text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 px-3.5 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="text-xs font-semibold text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3.5 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Dispatch Comp Card</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                <span>Comp Dispatch (Held)</span>
               </button>
               <button
                 type="button"
@@ -993,7 +993,7 @@ export default function AdminDashboardPage() {
                 >
                   <span className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-600" />
-                    Dispatch Comp Card
+                    Comp Dispatch (Held)
                   </span>
                   <ChevronRight className="w-4 h-4 text-amber-500" />
                 </button>
@@ -1069,7 +1069,7 @@ export default function AdminDashboardPage() {
               )}
             </button>
 
-            {/* 2. SYSTEM HEALTH & INCIDENTS (Positioned second; font & icon reflect live health) */}
+            {/* 2. SYSTEM HEALTH & INCIDENTS */}
             <button
               type="button"
               onClick={() => setActiveTab("incidents")}
@@ -1079,15 +1079,14 @@ export default function AdminDashboardPage() {
                     ? "bg-rose-600 text-white shadow-xs ring-1 ring-rose-600 sm:bg-rose-50/30 sm:border-rose-600 sm:text-rose-700 sm:shadow-none sm:ring-0 font-bold"
                     : "bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-rose-600 font-semibold"
                   : activeTab === "incidents"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-emerald-50/30 sm:border-emerald-600 sm:text-emerald-800 sm:shadow-none sm:ring-0 font-bold"
-                  : "bg-white text-emerald-800 hover:text-emerald-900 hover:bg-stone-50 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-emerald-700 font-medium sm:shadow-none"
+                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-amber-50/30 sm:border-amber-600 sm:text-amber-900 sm:shadow-none sm:ring-0 font-bold"
+                  : "bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-600 font-medium sm:shadow-none"
               }`}
             >
-              {/* Alert icon ONLY shows up when there are active/unresolved alerts */}
               {hasActiveAlerts ? (
                 <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white sm:text-rose-600 animate-pulse shrink-0" />
               ) : (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
               )}
               <span>System Health</span>
               {hasActiveAlerts ? (
@@ -1095,8 +1094,8 @@ export default function AdminDashboardPage() {
                   {unresolvedIncidents.length}
                 </span>
               ) : (
-                <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-medium">
-                  Healthy
+                <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] bg-amber-100 text-amber-900 font-medium">
+                  Unverified
                 </span>
               )}
             </button>
@@ -1112,15 +1111,16 @@ export default function AdminDashboardPage() {
             >
               <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
               <span>Unit Economics</span>
-              {metrics?.margins?.netContributionMarginPercent !== undefined && (
-                <span className={`ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold ${
-                  activeTab === "margins"
-                    ? "bg-stone-800 text-emerald-300 sm:bg-emerald-100 sm:text-emerald-800"
-                    : "bg-stone-100 text-stone-600 sm:bg-emerald-100 sm:text-emerald-800"
-                }`}>
-                  {metrics.margins.netContributionMarginPercent}%
-                </span>
-              )}
+              <span className={`ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold ${
+                activeTab === "margins"
+                  ? "bg-stone-800 text-amber-300 sm:bg-amber-100 sm:text-amber-900"
+                  : "bg-stone-100 text-stone-600 sm:bg-amber-100 sm:text-amber-900"
+              }`}>
+                {metrics?.margins?.netContributionMarginPercent !== null &&
+                metrics?.margins?.netContributionMarginPercent !== undefined
+                  ? `${metrics.margins.netContributionMarginPercent}% (Est.)`
+                  : "N/A"}
+              </span>
             </button>
 
             <button
@@ -1201,45 +1201,47 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
               <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Gross Revenue</span>
+                  <span>Order Amount Sum</span>
                   <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
                 </div>
-                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">${revenueDollars}</p>
-                <p className="text-[10px] sm:text-[11px] text-stone-400">$9.00 flat per card</p>
+                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">{revenueDollars}</p>
+                <p className="text-[10px] sm:text-[11px] text-amber-700 font-medium">
+                  Interim status-based order fields; payment ledger unverified
+                </p>
               </div>
 
               <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Dispatch Queue</span>
+                  <span>Post-Payment Statuses</span>
                   <PenTool className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" />
                 </div>
                 <p className="font-serif text-xl sm:text-2xl font-bold text-indigo-900">
                   {metrics?.ordersByStatus.processing || 0}
                 </p>
-                <p className="text-[10px] sm:text-[11px] text-indigo-600 font-medium">Dispatched to Lob</p>
+                <p className="text-[10px] sm:text-[11px] text-indigo-600 font-medium">Status-derived; not reconciled</p>
               </div>
 
               <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Total Orders</span>
+                  <span>All Orders</span>
                   <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
                 </div>
                 <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-                  {metrics?.totalOrders || 0}
+                  {metrics ? metrics.totalOrders : "—"}
                 </p>
                 <p className="text-[10px] sm:text-[11px] text-stone-400">
-                  {metrics?.ordersByStatus.pending || 0} pending drafts
+                  Includes pending and unpaid records
                 </p>
               </div>
 
               <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Conversion</span>
+                  <span>Session Conversion</span>
                   <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
                 </div>
-                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">{conversionRate}%</p>
+                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">Unavailable</p>
                 <p className="text-[10px] sm:text-[11px] text-stone-400">
-                  {metrics?.funnel.paid || 0} paid / {metrics?.funnel.totalSessions || 0} visits
+                  Legacy events are not joined to verified paid orders
                 </p>
               </div>
             </div>
@@ -1395,7 +1397,9 @@ export default function AdminDashboardPage() {
                                 </div>
                                 <div className="text-right shrink-0">
                                   <span className="font-serif font-bold text-stone-900 text-sm">
-                                    ${((order.amountInCents || 900) / 100).toFixed(2)}
+                                    {typeof order.amountInCents === "number"
+                                      ? `$${(order.amountInCents / 100).toFixed(2)}`
+                                      : "Amount unavailable"}
                                   </span>
                                   {(order.lobLetterId || order.handwryttenOrderId) && (
                                     <span className="font-mono text-[9px] text-indigo-700 block mt-0.5">
@@ -1489,34 +1493,37 @@ export default function AdminDashboardPage() {
                                 type="button"
                                 onClick={() => handleSyncLob(order.id)}
                                 disabled={syncingId === order.id}
-                                className="py-2.5 text-center text-xs font-semibold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 active:scale-98 rounded-xl border border-indigo-200 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                title="Held in S0 pending S3-T02/T03 read-only Lob reconciliation"
+                                className="py-2.5 text-center text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 active:scale-98 rounded-xl border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
                                 <RefreshCw
                                   className={`w-3.5 h-3.5 shrink-0 ${syncingId === order.id ? "animate-spin" : ""}`}
                                 />
-                                <span>Check Status</span>
+                                <span>Sync Lob (Held: S3)</span>
                               </button>
                             ) : canRetry ? (
                               <button
                                 type="button"
                                 onClick={() => handleRetryFulfillment(order.id)}
                                 disabled={retryingId === order.id}
+                                title="Held in S0 pending S3-T02 immutable snapshot retry contract"
                                 className="py-2.5 text-center text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 active:scale-98 rounded-xl border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
                                 <RefreshCw
                                   className={`w-3.5 h-3.5 shrink-0 ${retryingId === order.id ? "animate-spin" : ""}`}
                                 />
-                                <span>{retryingId === order.id ? "Inking..." : "Retry Dispatch"}</span>
+                                <span>{retryingId === order.id ? "Checking..." : "Retry (Held: S3)"}</span>
                               </button>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => handleSyncStripe(order.id)}
                                 disabled={syncingStripeId === order.id}
-                                className="py-2.5 text-center text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 active:scale-98 rounded-xl border border-stone-200 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                title="Held in S0 pending S2-T01/S3-T03 verified Stripe settlement authority"
+                                className="py-2.5 text-center text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 active:scale-98 rounded-xl border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
                                 <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                                <span>Stripe Sync</span>
+                                <span>Stripe Sync (Held: S2)</span>
                               </button>
                             )}
                           </div>
@@ -1666,7 +1673,9 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="py-3 px-4 text-right">
                                 <span className="font-serif font-bold text-stone-900 text-sm">
-                                  ${((order.amountInCents || 900) / 100).toFixed(2)}
+                                  {typeof order.amountInCents === "number"
+                                    ? `$${(order.amountInCents / 100).toFixed(2)}`
+                                    : "Amount unavailable"}
                                 </span>
                                 {order.discountCode && (
                                   <div className="mt-1 flex items-center justify-end gap-1">
@@ -1717,6 +1726,7 @@ export default function AdminDashboardPage() {
                                       <button
                                         onClick={() => handleRetryFulfillment(order.id)}
                                         disabled={retryingId === order.id}
+                                        title="Held in S0 pending S3-T02 immutable snapshot retry contract"
                                         className="px-2 py-0.5 text-[10px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 rounded border border-amber-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
                                       >
                                         <RefreshCw
@@ -1724,16 +1734,16 @@ export default function AdminDashboardPage() {
                                             retryingId === order.id ? "animate-spin" : ""
                                           }`}
                                         />
-                                        {retryingId === order.id ? "Inking..." : "Retry"}
+                                        {retryingId === order.id ? "Checking..." : "Retry (Held: S3)"}
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setAddressRetryOrder(order)}
-                                        className="px-2 py-0.5 text-[10px] font-medium text-stone-700 bg-white hover:bg-stone-100 rounded border border-stone-300 transition inline-flex items-center gap-1 cursor-pointer"
-                                        title="Edit recipient address before retry"
+                                        className="px-2 py-0.5 text-[10px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 rounded border border-amber-300 transition inline-flex items-center gap-1 cursor-pointer"
+                                        title="Inspect address retry modal (Execution held until S3-T02)"
                                       >
-                                        <MapPin className="w-2.5 h-2.5 text-stone-500" />
-                                        <span>Edit</span>
+                                        <MapPin className="w-2.5 h-2.5 text-amber-700" />
+                                        <span>Address (Held: S3)</span>
                                       </button>
                                     </div>
                                   )}
@@ -1741,15 +1751,15 @@ export default function AdminDashboardPage() {
                                     <button
                                       onClick={() => handleSyncLob(order.id)}
                                       disabled={syncingId === order.id}
-                                      title="Check latest order and postal status directly from Lob API"
-                                      className="px-2 py-0.5 text-[10px] font-medium text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
+                                      title="Held in S0 pending S3-T02/T03 read-only Lob reconciliation"
+                                      className="px-2 py-0.5 text-[10px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 rounded border border-amber-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
                                     >
                                       <RefreshCw
                                         className={`w-2.5 h-2.5 ${
                                           syncingId === order.id ? "animate-spin" : ""
                                         }`}
                                       />
-                                      {syncingId === order.id ? "Checking..." : "Sync Lob"}
+                                      {syncingId === order.id ? "Checking..." : "Sync Lob (Held: S3)"}
                                     </button>
                                   )}
                                   {isMailed && (
@@ -1766,11 +1776,11 @@ export default function AdminDashboardPage() {
                                     <button
                                       onClick={() => handleSyncStripe(order.id)}
                                       disabled={syncingStripeId === order.id}
-                                      title="Check if customer completed payment on Stripe and initiate fulfillment"
-                                      className="px-2 py-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
+                                      title="Held in S0 pending S2-T01/S3-T03 verified Stripe settlement authority"
+                                      className="px-2 py-1 text-[11px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
                                     >
                                       <CreditCard className={`w-3 h-3 ${syncingStripeId === order.id ? "animate-spin" : ""}`} />
-                                      {syncingStripeId === order.id ? "Verifying..." : "Verify Stripe"}
+                                      {syncingStripeId === order.id ? "Checking..." : "Verify Stripe (Held: S2)"}
                                     </button>
                                   )}
                                   {!isPending && !canRetry && !(order.lobLetterId || order.handwryttenOrderId) && (
@@ -1807,322 +1817,265 @@ export default function AdminDashboardPage() {
         {/* ===================== TAB: UNIT ECONOMICS & MARGINS ===================== */}
         {activeTab === "margins" && (
           <div className="space-y-8">
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold">Interim Rollup Notice: Legacy Unverified Unit Economics</p>
+                <p className="text-amber-900/90 leading-relaxed">
+                  Gross revenue below sums observed <code className="font-mono">order.amountInCents</code> on paid orders without fabricating a $9.00 fallback. Gateway fees and fulfillment COGS remain legacy formula estimates (<code className="font-mono">estimated_legacy_unverified</code>) until verified Stripe balance transactions and Lob tier schedules are active.
+                </p>
+              </div>
+            </div>
+
             {/* UNIT ECONOMICS KPI SUMMARY */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-xs font-semibold uppercase tracking-wider">
-                  <span>Gross Retail Revenue</span>
+                  <span>Observed Gross Revenue</span>
                   <DollarSign className="w-4 h-4 text-emerald-600" />
                 </div>
                 <p className="font-serif text-2xl font-bold text-stone-900">
                   ${((metrics?.margins?.grossRevenueCents || 0) / 100).toFixed(2)}
                 </p>
-                <p className="text-[11px] text-stone-400">
-                  {metrics?.margins?.paidCardsCount || 0} delivered cards @ $9.00 flat
+                <p className="text-[11px] text-stone-500">
+                  {metrics?.margins?.paidCardsCount || 0} paid orders (Observed amountInCents)
                 </p>
               </div>
 
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-xs font-semibold uppercase tracking-wider">
-                  <span>Stripe Gateway Fees</span>
+                  <span>Est. Gateway Fees (Unverified)</span>
                   <Receipt className="w-4 h-4 text-rose-500" />
                 </div>
                 <p className="font-serif text-2xl font-bold text-rose-700">
                   -${((metrics?.margins?.stripeFeesCents || 0) / 100).toFixed(2)}
                 </p>
-                <p className="text-[11px] text-stone-400">2.9% + 30¢ (~$0.56 per standard card)</p>
+                <p className="text-[11px] text-amber-700">
+                  Formula estimate (2.9% + 30¢ on paid orders; not Stripe balance-verified)
+                </p>
               </div>
 
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
                 <div className="flex items-center justify-between text-stone-500 text-xs font-semibold uppercase tracking-wider">
-                  <span>Fulfillment COGS</span>
+                  <span>Est. Fulfillment COGS (Unverified)</span>
                   <Package className="w-4 h-4 text-indigo-600" />
                 </div>
                 <p className="font-serif text-2xl font-bold text-indigo-900">
                   -${((metrics?.margins?.fulfillmentCogsCents || 0) / 100).toFixed(2)}
                 </p>
-                <p className="text-[11px] text-stone-400">$4.88 ink + cardstock + First Class</p>
+                <p className="text-[11px] text-amber-700">
+                  Legacy estimate (not verified Lob First-Class / Certified / ERR tier schedule)
+                </p>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm space-y-1 bg-emerald-50/30">
-                <div className="flex items-center justify-between text-emerald-800 text-xs font-semibold uppercase tracking-wider">
-                  <span>Net Contribution Margin</span>
-                  <Coins className="w-4 h-4 text-emerald-600" />
+              <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-1 bg-amber-50/30">
+                <div className="flex items-center justify-between text-amber-900 text-xs font-semibold uppercase tracking-wider">
+                  <span>Est. Net Contribution (Unverified)</span>
+                  <Coins className="w-4 h-4 text-amber-600" />
                 </div>
-                <p className="font-serif text-2xl font-bold text-emerald-700">
-                  +${((metrics?.margins?.netContributionMarginCents || 0) / 100).toFixed(2)}
+                <p className="font-serif text-2xl font-bold text-stone-900">
+                    {metrics?.margins?.netContributionMarginCents !== undefined
+                    ? `${metrics.margins.netContributionMarginCents >= 0 ? "+" : "-"}$${(Math.abs(metrics.margins.netContributionMarginCents) / 100).toFixed(2)}`
+                    : "Unavailable"}
                 </p>
-                <p className="text-[11px] text-emerald-800 font-medium">
-                  {metrics?.margins?.netContributionMarginPercent || 39.6}% margin ($3.56/card)
+                <p className="text-[11px] text-amber-800 font-medium">
+                  {metrics?.margins?.netContributionMarginPercent !== null &&
+                  metrics?.margins?.netContributionMarginPercent !== undefined
+                    ? `${metrics.margins.netContributionMarginPercent}% estimated margin (Unverified)`
+                    : "N/A (0 observed revenue) • Unverified Estimate"}
                 </p>
               </div>
             </div>
 
-            {/* INTERACTIVE AD SPEND & CPA SIMULATOR */}
-            {(() => {
-              const enteredAdSpend = parseFloat(adSpendInput) || 0;
-              const paidCount = metrics?.margins?.paidCardsCount || 0;
-              const netContribDollars = (metrics?.margins?.netContributionMarginCents || 0) / 100;
-              const grossRevDollars = (metrics?.margins?.grossRevenueCents || 0) / 100;
-              const cpaDollars = paidCount > 0 ? enteredAdSpend / paidCount : (enteredAdSpend > 0 ? enteredAdSpend : 0);
-              const netProfitAfterAds = netContribDollars - enteredAdSpend;
-              const roasRatio = enteredAdSpend > 0 ? (grossRevDollars / enteredAdSpend).toFixed(2) : "—";
-              const isProfitable = paidCount > 0 ? cpaDollars <= 3.56 : netProfitAfterAds >= 0;
-
-              return (
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                          Interactive Calculator
-                        </span>
-                        <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                          <Calculator className="w-4 h-4 text-amber-600" />
-                          Ad Spend, CAC &amp; Profitability Simulator
-                        </h2>
-                      </div>
-                      <p className="text-xs text-stone-500">
-                        Input your Google Ads expenditure to evaluate live Customer Acquisition Cost (CAC), Return on Ad Spend (ROAS), and net studio profit.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSaveAdSpend}
-                        disabled={savingAdSpend}
-                        className="text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-4 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${savingAdSpend ? "animate-spin" : ""}`} />
-                        <span>{savingAdSpend ? "Saving..." : "Save Ad Spend"}</span>
-                      </button>
-                    </div>
+            {/* COLLAPSIBLE ILLUSTRATIVE ASSUMPTIONS SIMULATOR BOUNDARY */}
+            <details className="group bg-stone-100/80 rounded-3xl border border-amber-300/80 p-4 sm:p-6 space-y-6">
+              <summary className="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-400">
+                      Illustrative Assumptions Simulator (Not Observed Accounting)
+                    </span>
+                    <span className="text-xs font-semibold text-stone-700">
+                      Collapsed by default &bull; Click to expand hypothetical scenario worksheets
+                    </span>
                   </div>
+                  <p className="text-xs text-stone-500">
+                    Contains user-adjustable ad spend CPA simulation and hypothetical LTV/valuation heuristics. Never mixed with observed accounting totals.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-amber-900 bg-white px-3 py-1.5 rounded-xl border border-amber-300 shrink-0 self-start sm:self-center">
+                  Toggle Simulator
+                </span>
+              </summary>
 
-                  {adSpendSuccess && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs rounded-xl flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{adSpendSuccess}</span>
-                    </div>
-                  )}
+              <div className="pt-4 border-t border-stone-200/80 space-y-8">
+                {/* INTERACTIVE AD SPEND & CPA SIMULATOR */}
+                {(() => {
+                  const enteredAdSpend = parseFloat(adSpendInput) || 0;
+                  const paidCount = metrics?.margins?.paidCardsCount || 0;
+                  const netContribDollars = (metrics?.margins?.netContributionMarginCents || 0) / 100;
+                  const grossRevDollars = (metrics?.margins?.grossRevenueCents || 0) / 100;
+                  const cpaDollars = paidCount > 0 ? enteredAdSpend / paidCount : (enteredAdSpend > 0 ? enteredAdSpend : 0);
+                  const netProfitAfterAds = netContribDollars - enteredAdSpend;
+                  const roasRatio = enteredAdSpend > 0 ? (grossRevDollars / enteredAdSpend).toFixed(2) : "—";
+                  const isProfitable = netProfitAfterAds >= 0 && (paidCount > 0 || enteredAdSpend === 0);
 
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* LEFT: Ad Spend Input Controls */}
-                    <div className="lg:col-span-5 space-y-4 bg-stone-50 p-5 rounded-2xl border border-stone-200">
-                      <div>
-                        <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                          Total Ad Spend (USD)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
-                            $
-                          </span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={adSpendInput}
-                            onChange={(e) => setAdSpendInput(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full pl-8 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                          />
+                  return (
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                              Illustrative Assumptions Simulator (Not Observed Accounting)
+                            </span>
+                            <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
+                              <Calculator className="w-4 h-4 text-amber-600" />
+                              Hypothetical Ad Spend &amp; CPA Worksheet
+                            </h2>
+                          </div>
+                          <p className="text-xs text-stone-500">
+                            Enter hypothetical ad spend to simulate blended CPA and ROAS against interim unverified margin estimates.
+                          </p>
                         </div>
-                      </div>
 
-                      {/* Quick Increments */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-medium text-stone-500">Quick Simulation Presets:</span>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { label: "+$10", val: 10 },
-                            { label: "+$25", val: 25 },
-                            { label: "+$50", val: 50 },
-                            { label: "+$100", val: 100 },
-                          ].map((preset) => (
-                            <button
-                              key={preset.label}
-                              type="button"
-                              onClick={() => {
-                                const curr = parseFloat(adSpendInput) || 0;
-                                setAdSpendInput((curr + preset.val).toFixed(2));
-                              }}
-                              className="text-xs font-medium px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg transition cursor-pointer"
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => setAdSpendInput("0.00")}
-                            className="text-xs font-medium px-2.5 py-1 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg transition cursor-pointer"
+                            onClick={handleSaveAdSpend}
+                            disabled={savingAdSpend}
+                            className="text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-4 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
                           >
-                            Reset
+                            <RefreshCw className={`w-3.5 h-3.5 ${savingAdSpend ? "animate-spin" : ""}`} />
+                            <span>{savingAdSpend ? "Saving..." : "Save Manual Spend"}</span>
                           </button>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-stone-200/80 text-[11px] text-stone-500 space-y-1">
-                        <p className="flex items-center gap-1.5 font-medium text-stone-700">
-                          <Target className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Break-even Target CPA: <strong>$3.56</strong></span>
-                        </p>
-                        <p>
-                          Any Google Ads click-to-order cost under $3.56 is instantly profitable on the first card mailed.
-                        </p>
+                      {adSpendSuccess && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs rounded-xl flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{adSpendSuccess}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        {/* LEFT: Ad Spend Input Controls */}
+                        <div className="lg:col-span-5 space-y-4 bg-stone-50 p-5 rounded-2xl border border-stone-200">
+                          <div>
+                            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                              Simulated / Manual Ad Spend (USD)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
+                                $
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={adSpendInput}
+                                onChange={(e) => setAdSpendInput(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full pl-8 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Quick Increments */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-medium text-stone-500">Quick Simulation Presets:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {[
+                                { label: "+$10", val: 10 },
+                                { label: "+$25", val: 25 },
+                                { label: "+$50", val: 50 },
+                                { label: "+$100", val: 100 },
+                              ].map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => {
+                                    const curr = parseFloat(adSpendInput) || 0;
+                                    setAdSpendInput((curr + preset.val).toFixed(2));
+                                  }}
+                                  className="text-xs font-medium px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg transition cursor-pointer"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setAdSpendInput("0.00")}
+                                className="text-xs font-medium px-2.5 py-1 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg transition cursor-pointer"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* RIGHT: Simulated Metrics */}
+                        <div className="lg:col-span-7 space-y-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div className="p-4 rounded-2xl border bg-stone-50 border-stone-200 space-y-1">
+                              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                                Simulated CPA
+                              </span>
+                              <p className="font-serif text-xl font-bold text-stone-900">
+                                ${cpaDollars.toFixed(2)}
+                              </p>
+                              <p className="text-[10px] text-stone-400">
+                                {paidCount > 0 ? `Across ${paidCount} paid orders` : "0 paid orders observed"}
+                              </p>
+                            </div>
+
+                            <div className="p-4 rounded-2xl border bg-stone-50 border-stone-200 space-y-1">
+                              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                                Simulated ROAS
+                              </span>
+                              <p className="font-serif text-xl font-bold text-stone-900">
+                                {roasRatio !== "—" ? `${roasRatio}x` : "—"}
+                              </p>
+                              <p className="text-[10px] text-stone-400">Observed Gross Rev / Manual Spend</p>
+                            </div>
+
+                            <div className={`p-4 rounded-2xl border space-y-1 ${isProfitable ? "bg-stone-50 border-stone-200" : "bg-rose-50/50 border-rose-200"}`}>
+                              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
+                                Simulated Net After Ads
+                              </span>
+                              <p className={`font-serif text-xl font-bold ${netProfitAfterAds >= 0 ? "text-stone-900" : "text-rose-700"}`}>
+                                {netProfitAfterAds >= 0 ? `+$${netProfitAfterAds.toFixed(2)}` : `-$${Math.abs(netProfitAfterAds).toFixed(2)}`}
+                              </p>
+                              <p className="text-[10px] text-stone-400">Hypothetical estimate only</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  );
+                })()}
 
-                    {/* RIGHT: Live Simulated Metrics */}
-                    <div className="lg:col-span-7 space-y-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div className="p-4 rounded-2xl border bg-stone-50 border-stone-200 space-y-1">
-                          <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
-                            Blended CPA / CAC
-                          </span>
-                          <p className={`font-serif text-xl font-bold ${cpaDollars <= 3.56 ? "text-emerald-700" : "text-amber-700"}`}>
-                            ${cpaDollars.toFixed(2)}
-                          </p>
-                          <p className="text-[10px] text-stone-400">
-                            {paidCount > 0 ? `Across ${paidCount} paid orders` : "Based on ad spend"}
-                          </p>
-                        </div>
+                {/* LTV, CAC & VALUATION HEURISTICS ENGINE */}
+                {(() => {
+                  const parsedAdSpend = parseFloat(adSpendInput) || 0;
+                  const currentPaidCount = metrics?.margins?.paidCardsCount || 0;
+                  const currentCac =
+                    currentPaidCount > 0
+                      ? parsedAdSpend / currentPaidCount
+                      : parsedAdSpend > 0
+                      ? parsedAdSpend
+                      : 0;
 
-                        <div className="p-4 rounded-2xl border bg-stone-50 border-stone-200 space-y-1">
-                          <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
-                            ROAS Multiple
-                          </span>
-                          <p className="font-serif text-xl font-bold text-stone-900">
-                            {roasRatio !== "—" ? `${roasRatio}x` : "—"}
-                          </p>
-                          <p className="text-[10px] text-stone-400">Gross Rev / Ad Spend</p>
-                        </div>
-
-                        <div className={`p-4 rounded-2xl border space-y-1 ${netProfitAfterAds >= 0 ? "bg-emerald-50/50 border-emerald-200" : "bg-rose-50/50 border-rose-200"}`}>
-                          <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
-                            Net Studio Profit
-                          </span>
-                          <p className={`font-serif text-xl font-bold ${netProfitAfterAds >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                            {netProfitAfterAds >= 0 ? `+$${netProfitAfterAds.toFixed(2)}` : `-$${Math.abs(netProfitAfterAds).toFixed(2)}`}
-                          </p>
-                          <p className="text-[10px] text-stone-400">After COGS, fees &amp; ads</p>
-                        </div>
-                      </div>
-
-                      {/* Profitability Status Callout */}
-                      <div
-                        className={`p-4 rounded-2xl border flex items-start gap-3 ${
-                          isProfitable
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                            : "bg-amber-50 border-amber-200 text-amber-900"
-                        }`}
-                      >
-                        {isProfitable ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                        ) : (
-                          <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                        )}
-                        <div className="space-y-1 text-xs">
-                          <p className="font-bold">
-                            {isProfitable
-                              ? "Profitable First-Order Acquisition (CPA ≤ $3.56)"
-                              : "Growth & Customer Acquisition Investment (CPA > $3.56)"}
-                          </p>
-                          <p className="text-stone-600 leading-relaxed">
-                            {isProfitable
-                              ? `At a CPA of $${cpaDollars.toFixed(2)}, you are clearing positive cash flow on card #1. Repeat sends generated from recipient address book reminders are 100% organic profit.`
-                              : `At a CPA of $${cpaDollars.toFixed(2)}, the first card operates as customer acquisition. Customers who save recipients average 3+ card orders per year, achieving full breakeven on repeat sends.`}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* LTV, CAC & VALUATION HEURISTICS ENGINE */}
-            {(() => {
-              const parsedAdSpend = parseFloat(adSpendInput) || 0;
-              const currentPaidCount = metrics?.margins?.paidCardsCount || 0;
-              const currentCac =
-                currentPaidCount > 0
-                  ? parsedAdSpend / currentPaidCount
-                  : parsedAdSpend > 0
-                  ? parsedAdSpend
-                  : 3.56;
-
-              return (
-                <ValuationHeuristicsWidget
-                  initialAssumptions={metrics?.valuationAssumptions}
-                  actualCacDollars={currentCac}
-                  paidOrdersCount={currentPaidCount}
-                />
-              );
-            })()}
-
-            {/* THE $9.00 UNIT WATERFALL EXPLAINER */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-5">
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                  <PieChart className="w-4 h-4 text-stone-700" />
-                  Unit Economics Anatomy: The $9.00 Card Waterfall
-                </h3>
-                <p className="text-xs text-stone-500">
-                  Every standard notice sent on DocketStamp is structured around deterministic, ultra-predictable unit economics.
-                </p>
+                  return (
+                    <ValuationHeuristicsWidget
+                      initialAssumptions={metrics?.valuationAssumptions}
+                      actualCacDollars={currentCac}
+                      paidOrdersCount={currentPaidCount}
+                    />
+                  );
+                })()}
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-700">Retail Price</span>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      +$9.00
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-500 leading-relaxed">
-                    Customer pays $9.00 flat with free First Class shipping, envelope addressing, and physical stamp included.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-700">Stripe Processing</span>
-                    <span className="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
-                      -$0.56
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-500 leading-relaxed">
-                    Standard credit card interchange fee of 2.9% + $0.30 ($0.26 + $0.30 = $0.56 on $9.00). $0 for comp promo codes.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-700">Fulfillment COGS</span>
-                    <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
-                      -$4.88
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-500 leading-relaxed">
-                    Lob programmatic letter printing, 24 lb paper, certified/first-class envelope, and USPS postal induction.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-900">Net Gross Margin</span>
-                    <span className="text-xs font-bold text-white bg-emerald-600 px-2 py-0.5 rounded-full">
-                      +$3.56
-                    </span>
-                  </div>
-                  <p className="text-xs text-emerald-800 leading-relaxed">
-                    <strong>39.6% net contribution margin.</strong> This is your exact break-even budget for Google Ads CAC.
-                  </p>
-                </div>
-              </div>
-            </div>
+            </details>
 
             {/* CAMPAIGN ATTRIBUTION & GOOGLE ADS INTEL */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
@@ -2133,7 +2086,7 @@ export default function AdminDashboardPage() {
                     Campaign Attribution &amp; Traffic Intelligence
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Live attribution grouped by UTM parameters and Google Ads Click Identifiers (GCLID).
+                    Legacy order attribution grouped by stored UTM parameters and Google Ads Click Identifiers (GCLID); provider reconciliation is unavailable.
                   </p>
                 </div>
 
@@ -2795,7 +2748,7 @@ export default function AdminDashboardPage() {
                 <p className="font-serif text-2xl font-bold text-emerald-900">
                   {scenarioSummary?.totalOrders ?? 0}
                 </p>
-                <p className="text-[11px] text-stone-400">Physical cards placed ($9 flat)</p>
+                <p className="text-[11px] text-stone-400">Physical notices placed across postal tiers</p>
               </div>
 
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
@@ -2869,7 +2822,7 @@ export default function AdminDashboardPage() {
                   </span>
                   <p className="font-bold text-sm text-white">Product &amp; Offer Enabled</p>
                   <p className="text-[11px] text-stone-300">
-                    Google SERP rich snippets active: $9.00 flat, in-stock, free USPS First Class delivery.
+                    Structured schema configured across USPS First-Class, Certified Mail, and Return Receipt tiers.
                   </p>
                 </div>
               </div>
@@ -2913,19 +2866,15 @@ export default function AdminDashboardPage() {
                         <th className="py-3 px-4">Scenario &amp; Query</th>
                         <th className="py-3 px-4">Category</th>
                         <th className="py-3 px-4 text-center">Views</th>
-                        <th className="py-3 px-4 text-center">Funnel (View→Edit→Pay)</th>
+                        <th className="py-3 px-4 text-center">Legacy Stage Counters</th>
                         <th className="py-3 px-4 text-center">Conversion</th>
-                        <th className="py-3 px-4 text-center">Health Status</th>
-                        <th className="py-3 px-4">Optimization Recommendation</th>
+                        <th className="py-3 px-4 text-center">Confidence</th>
+                        <th className="py-3 px-4">Legacy Heuristic</th>
                         <th className="py-3 px-4 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
                       {filteredScenarioMetrics.map((item) => {
-                        const isTop = item.status === "top_performer";
-                        const isNeedsAttention = item.status === "needs_attention";
-                        const isHealthy = item.status === "healthy";
-
                         return (
                           <tr key={item.slug} className="hover:bg-stone-50/50 transition">
                             <td className="py-3.5 px-4">
@@ -2960,38 +2909,24 @@ export default function AdminDashboardPage() {
                             </td>
 
                             <td className="py-3.5 px-4 text-center font-serif font-bold text-stone-900 text-sm">
-                              {item.conversionRate}%
+                                Unavailable
                             </td>
 
                             <td className="py-3.5 px-4 text-center">
                               <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                  isTop
-                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                    : isHealthy
-                                    ? "bg-blue-100 text-blue-800 border-blue-300"
-                                    : isNeedsAttention
-                                    ? "bg-rose-100 text-rose-800 border-rose-300"
-                                    : "bg-stone-100 text-stone-600 border-stone-200"
-                                }`}
+                                className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-50 text-amber-900 border-amber-200"
                               >
-                                {isTop
-                                  ? "Top Performer"
-                                  : isHealthy
-                                  ? "Healthy"
-                                  : isNeedsAttention
-                                  ? "Needs Tweak"
-                                  : "Gathering Data"}
+                                Unverified
                               </span>
                             </td>
 
                             <td className="py-3.5 px-4 max-w-[240px]">
                               <p className="text-[11px] text-stone-600 leading-snug">
-                                {item.actionableInsight}
+                                Not validated: {item.actionableInsight}
                               </p>
                               {item.primaryDropoffStep !== "None (Initial Traffic)" && (
                                 <span className="text-[10px] text-amber-800 font-medium block mt-0.5">
-                                  Bottleneck: {item.primaryDropoffStep}
+                                  Legacy heuristic: {item.primaryDropoffStep}
                                 </span>
                               )}
                             </td>
@@ -3042,7 +2977,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <h2
                       className={`text-base font-bold flex items-center gap-2 ${
-                        hasActiveAlerts ? "text-rose-700" : "text-emerald-800"
+                        hasActiveAlerts ? "text-rose-700" : "text-stone-900"
                       }`}
                     >
                       {hasActiveAlerts && (
@@ -3055,13 +2990,13 @@ export default function AdminDashboardPage() {
                         {unresolvedIncidents.length} Active Alert{unresolvedIncidents.length > 1 ? "s" : ""}
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        All Systems Operational
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                        0 Open Incidents &bull; Provider Probes Unverified
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    Real-time incident log for Stripe checkout, document generation, and Lob USPS dispatch.
+                    Recorded application incident log. Absence of recorded incidents does not verify live Stripe, Lob, CASS, or webhook connectivity.
                   </p>
                 </div>
 
@@ -3189,18 +3124,18 @@ export default function AdminDashboardPage() {
               {/* INCIDENTS LIST */}
               {filteredIncidents.length === 0 ? (
                 incidentFilter === "UNRESOLVED" ? (
-                  <div className="text-center py-10 px-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 space-y-2">
-                    <ShieldCheck className="w-10 h-10 text-emerald-600 mx-auto" />
-                    <p className="font-bold text-sm text-emerald-900">All Systems Healthy &amp; Operational</p>
-                    <p className="text-xs text-emerald-700 max-w-md mx-auto">
-                      No active or unresolved alerts. Third-party API calls (Stripe, Lob) are executing smoothly without errors.
+                  <div className="text-center py-10 px-4 rounded-2xl bg-amber-50/40 border border-amber-200 space-y-2">
+                    <ShieldCheck className="w-10 h-10 text-amber-600 mx-auto" />
+                    <p className="font-bold text-sm text-stone-900">0 Unresolved Incidents Recorded (Live Provider Health Unverified)</p>
+                    <p className="text-xs text-stone-600 max-w-md mx-auto">
+                      No unresolved incident documents are currently stored in Firestore. Live Stripe, Lob, CASS, and webhook endpoints have not been verified by a fresh health probe.
                     </p>
                     {resolvedIncidents.length > 0 && (
                       <div className="pt-2">
                         <button
                           type="button"
                           onClick={() => setIncidentFilter("RESOLVED")}
-                          className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
+                          className="text-xs font-semibold text-amber-900 hover:text-amber-950 underline cursor-pointer"
                         >
                           View {resolvedIncidents.length} resolved incident{resolvedIncidents.length > 1 ? "s" : ""} in archive &rarr;
                         </button>
@@ -3215,10 +3150,10 @@ export default function AdminDashboardPage() {
                   </div>
                 ) : (
                   <div className="text-center py-10 px-4 rounded-2xl bg-stone-50 border border-stone-200 text-stone-500 text-xs space-y-1">
-                    <ShieldCheck className="w-8 h-8 text-emerald-500 mx-auto mb-1 opacity-80" />
-                    <p className="font-semibold text-stone-700">No Incidents Recorded</p>
-                    <p className="text-[11px] text-stone-400">
-                      Third-party API calls (Stripe, Lob) are executing smoothly without errors.
+                    <ShieldCheck className="w-8 h-8 text-amber-500 mx-auto mb-1 opacity-80" />
+                    <p className="font-semibold text-stone-700">No Incidents Recorded in Firestore</p>
+                    <p className="text-[11px] text-stone-500">
+                      Zero incident records logged. Live third-party provider connectivity remains unverified until probed.
                     </p>
                   </div>
                 )
@@ -3396,7 +3331,7 @@ export default function AdminDashboardPage() {
             <ShieldCheck className="w-5 h-5" />
             <span
               className={`w-2 h-2 rounded-full absolute -top-0.5 -right-0.5 ring-2 ring-white ${
-                hasActiveAlerts ? "bg-rose-500 animate-pulse" : "bg-emerald-500"
+                hasActiveAlerts ? "bg-rose-500 animate-pulse" : "bg-amber-500"
               }`}
             />
           </div>

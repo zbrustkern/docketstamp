@@ -5,6 +5,8 @@ import { useSearchParams, usePathname } from "next/navigation";
 import { OrderAttribution } from "@/lib/types";
 import { getGoogleClientId } from "@/lib/telemetry";
 import { trackMetaPageView, getMetaBrowserCookie, buildMetaFbcString } from "@/lib/meta-ads";
+import { readAttributionLedger, recordAttributionTouch } from "@/lib/admin-console/measurement/attribution";
+import { emitBusinessEvent } from "@/lib/admin-console/measurement/client";
 
 export const SMN_ATTRIBUTION_KEY = "smn_attribution";
 
@@ -83,6 +85,14 @@ function AttributionTrackerInner() {
     if (typeof window === "undefined") return;
 
     try {
+      const currentPath = pathname || window.location.pathname;
+      const entrySurface = currentPath === '/' ? 'home' : currentPath.startsWith('/notices/') ? 'notice_workspace' : currentPath.startsWith('/companies') ? 'company_directory' : 'other';
+      emitBusinessEvent({
+        eventName: 'entry_viewed',
+        entrySurface,
+        logicalKey: `entry:${currentPath}`,
+      });
+
       const isGpcActive =
         typeof navigator !== "undefined" &&
         (navigator as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
@@ -136,6 +146,16 @@ function AttributionTrackerInner() {
           gpc: isGpcActive || undefined,
           capturedAt: Date.now(),
         };
+
+        const priorLedger = readAttributionLedger();
+        const isOfferTouch = Boolean(searchParams.get("offer") || searchParams.get("coupon") || searchParams.get("promo"));
+        recordAttributionTouch({
+          pathname,
+          source: attribution.utmSource,
+          medium: attribution.utmMedium,
+          campaign: attribution.utmCampaign,
+          kind: priorLedger?.originalAcquisition ? (isOfferTouch ? "offer" : "recovery") : "acquisition",
+        });
 
         sessionStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(attribution));
         localStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(attribution));
@@ -228,6 +248,16 @@ function AttributionTrackerInner() {
         gpc: isGpcActive || undefined,
         capturedAt: Date.now(),
       };
+
+      if (!readAttributionLedger()?.originalAcquisition) {
+        recordAttributionTouch({
+          pathname,
+          source: detectedSource,
+          medium: detectedMedium,
+          campaign: "direct_organic",
+          kind: "acquisition",
+        });
+      }
 
       sessionStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(defaultAttribution));
       localStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(defaultAttribution));

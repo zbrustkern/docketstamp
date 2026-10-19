@@ -400,13 +400,25 @@ export interface FinancialMargins {
   stripeFeesCents: number;
   fulfillmentCogsCents: number;
   netContributionMarginCents: number;
-  netContributionMarginPercent: number;
+  netContributionMarginPercent: number | null;
   paidCardsCount: number;
   averageOrderRevenueCents: number;
   averageStripeFeeCents: number;
   averageFulfillmentCogsCents: number;
   averageNetContributionCents: number; // break-even target CPA
   targetBreakevenCpaDollars: number;
+  economicsAuthority?: "estimated_legacy_unverified" | "verified_ledger";
+}
+
+export interface AdminReportingQuality {
+  status: "legacy_interim_unverified";
+  funnelAuthority: "session_telemetry_only_no_synthetic_backfill";
+  economicsAuthority: "estimated_pending_provider_fee_cogs_ledger";
+  healthAuthority: "configuration_only_no_live_probe";
+  hasVerifiedRevenue: boolean;
+  hasObservedSessions: boolean;
+  unmatchedPaidOrdersCount: number;
+  notes: string[];
 }
 
 export interface CampaignAttributionMetric {
@@ -537,6 +549,7 @@ export interface AdminMetrics {
   campaignAttributions?: CampaignAttributionMetric[];
   adSpendCents?: number;
   valuationAssumptions?: ValuationHeuristicAssumptions;
+  reportingQuality?: AdminReportingQuality;
   recentOrders: Order[];
 }
 

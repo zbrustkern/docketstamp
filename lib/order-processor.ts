@@ -30,6 +30,7 @@ export interface ProcessOrderOptions {
   userAgent?: string;
   isTest?: boolean;
   paymentMode?: "live" | "stripe_test" | "local_mock";
+  authorityFactId?: string;
 }
 
 export interface SenderValidationResult {
@@ -103,6 +104,31 @@ export async function processPaidOrder(
   clientContext?: ProcessOrderOptions
 ): Promise<ProcessPaidOrderResult> {
   let order: Order;
+
+  // Real Stripe PaymentIntents must have a durable finance fact before this
+  // legacy inline fulfillment path can acquire its dispatch lock.
+  if (paymentIntentId.startsWith("pi_") && !paymentIntentId.startsWith("pi_mock_")) {
+    if (!clientContext?.authorityFactId) {
+      return {
+        success: false,
+        status: "PAYMENT_AUTHORITY_REQUIRED",
+        error: "Verified payment authority fact is required before fulfillment.",
+      };
+    }
+    const authority = await firestoreDb.collection("payment_facts_v1").doc(clientContext.authorityFactId).get();
+    const fact = authority.exists ? (authority.data() as Record<string, unknown>) : null;
+    if (
+      !fact || fact.kind !== "capture" || fact.verification !== "verified" ||
+      fact.orderId !== orderId || fact.providerObjectId !== paymentIntentId || fact.provider !== "stripe" ||
+      fact.providerMode !== (clientContext.paymentMode === "stripe_test" ? "test" : clientContext.paymentMode)
+    ) {
+      return {
+        success: false,
+        status: "PAYMENT_AUTHORITY_INVALID",
+        error: "Verified payment authority fact does not match the order and PaymentIntent.",
+      };
+    }
+  }
 
   // 1. Atomic Locking via Firestore Transaction:
   // Read and check status atomically, and claim the 'DISPATCHING' lock.

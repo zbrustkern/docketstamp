@@ -1,18 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import {
-  TrendingUp,
-  Globe,
-  ExternalLink,
   Target,
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
   Search,
   Activity,
-  CheckCircle2,
 } from "lucide-react";
 import { AdminMetrics, Order } from "@/lib/types";
 
@@ -34,69 +26,73 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
     {
       name: string;
       channel: string;
-      visitors: number;
-      reachedAddress: number;
-      purchases: number;
-      revenueDollars: number;
-      netMarginDollars: number;
+      recentSessionSample: number;
+      addressReachedSample: number;
+      recentOrderSample: number;
+      unmatchedOrderSample: number;
+      amountFieldSumDollars: number;
       landingPage?: string;
     }
   >();
 
-  // 1. Populate from sessions
+  // These inputs are different bounded samples (50 recent sessions and 50 recent orders).
+  // Display each sample separately; they are not a campaign cohort and cannot support rates.
   for (const s of sessions) {
     const campName = s.campaign || (s.gclid ? "Google Ads (Auto-Tagged)" : s.source ? `${s.source} / ${s.medium}` : "Direct / Organic");
-    const channel = s.gclid || s.source === "google" && s.medium === "cpc" ? "Google Ads" : s.medium === "organic" ? "Organic" : s.medium === "social" ? "Social" : "Direct";
+    const channel = s.gclid || (s.source === "google" && s.medium === "cpc") ? "Google Ads" : s.medium === "organic" ? "Organic" : s.medium === "social" ? "Social" : "Direct";
 
     if (!campaignDataMap.has(campName)) {
       campaignDataMap.set(campName, {
         name: campName,
         channel,
-        visitors: 0,
-        reachedAddress: 0,
-        purchases: 0,
-        revenueDollars: 0,
-        netMarginDollars: 0,
+        recentSessionSample: 0,
+        addressReachedSample: 0,
+        recentOrderSample: 0,
+        unmatchedOrderSample: 0,
+        amountFieldSumDollars: 0,
         landingPage: s.landingPath,
       });
     }
 
     const row = campaignDataMap.get(campName)!;
-    row.visitors++;
+    row.recentSessionSample++;
     if (s.highestStep >= 3) {
-      row.reachedAddress++;
-    }
-    if (s.completed) {
-      row.purchases++;
-      row.revenueDollars += 9.0;
-      row.netMarginDollars += 3.56;
+      row.addressReachedSample++;
     }
   }
 
-  // 2. Also incorporate completed orders that have attribution
+  // Keep the bounded recent-order sample separate from session evidence.
   for (const ord of orders) {
-    if (ord.status === "PENDING_PAYMENT" || ord.status === "FAILED" || ord.status === "PAYMENT_VERIFICATION_FAILED") continue;
+    if (
+      ord.status === "PENDING_PAYMENT" ||
+      ord.status === "FAILED" ||
+      ord.status === "PAYMENT_VERIFICATION_FAILED" ||
+      (ord.status === "QUEUED_FOR_FULFILLMENT" && !ord.stripePaymentId && (ord.amountInCents === undefined || ord.amountInCents <= 0))
+    ) {
+      continue;
+    }
     const camp = ord.attribution?.utmCampaign || (ord.attribution?.gclid ? "Google Ads" : "Direct / Organic");
-    if (campaignDataMap.has(camp)) {
-      // Ensure orders count matches
-      const r = campaignDataMap.get(camp)!;
-      if (r.purchases === 0) {
-        r.purchases += 1;
-        r.revenueDollars += (ord.amountInCents || 900) / 100;
-        r.netMarginDollars += 3.56;
-      }
-    } else {
+    const observedRevenueDollars =
+      typeof ord.amountInCents === "number" && Number.isFinite(ord.amountInCents) && ord.amountInCents > 0
+        ? ord.amountInCents / 100
+        : 0;
+
+    if (!campaignDataMap.has(camp)) {
       campaignDataMap.set(camp, {
         name: camp,
         channel: ord.attribution?.gclid ? "Google Ads" : "Direct",
-        visitors: 1,
-        reachedAddress: 1,
-        purchases: 1,
-        revenueDollars: (ord.amountInCents || 900) / 100,
-        netMarginDollars: 3.56,
+        recentSessionSample: 0,
+        addressReachedSample: 0,
+        recentOrderSample: 0,
+        unmatchedOrderSample: 0,
+        amountFieldSumDollars: 0,
         landingPage: ord.attribution?.landingPath,
       });
     }
+    const row = campaignDataMap.get(camp)!;
+    row.recentOrderSample++;
+    row.unmatchedOrderSample++;
+    row.amountFieldSumDollars += observedRevenueDollars;
   }
 
   const rows = Array.from(campaignDataMap.values()).filter((r) => {
@@ -112,27 +108,33 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
               <Target className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Live Campaign Performance &amp; Channel Attribution</span>
+              <span>Campaign Attribution Samples</span>
             </h2>
-            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live Funnel
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Interim Rollup &bull; Unverified Attribution
             </span>
           </div>
           <p className="text-xs text-stone-500 mt-1">
-            Tracks real ad performance, high-intent address entries, and net contribution without opening Google Ads.
+              Separate samples of up to 50 recent sessions and 50 recent orders. They are not a complete campaign cohort or a verified session-to-order join; amount fields are unreconciled.
           </p>
         </div>
 
-        {/* GOOGLE ADS & GA4 HEALTH STATUS PILLS */}
+        {/* GOOGLE ADS & GA4 CONFIG TAG PILLS (UNVERIFIED UNTIL PROBED) */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>Google Ads: AW-18474411963</span>
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 border border-stone-300 text-stone-700 text-xs font-semibold"
+            title="Configured tag identifier only; live pixel firing and conversion delivery are unverified without a fresh probe"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>Google Ads: AW-18474411963 (Config Only &bull; Unverified)</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span>GA4: G-5DV25FZ7Q8</span>
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 border border-stone-300 text-stone-700 text-xs font-semibold"
+            title="Configured measurement ID only; live stream ingestion is unverified without a fresh probe"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>GA4: G-5DV25FZ7Q8 (Config Only &bull; Unverified)</span>
           </div>
         </div>
       </div>
@@ -140,7 +142,7 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
       {/* SEARCH & FILTERS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <span className="text-xs font-semibold text-stone-700">
-          Active Traffic Channels ({rows.length})
+          Campaigns in Recent Samples ({rows.length})
         </span>
 
         <div className="relative w-full sm:w-64">
@@ -161,7 +163,7 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
           <Activity className="w-6 h-6 text-stone-400 mx-auto animate-pulse" />
           <p className="text-xs font-medium text-stone-700">Awaiting Ad Clicks &amp; Visitor Sessions</p>
           <p className="text-[11px] text-stone-500 max-w-md mx-auto">
-            Once ad traffic hits your landing pages, each campaign (e.g. Pet Loss, Anniversary) will display here with live visitor counts, address entries, and purchases.
+              No campaign rows are present in the current recent samples. This does not establish zero campaign traffic or purchases.
           </p>
         </div>
       ) : (
@@ -171,19 +173,16 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
               <tr>
                 <th className="py-2.5 px-3">Campaign / Source</th>
                 <th className="py-2.5 px-3">Channel</th>
-                <th className="py-2.5 px-3 text-center">Visitors</th>
-                <th className="py-2.5 px-3 text-center">Reached Address (Step 3)</th>
-                <th className="py-2.5 px-3 text-center">Purchases</th>
-                <th className="py-2.5 px-3 text-right">Conv. Rate</th>
-                <th className="py-2.5 px-3 text-right">Gross Revenue</th>
-                <th className="py-2.5 px-3 text-right">Net Studio Margin</th>
+                <th className="py-2.5 px-3 text-center">Recent Sessions (≤50)</th>
+                <th className="py-2.5 px-3 text-center">Address Step in Sample</th>
+                <th className="py-2.5 px-3 text-center">Recent Orders (≤50)</th>
+                <th className="py-2.5 px-3 text-right">Session Conversion</th>
+                <th className="py-2.5 px-3 text-right">Order Amount Field Sum</th>
+                <th className="py-2.5 px-3 text-right">Contribution</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {rows.map((row, idx) => {
-                const convRate = row.visitors > 0 ? ((row.purchases / row.visitors) * 100).toFixed(1) : "0.0";
-                const highIntentRate = row.visitors > 0 ? Math.round((row.reachedAddress / row.visitors) * 100) : 0;
-
                 return (
                   <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
                     <td className="py-3 px-3">
@@ -193,6 +192,11 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
                       {row.landingPage && (
                         <span className="text-[10px] text-stone-400 font-mono truncate block max-w-[180px]">
                           {row.landingPage}
+                        </span>
+                      )}
+                      {row.unmatchedOrderSample > 0 && (
+                        <span className="text-[10px] text-amber-700 font-medium block">
+                          Order/session joins unavailable
                         </span>
                       )}
                     </td>
@@ -210,40 +214,37 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
                     </td>
 
                     <td className="py-3 px-3 text-center font-medium text-stone-700">
-                      {row.visitors}
+                      {row.recentSessionSample}
                     </td>
 
                     <td className="py-3 px-3 text-center">
                       <span className="inline-flex items-center gap-1 font-semibold text-stone-800">
-                        {row.reachedAddress}
-                        <span className="text-[10px] font-normal text-stone-400">
-                          ({highIntentRate}%)
-                        </span>
+                        {row.addressReachedSample}
                       </span>
                     </td>
 
                     <td className="py-3 px-3 text-center">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full font-bold text-xs ${
-                          row.purchases > 0
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                          row.recentOrderSample > 0
+                            ? "bg-amber-50 text-amber-900 border border-amber-200"
                             : "text-stone-400"
                         }`}
                       >
-                        {row.purchases}
+                        {row.recentOrderSample}
                       </span>
                     </td>
 
                     <td className="py-3 px-3 text-right font-medium text-stone-800">
-                      {convRate}%
+                      Unavailable
                     </td>
 
                     <td className="py-3 px-3 text-right font-semibold text-stone-900">
-                      ${row.revenueDollars.toFixed(2)}
+                      ${row.amountFieldSumDollars.toFixed(2)}
                     </td>
 
-                    <td className="py-3 px-3 text-right font-bold text-emerald-700">
-                      +${row.netMarginDollars.toFixed(2)}
+                    <td className="py-3 px-3 text-right font-medium text-stone-500">
+                      Unavailable
                     </td>
                   </tr>
                 );

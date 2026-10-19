@@ -44,6 +44,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { trackFunnelEvent, getSessionId } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
+import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
 
 export interface CheckoutModalProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export interface CheckoutModalProps {
   userValues: Record<string, string>;
   isSignatureAdopted?: boolean;
   entrySource?: EntrySource | string;
+  draftRevision?: number;
 }
 
 export interface LockedAttempt {
@@ -96,6 +98,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   userValues,
   isSignatureAdopted = false,
   entrySource = 'home_chooser',
+  draftRevision = 0,
 }) => {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
@@ -113,6 +116,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Funnel Event: checkout_view when CheckoutModal opens
   useEffect(() => {
     if (isOpen) {
+      emitBusinessEvent({
+        eventName: 'checkout_viewed',
+        noticeId: doc.noticeDefinition.slug,
+        tier: selectedTier,
+        entrySurface: entrySource,
+        draftRevision,
+        logicalKey: `checkout-view:${doc.noticeDefinition.slug}:${draftRevision}`,
+      });
       trackFunnelEvent({
         eventName: 'checkout_view',
         step: 5,
@@ -123,7 +134,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         experienceVersion: 'home_v2',
       });
     }
-  }, [isOpen, doc.noticeDefinition.slug, selectedTier, entrySource]);
+  }, [isOpen, doc.noticeDefinition.slug, selectedTier, entrySource, draftRevision]);
 
   // Auto-populate email if user is signed in
   useEffect(() => {
@@ -207,15 +218,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     // If an identical lock attempt already exists, advance to payment step
     if (lockedAttempt && lockedAttempt.fingerprint === currentFingerprint) {
-      trackFunnelEvent({
-        eventName: 'payment_submitted',
-        step: 6,
-        noticeSlug: doc.noticeDefinition.slug,
+      emitBusinessEvent({
+        eventName: 'legacy_intent_initialized',
+        noticeId: doc.noticeDefinition.slug,
         tier: lockedAttempt.tier,
         orderId: lockedAttempt.orderId,
-        amountInCents: lockedAttempt.amountCents,
-        entrySource,
-        experienceVersion: 'home_v2',
+        entrySurface: entrySource,
+        draftRevision,
+        logicalKey: `intent-initialized:${lockedAttempt.orderId}`,
       });
       setStep('payment');
       return;
@@ -297,15 +307,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         fingerprint: computeFingerprint(selectedTier, cleanEmail, userValues, isSignatureAdopted),
       };
 
-      trackFunnelEvent({
-        eventName: 'payment_submitted',
-        step: 6,
-        noticeSlug: doc.noticeDefinition.slug,
+      emitBusinessEvent({
+        eventName: 'legacy_intent_initialized',
+        noticeId: doc.noticeDefinition.slug,
         tier: data.tier || selectedTier,
         orderId: data.orderId,
-        amountInCents: data.amountCents || freshAttempt.amountCents,
-        entrySource,
-        experienceVersion: 'home_v2',
+        entrySurface: entrySource,
+        draftRevision,
+        logicalKey: `intent-initialized:${data.orderId}`,
       });
 
       setLockedAttempt(freshAttempt);
@@ -547,6 +556,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               setStep('delivery');
             }}
             onPaymentSuccess={handlePaymentSuccess}
+            draftRevision={draftRevision}
+            noticeId={doc.noticeDefinition.slug}
+            tier={selectedTier}
+            entrySource={entrySource}
           />
         )}
 
@@ -658,6 +671,10 @@ interface PaymentStepFormProps {
   setErrorMessage: (msg: string | null) => void;
   onBackToDelivery: () => void;
   onPaymentSuccess: () => void;
+  draftRevision: number;
+  noticeId: string;
+  tier: MailTierId;
+  entrySource: string;
 }
 
 const PaymentStepForm: React.FC<PaymentStepFormProps> = (props) => {
@@ -712,6 +729,10 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
   setErrorMessage,
   onBackToDelivery,
   onPaymentSuccess,
+  draftRevision,
+  noticeId,
+  tier,
+  entrySource,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -724,6 +745,18 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
     setIsProcessingPayment(true);
     setErrorMessage(null);
 
+    const checkoutAttemptId = `checkout_${crypto.randomUUID()}`;
+    emitBusinessEvent({
+      eventName: 'payment_attempted',
+      noticeId,
+      tier,
+      entrySurface: entrySource,
+      draftRevision,
+      checkoutAttemptId,
+      orderId: lockedAttempt.orderId,
+      logicalKey: `payment-attempt:${checkoutAttemptId}`,
+    });
+
     try {
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
@@ -735,10 +768,33 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
       });
 
       if (confirmError) {
+        emitBusinessEvent({
+          eventName: 'payment_client_result',
+          noticeId,
+          tier,
+          entrySurface: entrySource,
+          draftRevision,
+          checkoutAttemptId,
+          orderId: lockedAttempt.orderId,
+          safeProperties: { result: 'error' },
+          logicalKey: `payment-result:${checkoutAttemptId}`,
+        });
         setErrorMessage(confirmError.message || 'Payment confirmation failed. Please try another card.');
         setIsProcessingPayment(false);
         return;
       }
+
+      emitBusinessEvent({
+        eventName: 'payment_client_result',
+        noticeId,
+        tier,
+        entrySurface: entrySource,
+        draftRevision,
+        checkoutAttemptId,
+        orderId: lockedAttempt.orderId,
+        safeProperties: { result: paymentIntent?.status === 'succeeded' ? 'succeeded' : 'pending' },
+        logicalKey: `payment-result:${checkoutAttemptId}`,
+      });
 
       // Notify server of confirmed order payment
       try {
@@ -809,7 +865,18 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
         )}
         <PaymentElement
           options={{ layout: 'tabs' }}
-          onReady={() => setIsElementReady(true)}
+          onReady={() => {
+            setIsElementReady(true);
+            emitBusinessEvent({
+              eventName: 'payment_form_ready',
+              noticeId,
+              tier,
+              entrySurface: entrySource,
+              draftRevision,
+              orderId: lockedAttempt.orderId,
+              logicalKey: `payment-form-ready:${lockedAttempt.orderId}`,
+            });
+          }}
           onLoadError={(err) => setErrorMessage(err.error?.message || 'Could not load payment form.')}
         />
       </div>

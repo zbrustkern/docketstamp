@@ -30,7 +30,7 @@ export async function GET(
       );
     }
 
-    const draft = getStagedDraft(stageId);
+    const draft = await getStagedDraft(stageId);
 
     if (!draft) {
       return NextResponse.json(

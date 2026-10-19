@@ -6,6 +6,8 @@ import { MailTierId, PricingTierMetadata } from '@/src/lib/docket/types';
 import { getNoticeBySlug, DOCKET_PRICING_TIERS } from '@/src/lib/docket/notices';
 import { getVerifiedRecipientById } from '@/src/lib/docket/data/verified-recipients';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/src/lib/docket/guardrails';
+import { firestoreDb, sanitizeFirestoreData } from '@/lib/firebase-admin';
+import { recordServerBusinessEvent } from '@/lib/admin-console/measurement/store';
 
 export interface PostalAddressInput {
   name?: string;
@@ -74,13 +76,7 @@ const DATA_DIR = path.join(process.cwd(), '.data');
 const DRAFTS_FILE = path.join(DATA_DIR, 'staged-drafts.json');
 
 function generateStageId(): string {
-  const chars = '0123456789ABCDEF';
-  let hex = '';
-  const bytes = crypto.randomBytes(6);
-  for (let i = 0; i < 6; i++) {
-    hex += chars[bytes[i] % chars.length];
-  }
-  return `DS-STAGE-${hex}`;
+  return `DS-STAGE-${crypto.randomBytes(16).toString('hex').toUpperCase()}`;
 }
 
 function loadDraftsFromFile(): Map<string, StagedDraftRecord> {
@@ -106,48 +102,31 @@ function loadDraftsFromFile(): Map<string, StagedDraftRecord> {
   return map;
 }
 
-function persistDraft(record: StagedDraftRecord): void {
-  // Always update in-memory
+async function persistDraft(record: StagedDraftRecord): Promise<void> {
+  // New writes must reach shared durable storage before a resumable link is returned.
+  await firestoreDb.collection('staged_drafts_v1').doc(record.stageId).set(
+    sanitizeFirestoreData({ ...record, schemaVersion: 1, expiresAtMs: Date.parse(record.expiresAt) })
+  );
   inMemoryDrafts.set(record.stageId, record);
-
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-
-    const fileMap = loadDraftsFromFile();
-    fileMap.set(record.stageId, record);
-
-    const obj: Record<string, StagedDraftRecord> = {};
-    const now = Date.now();
-    for (const [key, val] of fileMap.entries()) {
-      if (new Date(val.expiresAt).getTime() > now) {
-        obj[key] = val;
-      }
-    }
-
-    fs.writeFileSync(DRAFTS_FILE, JSON.stringify(obj, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('[stage-store] Could not write staged draft to file, relying on in-memory store:', err);
-  }
 }
 
-export function getStagedDraft(stageId: string): StagedDraftRecord | null {
+export async function getStagedDraft(stageId: string): Promise<StagedDraftRecord | null> {
   if (!stageId) return null;
 
   const now = Date.now();
 
-  // Check in-memory first
   let record = inMemoryDrafts.get(stageId);
 
-  // If not found in memory, try loading from file
   if (!record) {
-    const fileMap = loadDraftsFromFile();
-    record = fileMap.get(stageId);
+    const snap = await firestoreDb.collection('staged_drafts_v1').doc(stageId).get();
+    if (snap.exists) record = snap.data() as StagedDraftRecord;
     if (record) {
       inMemoryDrafts.set(stageId, record);
     }
   }
+
+  // Read legacy file drafts during migration; new writes never fall back to process-local storage.
+  if (!record) record = loadDraftsFromFile().get(stageId);
 
   if (!record) return null;
 
@@ -160,7 +139,7 @@ export function getStagedDraft(stageId: string): StagedDraftRecord | null {
   return record;
 }
 
-export function createStagedDraft(body: StageDraftRequest): StageDraftResult {
+export async function createStagedDraft(body: StageDraftRequest): Promise<StageDraftResult> {
   // 1. Guardrail check: assertNonFitnessEntity
   try {
     if (body.noticeSlug) {
@@ -308,7 +287,29 @@ export function createStagedDraft(body: StageDraftRequest): StageDraftResult {
     expiresAt,
   };
 
-  persistDraft(record);
+  try {
+    await persistDraft(record);
+  } catch {
+    console.error('[stage-store] Durable stage write failed; no resume link returned.');
+    return {
+      success: false,
+      status: 503,
+      error: 'Draft could not be saved for resume. Please retry.',
+      code: 'STORAGE_UNAVAILABLE',
+    };
+  }
+
+  // Analytics are observational; a failed event must never undo a durable draft.
+  try {
+    await recordServerBusinessEvent({
+      eventName: 'stage_created',
+      idempotencyKey: `stage-created:${stageId}`,
+      noticeId: notice.slug,
+      classification: 'unresolved',
+    });
+  } catch {
+    console.warn('[stage-store] Stage was saved but measurement event could not be recorded.');
+  }
 
   return {
     success: true,

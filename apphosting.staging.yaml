@@ -17,6 +17,36 @@ env:
     availability:
       - RUNTIME
 
+  # All entries refer to secrets in the staging Firebase project. Secret creation
+  # alone is insufficient: grant this backend access before a reviewed rollout.
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: stripe-webhook-secret
+    availability:
+      - RUNTIME
+
+  # This is a public key, but storing it centrally avoids per-backend drift.
+  # Next.js needs NEXT_PUBLIC values at BUILD as well as RUNTIME.
+  - variable: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    secret: stripe-publishable-key
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: LOB_DISPATCH_API_KEY
+    secret: lob-key
+    availability:
+      - RUNTIME
+
+  - variable: LOB_WEBHOOK_SECRET
+    secret: lob-webhook-secret
+    availability:
+      - RUNTIME
+
+  - variable: ADMIN_SESSION_SIGNING_KEY
+    secret: admin-session-signing-key
+    availability:
+      - RUNTIME
+
   # Invariant 6: Staging deterministic address verification / mock CASS
   - variable: LOB_ENV
     value: staging_mock_cass

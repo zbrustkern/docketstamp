@@ -80,12 +80,49 @@ function verifyLobWebhookRequest(
   return false;
 }
 
+const PLACEHOLDER_WEBHOOK_SECRETS = new Set([
+  "whsec_placeholder",
+  "whsec_replace_me",
+  "placeholder",
+  "lob_whsec_placeholder",
+  "changeme",
+  "secret",
+  "test",
+]);
+
+function isConfiguredWebhookSecret(secret?: string | null): secret is string {
+  if (!secret || typeof secret !== "string") return false;
+  const trimmed = secret.trim();
+  if (trimmed.length < 12) return false;
+  const lower = trimmed.toLowerCase();
+  if (PLACEHOLDER_WEBHOOK_SECRETS.has(lower)) return false;
+  if (lower.includes("placeholder") || lower.includes("replace_me")) return false;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
     const webhookSecret = process.env.LOB_WEBHOOK_SECRET;
+    const allowUnsignedTestHarness =
+      process.env.NODE_ENV === "test" &&
+      process.env.USE_MOCK_FIRESTORE === "true" &&
+      process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST === "true";
 
-    if (webhookSecret && webhookSecret.trim().length > 0) {
+    if (!isConfiguredWebhookSecret(webhookSecret)) {
+      if (!allowUnsignedTestHarness) {
+        console.error(
+          "[LobWebhook] FAIL-CLOSED: LOB_WEBHOOK_SECRET is missing or placeholder; rejecting unsigned webhook."
+        );
+        return NextResponse.json(
+          {
+            error:
+              "LOB_WEBHOOK_SECRET is not configured or uses a placeholder value; webhook rejected (fail-closed).",
+          },
+          { status: 503 }
+        );
+      }
+    } else {
       const isValid = verifyLobWebhookRequest(req, rawBody, webhookSecret.trim());
       if (!isValid) {
         console.warn("[LobWebhook] Unauthorized webhook signature or credential verification failure");

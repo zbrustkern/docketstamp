@@ -79,8 +79,12 @@ export interface LobLetterDispatchParams {
   metadata?: Record<string, string>;
 }
 
+export type LobOperationalMode = 'mock' | 'test_api' | 'live' | 'unconfigured';
+
 export interface LobLetterResult {
   success: boolean;
+  mode?: LobOperationalMode;
+  isSimulatedMock?: boolean;
   letterId?: string;
   trackingNumber?: string;
   url?: string;
@@ -105,7 +109,7 @@ export function getLobVerificationApiKey(): string {
   return (
     process.env.LOB_ADDRESS_VERIFICATION_KEY ||
     process.env['lob-address-verification-key'] ||
-    getLobApiKey()
+    ''
   );
 }
 
@@ -113,8 +117,63 @@ export function getLobDispatchApiKey(): string {
   return (
     process.env.LOB_DISPATCH_API_KEY ||
     process.env['lob-dispatch-api-key'] ||
-    getLobApiKey()
+    ''
   );
+}
+
+/**
+ * Resolves the explicit operational mode for Lob physical letter dispatch:
+ * - 'live': live payment context AND valid live_* Lob dispatch key
+ * - 'test_api': non-live context AND valid test_* Lob dispatch key
+ * - 'mock': local/test/staging_mock_cass context with no Lob API key configured
+ * - 'unconfigured': live context without a live_* key, or unrecognized/invalid key prefix (fail-closed)
+ */
+export function resolveLobDispatchMode(): LobOperationalMode {
+  const apiKey = getLobDispatchApiKey().trim();
+  const isStagingMock = process.env.LOB_ENV === 'staging_mock_cass';
+
+  // This explicit mode always prevents physical production dispatch, even if
+  // Stripe is configured with live keys or a live Lob key is accidentally set.
+  if (isStagingMock) {
+    if (apiKey.startsWith('test_')) return 'test_api';
+    if (!apiKey) return 'mock';
+    return 'unconfigured';
+  }
+
+  let paymentMode = 'local_mock';
+  try {
+    paymentMode = resolvePaymentMode();
+  } catch {
+    paymentMode = 'local_mock';
+  }
+
+  const isLiveRequired =
+    paymentMode === 'live' ||
+    process.env.LOB_ENV === 'live' ||
+    process.env.LOB_ENV === 'production' ||
+    (process.env.NODE_ENV === 'production' && paymentMode !== 'stripe_test');
+
+  if (isLiveRequired) {
+    if (apiKey.startsWith('live_')) {
+      return 'live';
+    }
+    return 'unconfigured';
+  }
+
+  if (apiKey.startsWith('test_')) {
+    return 'test_api';
+  }
+
+  if (!apiKey) {
+    return 'mock';
+  }
+
+  if (apiKey.startsWith('live_')) {
+    // Never dispatch live physical mail when paymentMode is test/mock
+    return 'unconfigured';
+  }
+
+  return 'unconfigured';
 }
 
 function getLobAuthHeader(key: string): string {
@@ -153,7 +212,7 @@ export async function verifyUsAddress(
   address: LobAddressInput | PostalAddress
 ): Promise<LobAddressVerificationResult> {
   const norm = normalizeAddressInput(address);
-  const apiKey = getLobVerificationApiKey();
+  const apiKey = getLobVerificationApiKey().trim();
   let paymentMode = 'local_mock';
   try {
     paymentMode = resolvePaymentMode();
@@ -161,9 +220,23 @@ export async function verifyUsAddress(
     paymentMode = 'local_mock';
   }
   const isStagingMock = process.env.LOB_ENV === 'staging_mock_cass';
+  const isLiveRequired =
+    !isStagingMock &&
+    (paymentMode === 'live' ||
+      process.env.LOB_ENV === 'live' ||
+      process.env.LOB_ENV === 'production' ||
+      (process.env.NODE_ENV === 'production' && paymentMode !== 'stripe_test'));
+
+  if (isLiveRequired && !apiKey.startsWith('live_')) {
+    return {
+      valid: false,
+      deliverability: 'undeliverable',
+      error: 'USPS CASS live verification key (live_*) is not configured in live mode (fail-closed).',
+    };
+  }
 
   // Staging mock or local test mode fallback
-  if (isStagingMock || !apiKey || paymentMode === 'local_mock') {
+  if (isStagingMock || (!apiKey && !isLiveRequired) || (paymentMode === 'local_mock' && !apiKey)) {
     const cleanZip = norm.zip.trim().slice(0, 5) || '10001';
     const plus4 = norm.zip.length > 5 ? norm.zip.slice(-4) : '1001';
     return {
@@ -243,21 +316,15 @@ export async function verifyUsAddress(
 
 /**
  * Dispatches a formal legal notice letter via physical USPS mail using Lob /v1/letters.
- * Maps:
- * - first_class -> extra_service: undefined
- * - certified -> extra_service: 'certified'
- * - certified_return_receipt -> extra_service: 'certified_return_receipt'
+ * Enforces explicit operational mode ('mock' | 'test_api' | 'live' | 'unconfigured'):
+ * - Never falls back to synthetic mock success when 'test_api' or 'live' fails.
+ * - Fails closed ('unconfigured') when live mode lacks a valid live_* key.
  */
 export async function dispatchDocketLetter(
   params: LobLetterDispatchParams
 ): Promise<LobLetterResult> {
-  const apiKey = getLobDispatchApiKey();
-  let paymentMode = 'local_mock';
-  try {
-    paymentMode = resolvePaymentMode();
-  } catch {
-    paymentMode = 'local_mock';
-  }
+  const apiKey = getLobDispatchApiKey().trim();
+  const mode = resolveLobDispatchMode();
 
   // Normalize service level / tier
   const tier: MailTierId =
@@ -270,38 +337,52 @@ export async function dispatchDocketLetter(
       ? 'first_class'
       : (params.serviceLevel as MailTierId) || 'certified');
 
-  // Test mode safety: never order real physical letters under test credentials
-  if (!apiKey || paymentMode === 'stripe_test' || paymentMode === 'local_mock' || apiKey.startsWith('test_')) {
-    console.log(
-      `[Lob Test Dispatch] Simulating ${tier} dispatch for order ${params.orderId} (Docket: ${params.docketId})`
-    );
-
-    // If using Lob's real test key (starts with test_), we can dispatch to Lob sandbox
-    if (apiKey && apiKey.startsWith('test_')) {
-      try {
-        return await executeLobHttpRequest(apiKey, params, tier);
-      } catch (e: any) {
-        console.warn(`[Lob Test API Failed, falling back to mock] ${e.message}`);
-      }
-    }
-
-    const mockTracking =
-      tier === 'first_class'
-        ? `94001000000000${Math.floor(100000000 + Math.random() * 900000000)}`
-        : `702006400000${Math.floor(10000000 + Math.random() * 90000000)}`;
-
+  if (mode === 'unconfigured') {
     return {
-      success: true,
-      letterId: `test_lob_ltr_${params.orderId}`,
-      trackingNumber: mockTracking,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://docketstamp.com'}/mock-proof/${params.orderId}.pdf`,
-      carrier: 'USPS',
-      expectedDeliveryDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
-      isTest: true,
+      success: false,
+      mode: 'unconfigured',
+      isTest: false,
+      isSimulatedMock: false,
+      error:
+        'Lob dispatch key is unconfigured or mismatched with payment mode; refusing to fabricate dispatch (fail-closed).',
     };
   }
 
-  return await executeLobHttpRequest(apiKey, params, tier);
+  if (mode === 'test_api') {
+    const result = await executeLobHttpRequest(apiKey, params, tier);
+    return {
+      ...result,
+      mode: 'test_api',
+      isTest: true,
+      isSimulatedMock: false,
+    };
+  }
+
+  if (mode === 'mock') {
+    console.log(
+      `[Lob Mock Simulation] Simulating ${tier} dispatch for order ${params.orderId} (Docket: ${params.docketId})`
+    );
+    const mockTracking = `MOCK-SIM-${tier.toUpperCase()}-${params.orderId.replace(/[^a-zA-Z0-9]/g, '').slice(-10) || '0001'}`;
+    return {
+      success: true,
+      mode: 'mock',
+      isTest: true,
+      isSimulatedMock: true,
+      letterId: `mock_lob_ltr_${params.orderId}`,
+      trackingNumber: mockTracking,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://docketstamp.com'}/mock-proof/${params.orderId}.pdf`,
+      carrier: 'USPS_SIMULATED_MOCK',
+      expectedDeliveryDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+    };
+  }
+
+  const liveResult = await executeLobHttpRequest(apiKey, params, tier);
+  return {
+    ...liveResult,
+    mode: 'live',
+    isTest: false,
+    isSimulatedMock: false,
+  };
 }
 
 export const dispatchLetter = dispatchDocketLetter;
@@ -402,6 +483,8 @@ async function executeLobHttpRequest(
 
 export interface LobLetterStatusResult {
   success: boolean;
+  mode?: LobOperationalMode;
+  isSimulatedMock?: boolean;
   status?: string;
   trackingNumber?: string;
   trackingUrl?: string;
@@ -413,27 +496,36 @@ export interface LobLetterStatusResult {
 
 /**
  * Queries real-time Lob USPS letter delivery and dispatch status.
+ * Never returns synthetic live-looking 'in_transit' or fake USPS tracking numbers
+ * for mock/test/unconfigured letters.
  */
 export async function fetchLobLetterStatus(
   letterId: string
 ): Promise<LobLetterStatusResult> {
-  const apiKey = getLobDispatchApiKey();
-  const paymentMode = resolvePaymentMode();
+  const apiKey = getLobDispatchApiKey().trim();
+  const mode = resolveLobDispatchMode();
 
   if (
-    !apiKey ||
-    paymentMode === 'stripe_test' ||
-    paymentMode === 'local_mock' ||
-    letterId.startsWith('test_')
+    letterId.startsWith('mock_') ||
+    letterId.startsWith('test_lob_ltr_') ||
+    mode === 'mock'
   ) {
     return {
-      success: true,
-      status: 'in_transit',
-      trackingNumber: '70200640000012345678',
-      trackingUrl: 'https://tools.usps.com/go/TrackConfirmAction?tLabels=70200640000012345678',
-      dateSent: new Date().toISOString().split('T')[0],
-      carrier: 'USPS',
-      expectedDeliveryDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+      success: false,
+      mode: 'mock',
+      isSimulatedMock: true,
+      status: 'mock_simulated_not_dispatched',
+      error:
+        'Letter was created in simulated mock mode; no live USPS or Lob tracking status exists.',
+    };
+  }
+
+  if (mode === 'unconfigured') {
+    return {
+      success: false,
+      mode: 'unconfigured',
+      isSimulatedMock: false,
+      error: 'Lob dispatch API key is unconfigured; cannot fetch letter status (fail-closed).',
     };
   }
 
@@ -449,6 +541,8 @@ export async function fetchLobLetterStatus(
     if (!res.ok) {
       return {
         success: false,
+        mode,
+        isSimulatedMock: false,
         error: data.error?.message || `Lob status API error ${res.status}`,
       };
     }
@@ -458,6 +552,8 @@ export async function fetchLobLetterStatus(
 
     return {
       success: true,
+      mode,
+      isSimulatedMock: false,
       status: latestEvent?.name || data.status || 'rendered',
       trackingNumber: data.tracking_number,
       trackingUrl: data.tracking_number
@@ -470,6 +566,8 @@ export async function fetchLobLetterStatus(
   } catch (err: any) {
     return {
       success: false,
+      mode,
+      isSimulatedMock: false,
       error: err.message || 'Failed to query Lob postal status',
     };
   }

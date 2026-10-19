@@ -99,6 +99,7 @@ export function setMetaUserData(userData: MetaUserData): void {
  * Fires a standard Meta PageView event.
  */
 export function trackMetaPageView(eventID?: string): void {
+  if (!hasExplicitMarketingConsent()) return;
   if (eventID) {
     callFbq("track", "PageView", {}, { eventID });
   } else {
@@ -279,7 +280,8 @@ export function trackMetaPurchase(params: {
   itemName?: string;
   eventID?: string;
 }): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !hasExplicitMarketingConsent()) return;
+  if (!Number.isFinite(params.value) || !params.value || params.value <= 0) return;
 
   const convKey = `meta_conv_${params.orderId}`;
   if (sessionStorage.getItem(convKey)) {
@@ -288,22 +290,7 @@ export function trackMetaPurchase(params: {
   }
   sessionStorage.setItem(convKey, "true");
 
-  // Advanced Matching enrichment
-  if (params.customerEmail) {
-    const parts = (params.customerName || "").trim().split(/\s+/);
-    setMetaUserData({
-      email: params.customerEmail,
-      firstName: parts[0],
-      lastName: parts.slice(1).join(" "),
-      city: params.recipientCity,
-      state: params.recipientState,
-      zip: params.recipientZip,
-      country: "us",
-      externalId: params.orderId,
-    });
-  }
-
-  const purchaseValue = params.value ?? 9.0;
+  const purchaseValue = params.value;
   const currency = params.currency || "USD";
   const eventId = params.eventID || params.orderId;
 
@@ -313,7 +300,7 @@ export function trackMetaPurchase(params: {
     {
       value: purchaseValue,
       currency,
-      content_name: params.itemName || "Custom Folded Handwritten Card",
+      content_name: "DocketStamp USPS document dispatch",
       content_type: "product",
       content_ids: [params.orderId],
       contents: [
@@ -387,3 +374,4 @@ export function trackMetaCustomEvent(
     callFbq("trackCustom", eventName, params || {});
   }
 }
+import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';

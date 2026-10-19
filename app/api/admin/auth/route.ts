@@ -3,6 +3,7 @@ import {
   generateAdminSessionToken,
   isValidAdminSessionToken,
   getAdminSessionEmail,
+  getAdminSessionSigningKey,
   isAuthorizedAdminEmail,
   AUTHORIZED_ADMIN_EMAILS,
   ADMIN_COOKIE_NAME,
@@ -15,13 +16,28 @@ import {
 
 // Check session status
 export async function GET(req: NextRequest) {
+  const signingKey = getAdminSessionSigningKey();
+  if (!signingKey) {
+    return NextResponse.json(
+      {
+        authenticated: false,
+        email: null,
+        configured: false,
+        authorizedEmails: AUTHORIZED_ADMIN_EMAILS,
+        error: "Admin session signing configuration is missing or invalid (fail-closed).",
+      },
+      { status: 503 }
+    );
+  }
+
   const sessionCookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
   const isAuthenticated = sessionCookie ? isValidAdminSessionToken(sessionCookie) : false;
-  const email = sessionCookie ? getAdminSessionEmail(sessionCookie) : null;
+  const email = sessionCookie && isAuthenticated ? getAdminSessionEmail(sessionCookie) : null;
 
   return NextResponse.json({
     authenticated: isAuthenticated,
-    email: isAuthenticated ? email : null,
+    email,
+    configured: true,
     authorizedEmails: AUTHORIZED_ADMIN_EMAILS,
   });
 }
@@ -46,6 +62,16 @@ export async function POST(req: NextRequest) {
             "Passphrase access has been permanently disabled. Administrator access requires signing in with an authorized Google account.",
         },
         { status: 400 }
+      );
+    }
+
+    if (!getAdminSessionSigningKey()) {
+      return NextResponse.json(
+        {
+          error:
+            "Admin session signing key is not configured or uses a blocklisted secret (fail-closed).",
+        },
+        { status: 503 }
       );
     }
 

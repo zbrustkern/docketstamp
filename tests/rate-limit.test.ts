@@ -54,16 +54,22 @@ async function runTests() {
   }
   console.log("✅ PASS: clearAdminFailedAttempts restores full access");
 
-  // 6. Test timing-safe passphrase comparison
-  const defaultSecret = getAdminSecret() || "ds_dev_admin_2026";
-  const correct = verifyAdminPassphrase(defaultSecret);
-  const incorrect = verifyAdminPassphrase("wrongpassword");
+  // 6. Test timing-safe passphrase comparison & fail-closed default rejection
+  delete process.env.ADMIN_SECRET_KEY;
+  if (getAdminSecret() !== null || verifyAdminPassphrase("ds_dev_admin_2026")) {
+    throw new Error("Expected unconfigured ADMIN_SECRET_KEY and ds_dev_admin_2026 fallback to fail closed");
+  }
+  const explicitTestSecret = "test_only_explicit_admin_secret_2026_valid";
+  process.env.ADMIN_SECRET_KEY = explicitTestSecret;
+  const correct = verifyAdminPassphrase(explicitTestSecret);
+  const incorrect = verifyAdminPassphrase("wrongpassword_of_sufficient_length");
   const short = verifyAdminPassphrase("short");
   const empty = verifyAdminPassphrase("");
+  const blocklisted = verifyAdminPassphrase("ds_dev_admin_2026");
 
-  if (!correct) throw new Error("Expected default secret key to verify");
-  if (incorrect || short || empty) throw new Error("Expected invalid passphrases to fail");
-  console.log("✅ PASS: Constant-time passphrase comparison verified");
+  if (!correct) throw new Error("Expected explicit configured secret key to verify");
+  if (incorrect || short || empty || blocklisted) throw new Error("Expected invalid or blocklisted passphrases to fail");
+  console.log("✅ PASS: Constant-time passphrase comparison and fail-closed default rejection verified");
 
   console.log("=================================================");
   console.log("🎉 ALL RATE LIMIT TESTS PASSED!");

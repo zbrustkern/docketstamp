@@ -72,6 +72,70 @@ class MockDocRef<T = unknown> {
   }
 }
 
+// Local test double only. Queries retain all predicates/order/cursor constraints.
+class MockQuery<T = Record<string, unknown>> {
+  constructor(
+    private collection: MockCollection<T>,
+    private filters: Array<[string, string, unknown]> = [],
+    private ordering: Array<[string, "asc" | "desc"]> = [],
+    private maximum = Number.MAX_SAFE_INTEGER,
+    private cursor?: unknown[],
+  ) {}
+  private value(data: unknown, field: string): any {
+    return field.split(".").reduce((value: any, key) => value?.[key], data);
+  }
+  where(field: string, op: string, value: unknown) {
+    return new MockQuery(this.collection, [...this.filters, [field, op, value]], this.ordering, this.maximum, this.cursor);
+  }
+  orderBy(field: string, direction: "asc" | "desc" = "asc") {
+    return new MockQuery(this.collection, this.filters, [...this.ordering, [field, direction]], this.maximum, this.cursor);
+  }
+  limit(n: number) {
+    return new MockQuery(this.collection, this.filters, this.ordering, n, this.cursor);
+  }
+  startAfter(...values: unknown[]) {
+    const first = values[0] as any;
+    const cursor = first?.data instanceof Function
+      ? this.ordering.map(([field]) => field === "__name__" ? first.id : this.value(first.data(), field))
+      : values;
+    return new MockQuery(this.collection, this.filters, this.ordering, this.maximum, cursor);
+  }
+  async get(): Promise<MockQuerySnapshot<T>> {
+    const read = (id: string, data: T, field: string) => field === "__name__" ? id : this.value(data, field);
+    const compare = (a: any, b: any) => a === b ? 0 : a > b ? 1 : -1;
+    const rows = [...this.collection.store.entries()].filter(([id, data]) => this.filters.every(([field, op, expected]) => {
+      const actual = read(id, data, field);
+      switch (op) {
+        case "==": return actual === expected;
+        case "!=": return actual !== undefined && actual !== expected;
+        case ">=": return actual >= (expected as any);
+        case ">": return actual > (expected as any);
+        case "<=": return actual <= (expected as any);
+        case "<": return actual < (expected as any);
+        case "in": return Array.isArray(expected) && expected.includes(actual);
+        case "array-contains": return Array.isArray(actual) && actual.includes(expected);
+        default: throw new Error(`Unsupported mock query operator: ${op}`);
+      }
+    }));
+    rows.sort(([aid, a], [bid, b]) => {
+      for (const [field, direction] of this.ordering) {
+        const result = compare(read(aid, a, field), read(bid, b, field)) * (direction === "desc" ? -1 : 1);
+        if (result) return result;
+      }
+      return compare(aid, bid);
+    });
+    const after = this.cursor ? rows.filter(([id, data]) => {
+      for (let i = 0; i < this.ordering.length; i++) {
+        const [field, direction] = this.ordering[i];
+        const result = compare(read(id, data, field), this.cursor![i]) * (direction === "desc" ? -1 : 1);
+        if (result) return result > 0;
+      }
+      return false;
+    }) : rows;
+    return new MockQuerySnapshot(after.slice(0, this.maximum).map(([id, data]) => new MockDocumentSnapshot(id, data, this.collection.doc(id))));
+  }
+}
+
 class MockCollection<T = Record<string, unknown>> {
   public store = new Map<string, T>();
 
@@ -88,93 +152,9 @@ class MockCollection<T = Record<string, unknown>> {
     return new MockDocRef<T>(this, docId);
   }
 
-  limit(n: number) {
-    return {
-      get: async (): Promise<MockQuerySnapshot<T>> => {
-        const results: MockDocumentSnapshot<T>[] = [];
-        for (const [id, data] of this.store.entries()) {
-          results.push(new MockDocumentSnapshot<T>(id, data, this.doc(id)));
-          if (results.length >= n) break;
-        }
-        return new MockQuerySnapshot<T>(results);
-      },
-    };
-  }
-
-  where(field: string, op: string, value: unknown) {
-    const getVal = (item: Record<string, unknown>, path: string) => {
-      const parts = path.split(".");
-      let curr: any = item;
-      for (const p of parts) {
-        if (curr === undefined || curr === null) return undefined;
-        curr = curr[p];
-      }
-      return curr;
-    };
-
-    const filterItem = (data: Record<string, unknown>) => {
-      const val = getVal(data, field);
-      if (op === "==") return val === value;
-      if (op === "!=") return val !== value;
-      return false;
-    };
-
-    return {
-      where: (nextField: string, nextOp: string, nextValue: unknown) => {
-        return this.where(nextField, nextOp, nextValue);
-      },
-      limit: (n: number) => ({
-        get: async (): Promise<MockQuerySnapshot<T>> => {
-          const results: MockDocumentSnapshot<T>[] = [];
-          for (const [id, data] of this.store.entries()) {
-            if (filterItem(data as Record<string, unknown>)) {
-              results.push(new MockDocumentSnapshot<T>(id, data, this.doc(id)));
-            }
-            if (results.length >= n) break;
-          }
-          return new MockQuerySnapshot<T>(results);
-        },
-      }),
-      get: async (): Promise<MockQuerySnapshot<T>> => {
-        const results: MockDocumentSnapshot<T>[] = [];
-        for (const [id, data] of this.store.entries()) {
-          if (filterItem(data as Record<string, unknown>)) {
-            results.push(new MockDocumentSnapshot<T>(id, data, this.doc(id)));
-          }
-        }
-        return new MockQuerySnapshot<T>(results);
-      },
-    };
-  }
-
-  orderBy(field: string, direction: "asc" | "desc" = "asc") {
-    return {
-      limit: (n: number) => ({
-        get: async (): Promise<MockQuerySnapshot<T>> => {
-          const sorted = Array.from(this.store.entries()).sort((a, b) => {
-            const valA = (a[1] as Record<string, unknown>)[field] as number | string | undefined;
-            const valB = (b[1] as Record<string, unknown>)[field] as number | string | undefined;
-            if (valA === undefined) return 1;
-            if (valB === undefined) return -1;
-            return direction === "desc" ? (valB > valA ? 1 : -1) : (valA > valB ? 1 : -1);
-          });
-          const results = sorted.slice(0, n).map(([id, data]) => new MockDocumentSnapshot<T>(id, data, this.doc(id)));
-          return new MockQuerySnapshot<T>(results);
-        },
-      }),
-      get: async (): Promise<MockQuerySnapshot<T>> => {
-        const sorted = Array.from(this.store.entries()).sort((a, b) => {
-          const valA = (a[1] as Record<string, unknown>)[field] as number | string | undefined;
-          const valB = (b[1] as Record<string, unknown>)[field] as number | string | undefined;
-          if (valA === undefined) return 1;
-          if (valB === undefined) return -1;
-          return direction === "desc" ? (valB > valA ? 1 : -1) : (valA > valB ? 1 : -1);
-        });
-        const results = sorted.map(([id, data]) => new MockDocumentSnapshot<T>(id, data, this.doc(id)));
-        return new MockQuerySnapshot<T>(results);
-      },
-    };
-  }
+  limit(n: number) { return new MockQuery(this).limit(n); }
+  where(field: string, op: string, value: unknown) { return new MockQuery(this).where(field, op, value); }
+  orderBy(field: string, direction: "asc" | "desc" = "asc") { return new MockQuery(this).orderBy(field, direction); }
 
   async get(): Promise<MockQuerySnapshot<T>> {
     const results: MockDocumentSnapshot<T>[] = [];
@@ -262,6 +242,7 @@ class MockFirestore {
           try {
             const tx = new MockTransaction(this);
             result = await updateFunction(tx);
+            await tx.commit();
           } catch (err) {
             thrownError = err;
           } finally {
@@ -278,25 +259,38 @@ class MockFirestore {
 }
 
 class MockTransaction {
+  private writes: Array<() => Promise<void>> = [];
+  private updates: Array<MockDocRef<any>> = [];
   constructor(private firestore: MockFirestore) {}
-
   async get<T = unknown>(ref: MockDocRef<T>): Promise<MockDocumentSnapshot<T>> {
+    if (this.writes.length) throw new Error("Firestore transactions require all reads before writes");
     return ref.get();
   }
-
+  create<T = unknown>(ref: MockDocRef<T>, data: T): this {
+    this.writes.push(async () => {
+      if ((await ref.get()).exists) throw new Error(`Document ${ref.id} already exists.`);
+      await ref.set(data);
+    });
+    return this;
+  }
   set<T = unknown>(ref: MockDocRef<T>, data: T, options?: { merge?: boolean }): this {
-    ref.set(data, options);
+    this.writes.push(() => ref.set(data, options));
     return this;
   }
-
   update<T = unknown>(ref: MockDocRef<T>, data: Partial<T>): this {
-    ref.update(data);
+    this.updates.push(ref);
+    this.writes.push(() => ref.update(data));
     return this;
   }
-
   delete<T = unknown>(ref: MockDocRef<T>): this {
-    ref.delete();
+    this.writes.push(() => ref.delete());
     return this;
+  }
+  async commit(): Promise<void> {
+    for (const ref of this.updates) {
+      if (!(await ref.get()).exists) throw new Error(`Document ${ref.id} does not exist.`);
+    }
+    for (const write of this.writes) await write();
   }
 }
 

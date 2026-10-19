@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { Order } from "./types";
+import { recordMarketingEgressReceipt } from '@/lib/admin-console/measurement/egress';
 
 export const META_PIXEL_ID =
   process.env.META_PIXEL_ID ||
@@ -274,10 +275,7 @@ export async function sendMetaCapiEvents(
     const resJson = await res.json();
 
     if (!res.ok) {
-      const errMsg =
-        resJson.error?.message ||
-        `Meta Conversions API returned HTTP ${res.status}`;
-      console.error("[Meta CAPI Error]", errMsg, resJson.error);
+      const errMsg = `Meta Conversions API rejected delivery (HTTP ${res.status}).`;
       return {
         success: false,
         error: errMsg,
@@ -285,21 +283,13 @@ export async function sendMetaCapiEvents(
       };
     }
 
-    console.log(
-      `[Meta CAPI Success] Dispatched ${formattedEvents.length} event(s) to Pixel ${pixelId}. Events received:`,
-      resJson.events_received,
-      testEventCode ? `(Test Code: ${testEventCode})` : ""
-    );
-
     return {
       success: true,
       eventsReceived: resJson.events_received,
       fbtraceId: resJson.fbtrace_id,
     };
   } catch (err: unknown) {
-    const errorMsg =
-      err instanceof Error ? err.message : "Unknown Meta CAPI network error";
-    console.error("[Meta CAPI Exception]", errorMsg);
+    const errorMsg = "Meta Conversions API delivery was unavailable.";
     return {
       success: false,
       error: errorMsg,
@@ -317,83 +307,59 @@ export async function sendMetaCapiPurchaseEvent(params: {
   userAgent?: string;
   testEventCode?: string;
 }): Promise<MetaCapiResult> {
-  const { order, clientIp, userAgent, testEventCode } = params;
+  const { order, testEventCode } = params;
 
-  const valueInDollars =
-    typeof order.amountInCents === "number" && order.amountInCents >= 0
-      ? order.amountInCents / 100
-      : 9.0;
-
-  // Extract customer name
-  const senderName = order.returnAddress?.firstName
-    ? `${order.returnAddress.firstName} ${order.returnAddress.lastName || ""}`.trim()
-    : undefined;
-  const nameParts = senderName ? senderName.split(/\s+/) : [];
-  const firstName = nameParts[0] || undefined;
-  const lastName = nameParts.slice(1).join(" ") || undefined;
-
-  // Resolve FBC: format standard string if fbclid is present
-  let resolvedFbc = order.attribution?.fbc;
-  if (!resolvedFbc && order.attribution?.fbclid) {
-    resolvedFbc = `fb.1.${Date.now()}.${order.attribution.fbclid}`;
+  const attribution = order.attribution as (Order['attribution'] & { marketingConsent?: boolean }) | undefined;
+  const correlationId = `meta-purchase:${order.id}`;
+  if (attribution?.marketingConsent !== true || attribution.gpc || attribution.optOut) {
+    await recordMarketingEgressReceipt({
+      provider: 'meta_capi', status: 'disabled', correlationId,
+      reasonCode: attribution?.gpc || attribution?.optOut ? 'privacy_signal' : 'consent_unknown',
+    }).catch(() => {});
+    return { success: false, skipped: true, error: 'Marketing delivery disabled by consent policy.' };
+  }
+  if (typeof order.amountInCents !== 'number' || !Number.isFinite(order.amountInCents) || order.amountInCents <= 0) {
+    await recordMarketingEgressReceipt({
+      provider: 'meta_capi', status: 'rejected', correlationId, reasonCode: 'missing_authority',
+    }).catch(() => {});
+    return { success: false, skipped: true, error: 'Verified positive payment amount required.' };
   }
 
-  const isOptedOut = Boolean(
-    order.attribution?.optOut || order.attribution?.gpc
-  );
+  const valueInDollars = order.amountInCents / 100;
 
   // Payload minimization & privacy compliance:
   // Only purchaser/sender address fields (from returnAddress) are used for customer matching.
   // Recipient address information and card correspondence are strictly excluded from all advertising payloads.
-  const userData: MetaCapiUserData = {
-    email: order.customerEmail || undefined,
-    firstName,
-    lastName,
-    city: order.returnAddress?.city,
-    state: order.returnAddress?.state,
-    zip: order.returnAddress?.zip,
-    country: "us",
-    clientIpAddress: clientIp || order.attribution?.clientIp,
-    clientUserAgent: userAgent || order.attribution?.userAgent,
-    fbp: order.attribution?.fbp,
-    fbc: resolvedFbc,
-    externalId: order.id,
-  };
+  const userData: MetaCapiUserData = {};
 
   const customData: MetaCapiCustomData = {
     currency: "USD",
     value: valueInDollars,
-    content_name: order.noticeType
-      ? `${order.noticeType} Legal Notice`
-      : order.serviceLevel
-      ? `DocketStamp ${order.serviceLevel}`
-      : "DocketStamp USPS Legal Notice Dispatch",
+    content_name: 'DocketStamp USPS document dispatch',
     content_type: "product",
-    content_ids: [order.id],
-    contents: [
-      {
-        id: order.id,
-        quantity: 1,
-        item_price: valueInDollars,
-      },
-    ],
-    order_id: order.id,
     num_items: 1,
   };
 
-  return sendMetaCapiEvents(
+  const result = await sendMetaCapiEvents(
     [
       {
         event_name: "Purchase",
         event_time: Math.floor(Date.now() / 1000),
         event_id: order.id, // Exact match with browser pixel trackMetaPurchase { eventID: order.id }
-        event_source_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com"}/order/${order.id}`,
+        event_source_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com"}/`,
         action_source: "website",
         user_data: userData,
         custom_data: customData,
-        opt_out: isOptedOut,
+        opt_out: false,
       },
     ],
     testEventCode
   );
+  await recordMarketingEgressReceipt({
+    provider: 'meta_capi',
+    status: result.success ? 'accepted' : result.skipped ? 'disabled' : 'rejected',
+    correlationId,
+    reasonCode: result.success ? 'provider_accepted' : result.skipped ? 'provider_unavailable' : 'provider_rejected',
+  }).catch(() => {});
+  return result;
 }

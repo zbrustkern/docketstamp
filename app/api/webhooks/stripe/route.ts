@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { constructWebhookEvent } from "@/lib/stripe";
-import { processPaidOrder } from "@/lib/order-processor";
 import { logIncident } from "@/lib/incident-logger";
+import { consumePaymentObligation } from "@/lib/admin-console/finance/authority";
+import { ingestStripeEvidenceEvent } from "@/lib/admin-console/finance/stripe-events";
 import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
@@ -58,35 +59,27 @@ export async function POST(req: NextRequest) {
 
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      const orderId = paymentIntent.metadata?.orderId;
+      const normalized = await ingestStripeEvidenceEvent(event);
+      const authority = normalized;
 
-      if (!orderId) {
-        console.warn("[Webhook] payment_intent.succeeded missing metadata.orderId:", paymentIntent.id);
-        return NextResponse.json({ received: true, warning: "Missing orderId in metadata" });
+      if (!authority.accepted || !authority.orderId || !authority.paymentFactId) {
+        console.warn("[Webhook] PaymentIntent quarantined by financial authority:", (authority.diagnosticCodes || []).join(","));
+        return NextResponse.json({
+          received: true,
+          accepted: false,
+          status: authority.status,
+          diagnosticCodes: authority.diagnosticCodes,
+        });
       }
 
-      const isTestPayment = event.livemode === false || paymentIntent.livemode === false;
-      const paymentMode = isTestPayment ? "stripe_test" : "live";
-
-      console.log(
-        `[Webhook] Payment confirmed for Order ${orderId} (mode: ${paymentMode}, livemode: ${!isTestPayment}). Processing order...`
-      );
-
-      const result = await processPaidOrder(
-        orderId,
-        paymentIntent.id,
-        paymentIntent.receipt_email || undefined,
-        {
-          isTest: isTestPayment,
-          paymentMode,
-        }
-      );
+      const orderId = authority.orderId;
+      const result = await consumePaymentObligation(orderId, authority.paymentFactId);
 
       if (!result.success) {
         return NextResponse.json({
           received: true,
           status: result.status,
-          error: result.error,
+          fulfillmentPending: true,
         }, { status: 200 });
       }
 
@@ -98,7 +91,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ received: true });
+    const normalized = await ingestStripeEvidenceEvent(event);
+    return NextResponse.json({
+      received: true,
+      accepted: normalized.accepted,
+      status: normalized.status,
+      diagnosticCodes: normalized.diagnosticCodes,
+    });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Webhook handler exception";
     console.error("[Webhook Exception]:", msg);

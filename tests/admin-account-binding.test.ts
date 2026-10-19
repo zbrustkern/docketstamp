@@ -18,6 +18,8 @@ async function runTests() {
   console.log("🛡️ RUNNING ADMIN ACCOUNT BINDING & LARGER AUTH TESTS");
   console.log("=================================================\n");
 
+  process.env.ADMIN_SESSION_SIGNING_KEY = "test_only_explicit_signing_key_for_admin_binding_suite";
+
   let passed = 0;
   let failed = 0;
 

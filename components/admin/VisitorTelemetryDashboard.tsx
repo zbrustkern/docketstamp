@@ -8,7 +8,6 @@ import {
   Tablet,
   MapPin,
   ArrowRight,
-  AlertTriangle,
   CheckCircle2,
   Copy,
   Check,
@@ -44,7 +43,6 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
   const topLocations = telemetry?.topLocations || [];
   const recentSessions = telemetry?.recentSessions || [];
   const botVisitors = telemetry?.botVisitors || 0;
-  const humanVisitors = telemetry?.humanVisitors !== undefined ? telemetry.humanVisitors : (metrics.funnel?.totalSessions || 1);
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -65,9 +63,8 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
     );
   });
 
-  const totalSessions = metrics.funnel?.totalSessions || 1;
-  const paidCount = metrics.funnel?.paid || 0;
-  const overallConversion = ((paidCount / totalSessions) * 100).toFixed(1);
+  const totalSessions = metrics.funnel?.totalSessions ?? 0;
+  const overallConversion = "Unavailable";
 
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-stone-200 shadow-sm space-y-6 sm:space-y-8 w-full min-w-0 overflow-hidden">
@@ -77,38 +74,38 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Traffic Acquisition &amp; Micro-Funnel Drop-Offs</span>
+              <span>Traffic Acquisition &amp; Legacy Stage Counters</span>
             </h2>
-            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live Telemetry
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Legacy Rollup • Unverified
             </span>
             {botVisitors > 0 && (
               <span
                 className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200"
-                title={`${botVisitors} automated search engine crawlers or indexer bots identified`}
+                title={`${botVisitors} recent session records are tagged as bots; classification is incomplete`}
               >
                 <Bot className="w-3 h-3 text-amber-600" />
-                <span>{botVisitors} Bot{botVisitors === 1 ? "" : "s"} Filtered</span>
+                <span>{botVisitors} Bot-Tagged Sample Records</span>
               </span>
             )}
           </div>
           <p className="text-xs text-stone-500 mt-1">
-            Pinpoints visitor origin, Google Analytics Client IDs, device specs, and exact drop-off steps.
+            Stored telemetry is a bounded, unclassified legacy rollup. It does not establish complete traffic, linked customer outcomes, or exact drop-off.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right">
             <span className="text-[11px] text-stone-400 uppercase font-semibold tracking-wider block">
-              Conversion Rate
+              Session Conversion
             </span>
-            <span className="font-serif text-lg font-bold text-stone-900">{overallConversion}%</span>
+            <span className="font-serif text-lg font-bold text-stone-900">{overallConversion}</span>
           </div>
           <div className="h-8 w-px bg-stone-200" />
           <div className="text-right">
             <span className="text-[11px] text-stone-400 uppercase font-semibold tracking-wider block">
-              Active Ingested
+              Stored Session Counter
             </span>
             <span className="font-serif text-lg font-bold text-stone-900">{totalSessions} Visits</span>
           </div>
@@ -120,26 +117,22 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-stone-400" />
-            Step-by-Step Drop-Off Waterfall
+            Legacy Stage Counter Snapshot
           </h3>
           <span className="text-[11px] text-stone-400">
-            Leak % indicates visitors who abandoned before advancing to next step
+            Stage counts are not a validated ordered funnel. Conversion and drop-off are unavailable.
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           {funnelLeaks.map((step, idx) => {
             const isLast = idx === funnelLeaks.length - 1;
-            const hasHighLeak = step.leakToNext >= 40 && !isLast;
-
             return (
               <div
                 key={idx}
                 className={`p-4 rounded-2xl border transition-all relative flex flex-col justify-between ${
                   isLast
-                    ? "bg-emerald-50/70 border-emerald-200 text-emerald-950"
-                    : hasHighLeak
-                    ? "bg-amber-50/40 border-amber-200/80 text-stone-800"
+                    ? "bg-stone-50/70 border-stone-200 text-stone-800"
                     : "bg-stone-50/60 border-stone-200 text-stone-800"
                 }`}
               >
@@ -147,9 +140,7 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
                   <div className="flex items-center justify-between text-[10px] uppercase font-bold text-stone-400 tracking-wider">
                     <span>Step {step.stepNumber}</span>
                     {step.stepNumber > 1 && (
-                      <span className="text-stone-500 font-mono font-medium">
-                        {step.conversionFromPrior}% retained
-                      </span>
+                      <span className="text-stone-500 font-mono font-medium">Relation unavailable</span>
                     )}
                   </div>
                   <span className="block font-semibold text-xs text-stone-800 mt-0.5 truncate">
@@ -164,25 +155,19 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
                   {isLast ? (
                     <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Converted Orders</span>
+                      <span>Payment events; order join unavailable</span>
                     </div>
                   ) : (
                     <div
                       className={`text-[11px] font-medium flex items-center justify-between ${
-                        hasHighLeak ? "text-amber-800 font-semibold" : "text-stone-500"
+                        "text-stone-500"
                       }`}
                     >
-                      <span>Drop-off leak:</span>
-                      <span className="font-mono">{step.leakToNext}%</span>
+                      <span>Next-stage relation:</span>
+                      <span className="font-mono">Unavailable</span>
                     </div>
                   )}
 
-                  {!isLast && hasHighLeak && (
-                    <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-700 font-medium">
-                      <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                      <span>High drop-off leak</span>
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -199,12 +184,12 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
               <Compass className="w-3.5 h-3.5 text-stone-500" />
               Acquisition Channels &amp; Campaigns
             </h3>
-            <span className="text-[11px] text-stone-400">UTMs &amp; GCLID</span>
+              <span className="text-[11px] text-stone-400">Legacy event source counts</span>
           </div>
 
           {acquisitionSources.length === 0 ? (
             <p className="text-xs text-stone-400 py-6 text-center">
-              Awaiting inbound tagged traffic sessions.
+              No source records in this rollup. Traffic volume is unknown.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -212,9 +197,9 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
                 <thead>
                   <tr className="text-stone-400 uppercase font-semibold text-[10px] border-b border-stone-200/60">
                     <th className="pb-2">Source / Medium</th>
-                    <th className="pb-2 text-right">Sessions</th>
-                    <th className="pb-2 text-left pl-3">Top Drop-off Step</th>
-                    <th className="pb-2 text-right">Paid</th>
+                    <th className="pb-2 text-right">Stored Sessions</th>
+                    <th className="pb-2 text-left pl-3">Stage relation</th>
+                    <th className="pb-2 text-right">Payment Events</th>
                     <th className="pb-2 text-right">Conv.</th>
                   </tr>
                 </thead>
@@ -228,14 +213,14 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
                       <td className="py-2.5 text-right font-mono text-stone-700">{src.sessions}</td>
                       <td className="py-2.5 pl-3">
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-stone-100 text-stone-600 border border-stone-200 truncate max-w-[120px]">
-                          {src.topDropOffStep}
+                          Unavailable
                         </span>
                       </td>
                       <td className="py-2.5 text-right font-mono font-semibold text-emerald-700">
                         {src.completedOrders}
                       </td>
                       <td className="py-2.5 text-right font-mono text-stone-800">
-                        {src.conversionRate}%
+                        N/A
                       </td>
                     </tr>
                   ))}
@@ -250,9 +235,9 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
           <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
             <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-stone-500" />
-              Device Category &amp; Metro Geographies
+              Device &amp; Geography Event Attributes
             </h3>
-            <span className="text-[11px] text-stone-400">Edge Headers</span>
+            <span className="text-[11px] text-stone-400">Legacy event-level counts</span>
           </div>
 
           {/* Device Split Bar */}
@@ -260,15 +245,15 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
             <div className="flex items-center justify-between text-xs font-medium text-stone-700">
               <span className="flex items-center gap-1.5">
                 <Smartphone className="w-3.5 h-3.5 text-stone-500" />
-                Mobile ({deviceBreakdown.mobilePercent}%)
+                Mobile Events ({deviceBreakdown.mobilePercent}% of tagged events)
               </span>
               <span className="flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5 text-stone-500" />
-                Desktop ({deviceBreakdown.desktopPercent}%)
+                Desktop Events ({deviceBreakdown.desktopPercent}% of tagged events)
               </span>
               <span className="flex items-center gap-1.5">
                 <Tablet className="w-3.5 h-3.5 text-stone-500" />
-                Tablet ({deviceBreakdown.tabletPercent}%)
+                Tablet Events ({deviceBreakdown.tabletPercent}% of tagged events)
               </span>
             </div>
 
@@ -294,11 +279,11 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
           {/* Top Geographies */}
           <div className="pt-2 border-t border-stone-200/60">
             <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider block mb-2">
-              Top Metro Locations
+              Top Locations in Event Records
             </span>
             {topLocations.length === 0 ? (
               <p className="text-xs text-stone-400 text-center py-2">
-                Ingesting edge location headers...
+                No location records in this rollup. Location coverage is unknown.
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -327,10 +312,10 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-stone-500" />
-              Live Visitor Session Stream
+              Recent Visitor Session Records (up to 50)
             </h3>
             <p className="text-[11px] text-stone-400">
-              Recent visitor journeys with acquisition source, device, city, and GA Client ID.
+              Bounded sample for investigation. Test, employee, bot, and customer classifications are incomplete; payment events are not verified paid orders.
             </p>
           </div>
 
@@ -428,11 +413,11 @@ export function VisitorTelemetryDashboard({ metrics }: VisitorTelemetryDashboard
                         {session.completed ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Paid ($9.00)
+                            Payment event observed; order match unverified
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-50 text-stone-600 border border-stone-200">
-                            Dropped: {session.dropOffStep || session.highestStepName}
+                            No payment event in record; outcome unknown
                           </span>
                         )}
                       </td>

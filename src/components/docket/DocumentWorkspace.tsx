@@ -38,6 +38,7 @@ import {
 } from '@/lib/docket/draft-recovery';
 import { trackFunnelEvent } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
+import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
 
 export interface DocumentWorkspaceProps {
   notice?: NoticeTemplateDefinition;
@@ -154,6 +155,13 @@ const DocumentWorkspaceInner: React.FC<{
 
   // Funnel Event: editor_start on workspace mount
   useEffect(() => {
+    emitBusinessEvent({
+      eventName: 'workspace_viewed',
+      noticeId: notice.slug,
+      tier: selectedTier,
+      entrySurface: entrySource,
+      logicalKey: `workspace:${notice.slug}`,
+    });
     trackFunnelEvent({
       eventName: 'editor_start',
       step: 3,
@@ -217,6 +225,18 @@ const DocumentWorkspaceInner: React.FC<{
   const validation = useMemo(() => {
     return validateNoticeDraft(notice, userValues);
   }, [notice, userValues]);
+
+  useEffect(() => {
+    if (!validation.isValid) return;
+    emitBusinessEvent({
+      eventName: 'details_ready',
+      noticeId: notice.slug,
+      tier: selectedTier,
+      entrySurface: entrySource,
+      draftRevision: draftRevisionRef.current,
+      logicalKey: `details:${notice.slug}:r${draftRevisionRef.current}`,
+    });
+  }, [validation.isValid, userValues, notice.slug, selectedTier, entrySource]);
 
   // Session-scoped draft persistence (tab-scoped, no permanent sensitive data in localStorage)
   useEffect(() => {
@@ -320,6 +340,14 @@ const DocumentWorkspaceInner: React.FC<{
   };
 
   const handleAdoptSignature = (signerName: string) => {
+    emitBusinessEvent({
+      eventName: 'signature_adopted',
+      noticeId: notice.slug,
+      tier: selectedTier,
+      entrySurface: entrySource,
+      draftRevision: draftRevisionRef.current,
+      logicalKey: `signature:${notice.slug}:r${draftRevisionRef.current}`,
+    });
     setIsSignatureAdopted(true);
     setSignatureInvalidatedByEdit(false);
     setUserValues((prev) => ({
@@ -483,6 +511,7 @@ const DocumentWorkspaceInner: React.FC<{
         userValues={userValues}
         isSignatureAdopted={isSignatureAdopted}
         entrySource={entrySource}
+        draftRevision={draftRevisionRef.current}
       />
     </div>
   );

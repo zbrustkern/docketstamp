@@ -387,6 +387,7 @@ async function runPaymentModeSafetyTests() {
     // 4B. livemode: false event with a live-looking supplier key present:
     // Order must NOT call live Handwrytten submission; must be labelled test.
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+    process.env.STRIPE_SECRET_KEY = "sk_test_payment_mode_fixture_12345";
     process.env.TEST_BYPASS_WEBHOOK_SIGNATURE = "true";
     process.env.HANDWRYTTEN_API_KEY = "live_supplier_key_handwrytten_real_looking";
 
@@ -436,12 +437,18 @@ async function runPaymentModeSafetyTests() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        id: `evt_test_${testOrderId}`,
+        object: "event",
         type: "payment_intent.succeeded",
         livemode: false, // Stripe TEST payment
+        created: Math.floor(Date.now() / 1000),
         data: {
           object: {
             id: `pi_test_${testOrderId}`,
             amount: CARD_FLAT_RATE_CENTS,
+            amount_received: CARD_FLAT_RATE_CENTS,
+            currency: "usd",
+            status: "succeeded",
             livemode: false,
             metadata: { orderId: testOrderId },
             receipt_email: "buyer@example.com",
@@ -470,7 +477,8 @@ async function runPaymentModeSafetyTests() {
         processedOrder?.isTest === true &&
         processedOrder?.paymentMode === "stripe_test" &&
         (processedOrder?.handwryttenOrderId?.startsWith("test_") ||
-          processedOrder?.lobLetterId?.startsWith("test_")),
+          processedOrder?.lobLetterId?.startsWith("test_") ||
+          processedOrder?.lobLetterId?.startsWith("mock_lob_ltr_")),
       `Order is labelled as test order in database (isTest: ${processedOrder?.isTest}, paymentMode: ${processedOrder?.paymentMode}, HW ID: ${processedOrder?.handwryttenOrderId})`
     );
 

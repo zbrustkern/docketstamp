@@ -1,0 +1,934 @@
+{
+  "schemaVersion": 1,
+  "package": "docketstamp-ceo-console",
+  "status": "in_progress",
+  "baseCommit": "b97551226aec144d469ca18b01ebc139df66f95c",
+  "preparedDate": "2026-10-18",
+  "executionAuthorizedInThisReview": true,
+  "ledgerOwner": "integration-release",
+  "sprints": [
+    {
+      "id": "S0",
+      "title": "Contain misleading reporting and unsafe control fallbacks",
+      "document": "sprints/S0.md",
+      "owner": "integration-security",
+      "dependencies": [],
+      "status": "implemented_local",
+      "requirements": [
+        "R01",
+        "R02",
+        "R03",
+        "R14"
+      ],
+      "tasks": [
+        {
+          "id": "S0-T01",
+          "status": "implemented_local",
+          "summary": "Replace current fabricated funnel, margin and health presentation with explicit legacy/unverified/unavailable states. Remove synthetic milestone backfill and zero/minimum denominators from active reporting. Keep order investigation and all compatible actions accessible; preserve simulator under a clearly labeled assumptions boundary.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/s0-safeguards.test.ts tests/admin-console/security-t02-t03.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S0-T02",
+          "status": "implemented_local",
+          "summary": "Fail closed for admin signing and live Lob webhook authentication when required secure configuration is missing. Remove predictable production/staging signing fallback. Preserve authorized Google flow and invalidate insecure sessions; no production credential rotation in this task.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/s0-safeguards.test.ts tests/admin-console/security-t02-t03.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S0-T03",
+          "status": "implemented_local",
+          "summary": "Make live fulfillment configuration failure blocked, never simulated success. Distinguish mock/test API/live return values. Gate unsafe direct comp/retry/sync execution behind explicit unavailable-with-reason state until shared adapter lands, preserving saved workflows and read-only inspection.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/s0-safeguards.test.ts tests/admin-console/security-t02-t03.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S0-T04",
+          "status": "implemented_local",
+          "summary": "Add isolated regression fixtures proving zero/unknown semantics, current modern postal statuses do not imply missing payment, absent secrets cannot authenticate, and mock evidence cannot represent live service. Capture honest interim reporting screens.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/s0-safeguards.test.ts tests/admin-console/security-t02-t03.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes.",
+            "Authenticated interim screenshots not yet captured; final UI screenshots supersede interim layout."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "partial_pending_visual_and_external_gates",
+      "review": {
+        "reviewer": "primary + Luna contracts reviewer",
+        "date": "2026-10-19",
+        "scope": "Source and credential-free local fixtures; no emulator, staging or production certification."
+      },
+      "handoff": null
+    },
+    {
+      "id": "S1",
+      "title": "Freeze shared business contracts and fixture authority",
+      "document": "sprints/S1.md",
+      "owner": "contracts-integration",
+      "dependencies": [
+        "S0"
+      ],
+      "status": "implemented_local",
+      "requirements": [
+        "R01",
+        "R04",
+        "R05",
+        "R15",
+        "R17"
+      ],
+      "tasks": [
+        {
+          "id": "S1-T01",
+          "status": "implemented_local",
+          "summary": "Implement versioned event, metric, identity/classification, money/postal/offer fact, scoped query, quality and audit schemas from CONTRACTS.md. Keep legacy interfaces additive; define mapping and unmapped states.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/contracts.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S1-T02",
+          "status": "implemented_local",
+          "summary": "Create reference fixtures for paid customer, founder live test, employee, suspected bot, unresolved, free promo/comp, repeat orders in one session, direct/staged entries, missing joins, stale evidence and all three tiers.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/contracts.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S1-T03",
+          "status": "implemented_local",
+          "summary": "Freeze provider boundaries and dispatch command interface: payment facts distinct from postal state, exact money/currency binding, snapshot hash/version, private evidence references, expected version and idempotency.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/contracts.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S1-T04",
+          "status": "implemented_local",
+          "summary": "Publish API/collection/index plan and fixture oracle with expected counts/amounts; approve task ownership and consumer adapters before parallel lanes start. Define diagnostic error taxonomy and redaction contract.",
+          "commit": null,
+          "evidence": [
+            "evidence/RESUME_AUDIT.md"
+          ],
+          "validation": [
+            {
+              "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/contracts.test.ts",
+              "result": "passed",
+              "limitations": "Repository mock Firestore and stubbed providers; not emulator/staging/production."
+            }
+          ],
+          "blockers": [
+            "No implementation commit requested; evidence tied to worktree hashes."
+          ],
+          "changedFiles": [],
+          "environment": "local",
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "verified_local",
+      "review": {
+        "reviewer": "primary + Luna contracts reviewer",
+        "date": "2026-10-19",
+        "scope": "Source and credential-free local fixtures; no emulator, staging or production certification."
+      },
+      "handoff": null
+    },
+    {
+      "id": "S2",
+      "title": "Durable financial authority and reconciliation",
+      "document": "sprints/S2.md",
+      "owner": "financial",
+      "dependencies": [
+        "S1"
+      ],
+      "status": "in_progress",
+      "requirements": [
+        "R02",
+        "R04",
+        "R06",
+        "R15",
+        "R17",
+        "R18"
+      ],
+      "tasks": [
+        {
+          "id": "S2-T01",
+          "status": "in_progress",
+          "summary": "Implement common Stripe verification and create-if-absent payment facts with account/mode/PI binding, payable total/currency, positive capture versus zero authorization, server classification and immutable snapshot reference. Persist authority fact/order/outbox atomically before acknowledgment.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S2-T02",
+          "status": "in_progress",
+          "summary": "Ingest refund, dispute and fee evidence using verified provider identity and cash transaction IDs; preserve success/pending/failure/reversal separately. Reconcile amount_received and processor fees without status-derived revenue.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S2-T03",
+          "status": "in_progress",
+          "summary": "Replace Verify Stripe execution coupling with evidence-only reconciliation; build cursor-based runs with overlap, unmatched captures/events, durable inbox, checkpoints and bounded dry-run backfill. No fulfillment/email/ad side effects from reconcile or replay.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S2-T04",
+          "status": "in_progress",
+          "summary": "Make payment authority/obligation outbox consumers resilient to duplicate/concurrent webhook and confirm paths, missing browser telemetry and crashes. Report ad export attempts/acceptance honestly; leave minimized export implementation to S4.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    },
+    {
+      "id": "S3",
+      "title": "Postal obligations and audited safe operator commands",
+      "document": "sprints/S3.md",
+      "owner": "postal-operations",
+      "dependencies": [
+        "S2"
+      ],
+      "status": "in_progress",
+      "requirements": [
+        "R01",
+        "R03",
+        "R06",
+        "R14",
+        "R15",
+        "R16",
+        "R18"
+      ],
+      "tasks": [
+        {
+          "id": "S3-T01",
+          "status": "in_progress",
+          "summary": "Unify paid/free/comp/retry submission behind authorized obligation, frozen canonical snapshot, mode and lock adapter. Preserve personal sender, guardrails/footer/one-page parity and Lob idempotency. Remove arbitrary HTML and mutable post-payment fallback paths.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S3-T02",
+          "status": "in_progress",
+          "summary": "Persist submission attempts and uncertain results. Reconcile before stale-lock takeover/retry; block accepted re-dispatch. Address correction creates reviewed revision/new snapshot linkage. Separate intentional replacement mailing from technical retry.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S3-T03",
+          "status": "in_progress",
+          "summary": "Implement authenticated durable Lob event inbox, exact mapping, provider time/dedupe/conflict handling and evidence-only sync; track proof/return-receipt and email attempt obligations independently. Replace health assertions with last measured evidence.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S3-T04",
+          "status": "in_progress",
+          "summary": "Enforce capability/object/environment authorization, expected-version, origin/CSRF and audit on all commands. Restore held comp/retry workflows with effect previews, reasons and cost/mode warning; implement incident ownership/acknowledgment/evidence-based resolution.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    },
+    {
+      "id": "S4",
+      "title": "Observed journey, acquisition and correlated diagnostics",
+      "document": "sprints/S4.md",
+      "owner": "measurement",
+      "dependencies": [
+        "S1"
+      ],
+      "status": "in_progress",
+      "requirements": [
+        "R04",
+        "R05",
+        "R06",
+        "R08",
+        "R09",
+        "R13",
+        "R18"
+      ],
+      "tasks": [
+        {
+          "id": "S4-T01",
+          "status": "in_progress",
+          "summary": "Replace logical browser event triggers using contract registry: workspace view, details readiness, human signature, form ready, actual Stripe attempt. Mark legacy intent-initialized event honestly. Durable event IDs/ack/retry and versioned session/journey classification; no invented upstream milestones.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S4-T02",
+          "status": "in_progress",
+          "summary": "Persist immutable original acquisition and subsequent qualified/promotional touches separately from product entry surface. Carry sanitized attribution/privacy state into server lock snapshot with S5-owned checkout integration. Handle storage denial, resume and explicit unknowns.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S4-T03",
+          "status": "in_progress",
+          "summary": "Implement partitioned ingestion/projection inputs with dedupe receipts and rejected/late/skew counters, multi-instance transaction correctness and correlation IDs. Instrument stage, CASS, lock, webhooks, postal/proof/receipt boundaries using bounded codes/timing. Move staged draft persistence to existing durable storage preserving expiry/API contracts; never log bearer token.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S4-T04",
+          "status": "in_progress",
+          "summary": "Apply redaction and minimum egress policy to server telemetry, incidents/logs/URLs/exports and ads. Exclude noncustomer/test/free paid exports, remove notice-specific sensitive advertising context, honor privacy signals and record accepted/rejected/disabled deliveries without blocking authority.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    },
+    {
+      "id": "S5",
+      "title": "Tier-aware offers, continuity and redemption authority",
+      "document": "sprints/S5.md",
+      "owner": "commercial",
+      "dependencies": [
+        "S2",
+        "S4"
+      ],
+      "status": "planned",
+      "requirements": [
+        "R01",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R17"
+      ],
+      "tasks": [
+        {
+          "id": "S5-T01",
+          "status": "planned",
+          "summary": "Add versioned offers, campaign/notice/tier eligibility, active dates, max usage, budget and archiving with compatibility adapter for existing codes. Preserve fixed/percent/100% vouchers/comps and explicit negative-contribution authorization.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S5-T02",
+          "status": "planned",
+          "summary": "Add canonical offer link parsing plus discount/promo aliases, automatic validated application and visible totals, continuity through all entry/resume/back/tier-change paths; integrate immutable acquisition snapshot from S4. Preview registry price, cost provenance and processor minimum supported payable amount.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S5-T03",
+          "status": "planned",
+          "summary": "Implement atomic reservation/expiry/budget and unique order redemption/release with paid and free authority. Honor late succeeded PIs against frozen quote, surface overruns, define refund/restoration audit and eliminate old $9 free validation assumptions.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S5-T04",
+          "status": "planned",
+          "summary": "Repair manual recovery link generator using real eligible selected offer and safe optional resume; emit exposure/application/rejection/commit/refund/fulfillment reporting inputs. Preserve creation/pause/share and replace deletion with archive while guarding deprecated compatibility endpoint.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    },
+    {
+      "id": "S6",
+      "title": "Versioned evidence queries and shadow reports",
+      "document": "sprints/S6.md",
+      "owner": "reporting",
+      "dependencies": [
+        "S2",
+        "S3",
+        "S4",
+        "S5"
+      ],
+      "status": "in_progress",
+      "requirements": [
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08",
+        "R09",
+        "R13",
+        "R17",
+        "R18"
+      ],
+      "tasks": [
+        {
+          "id": "S6-T01",
+          "status": "in_progress",
+          "summary": "Implement exact contract metrics and half-open windows with customer exclusions, session conversion/maturity, independent milestone reach vs ordered chains, financial/postal separation and all-open exceptions. Do not simply wire existing computeFunnelConversionReport unchanged.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S6-T02",
+          "status": "in_progress",
+          "summary": "Build indexed paginated queries for metric evidence/order search/campaign cohorts, quality/reconcile runs and private reveal/export permissions. Aggregate totals across complete declared scope, never the recent-50 samples.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S6-T03",
+          "status": "in_progress",
+          "summary": "Add immutable report generations, bounded migration/replay cursor/dry-run, evidence-only backfill, compatibility response and explainable v1/v2 deltas. Partition projections with generation watermark/publication, no GET-triggered rebuild.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S6-T04",
+          "status": "in_progress",
+          "summary": "Implement cost/spend source records and dated campaign/account/currency import validation with coverage, unknowns and labeled estimates; support decision log inputs and read-only scenario assumptions separately.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    },
+    {
+      "id": "S7",
+      "title": "Compact executive console and investigation workflows",
+      "document": "sprints/S7.md",
+      "owner": "experience",
+      "dependencies": [
+        "S6"
+      ],
+      "status": "planned",
+      "requirements": [
+        "R01",
+        "R03",
+        "R05",
+        "R07",
+        "R08",
+        "R09",
+        "R10",
+        "R11",
+        "R13",
+        "R14",
+        "R16",
+        "R19"
+      ],
+      "tasks": [
+        {
+          "id": "S7-T01",
+          "status": "planned",
+          "summary": "Build scoped executive layout and five KPI/evidence links, prioritized all-open exceptions, observed journey, acquisition rows and confidence strip. Preserve nonsensitive scope/back state; remove repeated decorative/global health panels and inherited card cohorts from active notice overview.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S7-T02",
+          "status": "planned",
+          "summary": "Implement paginated order timeline/proof/reconcile and exact metric investigation drawers with definition, authority, quality, original/promo attribution, costs, protected reveal and command preview/result/audit. Distinguish reconcile from consequential execution.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S7-T03",
+          "status": "planned",
+          "summary": "Build dedicated offers, money, reliability/data and allowlisted controls/planning areas using S3/S5 commands. Preserve comp/discount/recovery/proof/address tools; keep simulations separate. Record decision hypotheses/owner/evaluation without unsupported winners.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S7-T04",
+          "status": "planned",
+          "summary": "Implement responsive/loading/empty/error/stale/partial/unauthorized/offline states and accessibility; run timed task trials and capture required desktop/tablet/phone widths with synthetic data.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    },
+    {
+      "id": "S8",
+      "title": "Compatibility, replay, release evidence and handoff",
+      "document": "sprints/S8.md",
+      "owner": "integration-release",
+      "dependencies": [
+        "S7"
+      ],
+      "status": "planned",
+      "requirements": [
+        "R01",
+        "R10",
+        "R17",
+        "R18",
+        "R19",
+        "R20"
+      ],
+      "tasks": [
+        {
+          "id": "S8-T01",
+          "status": "planned",
+          "summary": "Run audited offline invariant/transaction/commerce tests and integrated fixture suite with network denied, emulator DB and stub email/ad/postal/Stripe. Confirm legacy public route compatibility/security including currently unmounted surfaces.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S8-T02",
+          "status": "planned",
+          "summary": "Run authorized staging-only verification with explicit payment/Lob/CASS modes and no production fee/outreach actions. Verify provider auth/event contracts and real return-receipt capability from permitted read-only evidence; document gaps as pending if inaccessible.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S8-T03",
+          "status": "planned",
+          "summary": "Complete bounded shadow comparison, projection-only replay/crash recovery and UI rollback drill; reconcile every sampled authority record or list unmatched. Separate local/staging/production evidence and preserve unresolved release blockers.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        },
+        {
+          "id": "S8-T04",
+          "status": "planned",
+          "summary": "Publish operator runbooks for paid-undispatched, ambiguous submission, correction, return/proof, refund visibility, failed receipt, spend/cost gaps, offer overruns and data staleness. Update coverage and ledger with commit-specific evidence, reviewer findings and next authorized release action.",
+          "commit": null,
+          "evidence": [],
+          "validation": [],
+          "blockers": [],
+          "changedFiles": [],
+          "environment": null,
+          "modes": {
+            "stripe": null,
+            "lob": null,
+            "cass": null
+          }
+        }
+      ],
+      "acceptanceStatus": "not_run",
+      "review": null,
+      "handoff": null
+    }
+  ],
+  "authorization": {
+    "date": "2026-10-19",
+    "scope": "User requested primary supervision and Luna agents to finish local implementation. No deployment, live money/postage/outreach or production mutations."
+  },
+  "resumeAudit": {
+    "date": "2026-10-19",
+    "baseCommit": "b97551226aec144d469ca18b01ebc139df66f95c",
+    "inheritedModifiedTrackedFiles": 21,
+    "inheritedUntrackedTest": "tests/admin-console/s0-safeguards.test.ts",
+    "conclusion": "Substantial uncommitted S0 work; no completed sprint/evidence records. Preserve and validate, do not restart."
+  },
+  "statusPolicy": "implemented_local records reviewed code and local test evidence without asserting all release/visual/provider gates or inventing a commit. complete requires accepted gates; external verification remains separately pending.",
+  "latestCheckpoint": {
+    "date": "2026-10-19",
+    "document": "CURRENT_STATUS.md",
+    "agentExecution": "Three Luna workers stopped with account usage-limit errors; saved work retained; primary continued local integration.",
+    "configuration": {
+      "productionOrigin": "https://docketstamp.com",
+      "stagingOrigin": "https://staging.docketstamp.com",
+      "stagingProject": "docketstamp-staging",
+      "stagingBackend": "docketstamp",
+      "cloudVerification": "not_run",
+      "cloudMutations": "none",
+      "setupDocument": "SANDBOX_SETUP.md"
+    },
+    "validation": [
+      {
+        "command": "node scripts/test-admin-console-offline.cjs tests/admin-console/config.test.ts",
+        "result": "passed",
+        "limitations": "Fake keys, denied transport, repository mock only; no deployed verification."
+      },
+      {
+        "command": "node_modules/.bin/tsc --project tsconfig.app-check.json --noEmit",
+        "result": "passed",
+        "limitations": "Scoped application/admin-console test check; full repository baseline still has obsolete test failures."
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "next-env.d.ts", "app/**/*.ts", "app/**/*.tsx", "src/**/*.ts", "src/**/*.tsx",
+    "lib/**/*.ts", "components/**/*.tsx", "context/**/*.tsx", "hooks/**/*.ts",
+    "middleware.ts", "tests/admin-console/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

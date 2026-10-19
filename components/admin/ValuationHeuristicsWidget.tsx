@@ -36,7 +36,7 @@ interface ValuationHeuristicsWidgetProps {
 
 export function ValuationHeuristicsWidget({
   initialAssumptions,
-  actualCacDollars = 3.56,
+  actualCacDollars = 0,
   paidOrdersCount = 0,
 }: ValuationHeuristicsWidgetProps) {
   const [assumptions, setAssumptions] = useState<ValuationHeuristicAssumptions>(
@@ -98,32 +98,32 @@ export function ValuationHeuristicsWidget({
     }
   };
 
-  // Determine LTV:CAC health tier
+  // Classifies a modeled ratio only; it is not a business health assessment.
   const ltvTier = useMemo(() => {
     const ratio = outputs.ltvToCacRatio;
     if (ratio < 1.0) {
       return {
-        label: "Value Destructive (CAC > LTV)",
+        label: "Modeled ratio below 1.0",
         badgeClass: "bg-rose-100 text-rose-800 border-rose-300",
-        message: "Customer acquisition exceeds total expected lifetime profit. Focus on retention or reducing CPA.",
+        message: "Under the selected assumptions, modeled CAC exceeds modeled LTV. This is a scenario result, not measured customer economics.",
       };
     } else if (ratio < 2.5) {
       return {
-        label: "Moderate Margin / Long Payback",
+        label: "Modeled ratio 1.0–2.5",
         badgeClass: "bg-amber-100 text-amber-800 border-amber-300",
-        message: "Viable business model, but requires ~2-3 repeat cards to recover acquisition costs.",
+        message: "Under the selected assumptions, modeled LTV is 1.0–2.5 times modeled CAC. Repeat behavior and actual payback are unverified.",
       };
     } else if (ratio <= 4.5) {
       return {
-        label: "Golden DTC Benchmark (3x - 5x)",
-        badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-300",
-        message: "Ideal balance of high unit profitability and aggressive customer acquisition headroom.",
+        label: "Modeled ratio 2.5–4.5",
+        badgeClass: "bg-amber-100 text-amber-800 border-amber-300",
+        message: "Hypothetical scenario balance of unit margin and acquisition cost under modeled assumptions.",
       };
     } else {
       return {
-        label: "Hyper-Efficient / Under-Investing in Ads",
+        label: "Modeled ratio above 4.5",
         badgeClass: "bg-indigo-100 text-indigo-800 border-indigo-300",
-        message: "Exceptional LTV relative to CAC. You have significant room to increase Google Ads bids.",
+        message: "Modeled LTV exceeds modeled CAC under the selected illustrative assumptions.",
       };
     }
   }, [outputs.ltvToCacRatio]);
@@ -134,19 +134,18 @@ export function ValuationHeuristicsWidget({
       <div className="bg-gradient-to-br from-stone-900 via-stone-850 to-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-stone-800">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                Heuristic Economic Engine
+                Illustrative Assumptions Simulator (Not Observed Accounting)
               </span>
-              <span className="text-xs text-stone-400">Deterministic Physical Product Modeling</span>
+              <span className="text-xs text-stone-400">Hypothetical Scenario Modeling Only</span>
             </div>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white flex items-center gap-2.5">
               <Award className="w-6 h-6 text-amber-400" />
-              LTV, CAC &amp; Business Valuation Engine
+              Illustrative LTV, CAC &amp; Valuation Scenario Simulator
             </h2>
             <p className="text-xs sm:text-sm text-stone-300 max-w-3xl leading-relaxed">
-              Model lifetime customer equity, acquisition payback horizons, and multi-scenario enterprise valuation
-              benchmarks driven by customizable retention, address book adoption, and market multiples.
+              Hypothetical scenario worksheet driven by user-entered assumptions ({paidOrdersCount} observed paid orders). Outputs below are illustrative projections and must not be treated as observed financial accounting.
             </p>
           </div>
 
@@ -181,7 +180,7 @@ export function ValuationHeuristicsWidget({
               ${outputs.modeledLtvGrossMargin.toFixed(2)}
             </p>
             <p className="text-[10px] text-stone-400">
-              {outputs.modeledLifetimeOrders} lifetime cards @ $3.56 margin
+              {outputs.modeledLifetimeOrders} lifetime dispatches at the selected modeled unit contribution
             </p>
           </div>
 
@@ -232,7 +231,7 @@ export function ValuationHeuristicsWidget({
               <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] border ${ltvTier.badgeClass}`}>
                 {ltvTier.label}
               </span>
-              <span className="text-stone-300 font-medium">LTV:CAC Health Analysis</span>
+              <span className="text-stone-300 font-medium">Illustrative LTV:CAC scenario</span>
             </div>
             <p className="text-stone-400 text-[11px] leading-relaxed">
               {ltvTier.message}
@@ -687,7 +686,7 @@ export function ValuationHeuristicsWidget({
       <div className="bg-stone-50 rounded-3xl p-6 sm:p-8 border border-stone-200/80 space-y-4">
         <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          The Economics of DocketStamp: Why Programmatic Certified Mail Scales Profitably
+          Business Model Questions to Validate
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-stone-600 leading-relaxed">
           <div className="p-4 bg-white rounded-2xl border border-stone-200/70 space-y-1.5">
@@ -695,7 +694,7 @@ export function ValuationHeuristicsWidget({
               <span>Zero Physical Inventory Waste</span>
             </span>
             <p>
-              Unlike traditional mail processing facilities who risk high overhead, every statutory instrument is verified via CASS and dispatched on-demand after customer payment.
+              Orders are designed for on-demand postal fulfillment after payment. Actual CASS coverage, dispatch outcomes, and supplier costs require current provider evidence.
             </p>
           </div>
 
@@ -704,16 +703,16 @@ export function ValuationHeuristicsWidget({
               <span>The Address Book Flywheel</span>
             </span>
             <p>
-              When a customer dispatches a notice, DocketStamp securely logs the instrument. Automated status tracking and follow-up notices generate high-margin re-orders with $0 marginal ad spend.
+              Customer reuse and follow-up demand are hypotheses to measure. The current data does not establish repeat purchase, margin, or marginal acquisition cost.
             </p>
           </div>
 
           <div className="p-4 bg-white rounded-2xl border border-stone-200/70 space-y-1.5">
             <span className="font-bold text-stone-900 flex items-center gap-1">
-              <span>Deterministic $3.56 Gross Margin</span>
+              <span>Unit Contribution Requires Reconciliation</span>
             </span>
             <p>
-              A clean 39.56% net contribution margin ensures that as long as Google Ads Customer Acquisition Cost (CAC) stays below LTV (~$35.24), you can scale ad spend aggressively.
+              Actual processor fees, postal charges, spend, customer identity, refunds, and repeat behavior are not reconciled here. Use only the adjustable assumptions above for scenario comparisons.
             </p>
           </div>
         </div>

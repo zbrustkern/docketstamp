@@ -287,7 +287,7 @@ export async function POST(req: NextRequest) {
         recommendedTier: toolArgs.recommendedTier,
       };
 
-      const result = createStagedDraft(stageReq);
+      const result = await createStagedDraft(stageReq);
 
       if (!result.success) {
         return NextResponse.json(

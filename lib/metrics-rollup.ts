@@ -457,15 +457,37 @@ export async function recordServerTelemetry(params: {
 }
 
 /**
- * Retrieves the funnel summary, backfilling from raw events if the summary doc is missing.
+ * Retrieves the funnel summary without performing automatic collection scans or Firestore writes on GET.
  */
 export async function getTelemetrySummary(): Promise<TelemetrySummary> {
   const existing = await getSystemConfig<TelemetrySummary>(SUMMARY_CONFIG_KEY);
-  if (existing && existing.totalSessions > 0) {
+  if (existing) {
     return existing;
   }
 
-  // Backfill from raw events if summary does not exist yet
+  return {
+    totalSessions: 0,
+    activeSessionIds: [],
+    coverSelected: 0,
+    noteCompleted: 0,
+    addressCompleted: 0,
+    checkoutInitiated: 0,
+    paid: 0,
+    paidOrderIds: [],
+    scenarios: {},
+    recentSessions: [],
+    deviceCounts: { mobile: 0, desktop: 0, tablet: 0 },
+    geoCounts: {},
+    sourceCounts: {},
+    updatedAt: 0,
+  };
+}
+
+/**
+ * Explicit maintenance helper to rebuild telemetry summary from raw events.
+ * Never invoked automatically during dashboard GET requests.
+ */
+export async function backfillTelemetrySummaryFromEvents(): Promise<TelemetrySummary> {
   const summary: TelemetrySummary = {
     totalSessions: 0,
     activeSessionIds: [],
@@ -566,7 +588,6 @@ export async function getTelemetrySummary(): Promise<TelemetrySummary> {
     };
     summary.updatedAt = Date.now();
 
-    // Persist backfilled aggregate
     await setSystemConfig(SUMMARY_CONFIG_KEY, summary as unknown as Record<string, unknown>);
   } catch (err) {
     console.warn("[Metrics Rollup] Backfill notice:", err);
@@ -592,8 +613,41 @@ export function isExcludedOrderCohort(o: Partial<Order>): boolean {
 }
 
 /**
+ * Recognizes all paid/post-payment order statuses, including modern DocketStamp Lob USPS lifecycle states.
+ * Never treats modern postal progress (PROCESSING_DISPATCH, IN_TRANSIT, DELIVERED, etc.) as unpaid.
+ */
+export function isPaidOrderStatus(o: Partial<Order>): boolean {
+  if (!o.status) return false;
+  if (o.status === "PENDING_PAYMENT" || o.status === "PAYMENT_VERIFICATION_FAILED") {
+    return false;
+  }
+  if (
+    o.status === "PAYMENT_RECEIVED" ||
+    o.status === "DISPATCHING" ||
+    o.status === "PROCESSING_HANDWRYTTEN" ||
+    o.status === "PROCESSING_DISPATCH" ||
+    o.status === "DISPATCHED_TO_USPS" ||
+    o.status === "MAILED" ||
+    o.status === "IN_TRANSIT" ||
+    o.status === "DELIVERED" ||
+    o.status === "RETURNED_TO_SENDER"
+  ) {
+    return true;
+  }
+  if (o.status === "QUEUED_FOR_FULFILLMENT") {
+    return (
+      Boolean(o.stripePaymentId) ||
+      (typeof o.finalAmountInCents === "number" && o.finalAmountInCents > 0) ||
+      (typeof o.amountInCents === "number" && o.amountInCents > 0) ||
+      o.paymentMethod === "PROMO_CODE"
+    );
+  }
+  return false;
+}
+
+/**
  * Computes scalable admin dashboard metrics by combining:
- * 1. Pre-aggregated telemetry summary
+ * 1. Pre-aggregated telemetry summary (observed sessions only; no synthetic order backfill)
  * 2. High-performance order queries with limit and status filtering
  */
 export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
@@ -642,18 +696,20 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
       return;
     }
 
-    const isPaid =
-      o.status === "PROCESSING_HANDWRYTTEN" ||
-      o.status === "PAYMENT_RECEIVED" ||
-      o.status === "MAILED";
+    const isPaid = isPaidOrderStatus(o);
 
     if (isPaid) {
-      const orderRev = o.amountInCents !== undefined ? o.amountInCents : 900;
+      const orderRev =
+        typeof o.finalAmountInCents === "number"
+          ? o.finalAmountInCents
+          : typeof o.amountInCents === "number"
+          ? o.amountInCents
+          : 0;
       totalRevenueCents += orderRev;
       processingCount++;
 
       const orderStripeFee = calculateStripeFeeCents(orderRev, o.paymentMethod);
-      const orderCogs = HANDWRYTTEN_COGS_PER_CARD_CENTS;
+      const orderCogs = USPS_DISPATCH_COGS_CENTS;
       const orderNetMargin = orderRev - orderStripeFee - orderCogs;
 
       stripeFeesCents += orderStripeFee;
@@ -696,7 +752,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
       }
     } else if (o.status === "PENDING_PAYMENT") {
       pendingCount++;
-    } else if (o.status === "FAILED") {
+    } else if (o.status === "FAILED" || o.status === "PAYMENT_VERIFICATION_FAILED") {
       failedCount++;
     }
 
@@ -717,13 +773,13 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     occasionCounts[occasion] = (occasionCounts[occasion] || 0) + 1;
   });
 
-  const totalCountForBreakdowns = Math.max(allOrdersSnap.size, 1);
+  const totalCountForBreakdowns = allOrdersSnap.size;
   const fontPopularity = Object.entries(fontCounts)
     .map(([fontName, count]) => ({
       fontId: fontName,
       fontName,
       count,
-      percentage: Math.round((count / totalCountForBreakdowns) * 100),
+      percentage: totalCountForBreakdowns > 0 ? Math.round((count / totalCountForBreakdowns) * 100) : 0,
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -731,23 +787,23 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     .map(([occasion, count]) => ({
       occasion,
       count,
-      percentage: Math.round((count / totalCountForBreakdowns) * 100),
+      percentage: totalCountForBreakdowns > 0 ? Math.round((count / totalCountForBreakdowns) * 100) : 0,
     }))
     .sort((a, b) => b.count - a.count);
 
-  // 3. Margin & Unit Economics Summaries
+  // 3. Margin & Unit Economics Summaries (No fabricated $9.00, $3.56, or 39.6% defaults on empty data)
   const paidCardsCount = processingCount;
   const netContributionMarginCents = totalRevenueCents - stripeFeesCents - fulfillmentCogsCents;
   const netContributionMarginPercent =
     totalRevenueCents > 0
       ? Math.round((netContributionMarginCents / totalRevenueCents) * 1000) / 10
-      : 39.6;
+      : null;
 
-  const averageOrderRevenueCents = paidCardsCount > 0 ? Math.round(totalRevenueCents / paidCardsCount) : 900;
-  const averageStripeFeeCents = paidCardsCount > 0 ? Math.round(stripeFeesCents / paidCardsCount) : 56;
-  const averageFulfillmentCogsCents = paidCardsCount > 0 ? Math.round(fulfillmentCogsCents / paidCardsCount) : HANDWRYTTEN_COGS_PER_CARD_CENTS;
-  const averageNetContributionCents = paidCardsCount > 0 ? Math.round(netContributionMarginCents / paidCardsCount) : (900 - 56 - HANDWRYTTEN_COGS_PER_CARD_CENTS);
-  const targetBreakevenCpaDollars = Number((averageNetContributionCents / 100).toFixed(2));
+  const averageOrderRevenueCents = paidCardsCount > 0 ? Math.round(totalRevenueCents / paidCardsCount) : 0;
+  const averageStripeFeeCents = paidCardsCount > 0 ? Math.round(stripeFeesCents / paidCardsCount) : 0;
+  const averageFulfillmentCogsCents = paidCardsCount > 0 ? Math.round(fulfillmentCogsCents / paidCardsCount) : 0;
+  const averageNetContributionCents = paidCardsCount > 0 ? Math.round(netContributionMarginCents / paidCardsCount) : 0;
+  const targetBreakevenCpaDollars = paidCardsCount > 0 ? Number((averageNetContributionCents / 100).toFixed(2)) : 0;
 
   const margins: FinancialMargins = {
     grossRevenueCents: totalRevenueCents,
@@ -761,6 +817,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     averageFulfillmentCogsCents,
     averageNetContributionCents,
     targetBreakevenCpaDollars,
+    economicsAuthority: "estimated_legacy_unverified",
   };
 
   const campaignAttributions = Object.values(campaignAgg).sort(
@@ -789,15 +846,16 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     console.warn("[Metrics Rollup] Error reading valuation assumptions:", err);
   }
 
-  // 4. Load pre-aggregated telemetry funnel
+  // 4. Load pre-aggregated telemetry funnel (strictly observed sessions; no synthetic order backfill or minimum-1 denominator)
   const telemetry = await getTelemetrySummary();
 
-  const totalSessions = Math.max(telemetry.totalSessions, allOrdersSnap.size, 1);
-  const coverCount = Math.max(telemetry.coverSelected, allOrdersSnap.size);
-  const noteCount = Math.max(telemetry.noteCompleted, allOrdersSnap.size);
-  const addressCount = Math.max(telemetry.addressCompleted, allOrdersSnap.size);
-  const checkoutCount = Math.max(telemetry.checkoutInitiated, allOrdersSnap.size);
-  const paidCount = Math.max(telemetry.paid, processingCount);
+  const totalSessions = telemetry.totalSessions;
+  const coverCount = telemetry.coverSelected;
+  const noteCount = telemetry.noteCompleted;
+  const addressCount = telemetry.addressCompleted;
+  const checkoutCount = telemetry.checkoutInitiated;
+  const paidCount = telemetry.paid;
+  const unmatchedPaidOrdersCount = Math.max(0, processingCount - telemetry.paid);
 
   // 5. Construct enriched visitor telemetry
   const totalDev =
@@ -857,7 +915,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
       stepNumber: 1,
       stepName: "1. Landed & Browsing",
       visitors: totalSessions,
-      conversionFromPrior: 100,
+      conversionFromPrior: totalSessions > 0 ? 100 : 0,
       leakToNext: totalSessions > 0 ? Math.max(0, Math.round(((totalSessions - coverCount) / totalSessions) * 100)) : 0,
     },
     {
@@ -890,7 +948,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     },
     {
       stepNumber: 6,
-      stepName: "6. Paid Order ($9.00)",
+      stepName: "6. Paid Order",
       visitors: paidCount,
       conversionFromPrior: checkoutCount > 0 ? Math.min(100, Math.round((paidCount / checkoutCount) * 100)) : 0,
       leakToNext: 0,
@@ -935,6 +993,19 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     campaignAttributions,
     adSpendCents,
     valuationAssumptions,
+    reportingQuality: {
+      status: "legacy_interim_unverified",
+      funnelAuthority: "session_telemetry_only_no_synthetic_backfill",
+      economicsAuthority: "estimated_pending_provider_fee_cogs_ledger",
+      healthAuthority: "configuration_only_no_live_probe",
+      hasVerifiedRevenue: totalRevenueCents > 0,
+      hasObservedSessions: totalSessions > 0,
+      unmatchedPaidOrdersCount,
+      notes: [
+        "Funnel counts reflect observed telemetry sessions only without synthetic order backfill or minimum-1 denominators.",
+        "Unit economics are interim legacy estimates pending verified Stripe balance_transaction fee and Lob COGS ledgers in S2/S6.",
+      ],
+    },
     recentOrders,
   };
 }

@@ -77,9 +77,9 @@ export function AddressRetryModal({
             </div>
             <div>
               <h3 className="font-serif font-bold text-base text-stone-900">
-                Correct Address &amp; Retry Dispatch
+                Correct Address &amp; Retry Dispatch (Held in S0)
               </h3>
-              <p className="text-xs text-stone-400 font-mono">{order.id}</p>
+              <p className="text-xs text-stone-400 font-mono">{order.id} &bull; Restored in S5-T02</p>
             </div>
           </div>
           <button
@@ -92,6 +92,16 @@ export function AddressRetryModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 text-xs space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-amber-900">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>Execution Held in Sprint S0 (Restoration Target: S5-T02)</span>
+            </div>
+            <p className="text-[11px] text-amber-900/90 leading-relaxed">
+              Direct address mutation and fulfillment retry are held until Sprint S5-T02 enforces immutable <code className="font-mono">frozen_html_payload</code> snapshot reuse and envelope-versus-body address congruence checks.
+            </p>
+          </div>
+
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />

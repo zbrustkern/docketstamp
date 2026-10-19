@@ -25,43 +25,60 @@ export function isAuthorizedAdminEmail(email?: string | null): boolean {
 }
 
 /**
+ * Blocklisted predictable or historical fallback secrets that must never be accepted
+ * even if accidentally supplied in environment variables.
+ */
+export const BLOCKLISTED_ADMIN_SECRETS = new Set([
+  "ds_dev_admin_2026",
+  "ds_staging_admin_2026",
+  "smn_internal_admin_session_key_2026",
+  "changeme",
+  "secret",
+  "admin",
+  "password",
+  "placeholder",
+  "whsec_placeholder",
+]);
+
+export function isPredictableOrInvalidSecret(candidate?: string | null): boolean {
+  if (!candidate || typeof candidate !== "string") return true;
+  const trimmed = candidate.trim();
+  if (trimmed.length < 16) return true;
+  if (BLOCKLISTED_ADMIN_SECRETS.has(trimmed)) return true;
+  if (BLOCKLISTED_ADMIN_SECRETS.has(trimmed.toLowerCase())) return true;
+  return false;
+}
+
+/**
  * Resolves the admin secret key from the environment.
- * In production, fails closed (returns null) if no secret is configured.
- * In non-production/test environments, falls back to a development key.
+ * Fails closed (returns null) in all environments if no valid, non-blocklisted secret is configured.
  */
 export function getAdminSecret(): string | null {
   const secret = process.env.ADMIN_SECRET_KEY || process.env["admin-secret-key"];
-  if (secret && secret.trim().length > 0) {
-    return secret.trim();
+  if (!secret || isPredictableOrInvalidSecret(secret)) {
+    return null;
   }
-  if (process.env.NODE_ENV !== "production") {
-    return "ds_dev_admin_2026";
-  }
-  // If explicitly in staging environment, provide default staging passphrase
-  if (
-    process.env.ENVIRONMENT === "staging" ||
-    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
-    (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging"))
-  ) {
-    return "ds_staging_admin_2026";
-  }
-  console.error("[AdminAuth] ERROR: ADMIN_SECRET_KEY is not configured in production environment.");
-  return null;
+  return secret.trim();
 }
 
 /**
  * Secret key used to sign and verify HMAC session cookies.
+ * Fails closed (returns null) if neither ADMIN_SESSION_SIGNING_KEY nor ADMIN_SECRET_KEY
+ * is configured with a non-blocklisted value.
  */
-export function getAdminSessionSigningKey(): string {
-  const secret = getAdminSecret();
-  if (secret) return secret;
-  return process.env.ADMIN_SESSION_SIGNING_KEY || "smn_internal_admin_session_key_2026";
+export function getAdminSessionSigningKey(): string | null {
+  const explicitSigningKey = process.env.ADMIN_SESSION_SIGNING_KEY;
+  if (explicitSigningKey && !isPredictableOrInvalidSecret(explicitSigningKey)) {
+    return explicitSigningKey.trim();
+  }
+  return getAdminSecret();
 }
+
+export const ADMIN_SESSION_TOKEN_PREFIX = "ds_admin_v2_";
 
 /**
  * Creates a signed session token derived from the signing key, timestamp, and authorized admin email.
+ * Throws if signing configuration is absent or invalid (fail-closed).
  */
 export function generateAdminSessionToken(adminEmail: string = "zbrustkern@gmail.com"): string {
   const cleanEmail = adminEmail.toLowerCase().trim();
@@ -69,9 +86,14 @@ export function generateAdminSessionToken(adminEmail: string = "zbrustkern@gmail
     throw new Error(`Cannot generate admin session token for unauthorized email: ${cleanEmail}`);
   }
   const signingKey = getAdminSessionSigningKey();
+  if (!signingKey) {
+    throw new Error(
+      "Admin session signing key is not configured or uses a blocklisted fallback secret (fail-closed)."
+    );
+  }
   const timestamp = Date.now();
   const userTag = `_${Buffer.from(cleanEmail).toString("hex")}`;
-  const payload = `smn_admin_${timestamp}${userTag}`;
+  const payload = `${ADMIN_SESSION_TOKEN_PREFIX}${timestamp}${userTag}`;
   const signature = crypto
     .createHmac("sha256", signingKey)
     .update(payload)
@@ -81,13 +103,14 @@ export function generateAdminSessionToken(adminEmail: string = "zbrustkern@gmail
 
 /**
  * Validates the admin session token from the cookie or header.
- * Enforces payload format, server-side timestamp expiration (8 hours max),
- * constant-time HMAC signature verification, and STRICT authorization check
- * against authorized admin accounts (zbrustkern@gmail.com, sentral@gmail.com).
+ * Enforces v2 payload format (invalidating legacy smn_admin_ fallback tokens),
+ * server-side timestamp expiration (8 hours max), constant-time HMAC signature verification,
+ * fail-closed signing key validation, and account-bound admin email authorization.
  */
 export function isValidAdminSessionToken(token: string): boolean {
   if (!token || typeof token !== "string" || !token.includes(".")) return false;
   const signingKey = getAdminSessionSigningKey();
+  if (!signingKey) return false;
 
   const lastDot = token.lastIndexOf(".");
   if (lastDot === -1) return false;
@@ -95,8 +118,8 @@ export function isValidAdminSessionToken(token: string): boolean {
   const signature = token.substring(lastDot + 1);
   if (!payload || !signature) return false;
 
-  // Enforce payload format and timestamp expiration with user tag
-  const match = payload.match(/^smn_admin_(\d+)(?:_.*)?$/);
+  // Enforce v2 payload format and timestamp expiration with required user tag
+  const match = payload.match(/^ds_admin_v2_(\d+)_([0-9a-fA-F]+)$/);
   if (!match) return false;
 
   const timestamp = parseInt(match[1], 10);
@@ -130,13 +153,13 @@ export function isValidAdminSessionToken(token: string): boolean {
 }
 
 /**
- * Safely extracts the email embedded in a valid session token (if present).
+ * Safely extracts the email embedded in a v2 session token (if present).
  */
 export function getAdminSessionEmail(token: string): string | null {
   if (!token || typeof token !== "string" || !token.includes(".")) return null;
   const lastDot = token.lastIndexOf(".");
   const payload = token.substring(0, lastDot);
-  const match = payload.match(/^smn_admin_\d+_(.+)$/);
+  const match = payload.match(/^ds_admin_v2_\d+_(.+)$/);
   if (!match) return null;
   const rawTag = match[1];
   if (/^[0-9a-fA-F]+$/.test(rawTag)) {
@@ -155,16 +178,19 @@ export function getAdminSessionEmail(token: string): string | null {
 
 /**
  * Validates incoming admin request from cookie or x-admin-key header.
+ * Fails closed when secret/signing keys are absent or blocklisted.
  */
 export function verifyAdminAuth(req: NextRequest): boolean {
   // 1. Direct header check with timing-safe comparison (service / API access)
   const secret = getAdminSecret();
   const headerKey = req.headers.get("x-admin-key");
   if (headerKey && typeof headerKey === "string" && secret) {
-    const headBuf = Buffer.from(headerKey);
-    const secBuf = Buffer.from(secret);
-    if (headBuf.length === secBuf.length && crypto.timingSafeEqual(headBuf, secBuf)) {
-      return true;
+    if (!isPredictableOrInvalidSecret(headerKey)) {
+      const headBuf = Buffer.from(headerKey.trim());
+      const secBuf = Buffer.from(secret);
+      if (headBuf.length === secBuf.length && crypto.timingSafeEqual(headBuf, secBuf)) {
+        return true;
+      }
     }
   }
 
@@ -179,10 +205,11 @@ export function verifyAdminAuth(req: NextRequest): boolean {
 
 /**
  * Timing-safe passphrase verification helper.
- * (Note: Passphrase login is disabled on /admin in favor of account-bound Google auth).
+ * Fails closed if ADMIN_SECRET_KEY is not configured or is blocklisted.
  */
 export function verifyAdminPassphrase(passphrase: string): boolean {
   if (!passphrase || typeof passphrase !== "string") return false;
+  if (isPredictableOrInvalidSecret(passphrase)) return false;
   const secret = getAdminSecret();
   if (!secret) return false;
 

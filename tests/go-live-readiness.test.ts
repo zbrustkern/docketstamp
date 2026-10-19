@@ -273,6 +273,12 @@ async function runGoLiveReadinessSuite() {
   // 5. Lob Tracking Webhook (POST /api/webhooks/lob) (WP-C)
   // -------------------------------------------------------------------------
   console.log("\n--- 5. Testing Lob Tracking Webhook Ingestion & Status Sync ---");
+  const prevUnsignedFlag = process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST;
+  const prevMockFirestore = process.env.USE_MOCK_FIRESTORE;
+  const prevNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "test";
+  process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST = "true";
+  process.env.USE_MOCK_FIRESTORE = "true";
   const testOrderId = `order_test_webhook_${Date.now()}`;
   const testDocketId = `DS-2026-WHK${Math.floor(1000 + Math.random() * 9000)}`;
   const testLetterId = `ltr_test_${Date.now()}`;
@@ -380,6 +386,12 @@ async function runGoLiveReadinessSuite() {
     Array.isArray(orderAfterDelivered?.lobTrackingEvents) && orderAfterDelivered.lobTrackingEvents.length >= 3,
     "Firestore order doc lobTrackingEvents has 3 recorded postal events"
   );
+  if (prevUnsignedFlag === undefined) delete process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST;
+  else process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST = prevUnsignedFlag;
+  if (prevMockFirestore === undefined) delete process.env.USE_MOCK_FIRESTORE;
+  else process.env.USE_MOCK_FIRESTORE = prevMockFirestore;
+  if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
+  else process.env.NODE_ENV = prevNodeEnv;
 
   // -------------------------------------------------------------------------
   // 6. Transactional Dispatch Receipt Email (WP-A)

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from 'node:crypto';
 import { ingestTelemetryEvent } from "@/lib/metrics-rollup";
 import { TelemetryEvent, TelemetryEventName } from "@/lib/types";
+import { AttributionTouchSchema, EventEnvelopeSchema } from "@/lib/admin-console/contracts";
+import { acceptBusinessEvent, recordMeasurementDiagnostic } from "@/lib/admin-console/measurement/store";
+import { serverEnvironment } from "@/lib/admin-console/commands/access";
 import {
   isAuthorityEvent,
   ALLOWED_BROWSER_EVENT_NAMES,
@@ -69,6 +73,88 @@ export async function POST(req: NextRequest) {
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Payload must be a JSON object" }, { status: 400 });
+    }
+
+    // Contract v1 events are stored additively. Legacy payloads continue through the adapter below.
+    if (body.schemaVersion === 1) {
+      const receivedAt = new Date().toISOString();
+      const { acquisition: rawAcquisition, classification: _untrustedClassification, ...wireEvent } = body;
+      const parsed = EventEnvelopeSchema.safeParse({
+        ...wireEvent,
+        environment: serverEnvironment(),
+        receivedAt,
+        emitter: 'client',
+        requestId: typeof body.requestId === 'string' ? body.requestId : crypto.randomUUID(),
+        correlationId: typeof body.correlationId === 'string' ? body.correlationId : crypto.randomUUID(),
+      });
+      if (!parsed.success) {
+        await recordMeasurementDiagnostic({
+          code: 'VALIDATION_FAILED', severity: 'warning', retryable: false,
+          detailsRedacted: 'Contract v1 event rejected by schema validation.',
+        }).catch(() => {});
+        return NextResponse.json({ accepted: false, code: 'VALIDATION_FAILED' }, { status: 400 });
+      }
+
+      const event = parsed.data;
+      const occurredMs = Date.parse(event.occurredAt);
+      const ageMs = Date.parse(receivedAt) - occurredMs;
+      if (!Number.isFinite(occurredMs) || occurredMs > Date.now() + 5 * 60_000 || ageMs > 24 * 60 * 60_000) {
+        await recordMeasurementDiagnostic({
+          code: 'CLOCK_SKEW', severity: 'warning', retryable: false,
+          correlationId: event.correlationId, detailsRedacted: 'Client event outside allowed time window; excluded from cohort time.',
+        }).catch(() => {});
+        return NextResponse.json({ accepted: false, code: 'CLOCK_SKEW' }, { status: 202 });
+      }
+
+      const userAgent = req.headers.get('user-agent') || '';
+      const isAutomated = /bot|crawler|spider|googlebot|bingbot|yandex|baidu|slurp|duckduckgo|semrush|ahrefs|lighthouse|headless|facebookexternalhit|whatsapp|twitterbot|pingdom|uptimerobot/i.test(userAgent);
+      const primary = isAutomated
+        ? 'suspected_bot'
+        : event.environment !== 'production'
+        ? 'automated_test'
+        : 'customer';
+      let acquisition: { original?: unknown; subsequentTouches?: unknown[] } | undefined;
+      if (rawAcquisition && typeof rawAcquisition === 'object' && !Array.isArray(rawAcquisition)) {
+        const candidate = rawAcquisition as Record<string, unknown>;
+        try {
+          const original = candidate.original ? AttributionTouchSchema.parse(candidate.original) : undefined;
+          const subsequentTouches = Array.isArray(candidate.subsequentTouches)
+            ? candidate.subsequentTouches.slice(-20).map((touch) => AttributionTouchSchema.parse(touch))
+            : [];
+          acquisition = { original, subsequentTouches };
+        } catch {
+          await recordMeasurementDiagnostic({
+            code: 'VALIDATION_FAILED', severity: 'warning', retryable: false,
+            correlationId: event.correlationId, detailsRedacted: 'Attribution touch data rejected; event stored without it.',
+          }).catch(() => {});
+        }
+      }
+
+      try {
+        const result = await acceptBusinessEvent(event, {
+          classification: {
+            primary,
+            evidenceClass: 'inferred',
+            policyVersion: 1,
+            evidenceRef: isAutomated ? 'server_user_agent_bot_heuristic_v1' : event.environment === 'production' ? 'server_non_bot_user_agent_candidate_v1' : 'server_nonproduction_environment_v1',
+          },
+          acquisition,
+        });
+        if (result === 'conflict') {
+          await recordMeasurementDiagnostic({
+            code: 'DUPLICATE_CONFLICT', severity: 'error', retryable: false,
+            correlationId: event.correlationId, detailsRedacted: 'Event ID was retried with a different logical payload.',
+          }).catch(() => {});
+          return NextResponse.json({ accepted: false, code: 'DUPLICATE_CONFLICT' }, { status: 409 });
+        }
+        return NextResponse.json({ accepted: true, disposition: result, eventId: event.eventId }, { status: result === 'accepted' ? 201 : 200 });
+      } catch {
+        await recordMeasurementDiagnostic({
+          code: 'STORAGE_UNAVAILABLE', severity: 'error', retryable: true,
+          correlationId: event.correlationId, detailsRedacted: 'Contract v1 event could not be durably stored.',
+        }).catch(() => {});
+        return NextResponse.json({ accepted: false, code: 'STORAGE_UNAVAILABLE' }, { status: 503 });
+      }
     }
 
     const {

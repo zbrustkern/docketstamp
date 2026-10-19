@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = createStagedDraft(body);
+    const result = await createStagedDraft(body);
 
     if (!result.success) {
       return NextResponse.json(

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStripeClient, CARD_FLAT_RATE_CENTS } from "@/lib/stripe";
+import { getStripeClient } from "@/lib/stripe";
 import { resolvePaymentMode, PaymentMode } from "@/lib/payment-mode";
 import { processPaidOrder } from "@/lib/order-processor";
 import { getOrderById, updateOrderStatus } from "@/lib/firebase-admin";
 import { logIncident } from "@/lib/incident-logger";
+import { consumePaymentObligation, recordPaymentAuthority } from "@/lib/admin-console/finance/authority";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Order ${orderId} not found` }, { status: 404 });
     }
 
-    // Idempotency: If order is already completed, processing, or actively dispatching, return immediately
+    // Idempotency: If the obligation has already advanced, return current state.
     if (
       order.status === "DISPATCHING" ||
       order.status === "PROCESSING_DISPATCH" ||
@@ -69,22 +70,17 @@ export async function POST(req: NextRequest) {
     let isTest = isMockDevMode;
     let paymentMode: PaymentMode = mode;
     let customerEmailFromStripe: string | undefined;
+    let authorityFactId: string | undefined;
 
     if (!isMockDevMode) {
       // Synchronously verify PaymentIntent directly via Stripe API (Fail Closed)
       let pi;
       try {
         const stripe = getStripeClient();
-        pi = await stripe.paymentIntents.retrieve(verifiedPaymentIntentId);
+        pi = await stripe.paymentIntents.retrieve(verifiedPaymentIntentId, { expand: ["latest_charge"] });
       } catch (stripeErr: unknown) {
         const msg = stripeErr instanceof Error ? stripeErr.message : "Stripe API retrieval error";
         console.error(`[Confirm Order] Failed to retrieve PaymentIntent ${verifiedPaymentIntentId}:`, msg);
-
-        await updateOrderStatus(orderId, {
-          status: "PAYMENT_VERIFICATION_FAILED",
-          fulfillmentError: `Stripe PaymentIntent verification error: ${msg}`,
-        });
-
         await logIncident({
           type: "STRIPE",
           severity: "error",
@@ -96,98 +92,49 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            status: "PAYMENT_VERIFICATION_FAILED",
-            error: `Unable to verify payment with processor: ${msg}`,
+            status: "PAYMENT_VERIFICATION_UNAVAILABLE",
+            error: "Unable to verify payment with processor. Retry after connectivity is restored.",
           },
-          { status: 400 }
+          { status: 503 }
         );
       }
 
-      // Assert status === 'succeeded'
-      if (pi.status !== "succeeded") {
-        await updateOrderStatus(orderId, {
-          status: "PAYMENT_VERIFICATION_FAILED",
-          fulfillmentError: `Payment status is ${pi.status}, expected succeeded`,
-        });
+      let capturedAtMs: number | undefined;
+      if (typeof pi.latest_charge === "object" && pi.latest_charge !== null) {
+        capturedAtMs = pi.latest_charge.created * 1000;
+      } else if (typeof pi.latest_charge === "string") {
+        try {
+          const charge = await getStripeClient().charges.retrieve(pi.latest_charge);
+          capturedAtMs = charge.created * 1000;
+        } catch {
+          // Keep the client from advancing without provider-effective capture time.
+        }
+      }
+      if (!capturedAtMs) {
+        return NextResponse.json(
+          { success: false, status: "PAYMENT_EVIDENCE_INCOMPLETE", error: "Stripe capture evidence is incomplete; retry verification." },
+          { status: 503 }
+        );
+      }
+
+      const authority = await recordPaymentAuthority(pi, {
+        eventId: `confirm-retrieve:${pi.id}`,
+        eventType: "payment_intent.retrieve.confirm_order",
+        eventLivemode: pi.livemode,
+        occurredAt: capturedAtMs,
+        receivedAt: Date.now(),
+      });
+      if (!authority.accepted || !authority.paymentFactId) {
         return NextResponse.json(
           {
             success: false,
-            status: "PAYMENT_NOT_SUCCEEDED",
-            error: `Payment has not succeeded (current status: ${pi.status}).`,
+            status: "PAYMENT_AUTHORITY_REJECTED",
+            diagnosticCodes: authority.diagnosticCodes,
           },
-          { status: 400 }
+          { status: authority.status === "unmatched" ? 404 : 409 }
         );
       }
-
-      // Assert currency === 'usd'
-      if (pi.currency?.toLowerCase() !== "usd") {
-        await updateOrderStatus(orderId, {
-          status: "PAYMENT_VERIFICATION_FAILED",
-          fulfillmentError: `Currency mismatch: expected usd, got ${pi.currency}`,
-        });
-        return NextResponse.json(
-          { success: false, error: `Invalid currency: expected usd, got ${pi.currency}` },
-          { status: 400 }
-        );
-      }
-
-      // Assert amount matches expected order total
-      const expectedAmountCents =
-        typeof order.amountInCents === "number" && order.amountInCents > 0
-          ? order.amountInCents
-          : CARD_FLAT_RATE_CENTS;
-
-      if (pi.amount !== expectedAmountCents) {
-        const errorMsg = `Payment amount mismatch: expected ${expectedAmountCents}¢ ($${(
-          expectedAmountCents / 100
-        ).toFixed(2)}), got ${pi.amount}¢ ($${(pi.amount / 100).toFixed(2)})`;
-        console.error(`[Confirm Order Alert] ${errorMsg} for order ${orderId}`);
-
-        await updateOrderStatus(orderId, {
-          status: "PAYMENT_VERIFICATION_FAILED",
-          fulfillmentError: errorMsg,
-        });
-
-        await logIncident({
-          type: "STRIPE",
-          severity: "error",
-          summary: `Payment Amount Mismatch for Order ${orderId}`,
-          technicalDetails: errorMsg,
-          metadata: { orderId, expected: expectedAmountCents, received: pi.amount },
-        });
-
-        return NextResponse.json(
-          { success: false, error: "Payment amount does not match expected order total." },
-          { status: 400 }
-        );
-      }
-
-      // Assert metadata orderId matches if present
-      if (pi.metadata?.orderId && pi.metadata.orderId !== orderId) {
-        const mismatchError = `PaymentIntent orderId mismatch: intent metadata has '${pi.metadata.orderId}', expected '${orderId}'`;
-        await updateOrderStatus(orderId, {
-          status: "PAYMENT_VERIFICATION_FAILED",
-          fulfillmentError: mismatchError,
-        });
-        return NextResponse.json(
-          { success: false, error: "PaymentIntent metadata orderId mismatch." },
-          { status: 400 }
-        );
-      }
-
-      // In production environment, assert livemode === true
-      if (process.env.NODE_ENV === "production" && !pi.livemode) {
-        const testModeError = "Test-mode payment intent used in production environment.";
-        await updateOrderStatus(orderId, {
-          status: "PAYMENT_VERIFICATION_FAILED",
-          fulfillmentError: testModeError,
-        });
-        return NextResponse.json(
-          { success: false, error: testModeError },
-          { status: 400 }
-        );
-      }
-
+      authorityFactId = authority.paymentFactId;
       customerEmailFromStripe = pi.receipt_email || undefined;
       isTest = !pi.livemode;
       paymentMode = pi.livemode ? "live" : "stripe_test";
@@ -202,12 +149,14 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get("user-agent") || undefined;
 
     // Process and fulfill the verified paid order (atomic locking handled in order-processor)
-    const result = await processPaidOrder(
-      orderId,
-      verifiedPaymentIntentId,
-      customerEmail || customerEmailFromStripe || order.customerEmail,
-      { clientIp, userAgent, isTest, paymentMode }
-    );
+    const result = authorityFactId
+      ? await consumePaymentObligation(orderId, authorityFactId, { clientIp, userAgent })
+      : await processPaidOrder(
+          orderId,
+          verifiedPaymentIntentId,
+          customerEmail || customerEmailFromStripe || order.customerEmail,
+          { clientIp, userAgent, isTest, paymentMode }
+        );
 
     return NextResponse.json({
       success: result.success,

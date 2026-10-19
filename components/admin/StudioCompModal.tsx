@@ -70,8 +70,8 @@ export function StudioCompModal({ onClose, onSuccess }: StudioCompModalProps) {
               <FileText className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-serif font-bold text-base text-white">Administrative Notice Dispatch</h3>
-              <p className="text-xs text-slate-400">Dispatch $0.00 test notice via postal registry</p>
+              <h3 className="font-serif font-bold text-base text-white">Administrative Notice Dispatch (Held in S0)</h3>
+              <p className="text-xs text-amber-300">Gated pending S3-T02 canonical template &amp; guardrail contract</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
@@ -80,6 +80,16 @@ export function StudioCompModal({ onClose, onSuccess }: StudioCompModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs font-sans">
+          <div className="p-3 bg-amber-950/60 border border-amber-700/80 text-amber-200 rounded-lg space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-amber-300">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>Execution Held in Sprint S0 (Restoration Target: S3-T02)</span>
+            </div>
+            <p className="text-[11px] text-amber-200/90 leading-relaxed">
+              Direct studio comp dispatch is temporarily gated so free/comp notices cannot bypass canonical template rendering, NAICS 713940 non-fitness guardrails, CASS validation, or immutable <code className="font-mono">frozen_html_payload</code> snapshot creation.
+            </p>
+          </div>
+
           {error && (
             <div className="p-3 bg-red-950/50 border border-red-800 text-red-300 rounded-lg flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />

@@ -171,7 +171,8 @@ export function trackGoogleAdsPurchase(params: {
   customerEmail?: string;
   itemName?: string;
 }): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !hasExplicitMarketingConsent()) return;
+  if (!Number.isFinite(params.amountInCents) || !params.amountInCents || params.amountInCents <= 0) return;
 
   const convKey = `gads_conv_${params.orderId}`;
   if (sessionStorage.getItem(convKey)) {
@@ -187,23 +188,15 @@ export function trackGoogleAdsPurchase(params: {
       ? `${GOOGLE_ADS_ID}/${conversionLabel}`
       : GOOGLE_ADS_ID;
 
-    // Set user data for Google Enhanced Conversions if customer email is available
-    if (params.customerEmail && params.customerEmail.includes("@")) {
-      win.gtag("set", "user_data", {
-        email: params.customerEmail.trim().toLowerCase(),
-      });
-    }
-
     win.gtag("event", "conversion", {
       send_to: sendTo,
-      value: params.amountInCents ? params.amountInCents / 100 : 9.0,
+      value: params.amountInCents / 100,
       currency: "USD",
       transaction_id: params.orderId,
     });
-
-    console.log("[Google Ads] Purchase conversion event recorded for order:", params.orderId);
 
     // Also fire standard GA4 purchase
     trackGA4Purchase(params);
   }
 }
+import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
