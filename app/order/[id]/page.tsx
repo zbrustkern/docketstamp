@@ -11,8 +11,6 @@ import {
   ShieldCheck,
   User as UserIcon,
   Lock,
-  Unlock,
-  Loader2,
   FileText,
   MapPin,
   Feather,
@@ -34,10 +32,8 @@ export default function OrderStatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Privacy verification unlock state
-  const [verifyInput, setVerifyInput] = useState("");
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [ownerLoading, setOwnerLoading] = useState(false);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
 
   // Auto-sync recipient address to user's address book if logged in or after claiming account
   useEffect(() => {
@@ -84,12 +80,16 @@ export default function OrderStatusPage() {
           ? `/api/orders/${orderId}?token=${encodeURIComponent(activeToken)}`
           : `/api/orders/${orderId}`;
 
-        const res = await fetch(endpoint);
+        const headers: HeadersInit = {};
+        if (!activeToken && user) {
+          headers.Authorization = `Bearer ${await user.getIdToken()}`;
+        }
+        const res = await fetch(endpoint, { headers });
         if (!res.ok) {
           throw new Error("Order not found or still processing.");
         }
         const data = await res.json();
-        if (data.order && data.order.status === "PENDING_PAYMENT" && typeof window !== "undefined") {
+        if (data.order && !data.order.isRedacted && data.order.status === "PENDING_PAYMENT" && typeof window !== "undefined") {
           const paymentIntentId = urlParams?.get("payment_intent") || data.order.stripePaymentId;
           if (paymentIntentId) {
             try {
@@ -118,7 +118,7 @@ export default function OrderStatusPage() {
           setOrder(data.order);
           setLoading(false);
 
-          if (data.order && data.order.status !== "PENDING_PAYMENT") {
+          if (data.order && !data.order.isRedacted && data.order.status !== "PENDING_PAYMENT") {
             trackGoogleAdsPurchase({
               orderId: data.order.id,
               amountInCents: data.order.finalAmountInCents ?? data.order.amountInCents,
@@ -156,40 +156,29 @@ export default function OrderStatusPage() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [orderId]);
+  }, [orderId, user]);
 
-  const handleUnlock = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!verifyInput.trim()) return;
-    setVerifyLoading(true);
-    setVerifyError(null);
+  const handleOwnerAccess = async () => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setOwnerLoading(true);
+    setOwnerError(null);
     try {
-      const isEmail = verifyInput.includes("@");
-      const payload = isEmail
-        ? { email: verifyInput.trim() }
-        : { zip: verifyInput.trim() };
-
       const res = await fetch(`/api/orders/${orderId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { Authorization: `Bearer ${await user.getIdToken()}` },
       });
-
       const data = await res.json();
-      if (!res.ok || !data.success) {
-        setVerifyError(
-          data.error || "Verification failed. Please check the entered ZIP code or email."
-        );
+      if (!res.ok || !data.order || data.order.isRedacted) {
+        setOwnerError(data.error || "Sign in with the verified account that owns this order.");
       } else {
         setOrder(data.order);
-        if (data.viewToken && typeof window !== "undefined") {
-          sessionStorage.setItem(`order_token_${orderId}`, data.viewToken);
-        }
       }
     } catch {
-      setVerifyError("Network error verifying order.");
+      setOwnerError("Could not verify account access. Please try again.");
     } finally {
-      setVerifyLoading(false);
+      setOwnerLoading(false);
     }
   };
 
@@ -338,41 +327,19 @@ export default function OrderStatusPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-stone-300 mt-1 leading-relaxed">
-                  Private order details are obscured for privacy. If you placed or received this order, enter the 5-digit delivery ZIP code or purchaser email to reveal the stored details.
+                  Private details are protected. Open the secure order link from your receipt, or sign in with the verified account that owns this order.
                 </p>
               </div>
             </div>
-
-            <form onSubmit={handleUnlock} className="flex flex-col sm:flex-row gap-2 max-w-lg">
-              <input
-                type="text"
-                value={verifyInput}
-                onChange={(e) => {
-                  setVerifyInput(e.target.value);
-                  if (verifyError) setVerifyError(null);
-                }}
-                placeholder="Enter 5-digit delivery ZIP or purchaser email"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-stone-800 border border-stone-700 text-white text-xs placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-              <button
-                type="submit"
-                disabled={verifyLoading || !verifyInput.trim()}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                {verifyLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Unlock className="w-3.5 h-3.5" />
-                )}
-                <span>Unlock order details</span>
-              </button>
-            </form>
-
-            {verifyError && (
-              <p className="text-xs text-rose-400 font-medium animate-in fade-in duration-150">
-                {verifyError}
-              </p>
-            )}
+            <button
+              type="button"
+              onClick={handleOwnerAccess}
+              disabled={ownerLoading}
+              className="min-h-11 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm transition cursor-pointer disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-300"
+            >
+              {ownerLoading ? "Checking account…" : user ? "View details with my account" : "Sign in to view details"}
+            </button>
+            {ownerError && <p role="alert" className="text-sm text-rose-300 font-medium">{ownerError}</p>}
           </div>
         )}
 
