@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  META_PIXEL_ID,
   getMetaAccessToken,
   getMetaTestEventCode,
   sendMetaCapiEvents,
 } from "@/lib/meta-conversions-api";
 import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getMarketingDestinationStatus } from "@/lib/marketing-destinations";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = getMetaAccessToken();
+    const destinationStatus = getMarketingDestinationStatus().meta;
 
     if (!token) {
       return NextResponse.json(
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
           success: false,
           error:
             "META_CONVERSIONS_API_ACCESS_TOKEN is not configured in your environment or Secret Manager.",
-          pixelId: META_PIXEL_ID,
+          destinationStatus,
         },
         { status: 400 }
       );
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: result.success,
-      pixelId: META_PIXEL_ID,
+      destinationStatus,
       testEventCode: testCode || null,
       eventsReceived: result.eventsReceived,
       fbtraceId: result.fbtraceId,

@@ -32,7 +32,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlagsMap = {
   ceoConsoleV1: false,
 };
 
-export const COOKIE_REWORK_V3 = "smn_rework_v3";
+export const COOKIE_REWORK_V3 = "docketstamp_rework_v3_v1";
+export const LEGACY_COOKIE_REWORK_V3 = "smn_rework_v3";
 export const QUERY_PARAM_V3 = "v3";
 
 /**
@@ -154,8 +155,9 @@ export async function isReworkV3Enabled(req?: FeatureFlagRequest): Promise<boole
       }
     }
 
-    // 2. Cookie override check
-    const cookieOverride = extractCookie(req, COOKIE_REWORK_V3);
+    // 2. Canonical cookie takes precedence. Legacy is read only when canonical is absent.
+    const canonicalCookieOverride = extractCookie(req, COOKIE_REWORK_V3);
+    const cookieOverride = canonicalCookieOverride ?? extractCookie(req, LEGACY_COOKIE_REWORK_V3);
     if (cookieOverride !== null) {
       const normalized = cookieOverride.trim().toLowerCase();
       if (normalized === "1" || normalized === "true") {

@@ -1,11 +1,10 @@
 import crypto from "crypto";
 import { Order } from "./types";
 import { recordMarketingEgressReceipt } from '@/lib/admin-console/measurement/egress';
+import { getMarketingEnvironment, getServerMetaPixelDestination } from '@/lib/marketing-destinations';
+import { getNoticeById } from '@/src/lib/docket/notices';
 
-export const META_PIXEL_ID =
-  process.env.META_PIXEL_ID ||
-  process.env.NEXT_PUBLIC_META_PIXEL_ID ||
-  "1773518093991339";
+export const META_PIXEL_ID = getServerMetaPixelDestination();
 
 export const META_GRAPH_API_VERSION = "v19.0";
 
@@ -159,7 +158,7 @@ export async function sendMetaCapiEvents(
   testEventCodeOverride?: string
 ): Promise<MetaCapiResult> {
   const token = getMetaAccessToken();
-  const pixelId = META_PIXEL_ID;
+  const pixelId = getServerMetaPixelDestination();
 
   if (!token) {
     console.warn(
@@ -176,7 +175,7 @@ export async function sendMetaCapiEvents(
     return {
       success: false,
       skipped: true,
-      error: "META_PIXEL_ID not configured",
+      error: `Verified Meta destination is not configured for ${getMarketingEnvironment()}.`,
     };
   }
 
@@ -318,25 +317,42 @@ export async function sendMetaCapiPurchaseEvent(params: {
     }).catch(() => {});
     return { success: false, skipped: true, error: 'Marketing delivery disabled by consent policy.' };
   }
-  if (typeof order.amountInCents !== 'number' || !Number.isFinite(order.amountInCents) || order.amountInCents <= 0) {
+  const paidAmountInCents = typeof order.finalAmountInCents === 'number' ? order.finalAmountInCents : order.amountInCents;
+  if (typeof paidAmountInCents !== 'number' || !Number.isFinite(paidAmountInCents) || paidAmountInCents <= 0) {
     await recordMarketingEgressReceipt({
       provider: 'meta_capi', status: 'rejected', correlationId, reasonCode: 'missing_authority',
     }).catch(() => {});
     return { success: false, skipped: true, error: 'Verified positive payment amount required.' };
   }
 
-  const valueInDollars = order.amountInCents / 100;
+  const valueInDollars = paidAmountInCents / 100;
+  const noticeDefinition = getNoticeById(order.noticeId || order.noticeType || "");
 
   // Payload minimization & privacy compliance:
   // Only purchaser/sender address fields (from returnAddress) are used for customer matching.
   // Recipient address information and card correspondence are strictly excluded from all advertising payloads.
-  const userData: MetaCapiUserData = {};
+  const sender = order.returnAddress;
+  const userData: MetaCapiUserData = {
+    email: order.customerEmail,
+    firstName: sender?.firstName,
+    lastName: sender?.lastName,
+    city: sender?.city,
+    state: sender?.state,
+    zip: sender?.zip,
+    country: sender?.country || "us",
+    clientIpAddress: attribution.clientIp,
+    clientUserAgent: attribution.userAgent,
+    fbp: attribution.fbp,
+    fbc: attribution.fbc || (attribution.fbclid ? `fb.1.${Date.now()}.${attribution.fbclid}` : undefined),
+  };
 
   const customData: MetaCapiCustomData = {
     currency: "USD",
     value: valueInDollars,
-    content_name: 'DocketStamp USPS document dispatch',
+    content_name: 'DocketStamp notice dispatch',
+    content_category: noticeDefinition?.category || "unknown",
     content_type: "product",
+    content_ids: [order.id],
     num_items: 1,
   };
 

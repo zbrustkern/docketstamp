@@ -1,5 +1,7 @@
-export const META_PIXEL_ID =
-  process.env.NEXT_PUBLIC_META_PIXEL_ID || "1773518093991339";
+import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
+import { getMetaPixelDestination } from '@/lib/marketing-destinations';
+
+export const META_PIXEL_ID = getMetaPixelDestination();
 
 export interface MetaUserData {
   email?: string;
@@ -23,7 +25,7 @@ export interface MetaContentItem {
  * Safe invocation of window.fbq for client-side execution.
  */
 function callFbq(...args: unknown[]): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !hasExplicitMarketingConsent() || !getMetaPixelDestination()) return;
   const win = window as unknown as { fbq?: (...params: unknown[]) => void };
   if (typeof win.fbq === "function") {
     win.fbq(...args);
@@ -34,7 +36,7 @@ function callFbq(...args: unknown[]): void {
  * Read a Meta first-party cookie (_fbp or _fbc) set by Pixel or script.
  */
 export function getMetaBrowserCookie(name: "_fbp" | "_fbc"): string | null {
-  if (typeof document === "undefined") return null;
+  if (typeof document === "undefined" || !hasExplicitMarketingConsent()) return null;
   const match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]*)"));
   return match ? decodeURIComponent(match[2]) : null;
 }
@@ -44,6 +46,7 @@ export function getMetaBrowserCookie(name: "_fbp" | "_fbc"): string | null {
  * Format: fb.1.{creationTimeInMs}.{fbclid}
  */
 export function buildMetaFbcString(fbclid?: string): string | null {
+  if (!hasExplicitMarketingConsent()) return null;
   if (!fbclid && typeof window !== "undefined") {
     const existing = getMetaBrowserCookie("_fbc");
     if (existing) return existing;
@@ -118,21 +121,21 @@ export function trackMetaViewContent(params: {
   currency?: string;
   eventID?: string;
 }): void {
-  const value = params.value ?? 9.0;
+  const value = Number.isFinite(params.value) && Number(params.value) > 0 ? params.value : undefined;
   const currency = params.currency || "USD";
   const contentIds = params.contentId ? [params.contentId] : undefined;
 
   const payload: Record<string, unknown> = {
     content_name: params.contentName,
-    content_category: params.contentCategory || "Handwritten Card",
+    content_category: params.contentCategory || "notice",
     content_type: "product",
-    value,
+    ...(value ? { value } : {}),
     currency,
   };
 
   if (contentIds) {
     payload.content_ids = contentIds;
-    payload.contents = [{ id: params.contentId!, quantity: 1, item_price: value }];
+    payload.contents = [{ id: params.contentId!, quantity: 1, ...(value ? { item_price: value } : {}) }];
   }
 
   if (params.eventID) {
@@ -153,21 +156,21 @@ export function trackMetaAddToCart(params: {
   currency?: string;
   eventID?: string;
 }): void {
-  const value = params.value ?? 9.0;
+  const value = Number.isFinite(params.value) && Number(params.value) > 0 ? params.value : undefined;
   const currency = params.currency || "USD";
   const contentIds = params.contentId ? [params.contentId] : undefined;
 
   const payload: Record<string, unknown> = {
     content_name: params.contentName,
-    content_category: params.contentCategory || "Handwritten Card",
+    content_category: params.contentCategory || "notice",
     content_type: "product",
-    value,
+    ...(value ? { value } : {}),
     currency,
   };
 
   if (contentIds) {
     payload.content_ids = contentIds;
-    payload.contents = [{ id: params.contentId!, quantity: 1, item_price: value }];
+    payload.contents = [{ id: params.contentId!, quantity: 1, ...(value ? { item_price: value } : {}) }];
   }
 
   if (params.eventID) {
@@ -190,8 +193,8 @@ export function trackMetaCustomizeProduct(params: {
 }): void {
   const payload: Record<string, unknown> = {
     content_name: params.contentName || params.customizationType,
-    content_category: params.occasion || "Handwritten Card",
-    value: params.value ?? 9.0,
+    content_category: params.occasion || "notice",
+    ...(Number.isFinite(params.value) && Number(params.value) > 0 ? { value: params.value } : {}),
     currency: params.currency || "USD",
   };
 
@@ -214,22 +217,22 @@ export function trackMetaInitiateCheckout(params: {
   currency?: string;
   eventID?: string;
 }): void {
-  const value = params.value ?? 9.0;
+  const value = Number.isFinite(params.value) && Number(params.value) > 0 ? params.value : undefined;
   const currency = params.currency || "USD";
   const contentIds = params.contentId ? [params.contentId] : undefined;
 
   const payload: Record<string, unknown> = {
-    content_name: params.contentName || "Handwritten Greeting Card",
-    content_category: params.contentCategory || "Handwritten Card",
+    content_name: params.contentName || "DocketStamp notice dispatch",
+    content_category: params.contentCategory || "notice",
     content_type: "product",
-    value,
+    ...(value ? { value } : {}),
     currency,
     num_items: params.numItems ?? 1,
   };
 
   if (contentIds) {
     payload.content_ids = contentIds;
-    payload.contents = [{ id: params.contentId!, quantity: 1, item_price: value }];
+    payload.contents = [{ id: params.contentId!, quantity: 1, ...(value ? { item_price: value } : {}) }];
   }
 
   if (params.eventID) {
@@ -251,9 +254,9 @@ export function trackMetaAddPaymentInfo(params: {
   eventID?: string;
 }): void {
   const payload: Record<string, unknown> = {
-    content_name: params.contentName || "Handwritten Greeting Card",
-    content_category: params.paymentType || "card",
-    value: params.value ?? 9.0,
+    content_name: params.contentName || "DocketStamp notice dispatch",
+    content_category: "notice",
+    ...(Number.isFinite(params.value) && Number(params.value) > 0 ? { value: params.value } : {}),
     currency: params.currency || "USD",
   };
 
@@ -278,17 +281,15 @@ export function trackMetaPurchase(params: {
   recipientState?: string;
   recipientZip?: string;
   itemName?: string;
+  itemCategory?: string;
   eventID?: string;
 }): void {
   if (typeof window === "undefined" || !hasExplicitMarketingConsent()) return;
   if (!Number.isFinite(params.value) || !params.value || params.value <= 0) return;
 
   const convKey = `meta_conv_${params.orderId}`;
-  if (sessionStorage.getItem(convKey)) {
-    // Already tracked in this session to prevent duplicate attribution
-    return;
-  }
-  sessionStorage.setItem(convKey, "true");
+  try { if (sessionStorage.getItem(convKey)) return; } catch { /* session storage can be unavailable */ }
+  try { sessionStorage.setItem(convKey, "true"); } catch { /* best effort browser dedupe */ }
 
   const purchaseValue = params.value;
   const currency = params.currency || "USD";
@@ -300,7 +301,8 @@ export function trackMetaPurchase(params: {
     {
       value: purchaseValue,
       currency,
-      content_name: "DocketStamp USPS document dispatch",
+      content_name: params.itemName || "DocketStamp notice dispatch",
+      content_category: params.itemCategory || "notice",
       content_type: "product",
       content_ids: [params.orderId],
       contents: [
@@ -327,6 +329,7 @@ export function trackMetaLead(params: {
   currency?: string;
   eventID?: string;
 }): void {
+  if (!hasExplicitMarketingConsent()) return;
   const payload: Record<string, unknown> = {
     content_name: params.contentName || "Occasion Reminder Opt-In",
     value: params.value ?? 0,
@@ -348,6 +351,7 @@ export function trackMetaSearch(params: {
   contentCategory?: string;
   eventID?: string;
 }): void {
+  if (!hasExplicitMarketingConsent()) return;
   const payload: Record<string, unknown> = {
     search_string: params.searchString,
     content_category: params.contentCategory,
@@ -368,10 +372,10 @@ export function trackMetaCustomEvent(
   params?: Record<string, unknown>,
   eventID?: string
 ): void {
+  if (!hasExplicitMarketingConsent()) return;
   if (eventID) {
     callFbq("trackCustom", eventName, params || {}, { eventID });
   } else {
     callFbq("trackCustom", eventName, params || {});
   }
 }
-import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';

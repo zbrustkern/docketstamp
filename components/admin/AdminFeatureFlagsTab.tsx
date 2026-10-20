@@ -484,7 +484,7 @@ export function AdminFeatureFlagsTab() {
                 Client Cookie Override
               </h4>
               <p className="text-[11px] text-stone-600 leading-relaxed mt-0.5 font-light">
-                Set <code className="bg-white px-1.5 py-0.5 rounded border border-stone-300 font-mono text-[10px]">smn_rework_v3=1</code> in DevTools console to persistently preview V3 across browser tabs.
+                Set <code className="bg-white px-1.5 py-0.5 rounded border border-stone-300 font-mono text-[10px]">docketstamp_rework_v3_v1=1</code> in DevTools console to persistently preview V3 across browser tabs. The retired <code>smn_rework_v3</code> cookie is read only for existing sessions.
               </p>
             </div>
           </div>

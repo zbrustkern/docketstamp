@@ -8,7 +8,26 @@ import { trackMetaPageView, getMetaBrowserCookie, buildMetaFbcString } from "@/l
 import { readAttributionLedger, recordAttributionTouch } from "@/lib/admin-console/measurement/attribution";
 import { emitBusinessEvent } from "@/lib/admin-console/measurement/client";
 
-export const SMN_ATTRIBUTION_KEY = "smn_attribution";
+// Separate campaign parameters from the structured touch ledger in measurement/attribution.
+export const ATTRIBUTION_STORAGE_KEY = "docketstamp_order_attribution_v1";
+/** Read-only migration source; writes use the canonical namespace. */
+export const LEGACY_ATTRIBUTION_STORAGE_KEY = "smn_attribution";
+export const SMN_ATTRIBUTION_KEY = LEGACY_ATTRIBUTION_STORAGE_KEY;
+
+function readAttributionStorage(): string | null {
+  const canonical = sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY) || localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
+  if (canonical) return canonical;
+  const legacy = sessionStorage.getItem(LEGACY_ATTRIBUTION_STORAGE_KEY) || localStorage.getItem(LEGACY_ATTRIBUTION_STORAGE_KEY);
+  if (legacy) writeAttributionStorage(legacy);
+  return legacy;
+}
+
+function writeAttributionStorage(value: string): void {
+  sessionStorage.setItem(ATTRIBUTION_STORAGE_KEY, value);
+  localStorage.setItem(ATTRIBUTION_STORAGE_KEY, value);
+  sessionStorage.removeItem(LEGACY_ATTRIBUTION_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_ATTRIBUTION_STORAGE_KEY);
+}
 
 /**
  * Retrieve first-party cookie by name safely.
@@ -27,9 +46,7 @@ function getDocumentCookie(name: string): string | undefined {
 export function getStoredAttribution(): OrderAttribution | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw =
-      sessionStorage.getItem(SMN_ATTRIBUTION_KEY) ||
-      localStorage.getItem(SMN_ATTRIBUTION_KEY);
+    const raw = readAttributionStorage();
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as OrderAttribution;
@@ -56,8 +73,7 @@ export function getStoredAttribution(): OrderAttribution | null {
     }
 
     if (changed) {
-      sessionStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(parsed));
-      localStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(parsed));
+      writeAttributionStorage(JSON.stringify(parsed));
     }
 
     return parsed;
@@ -157,15 +173,12 @@ function AttributionTrackerInner() {
           kind: priorLedger?.originalAcquisition ? (isOfferTouch ? "offer" : "recovery") : "acquisition",
         });
 
-        sessionStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(attribution));
-        localStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(attribution));
+        writeAttributionStorage(JSON.stringify(attribution));
         return;
       }
 
       // If no campaign params, check if we already have an attribution stored in this session
-      const existing =
-        sessionStorage.getItem(SMN_ATTRIBUTION_KEY) ||
-        localStorage.getItem(SMN_ATTRIBUTION_KEY);
+      const existing = readAttributionStorage();
       if (existing) {
         // Just make sure fbp/fbc are augmented if they were populated after script init
         try {
@@ -180,8 +193,7 @@ function AttributionTrackerInner() {
             updated = true;
           }
           if (updated) {
-            sessionStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(parsed));
-            localStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(parsed));
+            writeAttributionStorage(JSON.stringify(parsed));
           }
         } catch {
           // ignore
@@ -259,8 +271,7 @@ function AttributionTrackerInner() {
         });
       }
 
-      sessionStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(defaultAttribution));
-      localStorage.setItem(SMN_ATTRIBUTION_KEY, JSON.stringify(defaultAttribution));
+      writeAttributionStorage(JSON.stringify(defaultAttribution));
     } catch (e) {
       console.warn("[Attribution Tracker] Non-fatal capture notice:", e);
     }

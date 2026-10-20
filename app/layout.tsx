@@ -3,8 +3,7 @@ import { Inter, Merriweather, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AttributionTracker } from "@/components/AttributionTracker";
-import { GOOGLE_TAG_ID, GOOGLE_ADS_ID, GA4_MEASUREMENT_ID } from "@/lib/google-ads";
-import { META_PIXEL_ID } from "@/lib/meta-ads";
+import { MarketingTags } from "@/components/MarketingTags";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,8 +30,7 @@ const isStaging =
   appUrl.includes("staging") ||
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.includes("staging");
 
-const metaDomainVerification =
-  process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION || "7j8rbkz9ktc5jzapl53uueqvute5et";
+const metaDomainVerification = process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION;
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -70,11 +68,7 @@ export const metadata: Metadata = {
         index: true,
         follow: true,
       },
-  verification: {
-    other: {
-      "facebook-domain-verification": metaDomainVerification,
-    },
-  },
+  ...(metaDomainVerification ? { verification: { other: { "facebook-domain-verification": metaDomainVerification } } } : {}),
   openGraph: {
     title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
     description:
@@ -160,60 +154,10 @@ export default function RootLayout({
             }),
           }}
         />
-        {/* Google tag (gtag.js) */}
-        {GOOGLE_TAG_ID || GOOGLE_ADS_ID ? (
-          <>
-            <script
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID || GOOGLE_ADS_ID}`}
-            />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  ${GOOGLE_TAG_ID ? `gtag('config', '${GOOGLE_TAG_ID}');` : ""}
-                  ${GOOGLE_ADS_ID ? `gtag('config', '${GOOGLE_ADS_ID}');` : ""}
-                  ${GA4_MEASUREMENT_ID ? `gtag('config', '${GA4_MEASUREMENT_ID}', { send_page_view: true });` : ""}
-                `,
-              }}
-            />
-          </>
-        ) : null}
-        {/* Meta Pixel Code */}
-        {META_PIXEL_ID ? (
-          <>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  !function(f,b,e,v,n,t,s)
-                  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-                  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-                  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-                  n.queue=[];t=b.createElement(e);t.async=!0;
-                  t.src=v;s=b.getElementsByTagName(e)[0];
-                  s.parentNode.insertBefore(t,s)}(window, document,'script',
-                  'https://connect.facebook.net/en_US/fbevents.js');
-                  fbq('init', '${META_PIXEL_ID}');
-                  fbq('track', 'PageView');
-                `,
-              }}
-            />
-            <noscript>
-              <img
-                height="1"
-                width="1"
-                style={{ display: "none" }}
-                src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
-                alt=""
-              />
-            </noscript>
-          </>
-        ) : null}
       </head>
       <body className="min-h-screen bg-slate-900 text-slate-100 font-sans antialiased selection:bg-amber-100 selection:text-amber-900">
         <AuthProvider>
+          <MarketingTags />
           <AttributionTracker />
           {children}
         </AuthProvider>

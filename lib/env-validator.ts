@@ -8,7 +8,7 @@ export interface EnvStatus {
   stripeSecretConfigured: boolean;
   stripeWebhookConfigured: boolean;
   lobConfigured: boolean;
-  handwryttenConfigured?: boolean; // Backward compatibility
+  lobAddressVerificationConfigured: boolean;
   aiProviderConfigured?: "gemini_imagen" | "nano_banana" | "mock_fallback";
   firebaseConfigured: boolean;
   leaksDetected: string[];
@@ -54,11 +54,9 @@ export function validateEnvironment(): EnvStatus {
     stripeWebhook && !stripeWebhook.startsWith("whsec_placeholder")
   );
 
-  const lobKey =
-    process.env.LOB_API_KEY ||
-    process.env["lob-api-key"] ||
-    process.env.DOCKET_STAMP_SUPPLIER_API_KEY;
-  const lobConfigured = Boolean(lobKey && lobKey.trim().length > 0);
+  const lobDispatchKey = process.env.LOB_DISPATCH_API_KEY;
+  const lobAddressVerificationKey = process.env.LOB_ADDRESS_VERIFICATION_KEY;
+  const lobConfigured = Boolean(lobDispatchKey && lobDispatchKey.trim().length > 0);
 
   const firebaseConfigured = Boolean(
     process.env.FIREBASE_PROJECT_ID || process.env.K_SERVICE // Cloud Run environment
@@ -69,7 +67,7 @@ export function validateEnvironment(): EnvStatus {
     stripeSecretConfigured,
     stripeWebhookConfigured,
     lobConfigured,
-    handwryttenConfigured: lobConfigured, // backward compatibility
+    lobAddressVerificationConfigured: Boolean(lobAddressVerificationKey && lobAddressVerificationKey.trim().length > 0),
     aiProviderConfigured: "mock_fallback",
     firebaseConfigured,
     leaksDetected,

@@ -121,12 +121,14 @@ export default function OrderStatusPage() {
           if (data.order && data.order.status !== "PENDING_PAYMENT") {
             trackGoogleAdsPurchase({
               orderId: data.order.id,
-              amountInCents: data.order.amountInCents || 900,
+              amountInCents: data.order.finalAmountInCents ?? data.order.amountInCents,
               customerEmail: data.order.customerEmail,
+              itemName: "DocketStamp notice dispatch",
+              itemCategory: "notice",
             });
             trackMetaPurchase({
               orderId: data.order.id,
-              value: data.order.amountInCents ? data.order.amountInCents / 100 : 9.0,
+              value: (data.order.finalAmountInCents ?? data.order.amountInCents) / 100,
               customerEmail: data.order.customerEmail,
               customerName: data.order.returnAddress?.firstName
                 ? `${data.order.returnAddress.firstName} ${data.order.returnAddress.lastName || ""}`.trim()
@@ -134,7 +136,8 @@ export default function OrderStatusPage() {
               recipientCity: data.order.recipientAddress?.city,
               recipientState: data.order.recipientAddress?.state,
               recipientZip: data.order.recipientAddress?.zip,
-              itemName: data.order.occasion ? `${data.order.occasion} Card` : undefined,
+              itemName: "DocketStamp notice dispatch",
+              itemCategory: "notice",
             });
           }
         }

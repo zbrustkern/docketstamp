@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, FileText, CheckCircle2, Clock, Truck, Copy, Check } from "lucide-react";
 import { Order } from "@/lib/types";
+import { resolvePostalProvenance, postalProviderLabel, type PostalProvenance } from "@/lib/admin/postal-reference";
 
 interface ProofInspectorModalProps {
   orderId: string;
@@ -12,16 +13,18 @@ interface ProofInspectorModalProps {
 export function ProofInspectorModal({ orderId, onClose }: ProofInspectorModalProps) {
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
+  const [postalProvenance, setPostalProvenance] = useState<PostalProvenance | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function loadProof() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`);
+        const res = await fetch(`/api/admin/order-proof?orderId=${encodeURIComponent(orderId)}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setOrder(data.order || data);
+          setPostalProvenance(data.postalProvenance || resolvePostalProvenance(data.order || data));
         }
       } catch (err) {
         console.error("Error loading order notice proof:", err);
@@ -78,7 +81,8 @@ export function ProofInspectorModal({ orderId, onClose }: ProofInspectorModalPro
                 <div>DOCKET ID: <span className="font-bold text-sky-400">{order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`}</span></div>
                 <div>SERVICE LEVEL: <span className="font-bold text-white">{order.serviceLevel || "USPS CERTIFIED MAIL®"}</span></div>
                 <div>STATUS: <span className="text-emerald-400 font-bold">{order.status}</span></div>
-                {order.lobTrackingNumber && (
+                {postalProvenance && <div>POSTAL PROVIDER: <span className="font-bold text-white">{postalProviderLabel(postalProvenance.provider)} ({postalProvenance.evidence})</span></div>}
+                {postalProvenance?.provider === "lob" && order.lobTrackingNumber && (
                   <div>USPS TRACKING: <span className="font-bold text-white">{order.lobTrackingNumber}</span></div>
                 )}
               </div>

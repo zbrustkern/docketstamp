@@ -9,7 +9,6 @@ import {
   hashCountry,
   sendMetaCapiEvents,
   sendMetaCapiPurchaseEvent,
-  META_PIXEL_ID,
   META_GRAPH_API_VERSION,
 } from "../lib/meta-conversions-api";
 import { buildMetaFbcString } from "../lib/meta-ads";
@@ -83,6 +82,8 @@ async function runTests() {
   console.log("\n--- 2. Testing Meta Click ID & Cookie Utilities ---");
 
   const testFbclid = "IwAR0abc123xyz_test_click";
+  const oldWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: { getItem: () => "granted" } } });
   const formattedFbc = buildMetaFbcString(testFbclid);
   assert(
     formattedFbc !== null && formattedFbc.startsWith("fb.1.") && formattedFbc.endsWith(testFbclid),
@@ -93,7 +94,13 @@ async function runTests() {
 
   // Ensure unset token skips gracefully without crashing or throwing
   const originalToken = process.env.META_CONVERSIONS_API_ACCESS_TOKEN;
+  const originalEnvironment = process.env.ENVIRONMENT;
+  const originalVerified = process.env.META_LOCAL_DESTINATIONS_VERIFIED;
+  const originalPixel = process.env.META_LOCAL_PIXEL_ID;
   delete process.env.META_CONVERSIONS_API_ACCESS_TOKEN;
+  process.env.META_LOCAL_DESTINATIONS_VERIFIED = "true";
+  process.env.META_LOCAL_PIXEL_ID = "123456789012345";
+  process.env.ENVIRONMENT = "local";
 
   const skippedResult = await sendMetaCapiEvents([
     {
@@ -117,8 +124,10 @@ async function runTests() {
   const originalFetch = global.fetch;
   let capturedUrl = "";
   let capturedBody: any = null;
+  let fetchCalls = 0;
 
   global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    fetchCalls++;
     capturedUrl = String(input);
     capturedBody = JSON.parse(init?.body as string);
     return {
@@ -137,11 +146,12 @@ async function runTests() {
     id: "order_capi_test_888",
     customerEmail: "john.doe@example.com",
     amountInCents: 900,
+    finalAmountInCents: 775,
     frontImageUrl: "https://example.com/card.png",
     printedMessage: "Happy Birthday!",
     handwrittenNote: "Hope you have an amazing day!",
     fontStyleId: "1",
-    occasion: "birthday",
+    noticeId: "service-policy-cancellation",
     recipientAddress: {
       firstName: "Jane",
       lastName: "Smith",
@@ -161,6 +171,7 @@ async function runTests() {
     status: "PROCESSING_HANDWRYTTEN",
     paymentMethod: "STRIPE",
     attribution: {
+      marketingConsent: true,
       fbclid: testFbclid,
       fbp: "fb.1.1718000000.987654321",
       clientIp: "98.76.54.32",
@@ -169,6 +180,9 @@ async function runTests() {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
+
+  const noConsentResult = await sendMetaCapiPurchaseEvent({ order: { ...mockOrder, attribution: { ...mockOrder.attribution, marketingConsent: undefined } } });
+  assert(noConsentResult.skipped === true && fetchCalls === 0, "unknown consent blocks server-side Meta egress");
 
   const capiResponse = await sendMetaCapiPurchaseEvent({
     order: mockOrder,
@@ -181,7 +195,7 @@ async function runTests() {
 
   // Verify URL and API version
   assert(
-    capturedUrl.includes(`graph.facebook.com/${META_GRAPH_API_VERSION}/${META_PIXEL_ID}/events`),
+    capturedUrl.includes(`graph.facebook.com/${META_GRAPH_API_VERSION}/123456789012345/events`),
     `Correct Graph API URL and Pixel ID targeted (got: ${capturedUrl})`
   );
 
@@ -197,7 +211,7 @@ async function runTests() {
   );
   assert(eventPayload.action_source === "website", "action_source is 'website'");
   assert(
-    eventPayload.event_source_url === `https://docketstamp.com/order/${mockOrder.id}`,
+    eventPayload.event_source_url === "https://docketstamp.com/",
     "event_source_url correctly populated"
   );
 
@@ -226,12 +240,12 @@ async function runTests() {
 
   // Verify custom_data
   const customData = eventPayload.custom_data;
-  assert(customData.value === 9.0, "custom_data value is 9.0");
+  assert(customData.value === 7.75, "custom_data uses the actual final captured order amount");
   assert(customData.currency === "USD", "custom_data currency is USD");
-  assert(customData.content_name === "DocketStamp USPS Legal Notice Dispatch", "custom_data content_name populated");
+  assert(customData.content_name === "DocketStamp notice dispatch", "custom_data content_name identifies notice service");
+  assert(customData.content_category === "cancellation", "notice category comes from the canonical notice registry");
   assert(customData.content_ids[0] === mockOrder.id, "custom_data content_ids contains order ID");
-  assert(customData.contents[0].id === mockOrder.id, "custom_data contents array contains order ID");
-  assert(customData.contents[0].item_price === 9.0, "custom_data contents item_price is 9.0");
+  assert(!customData.contents || customData.contents.length === 0, "payload omits synthetic itemized product pricing");
 
   // --- 5. Testing GPC / Opt-Out Limited Data Use Handling ---
   const optedOutOrder: Order = {
@@ -244,24 +258,29 @@ async function runTests() {
     },
   };
 
-  await sendMetaCapiPurchaseEvent({
+  const egressBeforeOptOut = capturedBody.data[0].event_id;
+  const optOutResult = await sendMetaCapiPurchaseEvent({
     order: optedOutOrder,
   });
 
-  const gpcEventPayload = capturedBody.data[0];
-  assert(gpcEventPayload.opt_out === true, "opt_out is true when GPC/opt-out detected");
-  assert(
-    Array.isArray(gpcEventPayload.data_processing_options) &&
-      gpcEventPayload.data_processing_options[0] === "LDU",
-    "Limited Data Use (LDU) flag attached when GPC/opt-out detected"
-  );
+  assert(optOutResult.skipped === true, "GPC/opt-out prevents Meta server egress");
+  assert(capturedBody.data[0].event_id === egressBeforeOptOut, "opted-out purchase did not add an egress payload");
 
   // Cleanup
   global.fetch = originalFetch;
+  if (oldWindowDescriptor) Object.defineProperty(globalThis, "window", oldWindowDescriptor);
+  else Reflect.deleteProperty(globalThis, "window");
   if (originalToken) {
     process.env.META_CONVERSIONS_API_ACCESS_TOKEN = originalToken;
   } else {
     delete process.env.META_CONVERSIONS_API_ACCESS_TOKEN;
+  }
+  for (const [key, value] of Object.entries({
+    ENVIRONMENT: originalEnvironment,
+    META_LOCAL_DESTINATIONS_VERIFIED: originalVerified,
+    META_LOCAL_PIXEL_ID: originalPixel,
+  })) {
+    if (value === undefined) delete process.env[key]; else process.env[key] = value;
   }
 
   console.log("\n=================================================");

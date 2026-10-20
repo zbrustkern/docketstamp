@@ -1,9 +1,8 @@
 import {
   calculateStripeFeeCents,
-  HANDWRYTTEN_COGS_PER_CARD_CENTS,
   getAdminDashboardMetrics,
 } from "../lib/metrics-rollup";
-import { saveOrder, setSystemConfig, getSystemConfig } from "../lib/firebase-admin";
+import { firestoreDb, saveOrder, setSystemConfig } from "../lib/firebase-admin";
 import { Order } from "../lib/types";
 
 async function runUnitEconomicsTests() {
@@ -11,7 +10,7 @@ async function runUnitEconomicsTests() {
   console.log("🧪 RUNNING UNIT ECONOMICS & MARGIN TESTS");
   console.log("=================================================\n");
 
-  // 1. Verify Stripe Fee & Handwrytten COGS formulas
+  // 1. Verify processor fee math; fulfillment is sourced from tier evidence below.
   console.log("--- 1. Testing Financial Formulas ---");
   const standardFee = calculateStripeFeeCents(900); // $9.00
   if (standardFee === 56) {
@@ -27,18 +26,9 @@ async function runUnitEconomicsTests() {
     throw new Error(`Expected comp Stripe fee 0¢, got ${promoFee}¢`);
   }
 
-  if (HANDWRYTTEN_COGS_PER_CARD_CENTS === 488) {
-    console.log("✅ PASS: Handwrytten fulfillment COGS constant is 488¢ ($4.88)");
-  } else {
-    throw new Error(`Expected Handwrytten COGS 488¢, got ${HANDWRYTTEN_COGS_PER_CARD_CENTS}¢`);
-  }
-
-  const netContribution = 900 - standardFee - HANDWRYTTEN_COGS_PER_CARD_CENTS;
-  if (netContribution === 356) {
-    console.log("✅ PASS: Net contribution margin per $9.00 standard card is exactly $3.56 (356¢)");
-  } else {
-    throw new Error(`Expected net contribution 356¢, got ${netContribution}¢`);
-  }
+  if (!("HANDWRYTTEN_COGS_PER_CARD_CENTS" in await import("../lib/metrics-rollup"))) {
+    console.log("✅ PASS: No unsupported flat per-card fulfillment cost is exported");
+  } else throw new Error("Flat fulfillment cost must not be treated as evidence");
 
   // 2. Testing Order with Attribution & Rollup
   console.log("\n--- 2. Testing Order Attribution Aggregation ---");
@@ -67,6 +57,7 @@ async function runUnitEconomicsTests() {
       zip: "98101",
     },
     status: "PROCESSING_HANDWRYTTEN",
+    serviceLevel: "CERTIFIED",
     amountInCents: 900,
     paymentMethod: "STRIPE",
     attribution: {
@@ -80,11 +71,16 @@ async function runUnitEconomicsTests() {
     updatedAt: Date.now(),
   };
 
-  await saveOrder(testOrder);
-
   // Set test ad spend
   await setSystemConfig("admin_ad_spend", { amountCents: 5000, updatedAt: Date.now() });
+  await setSystemConfig("admin_fulfillment_cost_estimates", {
+    schemaVersion: 1,
+    currency: "USD",
+    tiers: { certified: { amountCents: 488, sourceRef: "operator:2026-10-certified-rate-card" } },
+  });
 
+  const beforeTierOrder = await getAdminDashboardMetrics();
+  await saveOrder(testOrder);
   const metrics = await getAdminDashboardMetrics();
 
   if (metrics.margins) {
@@ -94,6 +90,37 @@ async function runUnitEconomicsTests() {
     console.log(`         COGS:          -$${(metrics.margins.fulfillmentCogsCents / 100).toFixed(2)}`);
     console.log(`         Net Margin:    +$${(metrics.margins.netContributionMarginCents / 100).toFixed(2)}`);
     console.log(`         Target CPA:    $${metrics.margins.targetBreakevenCpaDollars.toFixed(2)}`);
+  if (
+      metrics.margins.fulfillmentCogsCents - (beforeTierOrder.margins?.fulfillmentCogsCents || 0) !== 488 ||
+      !["estimated", "partial"].includes(metrics.margins.fulfillmentCogsEvidence || "")
+    ) {
+      throw new Error("Certified tier COGS should be labeled estimated and use the sourced tier schedule");
+    }
+    if (
+      metrics.margins.grossRevenueCents - (beforeTierOrder.margins?.grossRevenueCents || 0) !== 900 ||
+      metrics.margins.stripeFeesCents - (beforeTierOrder.margins?.stripeFeesCents || 0) !== 56
+    ) throw new Error("Tier-estimated order economics should retain actual order price and fee estimate");
+
+  const actualOrder: Order = { ...testOrder, id: `${testOrderId}_actual_evidence`, amountInCents: 900, finalAmountInCents: 777 };
+  await saveOrder(actualOrder);
+  const financeEnvironment = process.env.ENVIRONMENT === "staging" || process.env.FIREBASE_PROJECT_ID === "docketstamp-staging"
+    ? "staging"
+    : process.env.NODE_ENV === "production" ? "production" : "local";
+  const financeFacts = [
+    { factId: `${actualOrder.id}_capture`, orderId: actualOrder.id, provider: "stripe", kind: "capture", amountMinor: 777, environment: financeEnvironment, verification: "verified" },
+    { factId: `${actualOrder.id}_fee`, orderId: actualOrder.id, provider: "stripe", kind: "processor_fee", amountMinor: 42, environment: financeEnvironment, verification: "verified" },
+    { factId: `${actualOrder.id}_lob`, orderId: actualOrder.id, provider: "lob", kind: "supplier_charge", amountMinor: 250, environment: financeEnvironment, verification: "verified" },
+    { factId: `${actualOrder.id}_credit`, orderId: actualOrder.id, provider: "lob", kind: "supplier_credit", amountMinor: 50, environment: financeEnvironment, verification: "verified" },
+  ];
+  for (const fact of financeFacts) await firestoreDb.collection("payment_facts_v1").doc(fact.factId).set(fact);
+  const beforeActualEvidence = metrics.margins;
+  const actualMetrics = await getAdminDashboardMetrics();
+  if (!beforeActualEvidence || !actualMetrics.margins ||
+    actualMetrics.margins.grossRevenueCents - beforeActualEvidence.grossRevenueCents !== 777 ||
+    actualMetrics.margins.stripeFeesCents - beforeActualEvidence.stripeFeesCents !== 42 ||
+    actualMetrics.margins.fulfillmentCogsCents - beforeActualEvidence.fulfillmentCogsCents !== 200) {
+    throw new Error("Verified Stripe captures, fees and net Lob charge/credit must override estimates");
+  }
   } else {
     throw new Error("margins object missing in AdminMetrics");
   }

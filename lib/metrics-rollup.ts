@@ -12,10 +12,7 @@ import {
   AcquisitionSourceMetric,
   VisitorTelemetryMetrics,
 } from "./types";
-import { getAllNotices as getAllNoticeTemplates } from "@/src/lib/docket/notices";
-
-export const USPS_DISPATCH_COGS_CENTS = 220; // ~$2.20 USPS First-Class + CASS print dispatch
-export const HANDWRYTTEN_COGS_PER_CARD_CENTS = 220; // Kept for backward compatibility
+import { getAllNotices as getAllNoticeTemplates, getNoticeById } from "@/src/lib/docket/notices";
 
 export function calculateStripeFeeCents(amountInCents: number, paymentMethod?: string): number {
   if (paymentMethod === "PROMO_CODE" || paymentMethod === "STUDIO_COMP" || amountInCents === 0) {
@@ -437,6 +434,33 @@ export async function recordServerTelemetry(params: {
   experienceVersion?: string;
   draftRevision?: number;
 }): Promise<string> {
+  const metadata: Record<string, unknown> = { ...(params.metadata || {}) };
+  let noticeCategory: string | undefined;
+  let cohort: "notice" | "legacy_card" | "unknown" = "unknown";
+  if (params.orderId) {
+    const orderSnapshot = await getOrdersCollection().doc(params.orderId).get();
+    if (orderSnapshot.exists) {
+      const order = orderSnapshot.data() as Partial<Order> & { noticeId?: string; noticeType?: string };
+      const paidAmount = typeof order.finalAmountInCents === "number" ? order.finalAmountInCents : order.amountInCents;
+      if (typeof paidAmount === "number" && Number.isInteger(paidAmount) && paidAmount >= 0) metadata.amountInCents = paidAmount;
+      else delete metadata.amountInCents;
+      const noticeRef = order.noticeType || order.noticeId;
+      const definition = noticeRef ? getNoticeById(noticeRef) : undefined;
+      if (definition) {
+        noticeCategory = definition.category;
+        cohort = "notice";
+      } else if (order.experienceVersion === "home_v2") {
+        cohort = "legacy_card";
+      }
+      if (!noticeCategory) delete metadata.noticeCategory;
+    } else {
+      delete metadata.amountInCents;
+      delete metadata.noticeCategory;
+    }
+  } else {
+    delete metadata.amountInCents;
+    delete metadata.noticeCategory;
+  }
   const eventId = `evt_srv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const now = Date.now();
   const eventDoc: TelemetryEvent = {
@@ -444,11 +468,13 @@ export async function recordServerTelemetry(params: {
     eventName: params.eventName,
     sessionId: params.sessionId,
     orderId: params.orderId,
-    metadata: params.metadata || {},
+    metadata,
     path: "/api/server",
     timestamp: now,
     createdAt: now,
     experienceVersion: params.experienceVersion,
+    ...(noticeCategory ? { noticeCategory } : {}),
+    cohort,
     draftRevision: params.draftRevision,
   };
 
@@ -664,28 +690,42 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
 
   // 2. Fetch all orders for status totals (or from summary)
   const allOrdersSnap = await getOrdersCollection().get();
+  const financeFactSnap = await firestoreDb.collection("payment_facts_v1").get().catch(() => null);
+  const fulfillmentEstimateDoc = await getSystemConfig<{
+    schemaVersion?: number;
+    currency?: string;
+    tiers?: Partial<Record<"first_class" | "certified" | "certified_return_receipt", { amountCents?: number; sourceRef?: string }>>;
+  }>("admin_fulfillment_cost_estimates").catch(() => null);
+  const processorFeesByOrder = new Map<string, number>();
+  const capturesByOrder = new Map<string, number>();
+  const lobCostsByOrder = new Map<string, number>();
+  const lobCreditsByOrder = new Map<string, number>();
+  const runtimeEnvironment = process.env.ENVIRONMENT === "staging" || process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ? "staging" : process.env.NODE_ENV === "production" ? "production" : "local";
+  financeFactSnap?.forEach((doc) => {
+    const fact = doc.data() as Record<string, unknown>;
+    if (fact.provider !== "stripe" && fact.provider !== "lob") return;
+    if (fact.environment !== runtimeEnvironment || fact.verification !== "verified" || typeof fact.orderId !== "string" || !Number.isInteger(fact.amountMinor)) return;
+    const amount = Number(fact.amountMinor);
+    if (fact.kind === "capture" && fact.provider === "stripe") capturesByOrder.set(fact.orderId, amount);
+    if (fact.kind === "processor_fee" && fact.provider === "stripe") processorFeesByOrder.set(fact.orderId, (processorFeesByOrder.get(fact.orderId) || 0) + amount);
+    if (fact.provider === "lob" && fact.kind === "supplier_charge") lobCostsByOrder.set(fact.orderId, (lobCostsByOrder.get(fact.orderId) || 0) + amount);
+    if (fact.provider === "lob" && fact.kind === "supplier_credit") lobCreditsByOrder.set(fact.orderId, (lobCreditsByOrder.get(fact.orderId) || 0) + amount);
+  });
   let totalRevenueCents = 0;
   let pendingCount = 0;
   let processingCount = 0;
   let failedCount = 0;
 
-  const fontCounts: Record<string, number> = {};
-  const occasionCounts: Record<string, number> = {};
-  const FONT_NAME_MAP: Record<string, string> = {
-    "1": "Casual David",
-    "hwDavid": "Casual David",
-    "2": "Charming Chase",
-    "hwChase": "Charming Chase",
-    "3": "Carefree Kate",
-    "hwKate": "Carefree Kate",
-    "4": "Executive Adam",
-    "hwAdam": "Executive Adam",
-    "5": "Dapper Will",
-    "hwWill": "Dapper Will",
-  };
+  const noticeCategoryCounts: Record<string, number> = {};
+  let legacyCardOrderCount = 0;
+  let unknownNoticeOrderCount = 0;
 
   let stripeFeesCents = 0;
   let fulfillmentCogsCents = 0;
+  let verifiedFeeOrderCount = 0;
+  let verifiedCogsOrderCount = 0;
+  let estimatedCogsOrderCount = 0;
+  let unknownFulfillmentOrdersCount = 0;
   const campaignAgg: Record<string, CampaignAttributionMetric> = {};
 
   allOrdersSnap.forEach((doc) => {
@@ -699,17 +739,28 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     const isPaid = isPaidOrderStatus(o);
 
     if (isPaid) {
-      const orderRev =
+      const orderRev = capturesByOrder.get(o.id) ?? (
         typeof o.finalAmountInCents === "number"
           ? o.finalAmountInCents
           : typeof o.amountInCents === "number"
           ? o.amountInCents
-          : 0;
+          : 0);
       totalRevenueCents += orderRev;
       processingCount++;
 
-      const orderStripeFee = calculateStripeFeeCents(orderRev, o.paymentMethod);
-      const orderCogs = USPS_DISPATCH_COGS_CENTS;
+      const observedStripeFee = processorFeesByOrder.get(o.id);
+      const orderStripeFee = observedStripeFee ?? calculateStripeFeeCents(orderRev, o.paymentMethod);
+      if (observedStripeFee !== undefined) verifiedFeeOrderCount++;
+      const providerCost = lobCostsByOrder.get(o.id);
+      const providerCredit = lobCreditsByOrder.get(o.id) || 0;
+      const providerNetCost = providerCost === undefined ? undefined : Math.max(0, providerCost - providerCredit);
+      const tier = o.serviceLevel === "FIRST_CLASS" ? "first_class" : o.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "certified_return_receipt" : "certified";
+      const tierEstimate = fulfillmentEstimateDoc?.schemaVersion === 1 && fulfillmentEstimateDoc.currency === "USD" ? fulfillmentEstimateDoc.tiers?.[tier] : undefined;
+      const estimateIsTraceable = Number.isInteger(tierEstimate?.amountCents) && Number(tierEstimate?.amountCents) > 0 && typeof tierEstimate?.sourceRef === "string" && tierEstimate.sourceRef.trim().length > 0;
+      const orderCogs = providerNetCost ?? (estimateIsTraceable ? Number(tierEstimate!.amountCents) : 0);
+      if (providerNetCost !== undefined) verifiedCogsOrderCount++;
+      else if (estimateIsTraceable) estimatedCogsOrderCount++;
+      else unknownFulfillmentOrdersCount++;
       const orderNetMargin = orderRev - orderStripeFee - orderCogs;
 
       stripeFeesCents += orderStripeFee;
@@ -756,40 +807,25 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
       failedCount++;
     }
 
-    // Font tally
-    const fontId = o.fontStyleId || "hwDavid";
-    const fontName = FONT_NAME_MAP[fontId] || fontId;
-    fontCounts[fontName] = (fontCounts[fontName] || 0) + 1;
-
-    // Occasion tally
-    const noteText = `${o.printedMessage || ""} ${o.handwrittenNote || ""}`.toLowerCase();
-    let occasion = "Personal Note";
-    if (noteText.includes("birthday") || noteText.includes("bday")) occasion = "Birthday";
-    else if (noteText.includes("thank") || noteText.includes("grateful") || noteText.includes("gratitude")) occasion = "Thank You";
-    else if (noteText.includes("anniversary")) occasion = "Anniversary";
-    else if (noteText.includes("congrat") || noteText.includes("milestone") || noteText.includes("proud")) occasion = "Congratulations";
-    else if (noteText.includes("sympathy") || noteText.includes("condolence") || noteText.includes("thinking of you")) occasion = "Sympathy";
-    else if (noteText.includes("love") || noteText.includes("miss you")) occasion = "Love / Romance";
-    occasionCounts[occasion] = (occasionCounts[occasion] || 0) + 1;
+    if (isPaid) {
+      const noticeRef = o.noticeType || o.noticeId;
+      const definition = noticeRef ? getNoticeById(noticeRef) : undefined;
+      if (definition) {
+        noticeCategoryCounts[definition.category] = (noticeCategoryCounts[definition.category] || 0) + 1;
+      } else if (o.experienceVersion === "home_v2") {
+        legacyCardOrderCount++;
+      } else {
+        unknownNoticeOrderCount++;
+      }
+    }
   });
 
-  const totalCountForBreakdowns = allOrdersSnap.size;
-  const fontPopularity = Object.entries(fontCounts)
-    .map(([fontName, count]) => ({
-      fontId: fontName,
-      fontName,
-      count,
-      percentage: totalCountForBreakdowns > 0 ? Math.round((count / totalCountForBreakdowns) * 100) : 0,
-    }))
-    .sort((a, b) => b.count - a.count);
-
-  const occasionPopularity = Object.entries(occasionCounts)
-    .map(([occasion, count]) => ({
-      occasion,
-      count,
-      percentage: totalCountForBreakdowns > 0 ? Math.round((count / totalCountForBreakdowns) * 100) : 0,
-    }))
-    .sort((a, b) => b.count - a.count);
+  const categorizedOrderCount = Object.values(noticeCategoryCounts).reduce((sum, count) => sum + count, 0) + legacyCardOrderCount + unknownNoticeOrderCount;
+  const noticeCategoryPopularity = [
+    ...Object.entries(noticeCategoryCounts).map(([category, count]) => ({ category, cohort: "notice" as const, count, percentage: categorizedOrderCount ? Math.round((count / categorizedOrderCount) * 100) : 0 })),
+    ...(legacyCardOrderCount ? [{ category: "Legacy card", cohort: "legacy_card" as const, count: legacyCardOrderCount, percentage: categorizedOrderCount ? Math.round((legacyCardOrderCount / categorizedOrderCount) * 100) : 0 }] : []),
+    ...(unknownNoticeOrderCount ? [{ category: "Unknown / unmapped", cohort: "unknown" as const, count: unknownNoticeOrderCount, percentage: categorizedOrderCount ? Math.round((unknownNoticeOrderCount / categorizedOrderCount) * 100) : 0 }] : []),
+  ].sort((a, b) => b.count - a.count);
 
   // 3. Margin & Unit Economics Summaries (No fabricated $9.00, $3.56, or 39.6% defaults on empty data)
   const paidCardsCount = processingCount;
@@ -805,6 +841,12 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
   const averageNetContributionCents = paidCardsCount > 0 ? Math.round(netContributionMarginCents / paidCardsCount) : 0;
   const targetBreakevenCpaDollars = paidCardsCount > 0 ? Number((averageNetContributionCents / 100).toFixed(2)) : 0;
 
+  const cogsEvidence: NonNullable<FinancialMargins["fulfillmentCogsEvidence"]> = unknownFulfillmentOrdersCount > 0
+    ? (verifiedCogsOrderCount || estimatedCogsOrderCount ? "partial" : "unavailable")
+    : estimatedCogsOrderCount > 0
+    ? (verifiedCogsOrderCount ? "partial" : "estimated")
+    : "verified";
+  const feeEvidence: NonNullable<FinancialMargins["stripeFeeEvidence"]> = processingCount === 0 ? "unavailable" : verifiedFeeOrderCount === processingCount ? "verified" : verifiedFeeOrderCount > 0 ? "partial" : "estimated";
   const margins: FinancialMargins = {
     grossRevenueCents: totalRevenueCents,
     stripeFeesCents,
@@ -817,7 +859,10 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     averageFulfillmentCogsCents,
     averageNetContributionCents,
     targetBreakevenCpaDollars,
-    economicsAuthority: "estimated_legacy_unverified",
+    economicsAuthority: cogsEvidence === "verified" && feeEvidence === "verified" ? "verified_ledger" : estimatedCogsOrderCount > 0 && unknownFulfillmentOrdersCount === 0 ? "estimated_tier_schedule" : "partial_ledger",
+    stripeFeeEvidence: feeEvidence,
+    fulfillmentCogsEvidence: cogsEvidence,
+    unknownFulfillmentOrdersCount,
   };
 
   const campaignAttributions = Object.values(campaignAgg).sort(
@@ -987,8 +1032,8 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
       paid: paidCount,
     },
     visitorTelemetry,
-    fontPopularity,
-    occasionPopularity,
+    noticeCategoryPopularity,
+    legacyCardOrderCount,
     margins,
     campaignAttributions,
     adSpendCents,
@@ -996,14 +1041,16 @@ export async function getAdminDashboardMetrics(): Promise<AdminMetrics> {
     reportingQuality: {
       status: "legacy_interim_unverified",
       funnelAuthority: "session_telemetry_only_no_synthetic_backfill",
-      economicsAuthority: "estimated_pending_provider_fee_cogs_ledger",
+      economicsAuthority: cogsEvidence === "unavailable" || cogsEvidence === "partial" || feeEvidence === "partial" || feeEvidence === "estimated"
+        ? "estimated_pending_provider_fee_cogs_ledger"
+        : "verified_ledger",
       healthAuthority: "configuration_only_no_live_probe",
       hasVerifiedRevenue: totalRevenueCents > 0,
       hasObservedSessions: totalSessions > 0,
       unmatchedPaidOrdersCount,
       notes: [
         "Funnel counts reflect observed telemetry sessions only without synthetic order backfill or minimum-1 denominators.",
-        "Unit economics are interim legacy estimates pending verified Stripe balance_transaction fee and Lob COGS ledgers in S2/S6.",
+        `Stripe fee evidence: ${feeEvidence}; fulfillment COGS evidence: ${cogsEvidence}. Tier estimates are used only when admin_fulfillment_cost_estimates contains per-tier amounts and source references; no flat card COGS is assumed.`,
       ],
     },
     recentOrders,

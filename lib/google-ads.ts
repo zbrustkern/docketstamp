@@ -1,202 +1,66 @@
-export const GOOGLE_TAG_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "GT-TNPN256B";
+import { hasExplicitMarketingConsent } from "@/lib/admin-console/measurement/privacy";
+import { getGoogleMarketingDestination } from "@/lib/marketing-destinations";
 
-export const GOOGLE_ADS_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-18474411963";
+const destination = getGoogleMarketingDestination();
+export const GOOGLE_TAG_ID = destination.tagId;
+export const GOOGLE_ADS_ID = destination.adsId;
+export const GOOGLE_ADS_CONVERSION_LABEL = destination.conversionLabel;
+export const GA4_MEASUREMENT_ID = destination.ga4Id;
 
-export const GOOGLE_ADS_CONVERSION_LABEL =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL || "ZzzVCMqAjoUdELvPpOlE";
+type GtagWindow = Window & { gtag?: (...args: unknown[]) => void };
+function gtag(): GtagWindow["gtag"] | undefined {
+  if (typeof window === "undefined" || !hasExplicitMarketingConsent()) return undefined;
+  const send = (window as GtagWindow).gtag;
+  return typeof send === "function" ? send.bind(window) : undefined;
+}
+function paidValue(amountInCents?: number): number | undefined {
+  return Number.isInteger(amountInCents) && Number(amountInCents) > 0 ? Number(amountInCents) / 100 : undefined;
+}
+function ga4SendTo(): string | undefined { return getGoogleMarketingDestination().ga4Id; }
 
-export const GA4_MEASUREMENT_ID =
-  process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-5DV25FZ7Q8";
-
-
-/**
- * Fires a standard GA4 view_item event
- */
-export function trackGA4ViewItem(item: {
-  itemId: string;
-  itemName: string;
-  price?: number;
-  itemCategory?: string;
-}): void {
-  if (typeof window === "undefined") return;
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    win.gtag("event", "view_item", {
-      currency: "USD",
-      value: item.price ?? 9.0,
-      items: [
-        {
-          item_id: item.itemId,
-          item_name: item.itemName,
-          price: item.price ?? 9.0,
-          item_category: item.itemCategory || "Handwritten Card",
-        },
-      ],
-    });
-  }
+export function trackGA4ViewItem(item: { itemId: string; itemName: string; price?: number; itemCategory?: string }): void {
+  const send = gtag(); const target = ga4SendTo(); if (!send || !target) return;
+  const price = paidValue(item.price === undefined ? undefined : Math.round(item.price * 100));
+  send("event", "view_item", { send_to: target, currency: "USD", ...(price ? { value: price } : {}), items: [{ item_id: item.itemId, item_name: item.itemName, ...(price ? { price } : {}), item_category: item.itemCategory || "notice" }] });
 }
 
-/**
- * Fires a standard GA4 begin_checkout event
- */
-export function trackGA4BeginCheckout(item: {
-  itemId: string;
-  itemName: string;
-  price?: number;
-}): void {
-  if (typeof window === "undefined") return;
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    win.gtag("event", "begin_checkout", {
-      currency: "USD",
-      value: item.price ?? 9.0,
-      items: [
-        {
-          item_id: item.itemId,
-          item_name: item.itemName,
-          price: item.price ?? 9.0,
-          item_category: "Handwritten Card",
-        },
-      ],
-    });
-  }
+export function trackGA4BeginCheckout(item: { itemId: string; itemName: string; price?: number; itemCategory?: string }): void {
+  const send = gtag(); const target = ga4SendTo(); if (!send || !target) return;
+  const price = paidValue(item.price === undefined ? undefined : Math.round(item.price * 100));
+  send("event", "begin_checkout", { send_to: target, currency: "USD", ...(price ? { value: price } : {}), items: [{ item_id: item.itemId, item_name: item.itemName, ...(price ? { price } : {}), item_category: item.itemCategory || "notice" }] });
 }
 
-/**
- * Fires a standard GA4 add_shipping_info event
- */
-export function trackGA4AddShippingInfo(item: {
-  itemId: string;
-  itemName: string;
-  price?: number;
-  shippingTier?: string;
-}): void {
-  if (typeof window === "undefined") return;
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    win.gtag("event", "add_shipping_info", {
-      currency: "USD",
-      value: item.price ?? 9.0,
-      shipping_tier: item.shippingTier || "USPS First Class",
-      items: [
-        {
-          item_id: item.itemId,
-          item_name: item.itemName,
-          price: item.price ?? 9.0,
-          item_category: "Handwritten Card",
-        },
-      ],
-    });
-  }
+export function trackGA4AddShippingInfo(item: { itemId: string; itemName: string; price?: number; shippingTier?: string; itemCategory?: string }): void {
+  const send = gtag(); const target = ga4SendTo(); if (!send || !target) return;
+  const price = paidValue(item.price === undefined ? undefined : Math.round(item.price * 100));
+  send("event", "add_shipping_info", { send_to: target, currency: "USD", ...(price ? { value: price } : {}), shipping_tier: item.shippingTier, items: [{ item_id: item.itemId, item_name: item.itemName, ...(price ? { price } : {}), item_category: item.itemCategory || "notice" }] });
 }
 
-/**
- * Fires a standard GA4 add_payment_info event
- */
-export function trackGA4AddPaymentInfo(item: {
-  itemId: string;
-  itemName: string;
-  price?: number;
-  paymentType?: string;
-}): void {
-  if (typeof window === "undefined") return;
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    win.gtag("event", "add_payment_info", {
-      currency: "USD",
-      value: item.price ?? 9.0,
-      payment_type: item.paymentType || "card",
-      items: [
-        {
-          item_id: item.itemId,
-          item_name: item.itemName,
-          price: item.price ?? 9.0,
-          item_category: "Handwritten Card",
-        },
-      ],
-    });
-  }
+export function trackGA4AddPaymentInfo(item: { itemId: string; itemName: string; price?: number; paymentType?: string; itemCategory?: string }): void {
+  const send = gtag(); const target = ga4SendTo(); if (!send || !target) return;
+  const price = paidValue(item.price === undefined ? undefined : Math.round(item.price * 100));
+  send("event", "add_payment_info", { send_to: target, currency: "USD", ...(price ? { value: price } : {}), payment_type: item.paymentType || "card", items: [{ item_id: item.itemId, item_name: item.itemName, ...(price ? { price } : {}), item_category: item.itemCategory || "notice" }] });
 }
 
-/**
- * Fires a custom GA4 event (e.g. ai_cover_generated, handwriting_style_selected)
- */
-export function trackGA4CustomEvent(
-  eventName: string,
-  params?: Record<string, unknown>
-): void {
-  if (typeof window === "undefined") return;
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    win.gtag("event", eventName, params || {});
-  }
+export function trackGA4CustomEvent(eventName: string, params?: Record<string, unknown>): void {
+  const send = gtag(); const target = ga4SendTo(); if (!send || !target) return;
+  send("event", eventName, { send_to: target, ...(params || {}) });
 }
 
-/**
- * Fires a standard GA4 purchase event
- */
-export function trackGA4Purchase(params: {
-  orderId: string;
-  amountInCents?: number;
-  itemName?: string;
-}): void {
-  if (typeof window === "undefined") return;
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    const value = params.amountInCents ? params.amountInCents / 100 : 9.0;
-    win.gtag("event", "purchase", {
-      transaction_id: params.orderId,
-      value,
-      currency: "USD",
-      items: [
-        {
-          item_id: params.orderId,
-          item_name: params.itemName || "Custom Folded Handwritten Card",
-          price: value,
-          item_category: "Handwritten Card",
-        },
-      ],
-    });
-  }
+export function trackGA4Purchase(params: { orderId: string; amountInCents?: number; itemName?: string; itemCategory?: string }): void {
+  const send = gtag(); const target = ga4SendTo(); const value = paidValue(params.amountInCents);
+  if (!send || !target || !value || !params.orderId) return;
+  send("event", "purchase", { send_to: target, transaction_id: params.orderId, value, currency: "USD", items: [{ item_id: params.orderId, item_name: params.itemName || "DocketStamp notice dispatch", price: value, item_category: params.itemCategory || "notice" }] });
 }
 
-/**
- * Fires a Google Ads Purchase conversion event with transaction deduplication.
- */
-export function trackGoogleAdsPurchase(params: {
-  orderId: string;
-  amountInCents?: number;
-  customerEmail?: string;
-  itemName?: string;
-}): void {
-  if (typeof window === "undefined" || !hasExplicitMarketingConsent()) return;
-  if (!Number.isFinite(params.amountInCents) || !params.amountInCents || params.amountInCents <= 0) return;
-
-  const convKey = `gads_conv_${params.orderId}`;
-  if (sessionStorage.getItem(convKey)) {
-    // Already tracked in this session to prevent duplicate attribution
-    return;
-  }
-  sessionStorage.setItem(convKey, "true");
-
-  const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof win.gtag === "function") {
-    const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL || GOOGLE_ADS_CONVERSION_LABEL;
-    const sendTo = conversionLabel
-      ? `${GOOGLE_ADS_ID}/${conversionLabel}`
-      : GOOGLE_ADS_ID;
-
-    win.gtag("event", "conversion", {
-      send_to: sendTo,
-      value: params.amountInCents / 100,
-      currency: "USD",
-      transaction_id: params.orderId,
-    });
-
-    // Also fire standard GA4 purchase
-    trackGA4Purchase(params);
-  }
+export function trackGoogleAdsPurchase(params: { orderId: string; amountInCents?: number; customerEmail?: string; itemName?: string; itemCategory?: string }): void {
+  if (typeof window === "undefined" || !hasExplicitMarketingConsent() || !params.orderId) return;
+  const config = getGoogleMarketingDestination();
+  const send = (window as GtagWindow).gtag;
+  const value = paidValue(params.amountInCents);
+  if (!send || !value || !config.adsId || !config.conversionLabel) return;
+  const key = `gads_conv_${params.orderId}`;
+  try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "true"); } catch { /* in-memory browser lifetime still sends once per render path */ }
+  send("event", "conversion", { send_to: `${config.adsId}/${config.conversionLabel}`, value, currency: "USD", transaction_id: params.orderId });
+  trackGA4Purchase(params);
 }
-import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';

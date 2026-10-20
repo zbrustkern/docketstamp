@@ -3,6 +3,16 @@ import { getStoredAttribution } from "@/components/AttributionTracker";
 import { isAuthorityEvent, sanitizeUrlOrPath } from "./telemetry-schema";
 
 export const TELEMETRY_COLLECTION = "telemetry_events";
+export const TELEMETRY_SESSION_STORAGE_KEY = "docketstamp_telemetry_session_v1";
+export const LEGACY_TELEMETRY_SESSION_STORAGE_KEY = "smn_telemetry_session";
+
+function hasMarketingConsent(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl !== true &&
+      window.localStorage.getItem("docketstamp_marketing_consent_v1") === "granted";
+  } catch { return false; }
+}
 
 // Re-export reporting engine and types from telemetry-reporting
 export {
@@ -25,12 +35,15 @@ export function getSessionId(): string {
   }
 
   if (!currentSessionId) {
-    const existing = window.sessionStorage.getItem("smn_telemetry_session");
+    const existing = window.sessionStorage.getItem(TELEMETRY_SESSION_STORAGE_KEY) ||
+      window.sessionStorage.getItem(LEGACY_TELEMETRY_SESSION_STORAGE_KEY);
     if (existing) {
       currentSessionId = existing;
+      window.sessionStorage.setItem(TELEMETRY_SESSION_STORAGE_KEY, existing);
+      window.sessionStorage.removeItem(LEGACY_TELEMETRY_SESSION_STORAGE_KEY);
     } else {
       currentSessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      window.sessionStorage.setItem("smn_telemetry_session", currentSessionId);
+      window.sessionStorage.setItem(TELEMETRY_SESSION_STORAGE_KEY, currentSessionId);
     }
   }
 
@@ -158,6 +171,7 @@ export interface TrackFunnelEventParams {
   eventName: TelemetryEventName;
   step?: number;
   noticeSlug?: string;
+  noticeCategory?: string;
   recipientId?: string;
   tier?: string;
   draftRevision?: number;
@@ -213,6 +227,7 @@ export async function trackFunnelEvent(params: TrackFunnelEventParams): Promise<
       experienceVersion: params.experienceVersion || "home_v2",
       entrySource: params.entrySource || "home_chooser",
       noticeSlug: params.noticeSlug,
+      noticeCategory: params.noticeCategory,
       recipientId: params.recipientId,
       tier: params.tier,
       draftRevision: params.draftRevision,
@@ -229,6 +244,7 @@ export async function trackFunnelEvent(params: TrackFunnelEventParams): Promise<
       sessionId,
       orderId: params.orderId,
       noticeSlug: params.noticeSlug,
+      noticeCategory: params.noticeCategory,
       recipientId: params.recipientId,
       tier: params.tier,
       draftRevision: params.draftRevision,
@@ -275,7 +291,7 @@ export async function trackFunnelEvent(params: TrackFunnelEventParams): Promise<
 
     // Forward to GA4 / gtag if active
     const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-    if (typeof win.gtag === "function") {
+    if (hasMarketingConsent() && typeof win.gtag === "function") {
       win.gtag("event", params.eventName, {
         event_category: "docket_funnel",
         step_number: params.step,

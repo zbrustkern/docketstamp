@@ -86,19 +86,21 @@ export function Step5Confirmation({
     if (orderId && !isReconciling) {
       trackGoogleAdsPurchase({
         orderId,
-        amountInCents: amountInCents || 900,
+        amountInCents,
         customerEmail,
-        itemName: cardTitle,
+        itemName: "DocketStamp notice dispatch",
+        itemCategory: "notice",
       });
       trackMetaPurchase({
         orderId,
-        value: amountInCents ? amountInCents / 100 : 9.0,
+        value: amountInCents ? amountInCents / 100 : undefined,
         customerEmail,
         customerName: sender.fullName,
         recipientCity: recipient.city,
         recipientState: recipient.state,
         recipientZip: recipient.zip,
-        itemName: cardTitle,
+        itemName: "DocketStamp notice dispatch",
+        itemCategory: "notice",
       });
     }
   }, [orderId, viewToken, fulfillmentStatus, amountInCents, customerEmail, cardTitle, sender.fullName, recipient.city, recipient.state, recipient.zip]);

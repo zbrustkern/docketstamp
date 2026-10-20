@@ -5,6 +5,8 @@ import { readAttributionLedger } from './attribution';
 
 const QUEUE_KEY = 'docketstamp_business_events_v1';
 const MILESTONES_KEY = 'docketstamp_business_milestones_v1';
+const SESSION_KEY = 'docketstamp_telemetry_session_v1';
+const LEGACY_SESSION_KEY = 'smn_telemetry_session';
 const MAX_QUEUE = 100;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const memoryQueue: Array<Record<string, unknown>> = [];
@@ -19,10 +21,14 @@ function randomId(prefix: string): string {
 
 function getOrCreateSessionId(): string {
   try {
-    const existing = sessionStorage.getItem('smn_telemetry_session');
-    if (existing) return existing;
+    const existing = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem(LEGACY_SESSION_KEY);
+    if (existing) {
+      sessionStorage.setItem(SESSION_KEY, existing);
+      sessionStorage.removeItem(LEGACY_SESSION_KEY);
+      return existing;
+    }
     const id = randomId('sess');
-    sessionStorage.setItem('smn_telemetry_session', id);
+    sessionStorage.setItem(SESSION_KEY, id);
     return id;
   } catch {
     return memorySessionId || (memorySessionId = randomId('sess'));

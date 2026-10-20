@@ -58,7 +58,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { isAuthorizedAdminEmail, AUTHORIZED_ADMIN_EMAILS } from "@/lib/admin-auth";
 import { AdminMetrics, Order, SystemIncident, DiscountCode, DiscountType, ScenarioPerformanceMetric } from "@/lib/types";
-import { LobStatusWidget, HandwryttenStatusWidget } from "@/components/admin/HandwryttenStatusWidget";
+import { LobStatusWidget } from "@/components/admin/LobStatusWidget";
+import { MarketingDestinationsWidget } from "@/components/admin/MarketingDestinationsWidget";
 import { ProofInspectorModal } from "@/components/admin/ProofInspectorModal";
 import { AddressRetryModal } from "@/components/admin/AddressRetryModal";
 import { StudioCompModal } from "@/components/admin/StudioCompModal";
@@ -70,6 +71,7 @@ import { OrderJourneyDrawer } from "@/components/admin/OrderJourneyDrawer";
 import { CampaignPerformanceWidget } from "@/components/admin/CampaignPerformanceWidget";
 import { HighIntentCartsWidget } from "@/components/admin/HighIntentCartsWidget";
 import { OutgoingEmailPanel } from "@/components/admin/OutgoingEmailPanel";
+import { resolvePostalProvenance, postalProviderLabel } from "@/lib/admin/postal-reference";
 
 export default function AdminDashboardPage() {
   const { user, signInWithGoogle, signOut: authSignOut } = useAuth();
@@ -273,7 +275,7 @@ export default function AdminDashboardPage() {
       if (!res.ok || !data.success) {
         alert(`Retry failed: ${data.error || "Unknown error"}`);
       } else {
-        alert(`Order successfully dispatched via Lob USPS! Letter ID: ${data.letterId || data.handwryttenOrderId}`);
+        alert(`Order successfully submitted to fulfillment. Reference: ${data.letterId || data.orderId || orderId}`);
       }
       await fetchMetrics();
     } catch (err: unknown) {
@@ -297,7 +299,7 @@ export default function AdminDashboardPage() {
         alert(`Sync failed: ${data.error || "Unknown error"}`);
       } else {
         alert(
-          `Lob USPS postal status updated: ${data.lobStatus || data.handwryttenStatus || data.status}${
+          `Lob postal status updated: ${data.lobStatus || data.status}${
             data.mailedDate ? ` (Mailed: ${data.mailedDate})` : ""
           }`
         );
@@ -310,7 +312,6 @@ export default function AdminDashboardPage() {
       setSyncingId(null);
     }
   };
-  const handleSyncHandwrytten = handleSyncLob;
 
   const handleSyncStripe = async (orderId: string) => {
     setSyncingStripeId(orderId);
@@ -1198,6 +1199,7 @@ export default function AdminDashboardPage() {
       <main className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-8 space-y-4 sm:space-y-8 min-w-0">
         {/* LIVE LOB USPS STATUS & BALANCE WIDGET */}
         <LobStatusWidget />
+        <MarketingDestinationsWidget />
         {/* ===================== TAB: ORDERS & OPERATIONS ===================== */}
         {activeTab === "orders" && (
           <div className="space-y-5 sm:space-y-8">
@@ -1405,9 +1407,9 @@ export default function AdminDashboardPage() {
                                       ? `$${(order.amountInCents / 100).toFixed(2)}`
                                       : "Amount unavailable"}
                                   </span>
-                                  {(order.lobLetterId || order.handwryttenOrderId) && (
+                                  {resolvePostalProvenance(order).reference && (
                                     <span className="font-mono text-[9px] text-indigo-700 block mt-0.5">
-                                      Lob: {order.lobLetterId || order.handwryttenOrderId}
+                                      {postalProviderLabel(resolvePostalProvenance(order).provider)}: {resolvePostalProvenance(order).reference}
                                     </span>
                                   )}
                                 </div>
@@ -1492,7 +1494,7 @@ export default function AdminDashboardPage() {
                               <span>View Proof</span>
                             </button>
 
-                            {(order.lobLetterId || order.handwryttenOrderId) ? (
+                            {resolvePostalProvenance(order).provider === "lob" ? (
                               <button
                                 type="button"
                                 onClick={() => handleSyncLob(order.id)}
@@ -1653,24 +1655,24 @@ export default function AdminDashboardPage() {
                                       ? "QUEUED"
                                       : order.status}
                                   </span>
-                                  {(order.lobLetterId || order.handwryttenOrderId) && (
+                                  {resolvePostalProvenance(order).reference && (
                                     <p className="font-mono text-[9px] text-indigo-700">
-                                      Lob: {order.lobLetterId || order.handwryttenOrderId}
+                                      {postalProviderLabel(resolvePostalProvenance(order).provider)}: {resolvePostalProvenance(order).reference}
                                     </p>
                                   )}
-                                  {(order.lobStatus || order.handwryttenStatus) && (
+                                  {(resolvePostalProvenance(order).provider === "lob" ? order.lobStatus : resolvePostalProvenance(order).provider === "handwrytten" ? order.handwryttenStatus : undefined) && (
                                     <p className="text-[10px] font-medium text-stone-600">
-                                      Lob: <span className="capitalize font-semibold text-stone-900">{order.lobStatus || order.handwryttenStatus}</span>
+                                      {postalProviderLabel(resolvePostalProvenance(order).provider)}: <span className="capitalize font-semibold text-stone-900">{resolvePostalProvenance(order).provider === "lob" ? order.lobStatus : order.handwryttenStatus}</span>
                                     </p>
                                   )}
-                                  {(order.lobMailedDate || order.handwryttenMailedDate) && (
+                                  {(resolvePostalProvenance(order).provider === "lob" ? order.lobMailedDate : resolvePostalProvenance(order).provider === "handwrytten" ? order.handwryttenMailedDate : undefined) && (
                                     <p className="text-[9px] text-purple-700 font-medium">
-                                      Mailed: {order.lobMailedDate || order.handwryttenMailedDate}
+                                      Mailed: {resolvePostalProvenance(order).provider === "lob" ? order.lobMailedDate : order.handwryttenMailedDate}
                                     </p>
                                   )}
-                                  {(order.lobTrackingNumber || order.handwryttenTrackingNumber) && (
+                                  {(resolvePostalProvenance(order).provider === "lob" ? order.lobTrackingNumber : resolvePostalProvenance(order).provider === "handwrytten" ? order.handwryttenTrackingNumber : undefined) && (
                                     <p className="text-[9px] text-stone-500 font-mono">
-                                      Trk: {order.lobTrackingNumber || order.handwryttenTrackingNumber}
+                                      Trk: {resolvePostalProvenance(order).provider === "lob" ? order.lobTrackingNumber : order.handwryttenTrackingNumber}
                                     </p>
                                   )}
                                 </div>
@@ -1751,7 +1753,7 @@ export default function AdminDashboardPage() {
                                       </button>
                                     </div>
                                   )}
-                                  {(order.lobLetterId || order.handwryttenOrderId) && (
+                                  {resolvePostalProvenance(order).provider === "lob" && (
                                     <button
                                       onClick={() => handleSyncLob(order.id)}
                                       disabled={syncingId === order.id}
@@ -1787,7 +1789,7 @@ export default function AdminDashboardPage() {
                                       {syncingStripeId === order.id ? "Checking..." : "Verify Stripe (Held: S2)"}
                                     </button>
                                   )}
-                                  {!isPending && !canRetry && !(order.lobLetterId || order.handwryttenOrderId) && (
+                                  {!isPending && !canRetry && resolvePostalProvenance(order).provider !== "lob" && (
                                     <span className="text-stone-300">—</span>
                                   )}
                                 </div>

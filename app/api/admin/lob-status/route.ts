@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       ? "test"
       : "unconfigured";
 
-    const lobDispatchKey = (process.env.LOB_DISPATCH_API_KEY || process.env.LOB_API_KEY || "").trim();
+    const lobDispatchKey = (process.env.LOB_DISPATCH_API_KEY || "").trim();
     const lobEnv = (process.env.LOB_ENV || "").trim();
     const dispatchMode: "live" | "test_api" | "mock" | "unconfigured" = lobDispatchKey.startsWith("live_")
       ? "live"
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       ? "mock"
       : "unconfigured";
 
-    const lobCassKey = (process.env.LOB_ADDRESS_VERIFICATION_KEY || process.env.LOB_API_KEY || "").trim();
+    const lobCassKey = (process.env.LOB_ADDRESS_VERIFICATION_KEY || "").trim();
     const cassMode: "live" | "test_api" | "staging_mock_cass" | "unconfigured" =
       lobEnv === "staging_mock_cass"
         ? "staging_mock_cass"

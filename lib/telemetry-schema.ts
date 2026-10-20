@@ -88,6 +88,8 @@ export const COMMON_METADATA_RULES: Record<string, FieldRule> = {
   elapsedMs: { type: "number" },
   entrySource: { type: "string", maxLength: 50 },
   noticeSlug: { type: "string", maxLength: 100 },
+  noticeCategory: { type: "string", maxLength: 50 },
+  cohort: { type: "string", maxLength: 20 },
   recipientId: { type: "string", maxLength: 100 },
   tier: { type: "string", maxLength: 50 },
   deviceCategory: { type: "string", maxLength: 20 },

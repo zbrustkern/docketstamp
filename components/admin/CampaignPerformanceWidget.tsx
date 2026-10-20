@@ -120,23 +120,7 @@ export function CampaignPerformanceWidget({ metrics, orders }: CampaignPerforman
           </p>
         </div>
 
-        {/* GOOGLE ADS & GA4 CONFIG TAG PILLS (UNVERIFIED UNTIL PROBED) */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 border border-stone-300 text-stone-700 text-xs font-semibold"
-            title="Configured tag identifier only; live pixel firing and conversion delivery are unverified without a fresh probe"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>Google Ads: AW-18474411963 (Config Only &bull; Unverified)</span>
-          </div>
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 border border-stone-300 text-stone-700 text-xs font-semibold"
-            title="Configured measurement ID only; live stream ingestion is unverified without a fresh probe"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>GA4: G-5DV25FZ7Q8 (Config Only &bull; Unverified)</span>
-          </div>
-        </div>
+        <span className="text-xs text-stone-500">Destination readiness is shown in Marketing Destinations; campaign rows are interim attribution samples.</span>
       </div>
 
       {/* SEARCH & FILTERS */}

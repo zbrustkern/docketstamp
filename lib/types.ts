@@ -89,6 +89,7 @@ export interface OrderAttribution {
   googleClientId?: string;
   gpc?: boolean; // Global Privacy Control signal detected
   optOut?: boolean; // User opted out of marketing tracking
+  marketingConsent?: boolean;
   capturedAt?: number;
 }
 
@@ -340,6 +341,8 @@ export interface TelemetryEvent {
   draftRevision?: number;
   entrySource?: EntrySource | string;
   noticeSlug?: string;
+  noticeCategory?: string;
+  cohort?: "notice" | "legacy_card" | "unknown";
   recipientId?: string;
   tier?: string;
   deviceCategory?: "mobile" | "tablet" | "desktop";
@@ -427,13 +430,16 @@ export interface FinancialMargins {
   averageFulfillmentCogsCents: number;
   averageNetContributionCents: number; // break-even target CPA
   targetBreakevenCpaDollars: number;
-  economicsAuthority?: "estimated_legacy_unverified" | "verified_ledger";
+  economicsAuthority?: "estimated_tier_schedule" | "partial_ledger" | "verified_ledger";
+  stripeFeeEvidence?: "verified" | "estimated" | "partial" | "unavailable";
+  fulfillmentCogsEvidence?: "verified" | "estimated" | "partial" | "unavailable";
+  unknownFulfillmentOrdersCount?: number;
 }
 
 export interface AdminReportingQuality {
   status: "legacy_interim_unverified";
   funnelAuthority: "session_telemetry_only_no_synthetic_backfill";
-  economicsAuthority: "estimated_pending_provider_fee_cogs_ledger";
+  economicsAuthority: "estimated_pending_provider_fee_cogs_ledger" | "verified_ledger";
   healthAuthority: "configuration_only_no_live_probe";
   hasVerifiedRevenue: boolean;
   hasObservedSessions: boolean;
@@ -563,8 +569,8 @@ export interface AdminMetrics {
     paid: number;
   };
   visitorTelemetry?: VisitorTelemetryMetrics;
-  fontPopularity?: { fontId: string; fontName: string; count: number; percentage: number }[];
-  occasionPopularity?: { occasion: string; count: number; percentage: number }[];
+  noticeCategoryPopularity?: { category: string; cohort: "notice" | "legacy_card" | "unknown"; count: number; percentage: number }[];
+  legacyCardOrderCount?: number;
   margins?: FinancialMargins;
   campaignAttributions?: CampaignAttributionMetric[];
   adSpendCents?: number;

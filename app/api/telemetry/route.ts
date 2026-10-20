@@ -5,6 +5,7 @@ import { TelemetryEvent, TelemetryEventName } from "@/lib/types";
 import { AttributionTouchSchema, EventEnvelopeSchema } from "@/lib/admin-console/contracts";
 import { acceptBusinessEvent, recordMeasurementDiagnostic } from "@/lib/admin-console/measurement/store";
 import { serverEnvironment } from "@/lib/admin-console/commands/access";
+import { resolveNoticeReporting } from "@/lib/notice-reporting";
 import {
   isAuthorityEvent,
   ALLOWED_BROWSER_EVENT_NAMES,
@@ -258,6 +259,8 @@ export async function POST(req: NextRequest) {
 
     const rawNoticeSlug = noticeSlug || sanitizedMetadata.noticeSlug;
     const cleanNoticeSlug = typeof rawNoticeSlug === "string" ? rawNoticeSlug.trim().slice(0, 100) : undefined;
+    const reporting = resolveNoticeReporting({ noticeSlug: cleanNoticeSlug, experienceVersion: cleanExpVersion });
+    const cleanNoticeCategory = reporting.category;
 
     const rawRecipientId = recipientId || sanitizedMetadata.recipientId;
     const cleanRecipientId = typeof rawRecipientId === "string" ? rawRecipientId.trim().slice(0, 100) : undefined;
@@ -310,6 +313,8 @@ export async function POST(req: NextRequest) {
       draftRevision: cleanDraftRev,
       entrySource: cleanEntrySource,
       noticeSlug: cleanNoticeSlug,
+      noticeCategory: cleanNoticeCategory,
+      cohort: reporting.cohort,
       recipientId: cleanRecipientId,
       tier: cleanTier,
       deviceCategory: validateDeviceType(deviceCategory || deviceType),

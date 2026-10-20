@@ -23,6 +23,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Order } from "@/lib/types";
+import { resolvePostalProvenance, postalProviderLabel } from "@/lib/admin/postal-reference";
 
 interface OrderJourneyDrawerProps {
   order: Order;
@@ -54,16 +55,11 @@ export function OrderJourneyDrawer({
     : attr?.utmSource || "Direct / Organic";
 
   // Financial unit calculation
-  const grossDollars = (order.amountInCents || 1995) / 100;
-  const stripeFeeDollars = Number((grossDollars * 0.029 + 0.3).toFixed(2));
-  const lobCogs =
-    order.serviceLevel === "CERTIFIED_RETURN_RECEIPT"
-      ? 10.95
-      : order.serviceLevel === "FIRST_CLASS"
-      ? 1.85
-      : 7.35;
-  const netMarginDollars = Number((grossDollars - stripeFeeDollars - lobCogs).toFixed(2));
-  const marginPercent = grossDollars > 0 ? Math.round((netMarginDollars / grossDollars) * 100) : 0;
+  const paidCents = typeof order.finalAmountInCents === "number" ? order.finalAmountInCents : order.amountInCents;
+  const paidDollars = Number.isInteger(paidCents) ? paidCents / 100 : undefined;
+  const postal = resolvePostalProvenance(order);
+  const providerStatus = postal.provider === "lob" ? order.lobStatus : postal.provider === "handwrytten" ? order.handwryttenStatus : undefined;
+  const providerTracking = postal.provider === "lob" ? order.lobTrackingNumber : postal.provider === "handwrytten" ? order.handwryttenTrackingNumber : undefined;
 
   return (
     <div className="bg-stone-50/70 border-t border-b border-stone-200 p-4 sm:p-6 space-y-6">
@@ -196,7 +192,7 @@ export function OrderJourneyDrawer({
             <div className="space-y-1 text-xs min-w-0 flex-1">
               <span className="text-[10px] text-stone-400 block font-medium">Handwriting Style</span>
               <p className="font-semibold text-stone-800 text-xs">
-                {order.fontStyleId || "hwDavid"}
+                {order.fontStyleId || "Unrecorded"}
               </p>
               {order.printedMessage && (
                 <p className="text-[10px] text-stone-500 italic truncate" title={order.printedMessage}>
@@ -220,31 +216,23 @@ export function OrderJourneyDrawer({
               <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
               Order Financials
             </span>
-            <span
-              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                netMarginDollars > 0
-                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                  : "bg-rose-50 text-rose-800 border border-rose-200"
-              }`}
-            >
-              +{marginPercent}% Margin
-            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Costs unavailable here</span>
           </div>
 
           <div className="space-y-2 text-xs">
             <div className="flex items-center justify-between text-stone-600">
               <span>Customer Paid</span>
-              <span className="font-bold text-stone-900">${grossDollars.toFixed(2)}</span>
+              <span className="font-bold text-stone-900">{paidDollars === undefined ? "Unavailable" : `$${paidDollars.toFixed(2)}`}</span>
             </div>
 
             <div className="flex items-center justify-between text-stone-500 text-[11px]">
               <span>Stripe Processing</span>
-              <span className="text-rose-600">-${stripeFeeDollars.toFixed(2)}</span>
+              <span className="text-rose-600">Unavailable</span>
             </div>
 
             <div className="flex items-center justify-between text-stone-500 text-[11px]">
-              <span>Lob USPS Postage COGS</span>
-              <span className="text-indigo-600">-${lobCogs.toFixed(2)}</span>
+              <span>Provider fulfillment cost</span>
+              <span className="text-indigo-600">Unavailable without finance evidence</span>
             </div>
 
             {order.discountCode && (
@@ -255,10 +243,8 @@ export function OrderJourneyDrawer({
             )}
 
             <div className="pt-2 border-t border-stone-100 flex items-center justify-between font-bold">
-              <span className="text-stone-800">Net Registry Margin</span>
-              <span className="text-emerald-700 text-sm">
-                +${netMarginDollars.toFixed(2)}
-              </span>
+              <span className="text-stone-800">Net contribution</span>
+              <span className="text-amber-700 text-sm">Unknown</span>
             </div>
           </div>
         </div>
@@ -286,21 +272,22 @@ export function OrderJourneyDrawer({
           </div>
 
           <div className="space-y-2 text-xs">
-            {order.lobLetterId || order.handwryttenOrderId ? (
+            {postal.reference ? (
               <div className="flex items-center justify-between bg-stone-50 p-2 rounded-xl border border-stone-200">
                 <div>
-                  <span className="text-[10px] text-stone-400 block font-medium">Postal Dispatch ID</span>
-                  <span className="font-mono font-bold text-stone-900 text-xs">#{order.lobLetterId || order.handwryttenOrderId}</span>
+                  <span className="text-[10px] text-stone-400 block font-medium">{postalProviderLabel(postal.provider)} reference ({postal.evidence})</span>
+                  <span className="font-mono font-bold text-stone-900 text-xs">#{postal.reference}</span>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold uppercase">
-                  {order.handwryttenStatus || "Dispatched"}
+                  {providerStatus || "Status unknown"}
                 </span>
               </div>
             ) : (
               <div className="bg-amber-50 p-2 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
-                Pending dispatch to USPS postal stream
+                {postal.evidence === "conflict" ? "Postal references conflict; provider unresolved and no live lookup will run." : "No verified postal provider reference recorded."}
               </div>
             )}
+            {providerTracking && <div className="text-[11px] text-stone-600">Provider tracking: <span className="font-mono">{providerTracking}</span></div>}
 
             <div>
               <span className="text-[10px] text-stone-400 block font-medium">Delivery Destination</span>
@@ -314,7 +301,7 @@ export function OrderJourneyDrawer({
 
             <div className="flex items-center gap-1 text-[11px] text-stone-500 pt-1">
               <Mail className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>USPS First Class Mail</span>
+              <span>{order.serviceLevel || "Service tier unrecorded"}</span>
             </div>
           </div>
         </div>
