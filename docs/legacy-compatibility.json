@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "policy": "Exceptions require exact active file, narrow matched token, reason, owner and retirement condition. Historical docs/tests are outside the active-source scan and remain preserved. Unclassified matches fail --check; never generate exceptions just to pass.",
+  "exceptions": [
+    {
+      "id": "weak-secret-denylist",
+      "file": "lib/admin-auth.ts",
+      "category": "namespace",
+      "match": "^smn_internal_admin_session_key_2026$",
+      "owner": "authentication",
+      "reason": "Known predictable historical secret must remain rejected even after migration.",
+      "retirement": "Permanent security regression evidence; remove only if the associated denylist policy is replaced by a stronger equivalent."
+    }
+  ]
+}

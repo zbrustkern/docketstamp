@@ -3,12 +3,14 @@
   "run_id": "2026-10-20-legacy-replacement",
   "workflow": "df-sprint-plan + df-sprint-execute",
   "project_root": "/Users/zeke/code/DocketStamp",
-  "stage": "planning_and_auth_release",
+  "stage": "staging_rollout_and_parallel_foundations",
   "status": "active",
   "owner": "Codex coordinator",
   "participants": [
-    "Codex",
-    "gpt-6-luna planning reviewer; implementation assignments pending"
+    "Codex coordinator",
+    "gpt-6-luna identity executor",
+    "gpt-6-luna orders/migration executor",
+    "gpt-6-luna reminder executor"
   ],
   "source_revision": "c4ede7639e2b6d6207325e50b27dd71f0c226c0e",
   "inputs": [
@@ -21,7 +23,10 @@
     "intent.md",
     "INDEX.md",
     "events.md",
-    "handoff-antigravity.md"
+    "handoff-antigravity.md",
+    "merge-notes.md",
+    "worker-luna-plan-review.md",
+    "docs/sprints/SPRINT-0004.md through SPRINT-0010.md"
   ],
   "acceptance_criteria": [
     "staging exact-source auth rollout",
@@ -29,7 +34,10 @@
     "Luna implementation in isolated clones",
     "independently verified integration"
   ],
-  "checks": [],
+  "checks": [
+    "Auth repair production build passed",
+    "Auth repair pushed to origin/staging at 1226a9c; exact-source rollout started"
+  ],
   "open_issues": [
     "cloud override inventory",
     "legacy data distribution",
@@ -37,6 +45,6 @@
   ],
   "iteration": 1,
   "iteration_limit": 3,
-  "next_action": "Release authentication repair, synthesize Luna critique, dispatch scoped implementers.",
-  "updated_at": "2026-10-20T15:37:57.804754-05:00"
+  "next_action": "Verify auth rollout; integrate isolated Luna foundation commits; dispatch dependent account and analytics packages.",
+  "updated_at": "2026-10-20T15:40:49.843800-05:00"
 }

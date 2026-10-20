@@ -1,3 +1,5 @@
+> Historical predecessor document. This is preserved migration evidence, not current DocketStamp authority. Use [the Master Build Specification](DOCKETSTAMP_MASTER_BUILD_SPEC.md), [Agentic Expansion Specification](DOCKETSTAMP_AGENTIC_EXPANSION.md) and [current architecture](../ARCHITECTURE.md).
+
 # Handwrytten integration audit
 
 **October 11, 2026. Read-only audit; no orders, uploads, or supplier settings changed.**

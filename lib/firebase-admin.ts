@@ -436,7 +436,7 @@ function getExpectedFirebaseProjectId() {
     (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging")) ||
     (typeof process.env.FIREBASE_CONFIG === "string" && process.env.FIREBASE_CONFIG.includes("docketstamp-staging"));
   const configuredProjectId = resolveFirebaseConfig({
-    ENVIRONMENT: isStagingEnv ? "staging" : process.env.ENVIRONMENT,
+    ENVIRONMENT: process.env.ENVIRONMENT,
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT,
     NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -447,6 +447,9 @@ function getExpectedFirebaseProjectId() {
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
   }).projectId;
+  if (isStagingEnv && configuredProjectId !== "docketstamp-staging") {
+    throw new Error("Firebase Admin project mismatch: staging runtime indicators conflict with the configured project.");
+  }
   if (process.env.GOOGLE_CLOUD_PROJECT && process.env.GOOGLE_CLOUD_PROJECT !== configuredProjectId) {
     throw new Error("Firebase Admin project mismatch: GOOGLE_CLOUD_PROJECT does not match the configured DocketStamp project.");
   }

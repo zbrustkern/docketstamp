@@ -1,3 +1,4 @@
+import "./helpers/firebase-auth-test-verifier";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { test } from "node:test";
@@ -12,7 +13,7 @@ import {
   updateNoticeDeadlineReminder,
 } from "../lib/reminders";
 import { runNoticeReminderScheduler } from "../lib/reminder-scheduler";
-import { calculateReminderSchedule, isDeadlinePast, localReminderTimeToEpoch, validateNoticeReminderInput } from "../lib/reminder-utils";
+import { calculateReminderSchedule, isDeadlinePast, localReminderTimeToEpoch, formatDeadlineDate, validateNoticeReminderInput } from "../lib/reminder-utils";
 import { GET as getReminders, POST as postReminder } from "../app/api/reminders/route";
 import { GET as getUnsubscribe, POST as postUnsubscribe } from "../app/api/reminders/unsubscribe/route";
 import { POST as runSchedulerRoute } from "../app/api/reminders/scheduler/route";
@@ -201,4 +202,20 @@ test("email payload uses the provider idempotency key, notice review link, and U
     globalThis.fetch = oldFetch;
     if (oldKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = oldKey;
   }
+});
+
+
+test("deadline email date retains the exact supplied calendar day across extreme timezones", () => {
+  for (const timezone of ["Pacific/Kiritimati", "Pacific/Pago_Pago", "America/Chicago", "Asia/Tokyo"]) {
+    assert.equal(formatDeadlineDate("2026-10-22", timezone), "October 22, 2026");
+  }
+});
+
+
+test("saved reminder delivery stays visibly disabled until operator enables configured delivery", async () => {
+  const { getReminderDeliveryReadiness } = await import("../lib/reminder-delivery");
+  assert.equal(getReminderDeliveryReadiness({}).enabled, false);
+  const configured = { RESEND_API_KEY: "test-only", REMINDER_SCHEDULER_SECRET: "s".repeat(32), REMINDER_UNSUBSCRIBE_SECRET: "u".repeat(32) };
+  assert.equal(getReminderDeliveryReadiness(configured).status, "disabled");
+  assert.equal(getReminderDeliveryReadiness({ ...configured, REMINDER_DELIVERY_ENABLED: "true" }).status, "ready");
 });

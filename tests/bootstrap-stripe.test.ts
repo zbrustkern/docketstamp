@@ -72,7 +72,8 @@ function createMockStripeClient() {
           description: params.description ?? null,
           statement_descriptor: params.statement_descriptor ?? null,
           metadata: params.metadata as Stripe.Metadata,
-          default_price: (params.default_price as string) ?? null,
+          // Product creation sets its default price later through products.update.
+          default_price: null,
           created: Date.now(),
           updated: Date.now(),
           livemode: false,

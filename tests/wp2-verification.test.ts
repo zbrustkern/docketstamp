@@ -178,7 +178,7 @@ describe('WP-2 Verification Gate', () => {
     it('freezes the same deterministic notice content produced for review, with docket, tier, signature, and UPL disclosure', async () => {
       const originalNodeEnv = process.env.NODE_ENV;
       const originalMockPayments = process.env.ALLOW_LOCAL_MOCK_PAYMENTS;
-      process.env.NODE_ENV = 'test';
+      Object.assign(process.env, { NODE_ENV: 'test' });
       process.env.ALLOW_LOCAL_MOCK_PAYMENTS = 'true';
 
       try {
@@ -231,6 +231,7 @@ describe('WP-2 Verification Gate', () => {
         const order = await getOrderById(result.orderId);
         assert.ok(order, 'lock route must persist an order before payment');
         assert.equal(order.status, 'PENDING_PAYMENT');
+        assert.ok(order.documentHtml, 'frozen HTML must be present');
         assert.equal(order.docketId, docketId);
 
         // The route and the interactive review fixture use the same interpolation
@@ -248,8 +249,8 @@ describe('WP-2 Verification Gate', () => {
         assert.ok(order.documentHtml.includes('USPS CERTIFIED + RETURN RECEIPT'));
         assert.ok(order.documentHtml.includes(UPL_COMPLIANCE_FOOTER_TEXT(docketId)));
       } finally {
-        if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-        else process.env.NODE_ENV = originalNodeEnv;
+        if (originalNodeEnv === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+        else Object.assign(process.env, { NODE_ENV: originalNodeEnv });
         if (originalMockPayments === undefined) delete process.env.ALLOW_LOCAL_MOCK_PAYMENTS;
         else process.env.ALLOW_LOCAL_MOCK_PAYMENTS = originalMockPayments;
       }

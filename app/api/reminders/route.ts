@@ -9,6 +9,7 @@ import {
   ReminderStateError,
   updateNoticeDeadlineReminder,
 } from "@/lib/reminders";
+import { getReminderDeliveryReadiness } from "@/lib/reminder-delivery";
 import { ReminderValidationError } from "@/lib/reminder-utils";
 
 async function authenticatedUser(req: NextRequest) {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     const requestedUserId = new URL(req.url).searchParams.get("userId");
     if (requestedUserId && requestedUserId !== user.uid) return NextResponse.json({ error: "You can only view your own reminders." }, { status: 403 });
-    return NextResponse.json({ version: 1, reminders: await getNoticeDeadlineRemindersForUser(user.uid) });
+    return NextResponse.json({ version: 1, reminders: await getNoticeDeadlineRemindersForUser(user.uid), delivery: getReminderDeliveryReadiness() });
   } catch (error) {
     console.error("[Reminders] GET failed", error);
     return NextResponse.json({ error: "Could not load reminders." }, { status: 500 });

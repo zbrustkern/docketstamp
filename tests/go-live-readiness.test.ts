@@ -276,7 +276,7 @@ async function runGoLiveReadinessSuite() {
   const prevUnsignedFlag = process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST;
   const prevMockFirestore = process.env.USE_MOCK_FIRESTORE;
   const prevNodeEnv = process.env.NODE_ENV;
-  process.env.NODE_ENV = "test";
+  Object.assign(process.env, { NODE_ENV: "test" });
   process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST = "true";
   process.env.USE_MOCK_FIRESTORE = "true";
   const testOrderId = `order_test_webhook_${Date.now()}`;
@@ -285,6 +285,7 @@ async function runGoLiveReadinessSuite() {
 
   const mockOrder: Order = {
     id: testOrderId,
+    customerEmail: "webhook.fixture@example.com",
     docketId: testDocketId,
     amountInCents: 1800,
     status: "PROCESSING_DISPATCH",
@@ -390,8 +391,8 @@ async function runGoLiveReadinessSuite() {
   else process.env.LOB_WEBHOOK_ALLOW_UNSIGNED_TEST = prevUnsignedFlag;
   if (prevMockFirestore === undefined) delete process.env.USE_MOCK_FIRESTORE;
   else process.env.USE_MOCK_FIRESTORE = prevMockFirestore;
-  if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
-  else process.env.NODE_ENV = prevNodeEnv;
+  if (prevNodeEnv === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+  else Object.assign(process.env, { NODE_ENV: prevNodeEnv });
 
   // -------------------------------------------------------------------------
   // 6. Transactional Dispatch Receipt Email (WP-A)

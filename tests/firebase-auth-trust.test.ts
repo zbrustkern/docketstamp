@@ -145,3 +145,14 @@ test("DocketStamp admin cookie requires a fresh session and clears the legacy co
   const valid = generateAdminSessionToken("zbrustkern@gmail.com");
   assert.match(valid, /^ds_admin_v2_/);
 });
+
+
+test("server project resolution rejects contradictory production/staging settings before initialization", () => {
+  const conflicting = spawnSync(process.execPath, ["--import", "tsx", "-e", 'require("./lib/firebase-admin");'], {
+    cwd: process.cwd(),
+    env: { PATH: process.env.PATH, NODE_ENV: "test", ENVIRONMENT: "production", FIREBASE_PROJECT_ID: "docketstamp-staging" },
+    encoding: "utf8",
+  });
+  assert.notEqual(conflicting.status, 0);
+  assert.match(`${conflicting.stdout}\n${conflicting.stderr}`, /staging and production identifiers conflict/);
+});

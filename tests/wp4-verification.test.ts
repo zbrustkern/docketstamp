@@ -22,7 +22,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
 
   before(() => {
     process.env.ALLOW_LOCAL_MOCK_PAYMENTS = 'true';
-    process.env.NODE_ENV = 'test';
+    Object.assign(process.env, { NODE_ENV: 'test' });
     process.env.LOB_ENV = 'staging_mock_cass';
   });
 

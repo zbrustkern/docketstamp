@@ -1,3 +1,5 @@
+> Historical predecessor document. This is preserved migration evidence, not current DocketStamp authority. Use [the Master Build Specification](DOCKETSTAMP_MASTER_BUILD_SPEC.md), [Agentic Expansion Specification](DOCKETSTAMP_AGENTIC_EXPANSION.md) and [current architecture](../ARCHITECTURE.md).
+
 # Send My Notes: canonical product specifications
 
 **Verified/reviewed: October 11, 2026.** Companion to the

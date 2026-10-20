@@ -1,6 +1,6 @@
 # DocketStamp inherited-system replacement plan
 
-Date: 2026-10-20. Status: audit complete; Firebase repair implemented locally; remaining work planned.
+Date: 2026-10-20. Status: audit complete; Firebase repair deployed to staging at `1226a9c`; replacement execution tracked in Sprints 0004–0010.
 
 Authority: [Master Build Specification](DOCKETSTAMP_MASTER_BUILD_SPEC.md) and [Agentic Expansion Specification](DOCKETSTAMP_AGENTIC_EXPANSION.md). This plan supplements those specifications and the existing sprint ledgers; it does not replace their acceptance criteria.
 
@@ -119,3 +119,7 @@ For each package, record before/after fixtures, commands and results, changed co
 ## Current validation limits
 
 The repair's Firebase regression suite, admin/account authorization suite, payment-mode safety suite and online Auth identity/domain verification pass. Repository-wide typechecking reports 63 diagnostics, identical line-for-line to an isolated checkout of the original HEAD, with no added diagnostics. The full `npm test` command passes Firebase, transaction security and payment-mode checks, then stops at the docket renderer suite (22 passed, 1 failed). The same renderer assertion fails in the isolated original HEAD; the repair did not change that renderer or test. The separately run admin/account suite passes all 22 checks. Interactive Google login and effective cloud environment overrides must be verified after staging redeployment. None of the remaining work packages above is represented as implemented.
+
+## Execution update — 2026-10-20
+
+The Firebase repair has been deployed to staging at `1226a9c`; effective public environment values and served client identity were verified using the authenticated Firebase CLI session. See the current run deployment evidence. The earlier unverified-cloud-settings note above is historical audit context. Sprints 0004–0010 divide the roadmap into testable packages; requested Luna subagents implement isolated branches and the coordinator reviews/integrates them sequentially. No production deployment, customer-data migration or external reminder schedule activation is included.

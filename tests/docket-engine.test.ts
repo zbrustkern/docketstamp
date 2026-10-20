@@ -194,18 +194,18 @@ describe('3. 50-State + DC Statutory Security Deposit Registry', () => {
     const ca = getStateStatute('CA');
     assert.ok(ca);
     assert.equal(ca.returnDeadlineDays, 21);
-    assert.ok(ca.statutoryCitation.includes('Cal. Civ. Code § 1950.5'));
+    assert.ok(ca.statuteCitation.includes('Cal. Civ. Code § 1950.5'));
 
     const tx = getStateStatute('TX');
     assert.ok(tx);
     assert.equal(tx.returnDeadlineDays, 30);
-    assert.ok(tx.statutoryCitation.includes('Tex. Prop. Code'));
-    assert.ok(tx.statutoryCitation.includes('92.109'));
+    assert.ok(tx.statuteCitation.includes('Tex. Prop. Code'));
+    assert.ok(tx.statuteCitation.includes('92.109'));
 
     const ny = getStateStatute('NY');
     assert.ok(ny);
     assert.equal(ny.returnDeadlineDays, 14);
-    assert.ok(ny.statutoryCitation.includes('N.Y. Gen. Oblig. Law § 7-108'));
+    assert.ok(ny.statuteCitation.includes('N.Y. Gen. Oblig. Law § 7-108'));
 
     const fl = getStateStatute('FL');
     assert.ok(fl);
@@ -478,7 +478,8 @@ describe('6. Lob 8.5x11 Physical Letter HTML Shell Generator', () => {
     assert.ok(html.includes('DOCKETSTAMP™') && html.includes('DISPATCH REGISTRY'));
     assert.ok(html.includes('DS-2026-TEST1'));
     assert.ok(html.includes('USPS CERTIFIED'));
-    assert.ok(html.includes('CASS'));
+    assert.ok(html.includes('ADDRESS VERIFICATION NOT CONFIRMED'));
+    assert.ok(!html.includes('CASS™ VERIFIED'), 'No verified address claim without verification evidence');
 
     // Verify RE Line and formal signature
     assert.ok(html.includes('742 Evergreen Terrace'));

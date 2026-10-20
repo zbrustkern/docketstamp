@@ -76,8 +76,9 @@ export function isReminderWindowPast(scheduledAt: number, timezone: string, now:
 }
 
 export function formatDeadlineDate(date: string, timezone: string): string {
-  const [year, month, day] = validateReminderDate(date).split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", { timeZone: validateReminderTimezone(timezone), dateStyle: "long" }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+  // Anchor in the requested local calendar date, including UTC+14/UTC-12 zones.
+  const localNoon = localReminderTimeToEpoch(validateReminderDate(date), timezone, 12);
+  return new Intl.DateTimeFormat("en-US", { timeZone: validateReminderTimezone(timezone), dateStyle: "long" }).format(new Date(localNoon));
 }
 
 // Historical occasion helpers remain available only for archived account metadata rendering.

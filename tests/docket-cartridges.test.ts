@@ -239,14 +239,14 @@ describe('2. 1-Page Lob 8.5in x 11in Letter Shell & Maximum Character Length Str
         executionDate: 'October 16, 2026',
         senderAddress: {
           name: maxUserValues.senderFullName,
-          line1: maxUserValues.senderAddressLine1,
+          addressLine1: maxUserValues.senderAddressLine1,
           city: maxUserValues.senderCity,
           state: maxUserValues.senderState,
           zip: maxUserValues.senderZip,
         },
         recipientAddress: {
           name: maxUserValues.recipientFormalName,
-          line1: maxUserValues.recipientAddressLine1,
+          addressLine1: maxUserValues.recipientAddressLine1,
           city: maxUserValues.recipientCity,
           state: maxUserValues.recipientState,
           zip: maxUserValues.recipientZip,
