@@ -26,6 +26,7 @@ import { ParsedContact } from "@/lib/contact-parser";
 import { NoticeDeadlineReminders } from "@/components/account/NoticeDeadlineReminders";
 import { ALL_NOTICE_CARTRIDGES } from "@/src/lib/docket/notices";
 import { NoticePrefillChooser } from "@/components/account/NoticePrefillChooser";
+import { getOrderHistoryPresentation } from "@/lib/account/order-history";
 
 export default function AccountDashboardPage() {
   const {
@@ -291,16 +292,7 @@ export default function AccountDashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {orders.map((order) => {
                   const isScheduled = !!order.scheduledSendDate;
-                  const postalProviderValue = (order as Order & { postalProvider?: string }).postalProvider;
-                  const postalProvider = postalProviderValue === "lob"
-                    ? "Lob dispatch record"
-                    : postalProviderValue === "handwrytten"
-                    ? "Historical Handwrytten record"
-                    : order.lobLetterId && !order.handwryttenOrderId
-                    ? "Lob reference on file"
-                    : order.handwryttenOrderId && !order.lobLetterId
-                    ? "Historical Handwrytten reference"
-                    : "Postal provider not confirmed";
+                  const history = getOrderHistoryPresentation(order);
 
                   return (
                     <div
@@ -327,13 +319,11 @@ export default function AccountDashboardPage() {
                             </span>
                           </div>
 
-                          <h3 className="text-sm font-bold text-stone-900 truncate">
-                            {order.noticeType || order.noticeId || "Notice record"}
-                          </h3>
+                          <h3 className="text-sm font-bold text-stone-900 truncate">{history.recordKind}{order.noticeType || order.noticeId ? ` · ${order.noticeType || order.noticeId}` : ""}</h3>
                           <p className="text-[11px] text-stone-500 truncate">
                             {order.recipientAddress?.firstName} {order.recipientAddress?.lastName}
                           </p>
-                          <p className="text-[10px] text-stone-500">{postalProvider}</p>
+                          <p className="text-[10px] text-stone-500">{history.providerLabel}</p>
 
                           {order.scheduledSendDate && (
                             <div className="flex items-center gap-1 text-[11px] text-indigo-700 font-medium pt-1">

@@ -1,39 +1,24 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
-  CheckCircle2,
-  Clock,
   PenTool,
   Mail,
-  Truck,
   ArrowLeft,
-  Sparkles,
   ExternalLink,
   ShieldCheck,
-  Feather,
-  Calendar,
   User as UserIcon,
   Lock,
   Unlock,
-  KeyRound,
-  Eye,
   Loader2,
-  Bell,
-  BellRing,
-  Heart,
-  Gift,
-  BookmarkCheck,
-  Check,
-  ChevronDown,
-  ChevronUp,
   FileText,
+  MapPin,
+  Feather,
 } from "lucide-react";
-import { Order, OccasionType } from "@/lib/types";
-import { formatOccasionDate, getOccasionTypeDisplay, MONTH_SHORT_NAMES, MONTH_NAMES } from "@/lib/reminder-utils";
+import { Order } from "@/lib/types";
+import { getOrderHistoryPresentation } from "@/lib/account/order-history";
 import { useAuth } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
 import { trackGoogleAdsPurchase } from "@/lib/google-ads";
@@ -54,88 +39,6 @@ export default function OrderStatusPage() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  // Post-order statutory follow-up reminder prompt state
-  const intentConfig = useMemo(() => {
-    if (!order) return null;
-    const today = new Date();
-    return {
-      suggestedMonth: (today.getMonth() + 2) % 12 || 12,
-      suggestedDay: today.getDate(),
-      defaultOccasionType: "statutory_deadline" as OccasionType,
-      defaultOccasionTitle: "Statutory Response Window Follow-up",
-      interactionMode: "statutory_followup",
-      headline: "Track Statutory Response Deadline",
-      badgeEmoji: "⚖️",
-      badgeLabel: "USPS Certified Mail®",
-      badgeClass: "bg-sky-100 text-sky-800 border-sky-300",
-      description: "Set an automated reminder for the 30-day statutory response window following physical USPS delivery.",
-      primaryButtonLabel: "Track 30-Day Deadline",
-      successTitle: "Statutory Follow-Up Scheduled",
-      successDescription: "We will email you when the statutory response period is expiring.",
-      allowDateAdjustment: true,
-    };
-  }, [order]);
-
-  const [postOrderReminderSet, setPostOrderReminderSet] = useState(false);
-  const [postOrderReminderLoading, setPostOrderReminderLoading] = useState(false);
-  const [reminderMonth, setReminderMonth] = useState<number>(1);
-  const [reminderDay, setReminderDay] = useState<number>(1);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showAddOccasionForRelational, setShowAddOccasionForRelational] = useState(false);
-  const [relationalOccasionType, setRelationalOccasionType] = useState<OccasionType>("birthday");
-
-  useEffect(() => {
-    if (intentConfig) {
-      setReminderMonth(intentConfig.suggestedMonth);
-      setReminderDay(intentConfig.suggestedDay);
-    }
-  }, [intentConfig?.suggestedMonth, intentConfig?.suggestedDay]);
-
-  const handleSetPostOrderReminder = async (opts?: {
-    occasionType?: OccasionType;
-    occasionTitle?: string;
-    month?: number;
-    day?: number;
-    remindDaysBefore?: number;
-  }) => {
-    if (!order?.customerEmail) return;
-    setPostOrderReminderLoading(true);
-    try {
-      const type = opts?.occasionType || intentConfig?.defaultOccasionType || "birthday";
-      const title =
-        opts?.occasionTitle ||
-        intentConfig?.defaultOccasionTitle ||
-        `${order.recipientAddress.firstName}'s Occasion`;
-      const month = opts?.month ?? reminderMonth;
-      const day = opts?.day ?? reminderDay;
-      const remindDaysBefore = opts?.remindDaysBefore ?? (intentConfig?.interactionMode === "care_checkin" ? 0 : 14);
-
-      const res = await fetch("/api/reminders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user?.uid,
-          userEmail: order.customerEmail,
-          recipientName: `${order.recipientAddress.firstName} ${order.recipientAddress.lastName}`.trim(),
-          occasionType: type,
-          occasionTitle: title,
-          month,
-          day,
-          remindDaysBefore,
-          optIn: true,
-          orderId: order.id,
-        }),
-      });
-      if (res.ok) {
-        setPostOrderReminderSet(true);
-      }
-    } catch (err) {
-      console.warn("Notice setting post-order reminder:", err);
-    } finally {
-      setPostOrderReminderLoading(false);
-    }
-  };
-
   // Auto-sync recipient address to user's address book if logged in or after claiming account
   useEffect(() => {
     if (user && order?.recipientAddress && order.recipientAddress.street1) {
@@ -149,13 +52,6 @@ export default function OrderStatusPage() {
         zip: order.recipientAddress.zip,
         country: order.recipientAddress.country,
         label: `${order.recipientAddress.firstName}'s Address`,
-        occasionType: order.recipientOccasion?.occasionType,
-        occasionTitle: order.recipientOccasion?.occasionTitle,
-        occasionMonth: order.recipientOccasion?.month,
-        occasionDay: order.recipientOccasion?.day,
-        occasionYear: order.recipientOccasion?.year,
-        remindMe: order.recipientOccasion?.remindMe,
-        remindDaysBefore: order.recipientOccasion?.remindDaysBefore,
       }).catch((err) => console.warn("Notice syncing address book on order page:", err));
     }
   }, [user, order?.id]);
@@ -301,9 +197,9 @@ export default function OrderStatusPage() {
           <PenTool className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-bold font-serif text-stone-900 mb-2">
-          Retrieving Physical Order Tracker...
+          Loading order record…
         </h2>
-        <p className="text-sm text-stone-500">Checking robotic plotter queue</p>
+        <p className="text-sm text-stone-500">Retrieving the stored order details.</p>
       </div>
     );
   }
@@ -326,89 +222,7 @@ export default function OrderStatusPage() {
     );
   }
 
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case "PROCESSING_HANDWRYTTEN":
-        return {
-          label: "Inking in Progress",
-          className: "text-emerald-700 bg-emerald-50 border-emerald-200",
-        };
-      case "COMPLETED":
-      case "MAILED":
-        return {
-          label: "Mailed via USPS",
-          className: "text-emerald-700 bg-emerald-50 border-emerald-200",
-        };
-      case "PENDING_PAYMENT":
-        return {
-          label: "Awaiting Payment",
-          className: "text-amber-700 bg-amber-50 border-amber-200",
-        };
-      case "PAYMENT_RECEIVED":
-      case "QUEUED_FOR_FULFILLMENT":
-      case "FAILED":
-      default:
-        return {
-          label: "Queued for Inking",
-          className: "text-amber-700 bg-amber-50 border-amber-200",
-        };
-    }
-  };
-
-  const statusDisplay = getStatusDisplay(order.status);
-  const isMailed = order.status === "MAILED";
-  const isInking = order.status === "PROCESSING_HANDWRYTTEN";
-  const isQueuedOrPaid =
-    order.status === "PAYMENT_RECEIVED" ||
-    order.status === "QUEUED_FOR_FULFILLMENT" ||
-    order.status === "FAILED" ||
-    isInking ||
-    isMailed;
-
-  const trackingSteps = [
-    {
-      title: `Filing & Payment Confirmed ($${((order.amountInCents || 1995) / 100).toFixed(2)})`,
-      description: "Transaction complete. Encrypted docket created and locked.",
-      icon: CheckCircle2,
-      status: "complete",
-    },
-    {
-      title: "CASS Address Verification & Docket Stamping",
-      description: "USPS Coding Accuracy Support System passed. Official Clerk's Docket Stamp applied.",
-      icon: ShieldCheck,
-      status: "complete",
-    },
-    {
-      title: isMailed
-        ? "Document Certified & Executed"
-        : "Document Preparation & Execution",
-      description: isMailed
-        ? `Legal notice formally stamped and locked into dispatch registry. (Docket ID: ${order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`})`
-        : "Notice rendered with formal statutory citations and signature block.",
-      icon: FileText,
-      status: isMailed ? "complete" : isQueuedOrPaid ? "current" : "upcoming",
-    },
-    {
-      title: "Enveloped & Metered with Official USPS Indicia",
-      description: `Addressed to ${order.recipientAddress.firstName} ${order.recipientAddress.lastName} with ${order.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "USPS Certified Mail® + Electronic Return Receipt" : order.serviceLevel === "CERTIFIED" ? "USPS Certified Mail®" : "USPS First-Class Mail®"} postage.`,
-      icon: Mail,
-      status: isMailed ? "complete" : "upcoming",
-    },
-    {
-      title: `Dispatched via ${order.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "USPS Certified Mail® + ERR" : order.serviceLevel === "CERTIFIED" ? "USPS Certified Mail®" : "USPS First-Class"}`,
-      description: isMailed
-        ? `Dispatched into USPS postal stream${
-            order.lobMailedDate || order.handwryttenMailedDate ? ` on ${order.lobMailedDate || order.handwryttenMailedDate}` : ""
-          }.${
-            order.lobTrackingNumber || order.handwryttenTrackingNumber
-              ? ` Tracking: ${order.lobTrackingNumber || order.handwryttenTrackingNumber}`
-              : " Estimated delivery: 2-4 business days."
-          }`
-        : "Transmitted to USPS postal dispatch gateway. Tracking will activate upon postal intake.",
-      icon: Truck,
-      status: isMailed ? "complete" : "upcoming",
-    },
-  ];
+  const history = getOrderHistoryPresentation(order);
 
   return (
     <div className="min-h-screen bg-[#0F172A] pb-20 text-slate-100">
@@ -420,7 +234,7 @@ export default function OrderStatusPage() {
             className="flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Dispatch Another Notice</span>
+            <span>Start a Notice</span>
           </Link>
           <div className="flex items-center gap-3">
             {user ? (
@@ -437,7 +251,7 @@ export default function OrderStatusPage() {
                 onClick={() => setIsAuthModalOpen(true)}
                 className="text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl border border-amber-200 transition cursor-pointer"
               >
-                Save Card to Account
+                Save Order to Account
               </button>
             )}
             <div className="text-right">
@@ -457,9 +271,9 @@ export default function OrderStatusPage() {
                 <Feather className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-stone-900">Save this card to a free account</h4>
+                <h4 className="text-sm font-bold text-stone-900">Keep this order in your account</h4>
                 <p className="text-xs text-stone-600">
-                  Save your recipient to your address book and track past deliveries with 1 click.
+                  Sign in to view your account and keep saved recipient addresses together.
                 </p>
               </div>
             </div>
@@ -467,321 +281,44 @@ export default function OrderStatusPage() {
               onClick={() => setIsAuthModalOpen(true)}
               className="px-4 py-2 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition flex-shrink-0 cursor-pointer shadow-sm"
             >
-              Claim Free Account
+              Create or sign in
             </button>
           </div>
         )}
-        {/* SUCCESS BANNER */}
-        <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner">
-            <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
-            Filing Confirmed & Queued for Postal Dispatch!
-          </h1>
-          <p className="text-slate-300 text-sm max-w-lg mx-auto">
-            Your formal notice has been docketed and transmitted to the USPS dispatch gateway. We will meter it, attach official barcoding, and dispatch directly to the receiving party.
-          </p>
-
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="bg-slate-800 text-slate-300 font-semibold px-3 py-1 rounded-full border border-slate-700">
-              Receipt Sent: {order.customerEmail || "Delivered"}
-            </span>
-            <span className="bg-sky-500/10 text-sky-400 font-semibold px-3 py-1 rounded-full border border-sky-500/20 font-mono">
-              Docket: {order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`}
-            </span>
-            <span className="bg-emerald-500/10 text-emerald-400 font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
-              USPS: {order.serviceLevel || "Certified Mail®"}
-            </span>
-          </div>
-        </div>
-
-        {/* MILESTONE REMINDER CONFIRMATION BANNER */}
-        {order.recipientOccasion?.remindMe && (
-          <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-500/10 border border-amber-300/80 rounded-3xl p-5 sm:p-6 shadow-xs flex items-start gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <BellRing className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-                  {getOccasionTypeDisplay(order.recipientOccasion.occasionType || "birthday").emoji}{" "}
-                  {getOccasionTypeDisplay(order.recipientOccasion.occasionType || "birthday").label} Reminder Set
-                </span>
-                <span className="text-xs text-stone-500 font-medium hidden sm:inline">
-                  • 14 Days Before
-                </span>
-              </div>
-              <h3 className="text-sm font-bold text-stone-900 font-serif pt-1">
-                Annual Reminder Confirmed for {order.recipientAddress.firstName}
-              </h3>
-              <p className="text-xs text-stone-600 mt-0.5 leading-relaxed">
-                We&apos;ll send an email reminder to <strong className="text-stone-800">{order.customerEmail}</strong> 14 days before{" "}
-                <strong>
-                  {formatOccasionDate(
-                    order.recipientOccasion.month,
-                    order.recipientOccasion.day,
-                    order.recipientOccasion.year
-                  )}
-                </strong>{" "}
-                with a 1-click personalized link to pen and send another luxury card.
-              </p>
+        {/* ORDER RECORD SUMMARY */}
+        <section className="rounded-3xl border border-slate-700 bg-slate-900 p-6 sm:p-8 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-sky-500/10 text-sky-300 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-serif font-bold text-white">{history.recordKind}</h1>
+              <p className="text-sm text-slate-300 mt-1">This page shows order details and postal evidence recorded for this reference. Missing or conflicting provider data is shown as unknown.</p>
             </div>
           </div>
-        )}
-
-        {/* POST-ORDER OCCASION-TAILORED NUDGE (If not already set during checkout) */}
-        {!order.recipientOccasion?.remindMe && intentConfig && (
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-4">
-            {postOrderReminderSet ? (
-              <div className="flex items-center gap-3 text-emerald-800">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold">{intentConfig.successTitle}</h4>
-                  <p className="text-xs text-emerald-700">
-                    {intentConfig.successDescription} We&apos;ll notify you at{" "}
-                    <span className="font-semibold">{order.customerEmail}</span>. No account required.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-700 border border-amber-200/70 flex items-center justify-center shrink-0 text-lg">
-                      {intentConfig.badgeEmoji}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-stone-900 font-serif">
-                          {intentConfig.headline}
-                        </h4>
-                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${intentConfig.badgeClass}`}>
-                          {intentConfig.badgeLabel}
-                        </span>
-                      </div>
-                      <p className="text-xs text-stone-500 mt-1 max-w-xl leading-relaxed">
-                        {intentConfig.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* ACTION CONTROLS BASED ON INTERACTION MODE */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
-                    {intentConfig.interactionMode === "address_book_retention" ? (
-                      user ? (
-                        <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Saved in Your Address Book</span>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setIsAuthModalOpen(true)}
-                          className="px-4 py-2 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <BookmarkCheck className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Save {order.recipientAddress.firstName}&apos;s Contact Free</span>
-                        </button>
-                      )
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleSetPostOrderReminder()}
-                        disabled={postOrderReminderLoading}
-                        className="px-4 py-2 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <Bell className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{postOrderReminderLoading ? "Saving..." : intentConfig.primaryButtonLabel}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* DATE ADJUSTMENT ACCORDION (For Birthday & Anniversary) */}
-                {intentConfig.allowDateAdjustment && (
-                  <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
-                    <button
-                      type="button"
-                      onClick={() => setShowDatePicker(!showDatePicker)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 transition cursor-pointer"
-                    >
-                      <Calendar className="w-3 h-3 text-stone-400" />
-                      <span>
-                        Target Date: {MONTH_SHORT_NAMES[reminderMonth - 1]} {reminderDay}
-                      </span>
-                      {showDatePicker ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
-
-                    {showDatePicker && (
-                      <div className="flex items-center gap-2 animate-in fade-in duration-150 w-full sm:w-auto pt-2 sm:pt-0">
-                        <select
-                          value={reminderMonth}
-                          onChange={(e) => setReminderMonth(Number(e.target.value))}
-                          className="px-2 py-1 text-xs bg-stone-50 border border-stone-200 rounded-lg text-stone-700"
-                        >
-                          {MONTH_NAMES.map((name, i) => (
-                            <option key={i} value={i + 1}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={reminderDay}
-                          onChange={(e) => setReminderDay(Number(e.target.value))}
-                          className="px-2 py-1 text-xs bg-stone-50 border border-stone-200 rounded-lg text-stone-700"
-                        >
-                          {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                            <option key={d} value={d}>
-                              Day {d}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* OPTIONAL EXPANDABLE OCCASION FOR RELATIONAL NOTES (Thank You, Thinking of You) */}
-                {intentConfig.interactionMode === "address_book_retention" && (
-                  <div className="pt-2 border-t border-stone-100">
-                    {!showAddOccasionForRelational ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowAddOccasionForRelational(true)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 transition cursor-pointer"
-                      >
-                        <Calendar className="w-3 h-3 text-stone-400" />
-                        <span>+ Note {order.recipientAddress.firstName}&apos;s birthday or anniversary for next year</span>
-                      </button>
-                    ) : (
-                      <div className="p-3 bg-stone-50/80 rounded-2xl border border-stone-200/60 space-y-2.5 animate-in fade-in duration-150">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-stone-700">
-                            Add milestone reminder for {order.recipientAddress.firstName}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setShowAddOccasionForRelational(false)}
-                            className="text-[11px] text-stone-400 hover:text-stone-600 cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <select
-                            value={relationalOccasionType}
-                            onChange={(e) => setRelationalOccasionType(e.target.value as OccasionType)}
-                            className="px-2.5 py-1.5 text-xs bg-white border border-stone-200 rounded-xl cursor-pointer"
-                          >
-                            <option value="birthday">🎂 Birthday</option>
-                            <option value="anniversary">🥂 Anniversary</option>
-                            <option value="milestone">🏆 Milestone</option>
-                          </select>
-                          <select
-                            value={reminderMonth}
-                            onChange={(e) => setReminderMonth(Number(e.target.value))}
-                            className="px-2 py-1.5 text-xs bg-white border border-stone-200 rounded-xl cursor-pointer"
-                          >
-                            {MONTH_NAMES.map((m, idx) => (
-                              <option key={idx} value={idx + 1}>{m}</option>
-                            ))}
-                          </select>
-                          <select
-                            value={reminderDay}
-                            onChange={(e) => setReminderDay(Number(e.target.value))}
-                            className="px-2 py-1.5 text-xs bg-white border border-stone-200 rounded-xl cursor-pointer"
-                          >
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                              <option key={d} value={d}>Day {d}</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleSetPostOrderReminder({
-                                occasionType: relationalOccasionType,
-                                occasionTitle: `${order.recipientAddress.firstName}'s ${
-                                  relationalOccasionType === "birthday"
-                                    ? "Birthday"
-                                    : relationalOccasionType === "anniversary"
-                                    ? "Anniversary"
-                                    : "Milestone"
-                                }`,
-                                month: reminderMonth,
-                                day: reminderDay,
-                                remindDaysBefore: 14,
-                              })
-                            }
-                            disabled={postOrderReminderLoading}
-                            className="px-3.5 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50"
-                          >
-                            {postOrderReminderLoading ? "Saving..." : "Save Reminder"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 text-slate-200">{history.statusLabel}</span>
+            <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 text-slate-200">{history.providerLabel}</span>
+            {order.customerEmail && <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 text-slate-200">Order email: {order.customerEmail}</span>}
           </div>
-        )}
+          {history.postal.evidence === "conflict" && <p className="text-xs text-amber-200">Postal identifiers conflict. No provider-specific tracking lookup is shown for this record.</p>}
+        </section>
 
-        {/* POSTAL DISPATCH TIMELINE */}
-        <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-sky-400" />
-              USPS Postal Dispatch Registry Tracker
-            </h2>
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${statusDisplay.className}`}>
-              {statusDisplay.label}
-            </span>
+        {/* POSTAL EVIDENCE */}
+        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
+            <ShieldCheck className="w-4 h-4 text-sky-300" />
+            <h2 className="text-base font-bold text-white">Postal evidence</h2>
           </div>
-
-          <div className="space-y-6">
-            {trackingSteps.map((step, idx) => {
-              const Icon = step.icon;
-              return (
-                <div key={idx} className="flex items-start gap-4">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                      step.status === "complete"
-                        ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                        : step.status === "current"
-                        ? "bg-amber-500 text-white animate-pulse shadow-md shadow-amber-500/20"
-                        : "bg-stone-100 text-stone-400"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 pt-0.5">
-                    <div className="flex items-center gap-2">
-                      <h3
-                        className={`text-sm font-bold ${
-                          step.status === "upcoming" ? "text-stone-400" : "text-stone-900"
-                        }`}
-                      >
-                        {step.title}
-                      </h3>
-                      {step.status === "current" && (
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                          In Progress
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div><dt className="text-xs text-slate-400">Provider</dt><dd className="mt-1 text-slate-100">{history.providerLabel}</dd></div>
+            <div><dt className="text-xs text-slate-400">Provider status</dt><dd className="mt-1 text-slate-100">{history.providerStatus}</dd></div>
+            <div><dt className="text-xs text-slate-400">Provider reference</dt><dd className="mt-1 font-mono text-slate-100 break-all">{history.providerReference || "Not available"}</dd></div>
+            <div><dt className="text-xs text-slate-400">Recorded mailed date</dt><dd className="mt-1 text-slate-100">{history.mailedDate}</dd></div>
+            <div><dt className="text-xs text-slate-400">Docket reference</dt><dd className="mt-1 font-mono text-slate-100 break-all">{history.docketReference}</dd></div>
+            <div><dt className="text-xs text-slate-400">Recorded service level</dt><dd className="mt-1 text-slate-100">{history.serviceLevel}</dd></div>
+          </dl>
+          {history.trackingNumber && <p className="text-sm text-slate-200">Tracking number: <span className="font-mono">{history.trackingNumber}</span></p>}
+          {history.trackingUrl && <a href={history.trackingUrl} target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center gap-2 rounded-xl border border-sky-700 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-400">Open provider tracking <ExternalLink className="w-4 h-4" /></a>}
+        </section>
 
         {/* PRIVACY UNLOCK BANNER IF REDACTED */}
         {order.isRedacted && (
@@ -798,7 +335,7 @@ export default function OrderStatusPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-stone-300 mt-1 leading-relaxed">
-                  Personal handwritten card messages and exact street addresses are obscured for privacy. If you placed or received this card, enter the 5-digit delivery ZIP code or billing email to reveal full details.
+                  Private order details are obscured for privacy. If you placed or received this order, enter the 5-digit delivery ZIP code or purchaser email to reveal the stored details.
                 </p>
               </div>
             </div>
@@ -824,7 +361,7 @@ export default function OrderStatusPage() {
                 ) : (
                   <Unlock className="w-3.5 h-3.5" />
                 )}
-                <span>Unlock Full Card</span>
+                <span>Unlock order details</span>
               </button>
             </form>
 
@@ -836,104 +373,43 @@ export default function OrderStatusPage() {
           </div>
         )}
 
-        {/* ORDER DETAILS & MAILING SUMMARY */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Card Preview Thumbnail */}
-          <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-md flex flex-col justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-sky-400" />
-              Executed Notice Document (8.5&quot; x 11&quot;)
-            </h3>
-            <div className="relative aspect-[8.5/11] w-full rounded-2xl overflow-hidden shadow-md border border-slate-700 bg-white p-4 text-slate-900 font-serif text-[11px] leading-relaxed">
-              <div className="border border-slate-900/20 p-3 h-full flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start border-b border-slate-900 pb-2 mb-3">
-                    <div>
-                      <span className="font-sans font-bold text-[10px] tracking-wider text-slate-800 uppercase block">Formal Legal Notice</span>
-                      <span className="font-mono text-[9px] text-slate-600">Docket: {order.docketId || `DS-2026-${order.id.slice(-6).toUpperCase()}`}</span>
-                    </div>
-                    <div className="border border-slate-900 px-1.5 py-0.5 text-[8px] font-mono uppercase bg-slate-100 text-slate-800">
-                      CASS VERIFIED
-                    </div>
-                  </div>
-                  <p className="font-mono text-[9px] text-slate-500 mb-2">
-                    DISPATCH SERVICE: {order.serviceLevel || "USPS CERTIFIED MAIL®"}
-                  </p>
-                  <div className="text-slate-800 text-[10px] space-y-1">
-                    <p className="font-bold">TO: {order.recipientAddress.firstName} {order.recipientAddress.lastName}</p>
-                    <p>{order.recipientAddress.street1}, {order.recipientAddress.city}, {order.recipientAddress.state} {order.recipientAddress.zip}</p>
-                  </div>
-                  <div className="mt-3 text-[10px] text-slate-700">
-                    {order.isRedacted ? (
-                      <span className="italic text-slate-400 inline-flex items-center gap-1 text-[10px]">
-                        <Lock className="w-3 h-3 text-amber-600 inline" /> Notice contents shielded for privacy
-                      </span>
-                    ) : (
-                      <p className="line-clamp-6">{order.handwrittenNote || order.printedMessage || "Formal written demand pursuant to applicable statutory requirements."}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="border-t border-slate-900/30 pt-2 flex justify-between items-end font-mono text-[8px] text-slate-500">
-                  <span>/s/ {order.returnAddress.firstName} {order.returnAddress.lastName}</span>
-                  <span>USPS DISPATCH REGISTRY</span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-slate-800 text-xs space-y-1 text-slate-300">
-              <p>
-                <strong>Service Level:</strong> {order.serviceLevel === "CERTIFIED_RETURN_RECEIPT" ? "USPS Certified Mail® + Electronic Return Receipt" : order.serviceLevel === "CERTIFIED" ? "USPS Certified Mail®" : "USPS First-Class Mail®"}
-              </p>
-              <div className="text-sky-400 font-medium">
-                <strong>Postal Status:</strong>{" "}
-                <span>{order.handwryttenStatus || "Dispatched into postal intake queue"}</span>
-              </div>
-            </div>
+        {/* STORED ORDER DETAILS */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 space-y-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2"><FileText className="w-4 h-4 text-sky-300" />Stored order details</h2>
+            <dl className="space-y-3 text-sm">
+              <div><dt className="text-xs text-slate-400">Order reference</dt><dd className="mt-1 font-mono text-slate-100 break-all">{order.id}</dd></div>
+              <div><dt className="text-xs text-slate-400">Created</dt><dd className="mt-1 text-slate-100">{order.createdAt ? new Date(order.createdAt).toLocaleString() : "Not available"}</dd></div>
+              <div><dt className="text-xs text-slate-400">Payment amount recorded</dt><dd className="mt-1 text-slate-100">{Number.isFinite(order.amountInCents) ? `$${(order.amountInCents / 100).toFixed(2)}` : "Not available"}</dd></div>
+              {order.fulfillmentError && <div><dt className="text-xs text-rose-300">Processing note</dt><dd className="mt-1 text-rose-100">{order.fulfillmentError}</dd></div>}
+            </dl>
           </div>
 
-          {/* Recipient & Shipping Details */}
-          <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-md space-y-5">
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-sky-400" />
-                Mailing Destination
-              </h3>
-              <div className="p-3.5 bg-slate-800/80 rounded-xl text-xs space-y-1 text-slate-200">
-                <p className="font-bold text-sm text-white">
-                  {order.recipientAddress.firstName} {order.recipientAddress.lastName}
-                </p>
-                <p>{order.recipientAddress.street1}</p>
-                {order.recipientAddress.street2 && <p>{order.recipientAddress.street2}</p>}
-                <p>
-                  {order.recipientAddress.city}, {order.recipientAddress.state} {order.recipientAddress.zip}
-                </p>
-                <p className="text-slate-400 text-[11px] pt-1">United States of America</p>
+          {order.isRedacted ? (
+            <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 flex items-start gap-3 text-sm text-slate-300"><Lock className="w-5 h-5 text-amber-300 shrink-0" /><p>Recipient and return-address details are hidden until order verification succeeds.</p></div>
+          ) : (
+            <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-2"><Mail className="w-4 h-4 text-sky-300" />Recipient address recorded</h2>
+                <address className="not-italic rounded-xl bg-slate-800 p-3.5 text-sm text-slate-200 space-y-1">
+                  <p className="font-semibold text-white">{order.recipientAddress.firstName} {order.recipientAddress.lastName}</p>
+                  <p>{order.recipientAddress.street1}</p>
+                  {order.recipientAddress.street2 && <p>{order.recipientAddress.street2}</p>}
+                  <p>{order.recipientAddress.city}, {order.recipientAddress.state} {order.recipientAddress.zip}</p>
+                </address>
+              </div>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-300" />Return address recorded</h2>
+                <address className="not-italic rounded-xl bg-slate-800 p-3.5 text-sm text-slate-200 space-y-1">
+                  <p className="font-semibold text-white">{order.returnAddress.firstName} {order.returnAddress.lastName}</p>
+                  <p>{order.returnAddress.street1}</p>
+                  {order.returnAddress.street2 && <p>{order.returnAddress.street2}</p>}
+                  <p>{order.returnAddress.city}, {order.returnAddress.state} {order.returnAddress.zip}</p>
+                </address>
               </div>
             </div>
-
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                Return Address
-              </h3>
-              <div className="p-3.5 bg-slate-800/80 rounded-xl text-xs space-y-1 text-slate-300">
-                <p className="font-semibold text-white">
-                  {order.returnAddress.firstName} {order.returnAddress.lastName}
-                </p>
-                <p>{order.returnAddress.street1}</p>
-                <p>
-                  {order.returnAddress.city}, {order.returnAddress.state} {order.returnAddress.zip}
-                </p>
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-sky-500/10 rounded-xl border border-sky-500/20 text-xs flex items-center justify-between text-sky-300">
-              <span>Amount Paid</span>
-              <span className="font-mono font-bold text-base text-white">
-                ${((order.amountInCents || 1995) / 100).toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </div>
+          )}
+        </section>
 
         {/* Action Button */}
         <div className="text-center pt-4">
@@ -942,7 +418,7 @@ export default function OrderStatusPage() {
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-xl shadow-sky-600/20 transition-all cursor-pointer"
           >
             <FileText className="w-4 h-4 text-sky-100" />
-            <span>Dispatch Another Notice</span>
+            <span>Start a Notice</span>
           </Link>
         </div>
       </main>
