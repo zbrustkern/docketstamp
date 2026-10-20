@@ -58,6 +58,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'first_class',
           customerEmail: 'firstclass_user@example.com',
         }),
@@ -88,6 +89,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'certified_user@example.com',
         }),
@@ -114,6 +116,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified_return_receipt',
           customerEmail: 'err_user@example.com',
         }),
@@ -174,6 +177,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'tier_change_user@example.com',
         }),
@@ -189,6 +193,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'first_class',
           customerEmail: 'tier_change_user@example.com',
         }),
@@ -263,6 +268,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'non-existent-template-slug',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'fail@example.com',
         }),
@@ -333,6 +339,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'guest_buyer@example.com',
         }),
@@ -359,6 +366,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         body: JSON.stringify({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'alice@example.com',
         }),
@@ -483,4 +491,3 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
     });
   });
 });
-

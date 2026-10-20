@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-19-integrity-evidence",
+  "workflow": "df-sprint-plan + df-sprint-execute",
+  "project_root": "/Users/zeke/code/DocketStamp",
+  "stage": "released_to_staging",
+  "status": "complete",
+  "owner": "Codex",
+  "participants": ["Codex (plan, verification, release)", "Luna (implementation pending)", "Luna (review pending)"],
+  "source_revision": "17ad41d4020ce1b136eb93181c4c70a822be3c31",
+  "inputs": ["AGENTS.md", "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md", "docs/DOCKETSTAMP_AGENTIC_EXPANSION.md", "docs/sprints/SPRINT-0003.md", "app/api/docket/lock-and-intent/route.ts", "lib/types.ts"],
+  "artifacts": ["intent.md", "handoff-luna-implementation.md", "handoff-luna-review.md", "implementation-result.md", "review-result.md", "merge-notes.md", "state.json", "INDEX.md", "../../../docs/sprints/SPRINT-0003.md"],
+  "acceptance_criteria": ["server SHA-256 record", "server-timestamped adoption evidence", "truthful customer copy", "focused verification", "staging-only rollout"],
+  "checks": ["Sprint integrity evidence test: 4/4 pass", "WP-2/WP-4 renderer, lock, and fulfillment checks pass", "Security: 10/10 pass", "Payment mode: 26/26 pass", "Telemetry pass", "Production build pass", "origin/staging pushed at 61271f2; origin/main unchanged", "Firebase staging backend reconciled; staging URL HTTP 200"],
+  "open_issues": ["No public evidence export is included; authorized order access remains the evidence retrieval path.", "Adoption facts are browser assertions recorded by the server at lock time, not independently verified click evidence.", "Digest and payload share the order record; this is a provenance digest, not an externally anchored immutable ledger.", "Historical unrelated test/type-check failures are recorded in Sprint 0003."],
+  "iteration": 1,
+  "iteration_limit": 3,
+  "next_action": "Monitor staging through normal smoke testing; consider an independently anchored evidence store only if stronger tamper-resistance becomes a product requirement.",
+  "updated_at": "2026-10-19T21:45:00-05:00"
+}

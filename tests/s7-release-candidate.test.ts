@@ -367,6 +367,7 @@ describe('S7 Release Candidate Verification Suite', () => {
             slug: 'security-deposit-return-demand-letter',
             tier,
             userValues: validTenantValues,
+            signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
             customerEmail: 'jane.tester@gmail.com',
           }),
         });
@@ -454,6 +455,7 @@ describe('S7 Release Candidate Verification Suite', () => {
           slug: 'security-deposit-return-demand-letter',
           tier: 'first_class',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           customerEmail: 'guest_buyer@gmail.com',
         }),
       });
@@ -475,6 +477,7 @@ describe('S7 Release Candidate Verification Suite', () => {
           slug: 'security-deposit-return-demand-letter',
           tier: 'first_class',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           customerEmail: 'alice@gmail.com',
         }),
       });
@@ -908,6 +911,7 @@ describe('S7 Release Candidate Verification Suite', () => {
           slug: 'security-deposit-return-demand-letter',
           tier: 'certified',
           userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Snapshot Tester' },
           customerEmail: 'snapshot.tester@gmail.com',
         }),
       });

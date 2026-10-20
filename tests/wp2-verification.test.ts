@@ -217,6 +217,7 @@ describe('WP-2 Verification Gate', () => {
           body: JSON.stringify({
             slug: securityDepositNotice.slug,
             userValues,
+            signatureAdoption: { adopted: true, affirmed: true, signerName: userValues.senderFullName },
             tier,
             docketId,
             customerEmail: 'parity-fixture@example.com',

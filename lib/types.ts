@@ -92,6 +92,18 @@ export interface OrderAttribution {
   capturedAt?: number;
 }
 
+export interface DocumentIntegrityEvidence {
+  schemaVersion: 1;
+  algorithm: 'sha256';
+  digest: string;
+  lockedAt: number;
+  signatureAdoption: {
+    signerName: string;
+    adoptedAt: number;
+    affirmationVersion: string;
+  };
+}
+
 export interface Order {
   id: string;
   stripePaymentId?: string;
@@ -112,6 +124,7 @@ export interface Order {
   lobTrackingEvents?: any[];
   returnReceiptUrl?: string;
   documentHtml?: string;
+  documentIntegrityEvidence?: DocumentIntegrityEvidence;
   frontImageUrl?: string;
   printedMessage?: string;
   handwrittenNote?: string;
@@ -563,4 +576,3 @@ export interface FeatureFlagsState {
   updatedAt?: number;
   updatedBy?: string;
 }
-

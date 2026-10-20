@@ -604,6 +604,7 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
         },
         tier: 'first_class',
         customerEmail: 'alex@example.com',
+        signatureAdoption: { adopted: true, affirmed: true, signerName: 'Alex Mercer' },
         telemetrySessionId: 'sess_lock_propagation_test',
         experienceVersion: 'home_v2',
         entrySource: 'home_chooser',

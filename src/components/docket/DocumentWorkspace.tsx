@@ -96,6 +96,7 @@ const DocumentWorkspaceInner: React.FC<{
   }));
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
   const [isSignatureAdopted, setIsSignatureAdopted] = useState(false);
+  const [isAffirmed, setIsAffirmed] = useState(false);
   const [signatureInvalidatedByEdit, setSignatureInvalidatedByEdit] = useState(false);
   const [selectedTier, setSelectedTier] = useState<MailTierId>(initialResolved.selectedTier);
   const [verificationStatus, setVerificationStatus] = useState<AddressVerificationStatus>('unverified');
@@ -291,6 +292,7 @@ const DocumentWorkspaceInner: React.FC<{
       setIsSignatureAdopted(false);
       setSignatureInvalidatedByEdit(true);
     }
+    setIsAffirmed(false);
 
     // Invalidate address verification upon editing any address or entity field
     const addressKeys = [
@@ -360,11 +362,19 @@ const DocumentWorkspaceInner: React.FC<{
       logicalKey: `signature:${notice.slug}:r${draftRevisionRef.current}`,
     });
     setIsSignatureAdopted(true);
+    setIsAffirmed(true);
     setSignatureInvalidatedByEdit(false);
     setUserValues((prev) => ({
       ...prev,
       senderFullName: signerName,
     }));
+  };
+
+  const handleAffirmationChange = (affirmed: boolean) => {
+    setIsAffirmed(affirmed);
+    if (!affirmed) {
+      setIsSignatureAdopted(false);
+    }
   };
 
   // Funnel Event: editor_complete when all required fields are valid and signature is adopted
@@ -409,6 +419,7 @@ const DocumentWorkspaceInner: React.FC<{
     clearNoticeDraft(notice.slug);
     userEditedKeysRef.current.clear();
     setIsSignatureAdopted(false);
+    setIsAffirmed(false);
     setSignatureInvalidatedByEdit(false);
     setVerificationStatus('unverified');
     const freshResolved = resolveInitialWorkspaceDraft({ notice, initialValues, searchParams });
@@ -503,6 +514,8 @@ const DocumentWorkspaceInner: React.FC<{
             activeFieldKey={activeFieldKey}
             onFieldFocus={(key) => setActiveFieldKey(key)}
             isSignatureAdopted={isSignatureAdopted}
+            isAffirmed={isAffirmed}
+            onAffirmationChange={handleAffirmationChange}
             signatureInvalidatedByEdit={signatureInvalidatedByEdit}
             validation={validation}
             onAdoptSignature={handleAdoptSignature}
@@ -523,6 +536,7 @@ const DocumentWorkspaceInner: React.FC<{
         onSelectTier={(tier) => setSelectedTier(tier)}
         userValues={userValues}
         isSignatureAdopted={isSignatureAdopted}
+        isAffirmed={isAffirmed}
         entrySource={entrySource}
         draftRevision={draftRevisionRef.current}
       />

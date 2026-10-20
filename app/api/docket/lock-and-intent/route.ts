@@ -9,6 +9,7 @@ import { saveOrder, updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } 
 import { createCardPaymentIntent } from '@/lib/stripe';
 import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
+import { createDocumentIntegrityEvidence } from '@/lib/docket/integrity-evidence';
 
 export async function POST(req: NextRequest) {
   let failureCode:
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
       sessionId: altSessionId,
       experienceVersion,
       entrySource,
+      signatureAdoption,
     } = body;
 
     const noticeKey = slug || noticeSlug;
@@ -105,6 +107,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (
+      !signatureAdoption ||
+      signatureAdoption.adopted !== true ||
+      signatureAdoption.affirmed !== true ||
+      typeof signatureAdoption.signerName !== 'string' ||
+      !signatureAdoption.signerName.trim()
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Adopt the typed signature and confirm the affirmation before checkout.',
+          code: 'SIGNATURE_ADOPTION_REQUIRED',
+        },
+        { status: 400 }
+      );
+    }
+
     // 4. Resolve Mail Tier & Pricing
     const activeTier: MailTierId =
       tier || selectedTier || notice.recommendedTier || 'certified';
@@ -150,6 +168,21 @@ export async function POST(req: NextRequest) {
     });
 
     const frozenHtmlPayload = renderLobHtmlPayload(interpolatedDoc);
+    const adoptedSignerName = signatureAdoption.signerName.trim();
+    if (adoptedSignerName !== interpolatedDoc.signatureBlock.signerName) {
+      return NextResponse.json(
+        { error: 'The adopted signer must match the name on the document.', code: 'SIGNER_MISMATCH' },
+        { status: 400 }
+      );
+    }
+    const adoptedAt = Date.now();
+    const lockedAt = Date.now();
+    const documentIntegrityEvidence = createDocumentIntegrityEvidence(
+      frozenHtmlPayload,
+      adoptedSignerName,
+      adoptedAt,
+      lockedAt
+    );
 
     // 7. Invariant 5: Freeze-Before-Pay Snapshot Persistence
     let authenticatedUserId = typeof userId === 'string' && userId.trim() ? userId.trim() : undefined;
@@ -214,6 +247,7 @@ export async function POST(req: NextRequest) {
       discountCode: appliedDiscountCode,
       discountAmountInCents,
       documentHtml: frozenHtmlPayload,
+      documentIntegrityEvidence,
       viewToken,
       experienceVersion: cleanExpVersion,
       sessionId: cleanSessionId,

@@ -86,6 +86,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'first_class',
           customerEmail: 'tenant@example.com',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Jordan Hayes' },
           userValues: {
             senderFullName: 'Jordan Hayes',
             senderAddressLine1: '512 Elm St, Apt 2B',
@@ -123,6 +124,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
           slug: 'security-deposit-return-demand-letter',
           tier: 'certified',
           customerEmail: 'tenant@example.com',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Sarah Connor' },
           userValues: {
             senderFullName: 'Sarah Connor',
             senderAddressLine1: '100 Main St',
@@ -160,6 +162,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
           slug: 'fcra-credit-bureau-written-dispute-letter',
           tier: 'certified_return_receipt',
           customerEmail: 'consumer@example.com',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Taylor Morgan' },
           userValues: {
             senderFullName: 'Taylor Morgan',
             senderAddressLine1: '789 Pine St',
@@ -199,6 +202,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'certified',
           customerEmail: 'snapshot-audit@example.com',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Arthur Dent' },
           userValues: {
             senderFullName: 'Arthur Dent',
             senderAddressLine1: '42 Country Lane',
@@ -247,6 +251,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'certified_return_receipt',
           customerEmail: 'fulfillment-test@example.com',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Jordan Hayes' },
           userValues: {
             senderFullName: 'Jordan Hayes',
             senderAddressLine1: '512 Elm St, Apt 2B',
@@ -312,6 +317,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'certified',
           customerEmail: 'registry-lookup@example.com',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: 'Jordan Hayes' },
           userValues: {
             senderFullName: 'Jordan Hayes',
             senderAddressLine1: '512 Elm St, Apt 2B',

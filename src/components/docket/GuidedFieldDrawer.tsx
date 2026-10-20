@@ -39,6 +39,8 @@ export interface GuidedFieldDrawerProps {
   activeFieldKey: string | null;
   onFieldFocus: (key: string) => void;
   isSignatureAdopted: boolean;
+  isAffirmed: boolean;
+  onAffirmationChange: (affirmed: boolean) => void;
   signatureInvalidatedByEdit?: boolean;
   validation: DraftValidationResult;
   onAdoptSignature: (signerName: string) => void;
@@ -55,6 +57,8 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
   activeFieldKey,
   onFieldFocus,
   isSignatureAdopted,
+  isAffirmed,
+  onAffirmationChange,
   signatureInvalidatedByEdit = false,
   validation,
   onAdoptSignature,
@@ -69,7 +73,6 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
     userValues.senderFullName || userValues.tenantFullName || ''
   );
   const [fitnessWarning, setFitnessWarning] = useState<string | null>(null);
-  const [isAffirmed, setIsAffirmed] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(() => new Set());
   const [showAllErrors, setShowAllErrors] = useState(false);
 
@@ -805,7 +808,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
               <input
                 type="checkbox"
                 checked={isAffirmed}
-                onChange={(e) => setIsAffirmed(e.target.checked)}
+                onChange={(e) => onAffirmationChange(e.target.checked)}
                 className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-800 text-sky-600 focus:ring-sky-500 focus:ring-offset-slate-900 cursor-pointer shrink-0"
               />
               <span className="leading-relaxed select-none">

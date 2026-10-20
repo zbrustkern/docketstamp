@@ -55,6 +55,7 @@ export interface CheckoutModalProps {
   onSelectTier: (tier: MailTierId) => void;
   userValues: Record<string, string>;
   isSignatureAdopted?: boolean;
+  isAffirmed?: boolean;
   entrySource?: EntrySource | string;
   draftRevision?: number;
 }
@@ -80,13 +81,15 @@ function computeFingerprint(
   tier: MailTierId,
   customerEmail: string,
   values: Record<string, string>,
-  sigAdopted: boolean
+  sigAdopted: boolean,
+  affirmed: boolean
 ): string {
   return JSON.stringify({
     tier,
     email: customerEmail.trim().toLowerCase(),
     values,
     sigAdopted,
+    affirmed,
   });
 }
 
@@ -98,6 +101,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onSelectTier,
   userValues,
   isSignatureAdopted = false,
+  isAffirmed = false,
   entrySource = 'home_chooser',
   draftRevision = 0,
 }) => {
@@ -146,8 +150,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Compute current live fingerprint
   const currentFingerprint = useMemo(() => {
-    return computeFingerprint(selectedTier, email, userValues, isSignatureAdopted);
-  }, [selectedTier, email, userValues, isSignatureAdopted]);
+    return computeFingerprint(selectedTier, email, userValues, isSignatureAdopted, isAffirmed);
+  }, [selectedTier, email, userValues, isSignatureAdopted, isAffirmed]);
 
   // Safe lock invalidation: If lockedAttempt exists but fingerprint changed, invalidate it
   useEffect(() => {
@@ -269,6 +273,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           telemetrySessionId: getSessionId(),
           experienceVersion: 'home_v2',
           entrySource,
+          signatureAdoption: {
+            adopted: isSignatureAdopted,
+            affirmed: isAffirmed,
+            signerName: userValues.senderFullName || '',
+          },
         }),
       });
 
@@ -307,7 +316,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         docketId: data.docketId,
         amountCents: data.amountCents,
         tier: data.tier,
-        fingerprint: computeFingerprint(selectedTier, cleanEmail, userValues, isSignatureAdopted),
+        fingerprint: computeFingerprint(selectedTier, cleanEmail, userValues, isSignatureAdopted, isAffirmed),
       };
 
       emitBusinessEvent({
@@ -589,7 +598,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     1. Payment Received ({currentTierMeta.formattedPrice})
                   </div>
                   <div className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                    Payment verified. Document snapshot locked and SHA-256 integrity preserved. Post-payment rendering never alters customer inputs.
+                    The locked document includes a SHA-256 integrity digest and a dated record of typed-name adoption. This records the prepared content; it does not assess legal validity. Post-payment rendering uses the saved snapshot.
                   </div>
                 </div>
               </div>
