@@ -14,6 +14,9 @@ async function run(){
   const postal=[{factId:'p1',orderId:'o1',state:'delivered',lobMode:'live',environment:'local',occurredAt:'2026-10-19T00:00:00.000Z',receivedAt:'2026-10-19T00:00:00.000Z'},{factId:'p2',orderId:'o2',state:'returned',lobMode:'live',environment:'local',occurredAt:'2026-10-19T00:00:00.000Z',receivedAt:'2026-10-19T00:00:00.000Z'}];
   const input={scope,asOf:'2026-10-20T04:00:00.000Z',facts,events,orders,postal,sourceComplete:true,generationId:'a'.repeat(32)};
   const report=computeReport(input);
+  for (const [unsupported, value] of [["campaignKey", "fixture"], ["offerId", "fixture"], ["device", "mobile"]] as const) {
+    assert.throws(() => computeReport({ ...input, scope: { ...scope, [unsupported]: value } as any }), /Unrecognized key/, `${unsupported} filter must be rejected instead of publishing aggregate metrics under a narrow scope`);
+  }
   assert.equal(report.metrics.paidOrders.value,3);
   assert.equal(report.metrics.netCollections.value,5585);
   assert.equal(report.metrics.conversion.numerator,2);

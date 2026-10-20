@@ -8,6 +8,20 @@ export const META_PIXEL_ID = getServerMetaPixelDestination();
 
 export const META_GRAPH_API_VERSION = "v19.0";
 
+/** Server CAPI stays disabled until consent can be verified independently of request JSON. */
+const SERVER_CAPI_CONSENT_VERIFICATION_READY = false;
+
+export type MetaMarketingEnvironment = "local" | "staging" | "production";
+
+export function getMetaMarketingEnvironment(env: Record<string, string | undefined> = process.env): MetaMarketingEnvironment {
+  if (env.ENVIRONMENT === "staging" || env.NEXT_PUBLIC_ENVIRONMENT === "staging" ||
+      env.FIREBASE_PROJECT_ID === "docketstamp-staging" || env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging") return "staging";
+  if (env.ENVIRONMENT === "production" || env.NEXT_PUBLIC_ENVIRONMENT === "production" ||
+      env.NODE_ENV === "production" || env.FIREBASE_PROJECT_ID === "docketstamp" ||
+      env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp") return "production";
+  return "local";
+}
+
 /**
  * Retrieves the Conversions API System User access token from environment or secrets.
  */
@@ -23,8 +37,14 @@ export function getMetaAccessToken(): string | undefined {
 /**
  * Retrieves optional test event code for real-time verification in Meta Events Manager.
  */
-export function getMetaTestEventCode(): string | undefined {
-  return process.env.META_TEST_EVENT_CODE || undefined;
+export function getMetaTestEventCode(
+  environment: MetaMarketingEnvironment = getMetaMarketingEnvironment(),
+  env: Record<string, string | undefined> = process.env,
+): string | undefined {
+  // Production events must never be redirected into Meta's test-event stream.
+  if (environment === "production") return undefined;
+  const key = environment === "staging" ? "META_STAGING_TEST_EVENT_CODE" : "META_LOCAL_TEST_EVENT_CODE";
+  return env[key]?.trim() || undefined;
 }
 
 /**
@@ -157,6 +177,9 @@ export async function sendMetaCapiEvents(
   events: MetaCapiEventPayload[],
   testEventCodeOverride?: string
 ): Promise<MetaCapiResult> {
+  if (!SERVER_CAPI_CONSENT_VERIFICATION_READY) {
+    return { success: false, skipped: true, error: "Server CAPI disabled until consent has verifiable first-party evidence." };
+  }
   const token = getMetaAccessToken();
   const pixelId = getServerMetaPixelDestination();
 
@@ -179,7 +202,10 @@ export async function sendMetaCapiEvents(
     };
   }
 
-  const testEventCode = testEventCodeOverride || getMetaTestEventCode();
+  const environment = getMetaMarketingEnvironment();
+  const testEventCode = environment === "production"
+    ? undefined
+    : testEventCodeOverride || getMetaTestEventCode(environment);
 
   // Normalize user_data for each event
   const formattedEvents = events.map((event) => {
@@ -307,6 +333,16 @@ export async function sendMetaCapiPurchaseEvent(params: {
   testEventCode?: string;
 }): Promise<MetaCapiResult> {
   const { order, testEventCode } = params;
+
+  // lock-and-intent currently stores a client assertion only. It is not proof
+  // of an affirmative grant, so do not send server-side identifiers or values.
+  if (!SERVER_CAPI_CONSENT_VERIFICATION_READY) {
+    await recordMarketingEgressReceipt({
+      provider: 'meta_capi', status: 'disabled', correlationId: `meta-purchase:${order.id}`,
+      reasonCode: 'consent_unknown',
+    }).catch(() => {});
+    return { success: false, skipped: true, error: 'Server CAPI disabled until consent has verifiable first-party evidence.' };
+  }
 
   const attribution = order.attribution as (Order['attribution'] & { marketingConsent?: boolean }) | undefined;
   const correlationId = `meta-purchase:${order.id}`;

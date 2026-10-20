@@ -52,3 +52,5 @@ The replacement run uses isolated local Luna checkouts and sequential coordinato
 Historical user/provider data is inventoried before any migration. Dry-run plans must preserve ownership, payment IDs, snapshots, digests and provider evidence; resume and rollback must reconcile counts without dispatching, charging or sending email. Actual production apply and cross-project user linkage require separately reviewed evidence.
 
 For staging release, commit the exact verified source, push only the staging branch, build/roll out in `docketstamp-staging`, inspect effective public environment values, and confirm the served client identity. The Firebase Auth runbook records the commands and interactive verification limitations. Production branch, secrets and deployment remain separate.
+
+Server CAPI remains disabled until independently verifiable first-party consent and a customer preferences UI are implemented and tested; client JSON is not a grant. See [consent readiness](docs/marketing-consent-readiness.md).

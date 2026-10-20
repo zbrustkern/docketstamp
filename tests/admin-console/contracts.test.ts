@@ -13,6 +13,9 @@ const scope = {
 
 assert.equal(ADMIN_CONSOLE_CONTRACT_VERSION, 1);
 assert.equal(ScopeSchema.safeParse(scope).success, true);
+for (const [unsupported, value] of [["campaignKey", "fixture"], ["offerId", "fixture"], ["device", "mobile"]] as const) {
+  assert.equal(ScopeSchema.safeParse({ ...scope, [unsupported]: value }).success, false, `${unsupported} scope filter is rejected until projection support exists`);
+}
 assert.equal(ScopeSchema.safeParse({ ...scope, endUtcExclusive: scope.startUtc }).success, false, "scope uses half-open non-empty intervals");
 assert.equal(ScopeSchema.safeParse({ ...scope, displayTimezone: "Mars/Olympus" }).success, false, "scope timezone must resolve as an IANA timezone");
 

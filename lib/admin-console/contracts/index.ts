@@ -47,13 +47,11 @@ export const ScopeSchema = z.object({
   tier: MailTierSchema.optional(),
   entrySurface: IdSchema.optional(),
   channel: IdSchema.optional(),
-  campaignKey: IdSchema.optional(),
-  offerId: IdSchema.optional(),
-  device: z.enum(["mobile", "tablet", "desktop", "unknown"]).optional(),
   classification: ClassificationSchema.optional(),
   reportVersion: z.number().int().positive(),
   cohortPolicyVersion: z.number().int().positive(),
-}).refine((v) => Date.parse(v.startUtc) < Date.parse(v.endUtcExclusive), "scope must be a non-empty half-open interval")
+}).strict()
+  .refine((v) => Date.parse(v.startUtc) < Date.parse(v.endUtcExclusive), "scope must be a non-empty half-open interval")
   .refine((v) => {
     try { new Intl.DateTimeFormat("en-US", { timeZone: v.displayTimezone }); return true; }
     catch { return false; }

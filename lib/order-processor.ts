@@ -12,6 +12,7 @@ import { assertNotFitnessEntity } from "@/src/lib/docket/guardrails";
 import { logIncident } from "./incident-logger";
 import { Order } from "./types";
 import { sendMetaCapiPurchaseEvent } from "./meta-conversions-api";
+import { markMetaCapiTrackedAtOnSuccess } from "./meta-capi-tracking";
 import { recordServerTelemetry } from "./metrics-rollup";
 import { sendDocketDispatchReceiptEmail } from "./email-alerts";
 import { getStripeClient } from "./stripe";
@@ -528,7 +529,7 @@ export async function processPaidOrder(
   // 9. Dispatch Meta Conversions API (CAPI) Purchase Event (deduplicated via event_id: orderId)
   if (!order.metaCapiTrackedAt) {
     try {
-      await sendMetaCapiPurchaseEvent({
+      const capiResult = await sendMetaCapiPurchaseEvent({
         order: {
           ...order,
           customerEmail: customerEmail || order.customerEmail,
@@ -536,9 +537,9 @@ export async function processPaidOrder(
         clientIp: clientContext?.clientIp,
         userAgent: clientContext?.userAgent,
       });
-      await updateOrderStatus(orderId, {
-        metaCapiTrackedAt: Date.now(),
-      });
+      await markMetaCapiTrackedAtOnSuccess(capiResult, (timestamp) => updateOrderStatus(orderId, {
+        metaCapiTrackedAt: timestamp,
+      }));
     } catch (capiErr) {
       console.warn("[OrderProcessor] Notice sending Meta CAPI purchase event:", capiErr);
     }
