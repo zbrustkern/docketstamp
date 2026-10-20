@@ -1,5 +1,5 @@
 import { SystemIncident } from "./types";
-import { UPL_COMPLIANCE_FOOTER_TEXT } from "@/src/lib/docket/guardrails";
+import { STATUTORY_COMPLIANCE_DISCLOSURE, UPL_COMPLIANCE_FOOTER_TEXT } from "@/src/lib/docket/guardrails";
 
 export interface SendAlertEmailParams {
   incident: SystemIncident;
@@ -154,116 +154,52 @@ export interface SendReminderEmailParams {
   sendCardUrl: string;
 }
 
-/**
- * Dispatches an automated, tasteful occasion milestone reminder email.
- */
-export async function sendOccasionReminderEmail({
-  toEmail,
-  recipientName,
-  occasionTitle,
-  occasionDateFormatted,
-  daysRemaining,
-  sendCardUrl,
-}: SendReminderEmailParams): Promise<{ success: boolean; error?: string }> {
-  if (!toEmail || !toEmail.includes("@")) {
-    return { success: false, error: "Invalid recipient email address" };
+export interface SendNoticeDeadlineReminderEmailParams {
+  toEmail: string;
+  label: string;
+  deadlineDateFormatted: string;
+  leadTimeDays: number;
+  reviewUrl: string;
+  unsubscribeUrl: string;
+  idempotencyKey: string;
+}
+
+/** Sends a one-time reminder tied to a user's explicit calendar date and consent. */
+export async function sendNoticeDeadlineReminderEmail({
+  toEmail, label, deadlineDateFormatted, leadTimeDays, reviewUrl, unsubscribeUrl, idempotencyKey,
+}: SendNoticeDeadlineReminderEmailParams): Promise<{ success: boolean; error?: string; emailId?: string }> {
+  if (!toEmail || !toEmail.includes("@")) return { success: false, error: "Invalid recipient email address" };
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (!resendApiKey) return { success: false, error: "RESEND_API_KEY is not configured; no email was sent." };
+
+  const escapedLabel = escapeHtml(label);
+  const safeReviewUrl = escapeHtml(reviewUrl);
+  const safeUnsubscribeUrl = escapeHtml(unsubscribeUrl);
+  const when = leadTimeDays === 0 ? "today" : `in ${leadTimeDays} ${leadTimeDays === 1 ? "day" : "days"}`;
+  const disclosure = STATUTORY_COMPLIANCE_DISCLOSURE;
+  const text = `You asked DocketStamp to remind you about: ${label}\nDate you entered: ${deadlineDateFormatted}\n\nReview a notice: ${reviewUrl}\n\nUnsubscribe: ${unsubscribeUrl}\n\n${disclosure}`;
+  const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;color:#0f172a;padding:24px"><main style="max-width:560px;margin:auto;background:white;border:1px solid #cbd5e1;border-radius:12px;padding:28px"><p style="font-size:12px;text-transform:uppercase;color:#0369a1;font-weight:bold">One-time notice reminder</p><h1 style="font-size:22px">A date you entered is ${when}</h1><p><strong>${escapedLabel}</strong></p><p>Date you entered: <strong>${escapeHtml(deadlineDateFormatted)}</strong></p><p>This message is a reminder of the date and label you supplied. DocketStamp does not determine or verify legal deadlines.</p><p><a href="${safeReviewUrl}" style="display:inline-block;background:#0369a1;color:white;padding:12px 18px;border-radius:6px;text-decoration:none">Review notice options</a></p><p style="font-size:12px"><a href="${safeUnsubscribeUrl}">Manage or unsubscribe from this reminder</a></p><hr/><p style="font-size:11px;color:#475569">${escapeHtml(disclosure)}</p></main></body></html>`;
+  try {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "reminders@docketstamp.com";
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({
+        from: `DocketStamp Reminders <${fromEmail}>`, to: [toEmail],
+        subject: `Reminder: ${label} — ${deadlineDateFormatted}`, text, html,
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return { success: false, error: result.message || `Resend error (${response.status})` };
+    return { success: true, emailId: result.id };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
+}
 
-  const subject = `💌 Reminder: ${occasionTitle} is in ${daysRemaining} days (${occasionDateFormatted})`;
-
-  const textBody = `
-DocketStamp Registry Statutory Reminder
-========================================
-Just a friendly heads-up: ${occasionTitle} is coming up on ${occasionDateFormatted} (in ${daysRemaining} days).
-
-Formal legal notices typically take 1–2 business days to prepare and 2–5 business days to deliver via USPS First-Class or Certified Mail.
-Dispatching your notice now ensures it satisfies statutory notice windows before the deadline!
-
-Prepare your notice:
-${sendCardUrl}
-
-Regards,
-DocketStamp Registry | docketstamp.com
-`.trim();
-
-  const htmlBody = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0F172A; margin: 0; padding: 24px; color: #F8FAFC; }
-    .card { background: #1E293B; border: 1px solid #334155; border-radius: 16px; max-width: 560px; margin: 0 auto; padding: 36px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
-    .badge { display: inline-block; background-color: #FEF3C7; color: #92400E; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .title { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: #F8FAFC; margin: 14px 0 8px 0; }
-    .content { font-size: 14px; line-height: 1.6; color: #CBD5E1; margin: 16px 0; }
-    .highlight-box { background-color: #0F172A; border-left: 3px solid #0284C7; padding: 14px 18px; border-radius: 8px; margin: 20px 0; font-size: 14px; color: #E2E8F0; }
-    .btn { display: inline-block; background-color: #0284C7; color: #FFFFFF; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    .footer { font-size: 11px; color: #64748B; margin-top: 32px; border-top: 1px solid #334155; padding-top: 16px; line-height: 1.5; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <span class="badge">Statutory Deadline Reminder</span>
-    <h1 class="title">${escapeHtml(occasionTitle)} is in ${daysRemaining} days</h1>
-    
-    <div class="content">
-      <p>Hello,</p>
-      <p>This is your formal reminder that a statutory or contractual notice deadline for <strong>${escapeHtml(recipientName)}</strong> is scheduled for <strong>${escapeHtml(occasionDateFormatted)}</strong>.</p>
-      
-      <div class="highlight-box">
-        <strong>📮 USPS Postal Dispatch:</strong> Physical notices dispatched via USPS First-Class or Certified Mail take 1–2 business days to process and 2–5 business days for domestic transit.
-      </div>
-      
-      <a href="${escapeHtml(sendCardUrl)}" class="btn" style="color: #ffffff;">Prepare Notice &rarr;</a>
-    </div>
-
-    <div class="footer">
-      You are receiving this because you scheduled a notice reminder on <a href="https://docketstamp.com" style="color: #94A3B8;">docketstamp.com</a>.
-      <br/>DocketStamp &bull; Official Document & Certified Mail Dispatch Registry.
-    </div>
-  </div>
-</body>
-</html>
-`.trim();
-
-  const resendApiKey =
-    process.env.RESEND_API_KEY ||
-    process.env["RESEND_API_KEY"] ||
-    process.env["resend-api-key"];
-
-  if (resendApiKey) {
-    try {
-      const fromEmail =
-        process.env.RESEND_FROM_EMAIL || "reminders@docketstamp.com";
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: `DocketStamp Reminders <${fromEmail}>`,
-          to: [toEmail],
-          subject,
-          text: textBody,
-          html: htmlBody,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.message || "Resend error" };
-      }
-      return { success: true };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  // Development simulation
-  console.log(`[Reminder Email Sim] (RESEND_API_KEY not configured) -> Would send reminder to: ${toEmail} for ${occasionTitle} (${occasionDateFormatted})`);
-  return { success: true };
+/** Legacy occasion reminders are retained as historical records but no longer send mail. */
+export async function sendOccasionReminderEmail(_params: SendReminderEmailParams): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: "Annual occasion reminder email delivery is retired. Use an explicit one-time notice deadline reminder." };
 }
 
 export interface SendDocketDispatchReceiptEmailParams {
