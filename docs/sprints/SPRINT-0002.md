@@ -1,6 +1,6 @@
 # Sprint 0002 — Admin Outgoing Email Composer
 
-**Status:** Implementation complete; staging release blocked on staging secret-access approval and verification  
+**Status:** Deployed to staging; admin API and composer bundle verified  
 **Run:** `2026-10-19-admin-outgoing-email`  
 **Authority:** `AGENTS.md`, `DOCKETSTAMP_MASTER_BUILD_SPEC.md`, `DOCKETSTAMP_AGENTIC_EXPANSION.md`, admin console auth/audit contracts
 
@@ -30,11 +30,13 @@ Add a small owner-only plain-text email composer to the existing DocketStamp adm
 | `firebase apphosting:backends:list --project docketstamp-staging --json` | Pass | Confirms project `docketstamp-staging`, backend `docketstamp`, environment `staging`, region `us-central1`, and runtime service account `firebase-app-hosting-compute@docketstamp-staging.iam.gserviceaccount.com`. |
 | `firebase apphosting:secrets:grantaccess resend-key --project docketstamp-staging --backend docketstamp --location us-central1` | Pass | Firebase CLI reported IAM bindings set on `resend-key` for the staging backend. Backend service account: `firebase-app-hosting-compute@docketstamp-staging.iam.gserviceaccount.com`. |
 | `firebase apphosting:secrets:describe resend-key --project docketstamp-staging --json` | Pass | Secret metadata reports version `1` in `ENABLED` state. Secret payload was not read. |
-| Push to `origin/staging` | Blocked | Automatic approval review rejected staging-branch push as sensitive code egress without trusted authorization for that exact push. No workaround was attempted. |
-| Staging rollout and deployed route/UI check | Not run | Push was blocked, so no new source revision was deployed. No email was sent. |
+| Push `685ec50` to `origin/staging` | Pass | Remote `main` remained at `b975512`; only the staging ref advanced from `08c0714` to `685ec50`. |
+| `firebase apphosting:rollouts:create docketstamp --project docketstamp-staging --location us-central1 --git-commit 685ec50 --force` | Pass | Firebase completed the rollout successfully for source commit `685ec50`. Backend update time advanced; backend remains environment `staging` in `us-central1`. |
+| Staging admin page and composer bundle | Pass | `https://staging.docketstamp.com/admin` returned HTTP 200; its deployed admin chunk contains `Outgoing Email`, `Outgoing email`, and `Recent send history`. Authenticated composer rendering was not inspected because no authorized login was available. |
+| Staging outbound-email API protection | Pass | Unauthenticated GET to `/api/admin/outbound-email` returned HTTP 401 with `ADMIN_AUTH_REQUIRED`. No email was sent. |
 
 ## Release gate
 
-The local staging manifest binds `RESEND_API_KEY` to Secret Manager secret `resend-key` with runtime-only availability. The staging backend's IAM grant succeeded and version 1 is enabled. The branch remains local because automatic approval review rejected the push; obtain approval for the exact push to `origin/staging`, then verify the staging rollout, effective revision, `ENVIRONMENT=staging`, and protected route/UI. Do not make a live send as a deployment check.
+The local staging manifest binds `RESEND_API_KEY` to Secret Manager secret `resend-key` with runtime-only availability. The staging backend's IAM grant succeeded and version 1 is enabled. Commit `685ec50` was pushed only to `origin/staging` and Firebase completed a rollout from that exact source commit. The public admin page and composer bundle are available; the API remains protected. Runtime `K_REVISION` was not inspected because its diagnostics endpoint requires authenticated owner access. No live send was made as a deployment check.
 
 Reply forwarding to `zeke@docketstamp.com` remains a pre-existing unverified prerequisite. This sprint does not inspect or change DNS.
