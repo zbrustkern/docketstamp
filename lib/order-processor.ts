@@ -155,7 +155,11 @@ export async function processPaidOrder(
         existingOrder.status === "DISPATCHING" ||
         existingOrder.status === "PROCESSING_DISPATCH" ||
         existingOrder.status === "PROCESSING_HANDWRYTTEN" ||
+        existingOrder.status === "DISPATCHED_TO_USPS" ||
         existingOrder.status === "MAILED" ||
+        existingOrder.status === "IN_TRANSIT" ||
+        existingOrder.status === "DELIVERED" ||
+        existingOrder.status === "RETURNED_TO_SENDER" ||
         existingOrder.status === "QUEUED_FOR_FULFILLMENT"
       ) {
         throw new DuplicateDispatchError(

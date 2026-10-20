@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import {
+  firestoreDb,
+  getOrdersCollection,
   getOrderById,
   getOrderByDocketId,
   getOrderByLobLetterId,
-  updateOrderStatus,
 } from "@/lib/firebase-admin";
 import { Order, OrderStatus } from "@/lib/types";
 import { resolvePostalProvenance } from "@/lib/order-record";
-import { validateFrozenNoticeOrder } from "@/lib/frozen-notice-order";
 
 /**
  * Maps Lob webhook events to internal OrderStatus lifecycle states.
@@ -102,6 +102,42 @@ function isConfiguredWebhookSecret(secret?: string | null): secret is string {
   return true;
 }
 
+const POSTAL_STATUS_RANK: Partial<Record<OrderStatus, number>> = {
+  DISPATCHED_TO_USPS: 1,
+  MAILED: 2,
+  IN_TRANSIT: 3,
+  DELIVERED: 4,
+  RETURNED_TO_SENDER: 4,
+};
+
+function parseEventTime(...candidates: unknown[]): number | undefined {
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0) {
+      return candidate < 100_000_000_000 ? candidate * 1000 : candidate;
+    }
+    if (typeof candidate === "string" && candidate.trim()) {
+      const parsed = Date.parse(candidate);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function eventTimeFromHistory(event: Record<string, unknown>): number | undefined {
+  const value = event.occurredAt ?? event.timestamp;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function statusCanAdvance(current: OrderStatus, next: OrderStatus): boolean {
+  const currentRank = POSTAL_STATUS_RANK[current];
+  const nextRank = POSTAL_STATUS_RANK[next];
+  if (currentRank === undefined || nextRank === undefined) return true;
+  // Delivered and returned are terminal postal outcomes. Keep the first terminal
+  // state even if a delayed or contradictory event arrives later.
+  if (current === "DELIVERED" || current === "RETURNED_TO_SENDER") return false;
+  return nextRank >= currentRank;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -190,65 +226,108 @@ export async function POST(req: NextRequest) {
     // Receiving a signed postal event is not a new dispatch. Keep tracking for
     // an explicitly matched historical Lob letter even when old records lack
     // today's snapshot schema. Unknown/provider-conflict records cannot borrow IDs.
-    if (provenance.provider === "unknown" &&
-        (provenance.evidence === "conflict" || validateFrozenNoticeOrder(order))) {
-      return NextResponse.json({ received: true, matched: false, ignored: "LEGACY_ORDER" });
-    }
     if (
-      !letterId || provenance.provider === "handwrytten" ||
-      (provenance.provider === "lob" && provenance.reference !== letterId)
+      !letterId || provenance.provider !== "lob" || provenance.reference !== letterId
     ) {
       return NextResponse.json({ received: true, matched: false, ignored: "PROVIDER_PROVENANCE_MISMATCH" });
     }
 
-    // Build partial order update
+    const eventId = target !== body && typeof body.id === "string" && body.id !== letterId
+      ? body.id
+      : crypto.createHash("sha256").update(rawBody, "utf8").digest("hex");
+    const eventOccurredAt = parseEventTime(
+      body.created,
+      body.date_created,
+      body.created_at,
+      target.date_created,
+      target.created_at,
+    );
     const nextStatus = mapLobEventToOrderStatus(eventType);
-    const updates: Partial<Order> = {
-      lobStatus: eventType,
-      postalProvider: "lob",
-      ...(letterId ? { postalProviderReference: letterId } : {}),
-      updatedAt: Date.now(),
-    };
 
-    if (nextStatus) {
-      updates.status = nextStatus;
-    }
+    // Re-read and apply the tracking update in one transaction. Webhook deliveries
+    // can be concurrent, replayed, or out of order; a stale outer lookup must never
+    // overwrite newer postal state or detach this event from its exact Lob letter.
+    const commitResult = await firestoreDb.runTransaction(async (transaction: any) => {
+      const docRef = getOrdersCollection().doc(order!.id);
+      const snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) return { matched: false as const, reason: "ORDER_MISSING" };
 
-    if (letterId && !order.lobLetterId) {
-      updates.lobLetterId = letterId;
-    }
+      const current = snapshot.data() as Order;
+      const currentProvenance = resolvePostalProvenance(current);
+      if (
+        !letterId || currentProvenance.provider !== "lob" || currentProvenance.reference !== letterId
+      ) {
+        return { matched: false as const, reason: "PROVIDER_PROVENANCE_MISMATCH" };
+      }
 
-    if (trackingNumber) {
-      updates.lobTrackingNumber = trackingNumber;
-    }
+      const existingEvents = Array.isArray(current.lobTrackingEvents)
+        ? [...current.lobTrackingEvents] as Array<Record<string, unknown>>
+        : [];
+      if (existingEvents.some((event) => event.eventFingerprint === eventId)) {
+        return { matched: true as const, duplicate: true, status: current.status };
+      }
 
-    if (expectedDeliveryDate) {
-      updates.lobExpectedDeliveryDate = expectedDeliveryDate;
-    }
+      const receivedAt = Date.now();
+      const effectiveEventTime = eventOccurredAt ?? receivedAt;
+      const latestKnownEventTime = existingEvents.reduce((latest, event) => {
+        return Math.max(latest, eventTimeFromHistory(event) ?? 0);
+      }, 0);
+      const eventIsNewest = effectiveEventTime >= latestKnownEventTime;
+      const advancesStatus = Boolean(nextStatus && statusCanAdvance(current.status, nextStatus));
+      const updates: Record<string, unknown> = {
+        postalProvider: "lob",
+        postalProviderReference: letterId,
+        updatedAt: receivedAt,
+      };
 
-    if (nextStatus === "MAILED" && !order.lobMailedDate) {
-      updates.lobMailedDate = new Date().toISOString().split("T")[0];
-    }
+      if (letterId && !current.lobLetterId) updates.lobLetterId = letterId;
+      if (nextStatus && advancesStatus) {
+        updates.status = nextStatus;
+        updates.lobStatus = eventType;
+      } else if (nextStatus && eventIsNewest && POSTAL_STATUS_RANK[current.status] === POSTAL_STATUS_RANK[nextStatus]) {
+        updates.lobStatus = eventType;
+      }
 
-    // Append to tracking events history
-    const existingEvents = Array.isArray(order.lobTrackingEvents)
-      ? [...order.lobTrackingEvents]
-      : [];
+      if (trackingNumber && (!current.lobTrackingNumber || (eventIsNewest && eventOccurredAt !== undefined))) {
+        updates.lobTrackingNumber = trackingNumber;
+      }
+      if (expectedDeliveryDate && (!current.lobExpectedDeliveryDate || (eventIsNewest && eventOccurredAt !== undefined))) {
+        updates.lobExpectedDeliveryDate = expectedDeliveryDate;
+      }
+      if (nextStatus === "MAILED" && advancesStatus && !current.lobMailedDate) {
+        updates.lobMailedDate = new Date(eventOccurredAt ?? receivedAt).toISOString().slice(0, 10);
+      }
 
-    existingEvents.push({
-      eventType,
-      timestamp: Date.now(),
-      letterId,
-      trackingNumber: trackingNumber || order.lobTrackingNumber,
-      status: nextStatus || order.status,
+      existingEvents.push({
+        eventFingerprint: eventId,
+        eventType,
+        occurredAt: effectiveEventTime,
+        receivedAt,
+        letterId,
+        trackingNumber: trackingNumber || current.lobTrackingNumber,
+        status: nextStatus || current.status,
+      });
+      updates.lobTrackingEvents = existingEvents;
+      transaction.update(docRef, updates);
+      return {
+        matched: true as const,
+        duplicate: false,
+        status: advancesStatus && nextStatus ? nextStatus : current.status,
+        trackingNumber: typeof updates.lobTrackingNumber === "string"
+          ? updates.lobTrackingNumber
+          : current.lobTrackingNumber,
+      };
     });
 
-    updates.lobTrackingEvents = existingEvents;
-
-    await updateOrderStatus(order.id, updates);
+    if (!commitResult.matched) {
+      return NextResponse.json({ received: true, matched: false, ignored: commitResult.reason });
+    }
+    if (commitResult.duplicate) {
+      return NextResponse.json({ received: true, matched: true, duplicate: true, orderId: order.id, status: commitResult.status });
+    }
 
     console.log(
-      `[LobWebhook] Successfully updated Order ${order.id} status -> '${updates.status || order.status}' from event '${eventType}'`
+      `[LobWebhook] Successfully updated Order ${order.id} status -> '${commitResult.status}' from event '${eventType}'`
     );
 
     return NextResponse.json({
@@ -256,8 +335,8 @@ export async function POST(req: NextRequest) {
       matched: true,
       orderId: order.id,
       docketId: order.docketId,
-      status: updates.status || order.status,
-      lobTrackingNumber: updates.lobTrackingNumber || order.lobTrackingNumber,
+      status: commitResult.status,
+      lobTrackingNumber: commitResult.trackingNumber,
     });
   } catch (err: any) {
     console.error("[LobWebhook] Internal error processing webhook:", err);
