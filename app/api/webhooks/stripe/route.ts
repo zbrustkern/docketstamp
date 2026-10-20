@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         received: true,
         orderId,
-        handwryttenOrderId: result.handwryttenOrderId,
+        lobLetterId: result.lobLetterId,
         status: result.status,
       });
     }

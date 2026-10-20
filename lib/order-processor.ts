@@ -16,11 +16,12 @@ import { recordServerTelemetry } from "./metrics-rollup";
 import { sendDocketDispatchReceiptEmail } from "./email-alerts";
 import { getStripeClient } from "./stripe";
 import { resolvePaymentMode } from "./payment-mode";
+import { validateFrozenNoticeOrder } from "./order-record";
 
 export interface ProcessPaidOrderResult {
   success: boolean;
   status: string;
-  handwryttenOrderId?: string;
+  lobLetterId?: string;
   error?: string;
   alreadyProcessed?: boolean;
 }
@@ -82,12 +83,12 @@ export function validatePersonalSender(
 
 export class DuplicateDispatchError extends Error {
   public status: string;
-  public handwryttenOrderId?: string;
-  constructor(status: string, handwryttenOrderId?: string) {
+  public lobLetterId?: string;
+  constructor(status: string, lobLetterId?: string) {
     super(`Order already in state ${status}`);
     this.name = "DuplicateDispatchError";
     this.status = status;
-    this.handwryttenOrderId = handwryttenOrderId;
+    this.lobLetterId = lobLetterId;
   }
 }
 
@@ -143,22 +144,21 @@ export async function processPaidOrder(
       }
 
       const existingOrder = snapshot.data() as Order;
+      const snapshotError = validateFrozenNoticeOrder(existingOrder);
+      if (snapshotError) {
+        throw new Error(`ORDER_NOT_DISPATCHABLE:${snapshotError}`);
+      }
 
       // Check if already dispatched, processing, or actively being dispatched
-      const isStaleLock =
-        existingOrder.status === "DISPATCHING" &&
-        existingOrder.dispatchStartedAt &&
-        Date.now() - existingOrder.dispatchStartedAt > 5 * 60 * 1000;
-
       if (
-        (existingOrder.status === "DISPATCHING" && !isStaleLock) ||
+        existingOrder.status === "DISPATCHING" ||
         existingOrder.status === "PROCESSING_DISPATCH" ||
         existingOrder.status === "PROCESSING_HANDWRYTTEN" ||
         existingOrder.status === "MAILED"
       ) {
         throw new DuplicateDispatchError(
           existingOrder.status,
-          existingOrder.handwryttenOrderId
+          existingOrder.lobLetterId
         );
       }
 
@@ -189,17 +189,20 @@ export async function processPaidOrder(
   } catch (err: unknown) {
     if (err instanceof DuplicateDispatchError) {
       console.log(
-        `[OrderProcessor] Idempotency lock active: Order ${orderId} is currently '${err.status}' (HW ID: ${err.handwryttenOrderId || "pending"}). Safely dropping duplicate dispatch.`
+        `[OrderProcessor] Idempotency lock active: Order ${orderId} is currently '${err.status}' (Lob ID: ${err.lobLetterId || "pending"}). Safely dropping duplicate dispatch.`
       );
       return {
         success: true,
         status: err.status,
-        handwryttenOrderId: err.handwryttenOrderId,
+        lobLetterId: err.lobLetterId,
         alreadyProcessed: true,
       };
     }
 
     const msg = err instanceof Error ? err.message : String(err);
+    if (msg.startsWith("ORDER_NOT_DISPATCHABLE:")) {
+      return { success: false, status: msg.slice("ORDER_NOT_DISPATCHABLE:".length), error: "Only a complete, integrity-verified frozen notice can be dispatched." };
+    }
     if (msg.includes("not found")) {
       return {
         success: false,
@@ -338,7 +341,7 @@ export async function processPaidOrder(
       address_state: order.returnAddress.state,
       address_zip: order.returnAddress.zip,
     },
-    file: order.documentHtml || order.printedMessage || `<html><body><h1>Formal Notice ${docketId}</h1><p>${order.handwrittenNote || ""}</p></body></html>`,
+    file: order.documentHtml as string,
     color: false,
   });
 
@@ -410,14 +413,31 @@ export async function processPaidOrder(
     };
   }
 
+  if (lobResult.isSimulatedMock === true) {
+    const simulationMessage = "Postal dispatch was simulated; no USPS mailing was created.";
+    await updateOrderStatus(orderId, {
+      status: "QUEUED_FOR_FULFILLMENT",
+      postalProvider: "unknown",
+      fulfillmentError: simulationMessage,
+      ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
+        ? {
+            isTest: true,
+            paymentMode: clientContext?.paymentMode || "local_mock",
+          }
+        : {}),
+    });
+    return { success: false, status: "QUEUED_FOR_FULFILLMENT", error: simulationMessage };
+  }
+
   // 6. Update Firestore Order to PROCESSING_DISPATCH
   await updateOrderStatus(orderId, {
     status: "PROCESSING_DISPATCH",
     lobLetterId: fulfillment.order_id,
+    postalProvider: "lob",
+    postalProviderReference: fulfillment.order_id,
     lobTrackingNumber: fulfillment.trackingNumber,
     lobTrackingUrl: fulfillment.url,
     expectedDeliveryDate: fulfillment.expectedDeliveryDate,
-    handwryttenOrderId: fulfillment.order_id, // Backward compatibility
     fulfillmentError: undefined,
     ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
       ? {
@@ -534,7 +554,7 @@ export async function processPaidOrder(
       sessionId: rawSessionId,
       orderId,
       metadata: {
-        handwryttenOrderId: fulfillment.order_id,
+        lobLetterId: fulfillment.order_id,
         isTest: isTestModePayment,
       },
       experienceVersion: order.experienceVersion,
@@ -548,6 +568,6 @@ export async function processPaidOrder(
   return {
     success: true,
     status: "PROCESSING_DISPATCH",
-    handwryttenOrderId: fulfillment.order_id,
+    lobLetterId: fulfillment.order_id,
   };
 }

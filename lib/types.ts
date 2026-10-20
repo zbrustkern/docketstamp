@@ -105,6 +105,10 @@ export interface DocumentIntegrityEvidence {
 }
 
 export interface Order {
+  /** v2 orders are deterministic DocketStamp notice orders; absent means pre-migration history. */
+  schemaVersion?: 2;
+  kind?: "notice";
+  noticeVersion?: number;
   id: string;
   stripePaymentId?: string;
   customerEmail: string;
@@ -115,6 +119,9 @@ export interface Order {
   noticeType?: string;
   serviceLevel?: "FIRST_CLASS" | "CERTIFIED" | "CERTIFIED_RETURN_RECEIPT";
   lobLetterId?: string;
+  /** Explicit provider identity for a postal reference. Legacy aliases are never inferred as Lob. */
+  postalProvider?: "lob" | "handwrytten" | "unknown";
+  postalProviderReference?: string;
   lobStatus?: string;
   lobTrackingNumber?: string;
   lobTrackingUrl?: string;

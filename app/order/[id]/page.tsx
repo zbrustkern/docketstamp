@@ -209,7 +209,7 @@ export default function OrderStatusPage() {
                 const confirmData = await confirmRes.json();
                 if (confirmData.success && confirmData.status) {
                   data.order.status = confirmData.status;
-                  data.order.handwryttenOrderId = confirmData.handwryttenOrderId;
+                  data.order.lobLetterId = confirmData.lobLetterId;
                 }
               }
             } catch (cErr) {

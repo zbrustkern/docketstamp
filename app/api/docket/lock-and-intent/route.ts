@@ -228,6 +228,10 @@ export async function POST(req: NextRequest) {
 
     const orderRecord: Order = {
       id: orderId,
+      schemaVersion: 2,
+      kind: 'notice',
+      noticeVersion: 1,
+      postalProvider: 'unknown',
       userId: authenticatedUserId || undefined,
       customerEmail,
       docketId,
@@ -279,11 +283,30 @@ export async function POST(req: NextRequest) {
       },
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      ...(finalAmountInCents === 0 ? { paymentMethod: 'PROMO_CODE' as const } : {}),
     };
 
     // Commit snapshot before requesting payment credentials
     failureCode = 'ORDER_PERSISTENCE';
     await saveOrder(orderRecord);
+
+    // A 100% discount is still a fully frozen notice order, but it does not
+    // require a zero-dollar Stripe PaymentIntent. The free-order endpoint binds
+    // it to durable free authorization before postal dispatch.
+    if (finalAmountInCents === 0) {
+      return NextResponse.json({
+        orderId,
+        viewToken,
+        clientSecret: null,
+        paymentIntentId: null,
+        docketId,
+        amountCents: 0,
+        tier: activeTier,
+        isFree: true,
+        discountCode: appliedDiscountCode,
+        discountAmountInCents,
+      });
+    }
 
     // 8. Create Stripe PaymentIntent
     failureCode = 'PAYMENT_INITIALIZATION';

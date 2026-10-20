@@ -11,6 +11,7 @@ import { POST as confirmOrderPost } from '../app/api/checkout/confirm-order/rout
 import { GET as accountGet } from '../app/api/account/route';
 import { getOrderById, getOrderByDocketId, saveOrder, updateOrderStatus } from '../lib/firebase-admin';
 import { MailTierId } from '../src/lib/docket/types';
+import { createDocumentIntegrityEvidence } from '../src/lib/docket/integrity-evidence';
 
 // Enable mock stripe payment mode in test environment
 process.env.ALLOW_LOCAL_MOCK_PAYMENTS = 'true';
@@ -283,8 +284,20 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
 
     it('enforces fulfillment idempotency on /api/checkout/confirm-order', async () => {
       const orderId = `order_idempotency_${Date.now()}`;
+      const lockedHtml = '<html><body>DOCKET RECORD & DISPATCH CERTIFICATION</body></html>';
+      const lockedAt = Date.now();
       await saveOrder({
         id: orderId,
+        schemaVersion: 2,
+        kind: 'notice',
+        noticeVersion: 1,
+        noticeId: 'fixture_notice',
+        noticeType: 'fixture-notice',
+        documentHtml: lockedHtml,
+        documentIntegrityEvidence: createDocumentIntegrityEvidence(lockedHtml, 'Sender', lockedAt, lockedAt),
+        postalProvider: 'lob',
+        postalProviderReference: 'ltr_fixture_123',
+        lobLetterId: 'ltr_fixture_123',
         customerEmail: 'idempotent@example.com',
         docketId: 'DS-2026-IDEMPOTENT',
         docketNumber: 'DS-2026-IDEMPOTENT',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { getOrderById } from "@/lib/firebase-admin";
 import { fetchLobLetterStatus } from "@/lib/fulfillment/lob";
+import { resolvePostalProvenance } from "@/lib/order-record";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,10 +22,10 @@ export async function GET(req: NextRequest) {
     }
 
     let postalLiveStatus: any = null;
-    const letterId = order.lobLetterId || order.handwryttenOrderId;
-    if (letterId) {
+    const provenance = resolvePostalProvenance(order);
+    if (provenance.provider === "lob" && provenance.reference) {
       try {
-        postalLiveStatus = await fetchLobLetterStatus(letterId);
+        postalLiveStatus = await fetchLobLetterStatus(provenance.reference);
       } catch (err) {
         console.warn("[Order Proof] Notice querying Lob live status:", err);
       }
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       order,
       postalStatus: postalLiveStatus,
-      handwrytten: postalLiveStatus,
+      postalProvenance: provenance,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Error fetching order proof";

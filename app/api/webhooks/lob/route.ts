@@ -7,6 +7,7 @@ import {
   updateOrderStatus,
 } from "@/lib/firebase-admin";
 import { Order, OrderStatus } from "@/lib/types";
+import { readOrderRecord, resolvePostalProvenance } from "@/lib/order-record";
 
 /**
  * Maps Lob webhook events to internal OrderStatus lifecycle states.
@@ -184,10 +185,24 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const record = readOrderRecord(order);
+    const provenance = resolvePostalProvenance(order);
+    if (record.schemaVersion !== 2 || record.kind !== "notice") {
+      return NextResponse.json({ received: true, matched: false, ignored: "LEGACY_ORDER" });
+    }
+    if (
+      provenance.provider === "handwrytten" ||
+      (provenance.provider === "lob" && letterId && provenance.reference !== letterId)
+    ) {
+      return NextResponse.json({ received: true, matched: false, ignored: "PROVIDER_PROVENANCE_MISMATCH" });
+    }
+
     // Build partial order update
     const nextStatus = mapLobEventToOrderStatus(eventType);
     const updates: Partial<Order> = {
       lobStatus: eventType,
+      postalProvider: "lob",
+      ...(letterId ? { postalProviderReference: letterId } : {}),
       updatedAt: Date.now(),
     };
 

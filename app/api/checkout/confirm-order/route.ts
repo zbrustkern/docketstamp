@@ -5,6 +5,7 @@ import { processPaidOrder } from "@/lib/order-processor";
 import { getOrderById, updateOrderStatus } from "@/lib/firebase-admin";
 import { logIncident } from "@/lib/incident-logger";
 import { consumePaymentObligation, recordPaymentAuthority } from "@/lib/admin-console/finance/authority";
+import { readOrderRecord, resolvePostalProvenance, validateFrozenNoticeOrder } from "@/lib/order-record";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +20,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Order ${orderId} not found` }, { status: 404 });
     }
 
+    const record = readOrderRecord(order);
+    if (record.schemaVersion !== 2 || record.kind !== "notice") {
+      return NextResponse.json({ code: "LEGACY_ORDER_UNSUPPORTED", error: "This historical order cannot enter the notice payment or dispatch flow." }, { status: 410 });
+    }
+    const snapshotError = validateFrozenNoticeOrder(order);
+    if (snapshotError) {
+      return NextResponse.json({ code: snapshotError, error: "The locked notice snapshot failed integrity verification." }, { status: 409 });
+    }
+
     // Idempotency: If the obligation has already advanced, return current state.
     if (
       order.status === "DISPATCHING" ||
@@ -30,7 +40,7 @@ export async function POST(req: NextRequest) {
         success: true,
         status: order.status,
         orderId,
-        handwryttenOrderId: order.handwryttenOrderId,
+        lobLetterId: resolvePostalProvenance(order).provider === "lob" ? resolvePostalProvenance(order).reference : undefined,
         alreadyProcessed: true,
       });
     }
@@ -162,7 +172,7 @@ export async function POST(req: NextRequest) {
       success: result.success,
       status: result.status,
       orderId,
-      handwryttenOrderId: result.handwryttenOrderId,
+      lobLetterId: result.lobLetterId,
       error: result.error,
       alreadyProcessed: result.alreadyProcessed,
     });

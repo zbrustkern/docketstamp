@@ -1,0 +1,34 @@
+[
+  {
+    "id": "fixture_legacy_lob_only",
+    "status": "MAILED",
+    "lobLetterId": "ltr_fixture_lob_001",
+    "documentHtml": "<html>fixture frozen content A</html>",
+    "documentIntegrityEvidence": { "schemaVersion": 1, "algorithm": "sha256", "digest": "fixture-a" }
+  },
+  {
+    "id": "fixture_legacy_hw_only",
+    "status": "PROCESSING_HANDWRYTTEN",
+    "handwryttenOrderId": "hw_fixture_002",
+    "documentHtml": "<html>fixture frozen content B</html>"
+  },
+  {
+    "id": "fixture_conflicting_provider_ids",
+    "status": "MAILED",
+    "lobLetterId": "ltr_fixture_lob_003",
+    "handwryttenOrderId": "hw_fixture_003"
+  },
+  {
+    "id": "fixture_unknown_provider",
+    "status": "FAILED"
+  },
+  {
+    "id": "fixture_canonical_notice",
+    "schemaVersion": 2,
+    "kind": "notice",
+    "noticeId": "notice_fixture",
+    "noticeType": "fixture",
+    "status": "PENDING_PAYMENT",
+    "postalProvider": "unknown"
+  }
+]

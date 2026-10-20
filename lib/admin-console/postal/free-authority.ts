@@ -3,6 +3,7 @@ import { firestoreDb, sanitizeFirestoreData } from "@/lib/firebase-admin";
 import type { Order } from "@/lib/types";
 import { computeOrderSnapshotHash } from "@/lib/admin-console/finance/authority";
 import { serverEnvironment } from "@/lib/admin-console/commands/access";
+import { readOrderRecord, validateFrozenNoticeOrder } from "@/lib/order-record";
 
 const COLLECTION = "free_authorizations_v1";
 const hashId = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
@@ -26,8 +27,8 @@ export interface FreeAuthorizationFact {
 
 function eligibleZeroOrder(order: Order): boolean {
   return (order.finalAmountInCents ?? order.amountInCents) === 0 && Boolean(
-    order.documentHtml && order.docketId && order.noticeId && order.recipientAddress && order.returnAddress && order.serviceLevel,
-  );
+    order.recipientAddress && order.returnAddress && order.serviceLevel,
+  ) && readOrderRecord(order).schemaVersion === 2 && readOrderRecord(order).kind === "notice" && !validateFrozenNoticeOrder(order);
 }
 
 /** Internal server writer: create durable evidence for an already committed free order. */

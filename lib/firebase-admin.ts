@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
 import { Order, ImageCachePoolItem, DiscountCode, SystemIncident } from "./types";
+import { readOrderRecord, resolvePostalProvenance } from "./order-record";
 import { optimizeCoverImage } from "./image-optimizer";
 import { resolveFirebaseConfig } from "./firebase-config";
 
@@ -578,23 +579,20 @@ export async function saveOrder(order: Order): Promise<void> {
 export async function getOrderById(orderId: string): Promise<Order | null> {
   const doc = await getOrdersCollection().doc(orderId).get();
   if (!doc.exists) return null;
-  return doc.data() as Order;
+  return readOrderRecord(doc.data()).order;
 }
 
 export async function getOrderByDocketId(docketId: string): Promise<Order | null> {
   const snapshot = await getOrdersCollection().where("docketId", "==", docketId).limit(1).get();
   if (snapshot.empty) return null;
-  return snapshot.docs[0].data() as Order;
+  return readOrderRecord(snapshot.docs[0].data()).order;
 }
 
 export async function getOrderByLobLetterId(letterId: string): Promise<Order | null> {
   const snapshot = await getOrdersCollection().where("lobLetterId", "==", letterId).limit(1).get();
-  if (snapshot.empty) {
-    const legacySnapshot = await getOrdersCollection().where("handwryttenOrderId", "==", letterId).limit(1).get();
-    if (legacySnapshot.empty) return null;
-    return legacySnapshot.docs[0].data() as Order;
-  }
-  return snapshot.docs[0].data() as Order;
+  if (snapshot.empty) return null;
+  const order = readOrderRecord(snapshot.docs[0].data()).order;
+  return resolvePostalProvenance(order).provider === "lob" ? order : null;
 }
 
 export async function updateOrderStatus(

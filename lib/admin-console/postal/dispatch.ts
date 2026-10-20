@@ -4,6 +4,7 @@ import { serverEnvironment } from "@/lib/admin-console/commands/access";
 import { claimDispatchAttempt, finishDispatchAttempt, AttemptAuthority } from "./attempt-store";
 import { getVerifiedPaymentObligation } from "@/lib/admin-console/finance/authority";
 import { getFreeObligation } from "./free-authority";
+import { readOrderRecord, resolvePostalProvenance, validateFrozenNoticeOrder } from "@/lib/order-record";
 
 function lobAddress(address: any): LobLetterDispatchParams["to"] {
   const fullName = [address.firstName, address.lastName].filter(Boolean).join(" ");
@@ -24,7 +25,11 @@ export async function resolvePostalObligation(orderId: string): Promise<Authoriz
   const proof: any = paid || free;
   if (!proof) return null;
   const order = proof.order;
-  const documentHtml = order.documentHtml || (order as any).frozen_html_payload;
+  const record = readOrderRecord(order);
+  if (record.schemaVersion !== 2 || record.kind !== "notice" || validateFrozenNoticeOrder(order)) return null;
+  const postal = resolvePostalProvenance(order);
+  if (postal.provider === "handwrytten") return null;
+  const documentHtml = order.documentHtml;
   return {
     verified: true, orderId, version: proof.snapshotVersion, environment: proof.environment || proof.paymentFact?.environment,
     ...(proof.paymentFact ? { paymentFactId: proof.paymentFact.factId || order.paymentFactId } : {}),
