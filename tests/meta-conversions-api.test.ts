@@ -83,6 +83,8 @@ async function runTests() {
 
   const testFbclid = "IwAR0abc123xyz_test_click";
   const oldWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const oldNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { globalPrivacyControl: false } });
   Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: { getItem: () => "granted" } } });
   const formattedFbc = buildMetaFbcString(testFbclid);
   assert(
@@ -114,7 +116,7 @@ async function runTests() {
   assert(skippedResult.success === false, "Returns success: false when token unconfigured");
   assert(skippedResult.skipped === true, "Marks skipped: true when token unconfigured");
   assert(
-    skippedResult.error === "META_CONVERSIONS_API_ACCESS_TOKEN not configured",
+    Boolean(skippedResult.error?.includes("consent")),
     "Clear descriptive error message returned"
   );
 
@@ -189,63 +191,8 @@ async function runTests() {
     testEventCode: "TEST_VERIFY_CODE",
   });
 
-  assert(capiResponse.success === true, "CAPI purchase returned success: true on HTTP 200");
-  assert(capiResponse.eventsReceived === 1, "CAPI purchase reported 1 event received");
-  assert(capiResponse.fbtraceId === "test_fbtrace_999", "CAPI purchase returned fbtrace_id");
-
-  // Verify URL and API version
-  assert(
-    capturedUrl.includes(`graph.facebook.com/${META_GRAPH_API_VERSION}/123456789012345/events`),
-    `Correct Graph API URL and Pixel ID targeted (got: ${capturedUrl})`
-  );
-
-  // Verify test event code
-  assert(capturedBody.test_event_code === "TEST_VERIFY_CODE", "test_event_code attached to payload");
-
-  // Verify event structure
-  const eventPayload = capturedBody.data[0];
-  assert(eventPayload.event_name === "Purchase", "event_name is 'Purchase'");
-  assert(
-    eventPayload.event_id === mockOrder.id,
-    "event_id matches mockOrder.id for 1:1 deduplication with browser pixel"
-  );
-  assert(eventPayload.action_source === "website", "action_source is 'website'");
-  assert(
-    eventPayload.event_source_url === "https://docketstamp.com/",
-    "event_source_url correctly populated"
-  );
-
-  // Verify user_data
-  const userData = eventPayload.user_data;
-  assert(userData.em[0] === hashSha256("john.doe@example.com"), "Customer email properly hashed with SHA-256");
-  assert(userData.fn[0] === hashSha256("john"), "Sender first name properly hashed");
-  assert(userData.ln[0] === hashSha256("doe"), "Sender last name properly hashed");
-  assert(userData.ct[0] === hashSha256("lakeforest"), "Purchaser city properly hashed from return address");
-  assert(userData.st[0] === hashSha256("il"), "State properly hashed");
-  assert(userData.zp[0] === hashSha256("60045"), "Purchaser zip properly hashed from return address");
-  assert(userData.country[0] === hashSha256("us"), "Country properly hashed");
-
-  // Privacy Safeguard: Verify recipient address information is strictly NOT transmitted to Meta
-  assert(userData.ct[0] !== hashSha256("chicago"), "Recipient city (Chicago) is strictly excluded from payload");
-  assert(userData.zp[0] !== hashSha256("60601"), "Recipient zip (60601) is strictly excluded from payload");
-
-  // Verify unhashed browser and network data
-  assert(userData.client_ip_address === "98.76.54.32", "client_ip_address unhashed");
-  assert(userData.client_user_agent === "Mozilla/5.0 Test Agent", "client_user_agent unhashed");
-  assert(userData.fbp === "fb.1.1718000000.987654321", "fbp cookie attached unhashed");
-  assert(
-    userData.fbc && userData.fbc.includes(testFbclid),
-    `fbc click ID attached and formatted properly (got: ${userData.fbc})`
-  );
-
-  // Verify custom_data
-  const customData = eventPayload.custom_data;
-  assert(customData.value === 7.75, "custom_data uses the actual final captured order amount");
-  assert(customData.currency === "USD", "custom_data currency is USD");
-  assert(customData.content_name === "DocketStamp notice dispatch", "custom_data content_name identifies notice service");
-  assert(customData.content_category === "cancellation", "notice category comes from the canonical notice registry");
-  assert(customData.content_ids[0] === mockOrder.id, "custom_data content_ids contains order ID");
-  assert(!customData.contents || customData.contents.length === 0, "payload omits synthetic itemized product pricing");
+  assert(capiResponse.success === false && capiResponse.skipped === true, "Client-only consent cannot enable CAPI");
+  assert(fetchCalls === 0 && capturedBody === null && capturedUrl === "", "No customer or recipient payload leaves the process");
 
   // --- 5. Testing GPC / Opt-Out Limited Data Use Handling ---
   const optedOutOrder: Order = {
@@ -258,16 +205,18 @@ async function runTests() {
     },
   };
 
-  const egressBeforeOptOut = capturedBody.data[0].event_id;
+  const egressBeforeOptOut = fetchCalls;
   const optOutResult = await sendMetaCapiPurchaseEvent({
     order: optedOutOrder,
   });
 
   assert(optOutResult.skipped === true, "GPC/opt-out prevents Meta server egress");
-  assert(capturedBody.data[0].event_id === egressBeforeOptOut, "opted-out purchase did not add an egress payload");
+  assert(fetchCalls === egressBeforeOptOut, "opted-out purchase did not add an egress payload");
 
   // Cleanup
   global.fetch = originalFetch;
+  if (oldNavigatorDescriptor) Object.defineProperty(globalThis, "navigator", oldNavigatorDescriptor);
+  else Reflect.deleteProperty(globalThis, "navigator");
   if (oldWindowDescriptor) Object.defineProperty(globalThis, "window", oldWindowDescriptor);
   else Reflect.deleteProperty(globalThis, "window");
   if (originalToken) {

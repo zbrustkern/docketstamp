@@ -199,7 +199,7 @@ async function runTests() {
   // Save sample order for user
   const sampleOrder: Order = {
     id: "ord_account_test_01",
-    userId: "usr_alice",
+    userId: "alice@example.com",
     customerEmail: "alice@example.com",
     docketId: "DS-2026-TEST-ALICE",
     docketNumber: "DS-2026-TEST-ALICE",

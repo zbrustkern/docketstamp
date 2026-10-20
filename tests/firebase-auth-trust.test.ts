@@ -30,6 +30,7 @@ const validClaims = (overrides: Record<string, unknown> = {}) => {
     iat: now,
     email: "zbrustkern@gmail.com",
     email_verified: true,
+    firebase: { sign_in_provider: "google.com", identities: { "google.com": ["trusted-user"] } },
     ...overrides,
   } as never;
 };
@@ -155,4 +156,21 @@ test("server project resolution rejects contradictory production/staging setting
   });
   assert.notEqual(conflicting.status, 0);
   assert.match(`${conflicting.stdout}\n${conflicting.stderr}`, /staging and production identifiers conflict/);
+});
+
+
+test("an allowlisted email cannot mint an admin session without verified Google authentication", async () => {
+  process.env.ADMIN_SESSION_SIGNING_KEY = "test_only_explicit_signing_key_for_admin_binding_suite";
+  const login = () => adminAuthPost(new NextRequest("http://localhost:3000/api/admin/auth", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ idToken: "mock_token_allowlisted_identity" }),
+  }));
+  for (const override of [{ email_verified: false }, { firebase: { sign_in_provider: "password" } }]) {
+    setFirebaseAuthTestVerifier(async () => validClaims(override));
+    const denied = await login();
+    assert.equal(denied.status, 403);
+    assert.equal(denied.headers.getSetCookie().length, 0);
+  }
+  setFirebaseAuthTestVerifier(async () => validClaims());
+  assert.equal((await login()).status, 200);
 });

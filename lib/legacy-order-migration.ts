@@ -28,6 +28,7 @@ export interface MigrationCounts {
 export interface LegacyOrderMigrationManifest {
   schemaVersion: 1;
   runId: string;
+  sourceFingerprint: string;
   dryRun: true;
   generatedAt: string;
   beforeCounts: MigrationCounts;
@@ -104,6 +105,29 @@ export function planLegacyOrderMigration(input: {
   now?: Date;
 }): LegacyOrderMigrationManifest {
   if (!input.runId.trim()) throw new Error("MIGRATION_RUN_ID_REQUIRED");
+  const ids = input.records.map(raw => {
+    if (!raw || typeof raw !== "object" || typeof (raw as Record<string, unknown>).id !== "string" || !(raw as Record<string, string>).id.trim()) {
+      throw new Error("MIGRATION_RECORD_ID_REQUIRED");
+    }
+    return (raw as Record<string, string>).id;
+  });
+  if (new Set(ids).size !== ids.length) throw new Error("MIGRATION_DUPLICATE_RECORD_ID");
+  if (input.batchSize !== undefined && (!Number.isInteger(input.batchSize) || input.batchSize < 1 || input.batchSize > 500)) {
+    throw new Error("MIGRATION_BATCH_SIZE_INVALID");
+  }
+  const orderedSource = [...input.records].sort((a, b) => (a as Record<string, string>).id.localeCompare((b as Record<string, string>).id));
+  const sourceFingerprint = createHash("sha256").update(JSON.stringify(orderedSource)).digest("hex");
+  if (input.priorManifest && (input.priorManifest.runId !== input.runId || input.priorManifest.sourceFingerprint !== sourceFingerprint)) {
+    throw new Error("MIGRATION_CHECKPOINT_SOURCE_MISMATCH");
+  }
+  if (
+    input.priorManifest && input.afterOrderId !== undefined &&
+    input.afterOrderId !== input.priorManifest.checkpoint.lastOrderId
+  ) {
+    throw new Error("MIGRATION_CHECKPOINT_CURSOR_MISMATCH");
+  }
+  const requestedAfter = input.afterOrderId || input.priorManifest?.checkpoint.lastOrderId;
+  if (requestedAfter && !ids.includes(requestedAfter)) throw new Error("MIGRATION_CHECKPOINT_ID_UNKNOWN");
   const all = input.records
     .map((raw) => ({ raw, item: classifyLegacyOrder(raw) }))
     .sort((a, b) => a.item.orderId.localeCompare(b.item.orderId));
@@ -164,6 +188,7 @@ export function planLegacyOrderMigration(input: {
   return {
     schemaVersion: 1,
     runId: input.runId,
+    sourceFingerprint,
     dryRun: true,
     generatedAt: (input.now || new Date()).toISOString(),
     beforeCounts: countLegacyOrders(input.records),

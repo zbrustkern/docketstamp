@@ -217,34 +217,6 @@ export interface ImageCachePoolItem {
   isGenerated?: boolean;
 }
 
-export interface HandwryttenAddress {
-  first_name: string;
-  last_name: string;
-  address1: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zip: string;
-}
-
-export interface HandwryttenOrderParams {
-  orderId?: string; // Internal order ID for idempotency & deduplication
-  imageUrl: string;
-  printedGreeting?: string;
-  handwrittenMessage: string;
-  fontId: string;
-  recipient: MailingAddress;
-  returnAddress: MailingAddress;
-  scheduledSendDate?: string; // YYYY-MM-DD
-}
-
-export interface HandwryttenOrderResult {
-  success: boolean;
-  order_id?: string;
-  error?: string;
-  details?: Record<string, unknown>;
-}
-
 export interface FontOption {
   id: string;
   name: string;

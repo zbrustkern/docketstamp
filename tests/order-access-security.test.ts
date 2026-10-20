@@ -1,3 +1,4 @@
+import "./helpers/firebase-auth-test-verifier";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { NextRequest } from "next/server";

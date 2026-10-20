@@ -45,6 +45,7 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { trackFunnelEvent, getSessionId } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
 import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
+import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
 import { checkoutErrorMessage } from '@/lib/docket/checkout-errors';
 
 export interface CheckoutModalProps {
@@ -273,6 +274,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           telemetrySessionId: getSessionId(),
           experienceVersion: 'home_v2',
           entrySource,
+          marketingConsent: hasExplicitMarketingConsent(),
           signatureAdoption: {
             adopted: isSignatureAdopted,
             affirmed: isAffirmed,
@@ -462,6 +464,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </label>
               <input
                 id="checkout-email"
+                aria-invalid={errorMessage ? (!email.trim() || !email.includes('@') || !email.includes('.')) : undefined}
+                aria-describedby={errorMessage ? "checkout-delivery-error" : undefined}
                 type="email"
                 required
                 placeholder="you@example.com"

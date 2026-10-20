@@ -4,7 +4,8 @@ import {
   isBusinessDay,
   addBusinessDays,
 } from "../lib/delivery-estimate";
-import { PRODUCT_TIMING, PRODUCT_PRICE, PRODUCT_FORMAT } from "../lib/product-facts";
+import { DOCKET_POSTAL_TIMING } from "../lib/delivery-estimate";
+import { DOCKETSTAMP_SERVICE_TIERS } from "../scripts/bootstrap-stripe";
 
 console.log("=================================================");
 console.log("🧪 RUNNING CANONICAL DELIVERY ESTIMATE & FACTS TESTS");
@@ -55,7 +56,7 @@ assert.ok(typeof estimate.formattedRange === "string", "formattedRange is a stri
 assert.strictEqual(estimate.isEstimate, true, "isEstimate is explicitly true");
 assert.ok(estimate.guidanceText.includes("estimated, not guaranteed"), "Guidance explicitly states timing is estimated, not guaranteed");
 assert.ok(estimate.guidanceText.includes("1–2 business days"), "Guidance includes 1–2 business days preparation");
-assert.ok(estimate.guidanceText.includes("2–7 business days"), "Guidance includes 2–7 business days transit");
+assert.ok(estimate.guidanceText.includes("2–5 business days"), "Guidance includes 2–5 business days transit");
 console.log("✅ PASS: calculateDeliveryEstimate fulfills honest guidance contract");
 
 // 4. Test scheduled date input
@@ -65,19 +66,12 @@ assert.strictEqual(scheduledEstimate.isScheduled, true, "isScheduled is true for
 assert.ok(scheduledEstimate.formattedRange.includes("Dec"), "Formatted range reflects December");
 console.log("✅ PASS: Scheduled delivery estimates correctly compute future ranges");
 
-// 5. Test canonical product facts values
-console.log("\n--- 5. Testing Canonical Product Facts ---");
-assert.strictEqual(PRODUCT_PRICE.amountInDollars, 9, "Price is $9");
-assert.strictEqual(PRODUCT_PRICE.amountInCents, 900, "Price in cents is 900");
-assert.strictEqual(PRODUCT_FORMAT.formatName, "Folded A2", "Format is Folded A2");
-assert.strictEqual(PRODUCT_FORMAT.foldedWidthInches, 4.25, "Folded width is 4.25");
-assert.strictEqual(PRODUCT_FORMAT.foldedHeightInches, 5.5, "Folded height is 5.5");
-assert.strictEqual(PRODUCT_FORMAT.aspectRatioFront.ratioString, "17:22", "Aspect ratio is 17:22");
-assert.strictEqual(PRODUCT_TIMING.preparationBusinessDaysMin, 1, "Min prep is 1 business day");
-assert.strictEqual(PRODUCT_TIMING.preparationBusinessDaysMax, 2, "Max prep is 2 business days");
-assert.strictEqual(PRODUCT_TIMING.transitBusinessDaysMin, 2, "Min transit is 2 business days");
-assert.strictEqual(PRODUCT_TIMING.transitBusinessDaysMax, 7, "Max transit is 7 business days");
-console.log("✅ PASS: Canonical product facts match canonical product specs exactly");
+// DocketStamp tier pricing replaces the predecessor folded-card product facts.
+assert.deepEqual(DOCKETSTAMP_SERVICE_TIERS.map(tier => tier.amountInCents), [1295, 1995, 2795]);
+assert.equal(DOCKET_POSTAL_TIMING.preparationBusinessDaysMin, 1);
+assert.equal(DOCKET_POSTAL_TIMING.preparationBusinessDaysMax, 2);
+assert.equal(DOCKET_POSTAL_TIMING.transitBusinessDaysMin, 2);
+assert.equal(DOCKET_POSTAL_TIMING.transitBusinessDaysMax, 5);
 
 console.log("\n=================================================");
 console.log("🎉 ALL DELIVERY ESTIMATE & PRODUCT FACTS TESTS PASSED");

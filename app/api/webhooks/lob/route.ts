@@ -187,12 +187,16 @@ export async function POST(req: NextRequest) {
     }
 
     const provenance = resolvePostalProvenance(order);
-    if (validateFrozenNoticeOrder(order)) {
+    // Receiving a signed postal event is not a new dispatch. Keep tracking for
+    // an explicitly matched historical Lob letter even when old records lack
+    // today's snapshot schema. Unknown/provider-conflict records cannot borrow IDs.
+    if (provenance.provider === "unknown" &&
+        (provenance.evidence === "conflict" || validateFrozenNoticeOrder(order))) {
       return NextResponse.json({ received: true, matched: false, ignored: "LEGACY_ORDER" });
     }
     if (
-      provenance.provider === "handwrytten" ||
-      (provenance.provider === "lob" && letterId && provenance.reference !== letterId)
+      !letterId || provenance.provider === "handwrytten" ||
+      (provenance.provider === "lob" && provenance.reference !== letterId)
     ) {
       return NextResponse.json({ received: true, matched: false, ignored: "PROVIDER_PROVENANCE_MISMATCH" });
     }

@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { NOTICE_REMINDER_LEAD_TIME_OPTIONS, type NoticeDeadlineReminderV1 } from "@/lib/reminder-contract";
-import { buildNoticePrefillUrl } from "@/lib/account/notice-prefill";
+import { stageNoticePrefill } from "@/lib/account/notice-prefill";
 import type { SavedAddress, MailingAddress } from "@/lib/types";
 
 interface NoticeOption { slug: string; title: string }
@@ -30,6 +30,8 @@ const statusText: Record<string, string> = {
 
 export function NoticeDeadlineReminders({ notices, savedAddresses, sender }: Props) {
   const { user } = useAuth();
+  const router = useRouter();
+  const [reviewing, setReviewing] = useState(false);
   const [items, setItems] = useState<NoticeDeadlineReminderV1[]>([]);
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
   const [deliveryMessage, setDeliveryMessage] = useState("");
@@ -99,6 +101,7 @@ export function NoticeDeadlineReminders({ notices, savedAddresses, sender }: Pro
     setError("");
     try {
       if (!user) throw new Error("Sign in to manage notice reminders.");
+      if (!consent) throw new Error("Select the consent checkbox to save a one-time reminder.");
       const token = await user.getIdToken();
       const res = await fetch("/api/reminders", {
         method: "POST",
@@ -109,7 +112,7 @@ export function NoticeDeadlineReminders({ notices, savedAddresses, sender }: Pro
           timezone,
           label: label.trim(),
           noticeSlug,
-          consent: true,
+          consent,
           leadTimeDays,
         }),
       });
@@ -138,6 +141,20 @@ export function NoticeDeadlineReminders({ notices, savedAddresses, sender }: Pro
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not opt out of this reminder.");
+    }
+  }
+
+  async function reviewNotice(slug: string, recipient?: SavedAddress) {
+    if (reviewing) return;
+    setReviewing(true);
+    setError("");
+    try {
+      const staged = await stageNoticePrefill({ noticeSlug: slug, recipient, sender });
+      router.push(staged.reviewUrl);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save this review draft. Please retry.");
+    } finally {
+      setReviewing(false);
     }
   }
 
@@ -189,7 +206,7 @@ export function NoticeDeadlineReminders({ notices, savedAddresses, sender }: Pro
         <div className="sm:col-span-2 flex flex-wrap gap-2">
           <button disabled={saving} type="submit" className="min-h-11 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">{saving ? "Saving…" : editingId ? "Save changes" : "Save reminder"}</button>
           {editingId && <button type="button" onClick={resetForm} className="min-h-11 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 focus:outline-none focus:ring-2 focus:ring-sky-500">Cancel edit</button>}
-          {selectedRecipient && noticeSlug && <Link className="min-h-11 inline-flex items-center rounded-xl border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500" href={buildNoticePrefillUrl({ noticeSlug, recipient: selectedRecipient, sender })}>Review selected notice</Link>}
+          {selectedRecipient && noticeSlug && <button type="button" disabled={reviewing} onClick={() => void reviewNotice(noticeSlug, selectedRecipient)} className="min-h-11 inline-flex items-center rounded-xl border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50">{reviewing ? "Saving draft…" : "Review selected notice"}</button>}
         </div>
       </form>
 
@@ -199,10 +216,10 @@ export function NoticeDeadlineReminders({ notices, savedAddresses, sender }: Pro
             <div>
               <h3 className="font-semibold text-stone-900">{item.label}</h3>
               <p className="text-sm text-stone-600">{noticeTitle(item.noticeSlug)} · Deadline {item.deadlineDate} · {item.timezone} · {item.leadTimeDays === 0 ? "on deadline" : `${item.leadTimeDays} days before`}</p>
-              <p className="text-xs text-stone-500 mt-1">{statusText[item.status] || "Status unavailable"}{item.status === "failed" && item.lastError ? `: ${item.lastError}` : ""}</p>
+              <p className="text-xs text-stone-500 mt-1">{statusText[item.status] || "Status unavailable"}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href={buildNoticePrefillUrl({ noticeSlug: item.noticeSlug, sender })} className="min-h-10 inline-flex items-center rounded-lg border border-sky-200 px-3 py-2 text-sm font-medium text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500">Review notice</Link>
+              <button type="button" disabled={reviewing} onClick={() => void reviewNotice(item.noticeSlug)} className="min-h-10 inline-flex items-center rounded-lg border border-sky-200 px-3 py-2 text-sm font-medium text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50">{reviewing ? "Saving draft…" : "Review notice"}</button>
               {["scheduled", "failed"].includes(item.status) && <button type="button" onClick={() => edit(item)} className="min-h-10 rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-800 focus:outline-none focus:ring-2 focus:ring-sky-500">Edit</button>}
               {["scheduled", "failed", "claimed"].includes(item.status) && <button type="button" onClick={() => void optOut(item)} className="min-h-10 rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500">Opt out</button>}
             </div>

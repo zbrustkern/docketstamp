@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
       experienceVersion,
       entrySource,
       signatureAdoption,
+      marketingConsent = false,
     } = body;
 
     const noticeKey = slug || noticeSlug;
@@ -260,6 +261,8 @@ export async function POST(req: NextRequest) {
       attribution: {
         sessionId: cleanSessionId,
         utmSource: cleanEntrySource,
+        // Customer consent assertion captured at lock; omitted/denied stays false.
+        marketingConsent: marketingConsent === true,
       },
       recipientAddress: {
         firstName: interpolatedDoc.recipientAddress.name,

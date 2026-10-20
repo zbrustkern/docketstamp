@@ -97,9 +97,16 @@ function classificationFor(order: Order, mode: StripeMoneyMode) {
 
 export function computeOrderSnapshotHash(order: Order): string {
   const document = order.documentHtml || (order as Order & { frozen_html_payload?: string }).frozen_html_payload;
+  const versionedOrder = order as Order & { schemaVersion?: number; kind?: string };
   // Bind the document and envelope/quote. Status, IDs, email, attribution and
   // timestamps remain outside the hash because they change during operations.
+  // New canonical notices also bind the separate signature-adoption evidence.
+  // Markerless historical orders deliberately retain their prior hash shape so
+  // existing payment facts remain verifiable without rewriting old records.
   const stableSnapshot = {
+    ...(versionedOrder.schemaVersion === 2 && versionedOrder.kind === "notice"
+      ? { documentIntegrityEvidence: order.documentIntegrityEvidence || null }
+      : {}),
     documentHtml: document || null,
     legacyContent: document ? null : {
         noticeId: order.noticeId,

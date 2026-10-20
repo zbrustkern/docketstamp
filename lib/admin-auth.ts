@@ -104,7 +104,7 @@ export function generateAdminSessionToken(adminEmail: string = "zbrustkern@gmail
 
 /**
  * Validates the admin session token from the cookie or header.
- * Enforces v2 payload format (invalidating legacy smn_admin_ fallback tokens),
+ * Enforces v2 payload format (invalidating legacy unsigned fallback tokens),
  * server-side timestamp expiration (8 hours max), constant-time HMAC signature verification,
  * fail-closed signing key validation, and account-bound admin email authorization.
  */

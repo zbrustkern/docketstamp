@@ -6,6 +6,14 @@ import { execFileSync } from 'node:child_process';
 const root = process.cwd();
 const check = process.argv.includes('--check');
 const allowlist = JSON.parse(fs.readFileSync(path.join(root, 'docs/legacy-compatibility.json'), 'utf8'));
+const exceptionIds = new Set();
+for (const item of allowlist.exceptions) {
+  for (const key of ['id', 'file', 'category', 'match', 'context', 'owner', 'reason', 'retirement']) {
+    if (typeof item[key] !== 'string' || !item[key].trim()) throw new Error(`Invalid compatibility exception ${item.id}: missing ${key}`);
+  }
+  if (exceptionIds.has(item.id) || !Number.isInteger(item.maxMatches) || item.maxMatches < 1) throw new Error(`Invalid compatibility exception quota or ID: ${item.id}`);
+  exceptionIds.add(item.id);
+}
 const patterns = [
   ['brand', /send[\s_-]*my[\s_-]*notes|aster\s*(?:&|and|&amp;)\s*blanche/ig],
   ['provider', /handwrytten/ig],
@@ -18,6 +26,7 @@ const tracked = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '
 const files = [...new Set(tracked)].filter(f => /^(app|components|context|lib|src|public)\//.test(f) || /^apphosting.*\.yaml$/.test(f) || f === '.env.example');
 const findings = [];
 const used = new Set();
+const exceptionCounts = new Map();
 for (const file of files.sort()) {
   if (!/\.(?:tsx?|jsx?|json|yaml|css|html|webmanifest|txt)$/.test(file) && file !== '.env.example') continue;
   let contents;
@@ -26,19 +35,20 @@ for (const file of files.sort()) {
     for (const [category, regex] of patterns) {
       regex.lastIndex = 0;
       for (const match of line.matchAll(regex)) {
-        const exception = allowlist.exceptions.find(e => e.file === file && e.category === category && new RegExp(e.match, 'i').test(match[0]));
-        if (exception) used.add(exception.id);
+        const exception = allowlist.exceptions.find(e => e.file === file && e.category === category && new RegExp(e.match, 'i').test(match[0]) && (!e.context || new RegExp(e.context).test(line.trim())));
+        if (exception) { used.add(exception.id); exceptionCounts.set(exception.id, (exceptionCounts.get(exception.id) || 0) + 1); }
         findings.push({ file, line: index + 1, category, token: match[0], classification: exception ? 'intentional_compatibility' : 'needs_replacement', exception: exception?.id });
       }
     }
   }
 }
 const unresolved = findings.filter(f => f.classification === 'needs_replacement');
-const report = { schemaVersion: 1, generatedAt: new Date().toISOString(), scannedFiles: files.length, unresolved: unresolved.length, findings, unusedExceptions: allowlist.exceptions.filter(e => !used.has(e.id)).map(e => e.id) };
+const overBudgetExceptions = allowlist.exceptions.filter(e => (exceptionCounts.get(e.id) || 0) > (e.maxMatches ?? Infinity)).map(e => e.id);
+const report = { overBudgetExceptions, schemaVersion: 1, generatedAt: new Date().toISOString(), scannedFiles: files.length, unresolved: unresolved.length, findings, unusedExceptions: allowlist.exceptions.filter(e => !used.has(e.id)).map(e => e.id) };
 if (process.argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
 else {
   console.log(`Legacy audit: ${files.length} tracked/new active files; ${unresolved.length} unclassified matches.`);
   for (const f of unresolved) console.log(`${f.file}:${f.line} [${f.category}] ${f.token}`);
   console.log(`Intentional compatibility: ${findings.length - unresolved.length} matches. Unused exceptions: ${report.unusedExceptions.join(', ') || 'none'}.`);
 }
-if (check && (unresolved.length || report.unusedExceptions.length)) process.exitCode = 1;
+if (check && (unresolved.length || report.unusedExceptions.length || overBudgetExceptions.length)) process.exitCode = 1;

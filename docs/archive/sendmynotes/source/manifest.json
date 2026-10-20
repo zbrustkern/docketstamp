@@ -1,0 +1,64 @@
+{
+  "archivedAt": "2026-10-20",
+  "reason": "No application import/call sites remained for these predecessor builder, wallet-copy and card-draft modules. Their replacement capabilities are implemented by DocumentWorkspace, CheckoutModal, protected order detail, and src/lib/docket/draft-recovery.ts. Browser data is not removed or silently converted.",
+  "replacementCoverage": [
+    "tests/s4-details-and-review.test.ts",
+    "tests/s5-delivery-and-payment.test.ts",
+    "tests/s7-release-candidate.test.ts",
+    "tests/order-access-security.test.ts",
+    "tests/legacy-order-replacement.test.ts"
+  ],
+  "files": [
+    {
+      "originalPath": "components/v3/Step4ReviewAndPayment.tsx",
+      "archivePath": "docs/archive/sendmynotes/source/components/v3/Step4ReviewAndPayment.tsx.txt",
+      "sha256": "0055a10b363238059186808c87968c980f2824eb31486a181ba5767df4de9a11"
+    },
+    {
+      "originalPath": "components/v3/Step5Confirmation.tsx",
+      "archivePath": "docs/archive/sendmynotes/source/components/v3/Step5Confirmation.tsx.txt",
+      "sha256": "6e3d73e737d37ff4bbd98444626760ba4d5afb695e8453e30eaf9c302bfe698d"
+    },
+    {
+      "originalPath": "lib/device-wallet.ts",
+      "archivePath": "docs/archive/sendmynotes/source/lib/device-wallet.ts.txt",
+      "sha256": "2e7da4caa813d51d8edad5ae4d5c2d78e98351c8d2108564f9d979aacab32192"
+    },
+    {
+      "originalPath": "lib/draft/use-draft.ts",
+      "archivePath": "docs/archive/sendmynotes/source/lib/draft/use-draft.ts.txt",
+      "sha256": "678ad87c49bcd6a0f22e1cbee6a57150f12d52cad329de929abb3d89a634b6ba"
+    },
+    {
+      "originalPath": "lib/draft/types.ts",
+      "archivePath": "docs/archive/sendmynotes/source/lib/draft/types.ts.txt",
+      "sha256": "0189bf59545fcce975300e9f0827e2bcb34080f42f1e3b9b81c13ca4e7d63675"
+    },
+    {
+      "originalPath": "lib/draft/reducer.ts",
+      "archivePath": "docs/archive/sendmynotes/source/lib/draft/reducer.ts.txt",
+      "sha256": "aa9ea80da606484bd83c876e9b0ba3fcfb89ba5f1f5ad6132165d8c32cce89a4"
+    },
+    {
+      "originalPath": "lib/draft/index.ts",
+      "archivePath": "docs/archive/sendmynotes/source/lib/draft/index.ts.txt",
+      "sha256": "6202c5c1ffd7f21fc3c05e1970d02a5b39dc7852ebdde7c3bab567a3fac4868d"
+    },
+    {
+      "originalPath": "lib/draft/store.ts",
+      "archivePath": "docs/archive/sendmynotes/source/lib/draft/store.ts.txt",
+      "sha256": "9993c024182eac79beaf7f2fdf601b7880b523e5018be437fb4a21b8d7367abb"
+    },
+    {
+      "originalPath": "tests/draft.test.ts",
+      "archivePath": "docs/archive/sendmynotes/source/tests/draft.test.ts.txt",
+      "sha256": "e8f8744342a44c52fe89bc0ef79f05f31b34bbae0b0a6e9b3d0c3550946e740c"
+    },
+    {
+      "originalPath": "components/admin/HandwryttenStatusWidget.tsx",
+      "archivePath": "docs/archive/sendmynotes/source/components/admin/HandwryttenStatusWidget.tsx.txt",
+      "sha256": "ccd14a8265d090c21750ad07e2418055098da465da8fdaf78a926911c2d4e7b0",
+      "replacement": "components/admin/LobStatusWidget.tsx; no active imports of the retired alias remain"
+    }
+  ]
+}

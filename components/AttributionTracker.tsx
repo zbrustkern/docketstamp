@@ -12,7 +12,6 @@ import { emitBusinessEvent } from "@/lib/admin-console/measurement/client";
 export const ATTRIBUTION_STORAGE_KEY = "docketstamp_order_attribution_v1";
 /** Read-only migration source; writes use the canonical namespace. */
 export const LEGACY_ATTRIBUTION_STORAGE_KEY = "smn_attribution";
-export const SMN_ATTRIBUTION_KEY = LEGACY_ATTRIBUTION_STORAGE_KEY;
 
 function readAttributionStorage(): string | null {
   const canonical = sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY) || localStorage.getItem(ATTRIBUTION_STORAGE_KEY);

@@ -84,12 +84,6 @@ export function formatDeadlineDate(date: string, timezone: string): string {
 // Historical occasion helpers remain available only for archived account metadata rendering.
 export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 export const MONTH_SHORT_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-export function calculateDaysUntilNextOccasion(month: number, day: number): number {
-  const now = new Date(); const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  let target = Date.UTC(now.getFullYear(), month - 1, day);
-  if (target < today) target = Date.UTC(now.getFullYear() + 1, month - 1, day);
-  return Math.round((target - today) / 86400000);
-}
 export function formatOccasionDate(month: number, day: number, year?: number): string {
   const name = MONTH_SHORT_NAMES[month - 1] || `Month ${month}`;
   return year ? `${name} ${day}, ${year}` : `${name} ${day}`;

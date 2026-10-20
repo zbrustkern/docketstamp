@@ -20,6 +20,7 @@ if (!isHosted && process.env.NODE_ENV !== "production") {
       uid,
       email: uid.includes("@") ? uid : `${uid}@example.com`,
       email_verified: true,
+      firebase: { sign_in_provider: "google.com", identities: { "google.com": [uid] } },
       auth_time: now,
       iss: `https://securetoken.google.com/${projectId}`,
       aud: projectId,

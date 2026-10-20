@@ -2,7 +2,8 @@ import sharp from "sharp";
 import * as admin from "firebase-admin";
 
 /**
- * Optimizes an image (base64 data URL or Buffer) to a standard 5:7 portrait greeting card JPEG.
+ * Compresses historical cached image assets to their legacy 5:7 JPEG format.
+ * This adapter is not used to render or resize frozen DocketStamp notices.
  * Ensures the image payload is well within Cloud Firestore's 1,048,487 byte single-property limit.
  * If Firebase Storage is available and accessible, optionally uploads to bucket.
  */

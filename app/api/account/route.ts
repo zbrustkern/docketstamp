@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     }
 
     const verifiedUid = decoded.uid;
-    const verifiedEmail = decoded.email?.toLowerCase();
+    const authenticatedEmail = decoded.email?.toLowerCase();
 
     const { searchParams } = new URL(req.url);
     const requestedUid = searchParams.get("uid");
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (requestedEmail && verifiedEmail && requestedEmail.toLowerCase() !== verifiedEmail) {
+    if (requestedEmail && authenticatedEmail && requestedEmail.toLowerCase() !== authenticatedEmail) {
       return NextResponse.json(
         { error: "Forbidden: You cannot access another user's email records." },
         { status: 403 }
@@ -67,13 +67,15 @@ export async function GET(req: NextRequest) {
       orders.push(d.data() as Order);
     });
 
-    if (verifiedEmail) {
+    if (decoded.email_verified === true && authenticatedEmail) {
       const emailOrdersSnapshot = await getOrdersCollection()
-        .where("customerEmail", "==", verifiedEmail)
+        .where("customerEmail", "==", authenticatedEmail)
         .get();
 
       emailOrdersSnapshot.forEach((d) => {
         const order = d.data() as Order;
+        // Verified email can recover guest orders, never another UID's bound order.
+        if (order.userId && order.userId !== verifiedUid) return;
         if (!orders.some((existing) => existing.id === order.id)) {
           orders.push(order);
         }
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     const verifiedUid = decoded.uid;
-    const verifiedEmail = decoded.email?.toLowerCase();
+    const authenticatedEmail = decoded.email?.toLowerCase();
 
     const body = await req.json();
     const { uid, email, displayName, savedAddresses, addressToAdd, defaultReturnAddress } = body;
@@ -126,7 +128,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (email && verifiedEmail && email.toLowerCase() !== verifiedEmail) {
+    if (email && (typeof email !== "string" || !authenticatedEmail || email.toLowerCase() !== authenticatedEmail)) {
       return NextResponse.json(
         { error: "Forbidden: Email must match verified identity" },
         { status: 403 }
@@ -180,7 +182,7 @@ export async function POST(req: NextRequest) {
 
     const userRecord: UserAccount = {
       uid: verifiedUid,
-      email: verifiedEmail || email || "",
+      email: authenticatedEmail || "",
       displayName: displayName ?? existingData?.displayName ?? "",
       savedAddresses: finalAddresses,
       ...(defaultReturnAddress !== undefined

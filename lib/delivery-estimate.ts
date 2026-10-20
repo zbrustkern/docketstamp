@@ -2,13 +2,13 @@
  * USPS First-Class Mail Delivery Timing Guidance
  *
  * Governing documents:
- * - /docs/CANONICAL_PRODUCT_SPECS.md (rows: Preparation time, Transit time)
- * - /docs/CONVERSION_REDESIGN_WORK_PLAN.md (§0, §4.4)
- * - /lib/product-facts.ts
+ * - /docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md
+ * - /docs/DOCKETSTAMP_HOME_CONVERSION_DESIGN_SPEC.md
+ * Estimates below are product guidance, not provider delivery evidence.
  *
  * Rules:
  * - Preparation typically 1–2 business days.
- * - Transit typically 2–7 business days domestically via USPS First-Class.
+ * - Transit typically 2–5 business days domestically via USPS First-Class.
  * - All dates are explicitly estimates, not guarantees.
  * - Excludes weekends (Saturday & Sunday) and standard US Federal Holidays.
  * - Eliminates artificial 2 PM cutoffs and "same-day" dispatch promises.
@@ -19,7 +19,7 @@ export const DOCKET_POSTAL_TIMING = {
   preparationBusinessDaysMax: 2,
   transitBusinessDaysMin: 2,
   transitBusinessDaysMax: 5,
-  summaryGuidance: "Physical letter prepared and dispatched within 1–2 business days; domestic USPS transit typically takes 2–5 business days.",
+  summaryGuidance: "Physical letter prepared and dispatched within 1–2 business days; domestic USPS transit typically takes 2–5 business days. Delivery dates are estimated, not guaranteed.",
 };
 
 /**
@@ -122,7 +122,7 @@ export interface DeliveryWindow {
 /**
  * Calculates conservative estimated delivery timing based on canonical specifications:
  * - Preparation typically 1–2 business days.
- * - Transit typically 2–7 business days domestically via USPS First-Class.
+ * - Transit typically 2–5 business days domestically via USPS First-Class.
  * - Excludes weekends and federal holidays.
  * - Always labelled as estimated.
  */

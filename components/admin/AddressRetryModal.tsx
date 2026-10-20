@@ -55,7 +55,7 @@ export function AddressRetryModal({
       if (!res.ok || !data.success) {
         setError(data.error || "Fulfillment retry failed. Check address validity.");
       } else {
-        alert(`Order successfully dispatched via Lob USPS! Letter ID: ${data.letterId || data.handwryttenOrderId}`);
+        alert(`Dispatch request processed. Status: ${data.status || "Check the order record for the result"}${data.lobLetterId ? `; Lob letter ID: ${data.lobLetterId}` : ""}`);
         onSuccess();
         onClose();
       }

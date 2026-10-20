@@ -9,6 +9,7 @@ function order(overrides: Partial<Order> = {}): Order {
     customerEmail: "person@example.com",
     amountInCents: 2500,
     status: "MAILED",
+    createdAt: 1, updatedAt: 1,
     recipientAddress: { firstName: "A", lastName: "B", street1: "1 Main", city: "Madison", state: "WI", zip: "53703" },
     returnAddress: { firstName: "C", lastName: "D", street1: "2 Oak", city: "Madison", state: "WI", zip: "53703" },
     ...overrides,

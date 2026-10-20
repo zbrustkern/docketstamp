@@ -1,0 +1,149 @@
+{
+  "archivedAt": "2026-10-20",
+  "policy": "Byte-preserved predecessor-only/mixed superseded suites; current source is not excluded from typechecking. No failing supported suite is archived to force green. Replacement coverage remains subject to integrated verification.",
+  "suites": [
+    {
+      "originalPath": "tests/ad-scenarios-routing.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/ad-scenarios-routing.test.ts.txt",
+      "sha256": "a2fa24c9dac81483cef689c64641f6500457785191342b70b4ecb70b8793bb77",
+      "reason": "Retired card/occasion SEO routing module",
+      "supportedCoverage": [
+        "tests/s2-chooser-and-routing.test.ts",
+        "tests/agent-stage-mcp.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/art-generation-fixtures.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/art-generation-fixtures.test.ts.txt",
+      "sha256": "eec818ef92441550711ca7a1211e8b3add9e8a2ce6103bc9dd883d22ec44ef27",
+      "reason": "Retired AI cover-art generation; deterministic notices are the supported product",
+      "supportedCoverage": [
+        "tests/docket-engine.test.ts",
+        "tests/docket-cartridges.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/artwork-harness.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/artwork-harness.test.ts.txt",
+      "sha256": "8e6ff01cd5d565033011fcc52ab1611efe56f3492e102d985fb8cbc2b838e881",
+      "reason": "Retired AI artwork pipeline, not a DocketStamp notice capability",
+      "supportedCoverage": [
+        "tests/docket-engine.test.ts",
+        "tests/wp2-verification.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/card-intent.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/card-intent.test.ts.txt",
+      "sha256": "427496689c1b350b8fdfff9374a590a2361f273efea30a95e8369b450c0c4cc3",
+      "reason": "Retired mutable card checkout intent model",
+      "supportedCoverage": [
+        "tests/legacy-order-replacement.test.ts",
+        "tests/sprint-0003-integrity-evidence.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/handwrytten-sync.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/handwrytten-sync.test.ts.txt",
+      "sha256": "fc69181990589844dc5de22464d35786df76a65ba001a0209d929d82f6b129cf",
+      "reason": "Retired vendor client and status endpoint",
+      "supportedCoverage": [
+        "tests/legacy-order-replacement.test.ts",
+        "tests/admin-console/postal-model.test.ts",
+        "tests/go-live-readiness.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/milestone1.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/milestone1.test.ts.txt",
+      "sha256": "66bfd79023e34650fc17a09e6d6072db7aaee512ae8df126b8c57d5ffd719301",
+      "reason": "Predecessor card/AI/vendor smoke test and $9 price expectation",
+      "supportedCoverage": [
+        "tests/bootstrap-stripe.test.ts",
+        "tests/docket-engine.test.ts",
+        "tests/legacy-order-replacement.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/milestone4.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/milestone4.test.ts.txt",
+      "sha256": "e19d3148efea2d0ae7ff4d0ac11568ebf087ffb3bdd7b22565d4368f0707c20e",
+      "reason": "Predecessor direct vendor fulfillment, mutable content, card price",
+      "supportedCoverage": [
+        "tests/legacy-order-replacement.test.ts",
+        "tests/sprint-0003-integrity-evidence.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/review-remediation.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/review-remediation.test.ts.txt",
+      "sha256": "ac249d981fb90c947a133bcdd6f147c9f365c4709585597e2dd0511c4314b50e",
+      "reason": "Mixed predecessor artwork/A2 review; supported privacy/authority/wallet/recovery guarantees remain covered separately",
+      "supportedCoverage": [
+        "tests/s5-delivery-and-payment.test.ts",
+        "tests/admin-console/reporting.test.ts",
+        "tests/admin-console/security-t02-t03.test.ts",
+        "tests/telemetry-ingestion.test.ts",
+        "tests/wp4-checkout-errors.test.ts",
+        "tests/s4-details-and-review.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/scenario-draft-seeding.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/scenario-draft-seeding.test.ts.txt",
+      "sha256": "e9f1695af3cac39c2db7cc38e87bb3f33444fd072e4ea7005f01e36188969d68",
+      "reason": "Removed occasion/font draft module; deterministic staged notices supersede it",
+      "supportedCoverage": [
+        "tests/agent-stage-mcp.test.ts",
+        "tests/agentic-api-mcp.test.ts",
+        "tests/s4-details-and-review.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/security-review-remediation.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/security-review-remediation.test.ts.txt",
+      "sha256": "08e96e973b9401dd1542197bdca3662d77b8e79e6d5ffadaab151958bfd30a96",
+      "reason": "Mixed predecessor provider/AI SSRF suite and obsolete implicit-auth fixtures; supported trust/payment/ownership guarantees replaced",
+      "supportedCoverage": [
+        "tests/firebase-auth-trust.test.ts",
+        "tests/admin-account-binding.test.ts",
+        "tests/transaction-security.test.ts",
+        "tests/payment-mode-safety.test.ts",
+        "tests/legacy-order-replacement.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/sender-validation.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/sender-validation.test.ts.txt",
+      "sha256": "b17074c978f35c76cb84dc3d4801aaee6632fed2d982f599c46e25ea41a3e190",
+      "reason": "Original predecessor sender suite preserved; active original path is being replaced with canonical notice sender validation by the order executor.",
+      "supportedCoverage": [
+        "tests/sender-validation.test.ts",
+        "tests/sprint-0003-integrity-evidence.test.ts",
+        "tests/legacy-order-replacement.test.ts",
+        "tests/go-live-readiness.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/target-experience.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/target-experience.test.ts.txt",
+      "sha256": "f42b8472ee668072edc92d6b3da9a0de339295ab1874876c176af2eb5bb6bdcb",
+      "reason": "Removed card/preset builder and A2 purchase experience",
+      "supportedCoverage": [
+        "tests/s1-trust-and-state.test.ts",
+        "tests/s4-details-and-review.test.ts",
+        "tests/s5-delivery-and-payment.test.ts"
+      ]
+    },
+    {
+      "originalPath": "tests/thematic-sentiment.test.ts",
+      "archivePath": "docs/archive/sendmynotes/tests/thematic-sentiment.test.ts.txt",
+      "sha256": "8c3b0c8e91c1f39ee731f98326a8c1bdc376cb46d90ae53c95ec74c7a3bf7297",
+      "reason": "Removed open-ended note/AI sentiment generator; prohibited as a notice-generation replacement",
+      "supportedCoverage": [
+        "tests/docket-engine.test.ts",
+        "tests/docket-cartridges.test.ts"
+      ]
+    }
+  ]
+}

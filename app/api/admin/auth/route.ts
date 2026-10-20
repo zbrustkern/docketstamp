@@ -84,6 +84,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (decoded.email_verified !== true || decoded.firebase?.sign_in_provider !== "google.com") {
+      return NextResponse.json(
+        { error: "Administrator access requires a verified Google account." },
+        { status: 403 }
+      );
+    }
+
     if (!decoded.email || !isAuthorizedAdminEmail(decoded.email)) {
       console.warn(`[AdminAuth] Access denied for unauthorized account: ${decoded.email || decoded.uid}`);
       return NextResponse.json(

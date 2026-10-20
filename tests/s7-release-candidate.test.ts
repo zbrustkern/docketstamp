@@ -398,37 +398,19 @@ describe('S7 Release Candidate Verification Suite', () => {
     });
 
     it('enforces fulfillment idempotency on /api/checkout/confirm-order', async () => {
-      const orderId = `order_idempotency_s7_${Date.now()}`;
-      await saveOrder({
-        id: orderId,
-        customerEmail: 'idempotent@gmail.com',
-        docketId: 'DS-2026-IDEMPOTENT-S7',
-        docketNumber: 'DS-2026-IDEMPOTENT-S7',
-        status: 'PROCESSING_DISPATCH',
-        serviceLevel: 'CERTIFIED',
-        amountInCents: 1995,
-        stripePaymentId: 'pi_mock_idempotency_s7',
-        recipientAddress: {
-          firstName: 'Recipient',
-          lastName: '',
-          street1: '100 Test St',
-          city: 'San Francisco',
-          state: 'CA',
-          zip: '94102',
-          country: 'US',
-        },
-        returnAddress: {
-          firstName: 'Sender',
-          lastName: '',
-          street1: '200 Sender Ave',
-          city: 'San Francisco',
-          state: 'CA',
-          zip: '94102',
-          country: 'US',
-        },
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+      const lockResponse = await lockAndIntentPost(new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: 'security-deposit-return-demand-letter', tier: 'certified',
+          userValues: validTenantValues, customerEmail: 'idempotent@example.test',
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
+        }),
+      }));
+      assert.equal(lockResponse.status, 200);
+      const { orderId } = await lockResponse.json();
+      const lockedOrder = await getOrderById(orderId);
+      assert.ok(lockedOrder?.documentIntegrityEvidence);
+      await saveOrder({ ...lockedOrder, status: 'PROCESSING_DISPATCH', stripePaymentId: 'pi_mock_idempotency_s7' });
 
       // Call confirmation on already processing order
       const confirmReq = new NextRequest('http://localhost:3000/api/checkout/confirm-order', {
