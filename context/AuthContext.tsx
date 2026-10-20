@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const saveAddress = async (address: Omit<SavedAddress, "id"> & { id?: string }) => {
-    if (!user) return;
+    if (!user) throw new Error("Sign in to save contacts.");
 
     const addressId = address.id || `addr_${Date.now()}`;
     const newAddress: SavedAddress = {
@@ -166,11 +166,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.user) {
         setAccount(data.user);
       }
+    } else {
+      throw new Error("Could not save this contact. Please try again.");
     }
   };
 
   const saveAddressesBulk = async (addressesToImport: (Omit<SavedAddress, "id"> & { id?: string })[]) => {
-    if (!user) return;
+    if (!user) throw new Error("Sign in to import contacts.");
     const currentAddresses = account?.savedAddresses || [];
     const merged = [...currentAddresses];
 
@@ -231,11 +233,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.user) {
         setAccount(data.user);
       }
+    } else {
+      throw new Error("Could not import contacts. Please try again.");
     }
   };
 
   const deleteAddress = async (addressId: string) => {
-    if (!user) return;
+    if (!user) throw new Error("Sign in to delete contacts.");
 
     const idToken = await user.getIdToken();
     const currentAddresses = account?.savedAddresses || [];
@@ -260,11 +264,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.user) {
         setAccount(data.user);
       }
+    } else {
+      throw new Error("Could not delete this contact. Please try again.");
     }
   };
 
   const updateDefaultReturnAddress = async (address: MailingAddress) => {
-    if (!user) return;
+    if (!user) throw new Error("Sign in to save a return address.");
 
     const idToken = await user.getIdToken();
     const res = await fetch("/api/account", {
@@ -287,6 +293,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.user) {
         setAccount(data.user);
       }
+    } else {
+      throw new Error("Could not save your return address. Please try again.");
     }
   };
 

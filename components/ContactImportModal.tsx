@@ -9,10 +9,7 @@ import {
   Download,
   ShieldCheck,
   X,
-  Sparkles,
   Users,
-  Calendar,
-  Lock,
 } from "lucide-react";
 import { parseContactData, ParsedContact, SAMPLE_CONTACTS_CSV } from "@/lib/contact-parser";
 import { formatOccasionDate, getOccasionTypeDisplay } from "@/lib/reminder-utils";
@@ -29,7 +26,6 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
   const [pasteText, setPasteText] = useState("");
   const [parsedContacts, setParsedContacts] = useState<ParsedContact[]>([]);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
-  const [optInReminders, setOptInReminders] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,11 +121,7 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
 
   const handleConfirmImport = async () => {
     const selected = parsedContacts
-      .filter((_, idx) => selectedIndices.has(idx))
-      .map((c) => ({
-        ...c,
-        remindMe: optInReminders && Boolean(c.occasionMonth && c.occasionDay),
-      }));
+      .filter((_, idx) => selectedIndices.has(idx));
 
     if (selected.length === 0) return;
 
@@ -137,6 +129,8 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
     try {
       await onImport(selected);
       onClose();
+    } catch (cause) {
+      setErrorMessage(cause instanceof Error ? cause.message : "Could not save imported contacts. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -298,8 +292,7 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
                   <>
                     <span className="text-stone-400">•</span>
                     <span className="text-amber-700 font-medium flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
-                      <span>{occasionCount} milestone dates detected</span>
+                      <span>{occasionCount} historical occasion dates detected</span>
                     </span>
                   </>
                 )}
@@ -326,24 +319,8 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
               </div>
             </div>
 
-            {/* Opt-in Email Reminders Checkbox */}
             {occasionCount > 0 && (
-              <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-300/60 cursor-pointer shrink-0">
-                <input
-                  type="checkbox"
-                  checked={optInReminders}
-                  onChange={(e) => setOptInReminders(e.target.checked)}
-                  className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-stone-300 cursor-pointer"
-                />
-                <div className="text-xs">
-                  <span className="font-bold text-amber-950">
-                    Opt-in to 14-day email reminders for detected birthdays &amp; anniversaries
-                  </span>
-                  <span className="text-[11px] text-amber-900/80 block">
-                    We&apos;ll notify you two weeks ahead of each date with a 1-click link to pen their physical card.
-                  </span>
-                </div>
-              </label>
+              <p className="rounded-2xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-700 shrink-0">Imported dates are retained as historical contact metadata only. Importing contacts never creates legal deadline reminders.</p>
             )}
 
             {/* Review Table Scrollable Container */}
@@ -358,15 +335,15 @@ export function ContactImportModal({ isOpen, onClose, onImport }: ContactImportM
                 return (
                   <div
                     key={idx}
-                    onClick={() => toggleSelectIndex(idx)}
-                    className={`p-3.5 flex items-start gap-3 text-xs transition cursor-pointer ${
+                    className={`p-3.5 flex items-start gap-3 text-xs transition ${
                       isSelected ? "bg-white hover:bg-amber-50/30" : "bg-stone-50/60 opacity-60 hover:opacity-100"
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => {}} // handled by parent div click
+                      onChange={() => toggleSelectIndex(idx)}
+                      aria-label={`Import ${contact.firstName} ${contact.lastName}`}
                       className="mt-1 w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-stone-300 cursor-pointer"
                     />
 

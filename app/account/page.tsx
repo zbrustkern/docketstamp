@@ -2,51 +2,32 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
   Package,
   BookOpen,
   Plus,
   Trash2,
   Calendar,
-  PenTool,
-  ArrowLeft,
-  Mail,
   CheckCircle2,
-  Clock,
-  Sparkles,
   LogOut,
   MapPin,
   ExternalLink,
   Edit2,
-  BookmarkCheck,
   Feather,
-  RefreshCw,
-  Bell,
-  BellRing,
-  Gift,
-  Heart,
-  Award,
   Upload,
   ShieldCheck,
   FileText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Order, SavedAddress, MailingAddress, OccasionType } from "@/lib/types";
-import {
-  MONTH_NAMES,
-  MONTH_SHORT_NAMES,
-  formatOccasionDate,
-  getOccasionTypeDisplay,
-  calculateDaysUntilNextOccasion,
-} from "@/lib/reminder-utils";
+import { Order, SavedAddress, MailingAddress } from "@/lib/types";
 import { AuthModal } from "@/components/AuthModal";
 import { ContactImportModal } from "@/components/ContactImportModal";
 import { ParsedContact } from "@/lib/contact-parser";
+import { NoticeDeadlineReminders } from "@/components/account/NoticeDeadlineReminders";
+import { ALL_NOTICE_CARTRIDGES } from "@/src/lib/docket/notices";
+import { NoticePrefillChooser } from "@/components/account/NoticePrefillChooser";
 
 export default function AccountDashboardPage() {
-  const router = useRouter();
   const {
     user,
     account,
@@ -70,6 +51,8 @@ export default function AccountDashboardPage() {
   // Contact Bulk Import Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importSuccessMessage, setImportSuccessMessage] = useState<string | null>(null);
+  const [accountError, setAccountError] = useState("");
+  const [returnAddressMessage, setReturnAddressMessage] = useState("");
 
   // Return Address Edit State
   const [isEditingReturn, setIsEditingReturn] = useState(false);
@@ -83,16 +66,6 @@ export default function AccountDashboardPage() {
     zip: "",
     country: "USA",
   });
-
-  // Upcoming milestone occasions in next 60 days
-  const upcomingMilestones = (account?.savedAddresses || [])
-    .filter((addr) => addr.occasionMonth && addr.occasionDay)
-    .map((addr) => ({
-      ...addr,
-      daysUntil: calculateDaysUntilNextOccasion(addr.occasionMonth!, addr.occasionDay!),
-    }))
-    .filter((item) => item.daysUntil <= 60)
-    .sort((a, b) => a.daysUntil - b.daysUntil);
 
   // Auth Modal State (if not logged in)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -138,29 +111,12 @@ export default function AccountDashboardPage() {
   }, [user]);
 
   const handleBulkImport = async (contactsToImport: ParsedContact[]) => {
-    await saveAddressesBulk(contactsToImport);
-    // Sync reminders for any contacts that have occasionMonth & occasionDay & remindMe
-    if (user?.email) {
-      for (const c of contactsToImport) {
-        if (c.remindMe && c.occasionMonth && c.occasionDay) {
-          await fetch("/api/reminders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user.uid,
-              userEmail: user.email,
-              recipientName: `${c.firstName} ${c.lastName}`.trim(),
-              occasionType: c.occasionType || "birthday",
-              occasionTitle: c.occasionTitle || `${c.firstName}'s Birthday`,
-              month: Number(c.occasionMonth),
-              day: Number(c.occasionDay),
-              year: c.occasionYear ? Number(c.occasionYear) : undefined,
-              remindDaysBefore: 14,
-              optIn: true,
-            }),
-          }).catch((err) => console.warn("Notice syncing reminder from bulk import:", err));
-        }
-      }
+    setAccountError("");
+    try {
+      await saveAddressesBulk(contactsToImport);
+    } catch (cause) {
+      setAccountError(cause instanceof Error ? cause.message : "Could not import contacts.");
+      return;
     }
     await refreshAccount();
     setImportSuccessMessage(
@@ -299,10 +255,8 @@ export default function AccountDashboardPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-serif font-bold text-stone-900">Your Dispatched Notices &amp; Dockets</h2>
-                <p className="text-xs text-stone-500">
-                  Formal statutory demands, lease notices, and dispute letters dispatched via USPS.
-                </p>
+                <h2 className="text-xl font-serif font-bold text-stone-900">Notice records and dockets</h2>
+                <p className="text-xs text-stone-500">Review notice records and any available dispatch evidence.</p>
               </div>
 
               <Link
@@ -323,7 +277,7 @@ export default function AccountDashboardPage() {
                 </div>
                 <h3 className="text-base font-bold text-stone-900">No notices dispatched yet</h3>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Select a state-referenced template, enter your factual parameters, and DocketStamp will certify and dispatch your notice via USPS Certified or First-Class Mail.
+                  Review a supported notice template and enter your factual details. Available postal options and any dispatch confirmation are shown in the notice workflow.
                 </p>
                 <Link
                   href="/"
@@ -336,8 +290,17 @@ export default function AccountDashboardPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {orders.map((order) => {
-                  const isInking = order.status === "PROCESSING_HANDWRYTTEN";
                   const isScheduled = !!order.scheduledSendDate;
+                  const postalProviderValue = (order as Order & { postalProvider?: string }).postalProvider;
+                  const postalProvider = postalProviderValue === "lob"
+                    ? "Lob dispatch record"
+                    : postalProviderValue === "handwrytten"
+                    ? "Historical Handwrytten record"
+                    : order.lobLetterId && !order.handwryttenOrderId
+                    ? "Lob reference on file"
+                    : order.handwryttenOrderId && !order.lobLetterId
+                    ? "Historical Handwrytten reference"
+                    : "Postal provider not confirmed";
 
                   return (
                     <div
@@ -345,39 +308,19 @@ export default function AccountDashboardPage() {
                       className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition space-y-4"
                     >
                       <div className="flex gap-4">
-                        <div className="relative w-20 aspect-[8.5/11] rounded-xl overflow-hidden border border-stone-200 bg-slate-900 flex-shrink-0 shadow-sm flex flex-col items-center justify-center p-1 text-center">
-                          {order.frontImageUrl ? (
-                            <Image
-                              src={order.frontImageUrl}
-                              alt="Document"
-                              fill
-                              sizes="80px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="text-white space-y-0.5">
-                              <FileText className="w-5 h-5 mx-auto text-sky-400" />
-                              <span className="text-[7px] font-mono text-slate-300 block">DS-2026</span>
-                            </div>
-                          )}
-                        </div>
-
+                        <div className="w-12 h-12 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 flex-shrink-0 flex items-center justify-center"><FileText className="w-5 h-5" /></div>
                         <div className="flex-1 min-w-0 space-y-1">
                           <div className="flex items-center justify-between">
                             <span
                               className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                                isInking
-                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                  : isScheduled
+                                isScheduled
                                   ? "bg-indigo-50 text-indigo-800 border-indigo-200"
-                                  : "bg-sky-50 text-sky-800 border-sky-200"
+                                  : "bg-stone-50 text-stone-800 border-stone-200"
                               }`}
                             >
-                              {isInking
-                                ? "Dispatched"
-                                : isScheduled
+                              {isScheduled
                                 ? "Scheduled"
-                                : "Certified"}
+                                : "Recorded"}
                             </span>
                             <span className="text-[10px] font-mono text-stone-400">
                               {new Date(order.createdAt).toLocaleDateString()}
@@ -385,11 +328,12 @@ export default function AccountDashboardPage() {
                           </div>
 
                           <h3 className="text-sm font-bold text-stone-900 truncate">
-                            {order.recipientAddress.firstName} {order.recipientAddress.lastName}
+                            {order.noticeType || order.noticeId || "Notice record"}
                           </h3>
                           <p className="text-[11px] text-stone-500 truncate">
-                            {order.recipientAddress.city}, {order.recipientAddress.state}
+                            {order.recipientAddress?.firstName} {order.recipientAddress?.lastName}
                           </p>
+                          <p className="text-[10px] text-stone-500">{postalProvider}</p>
 
                           {order.scheduledSendDate && (
                             <div className="flex items-center gap-1 text-[11px] text-indigo-700 font-medium pt-1">
@@ -398,10 +342,6 @@ export default function AccountDashboardPage() {
                             </div>
                           )}
                         </div>
-                      </div>
-
-                      <div className="p-2.5 bg-stone-50 rounded-xl text-xs text-stone-600 line-clamp-2 italic font-serif">
-                        &ldquo;{order.printedMessage || order.handwrittenNote?.slice(0, 80) || "Statutory written notice"}&rdquo;
                       </div>
 
                       <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
@@ -413,13 +353,7 @@ export default function AccountDashboardPage() {
                           <ExternalLink className="w-3 h-3" />
                         </Link>
 
-                        <Link
-                          href="/"
-                          className="font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1 bg-stone-100 hover:bg-stone-200/80 px-2.5 py-1 rounded-lg transition"
-                        >
-                          <PenTool className="w-3 h-3 text-amber-600" />
-                          <span>Send Again</span>
-                        </Link>
+                        <span className="text-[11px] text-stone-500">Record details</span>
                       </div>
                     </div>
                   );
@@ -433,6 +367,7 @@ export default function AccountDashboardPage() {
         {activeTab === "addresses" && (
           <div className="space-y-8">
             {/* SUCCESS BANNER FROM BULK IMPORT */}
+            {accountError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{accountError}</p>}
             {importSuccessMessage && (
               <div className="p-4 bg-emerald-50 border border-emerald-200/90 text-emerald-900 rounded-2xl flex items-center justify-between text-xs shadow-xs animate-in fade-in duration-200">
                 <div className="flex items-center gap-2.5">
@@ -449,88 +384,6 @@ export default function AccountDashboardPage() {
               </div>
             )}
 
-            {/* UPCOMING MILESTONES & REMINDERS STRIP (Next 60 Days) */}
-            {upcomingMilestones.length > 0 && (
-              <div className="bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-orange-500/5 rounded-3xl p-5 sm:p-6 border border-amber-200/80 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
-                      <BellRing className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-stone-900 font-serif">
-                        Upcoming Milestones &amp; Reminders
-                      </h3>
-                      <p className="text-[11px] text-stone-600">
-                        Never miss a birthday or anniversary. 1-click card preparation ready.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-                    Next 60 Days ({upcomingMilestones.length})
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-                  {upcomingMilestones.map((m) => {
-                    const occasionDisplay = getOccasionTypeDisplay(m.occasionType || "birthday");
-                    const dateFormatted = formatOccasionDate(m.occasionMonth!, m.occasionDay!, m.occasionYear);
-                    const builderUrl = `/?toName=${encodeURIComponent(`${m.firstName} ${m.lastName}`.trim())}&toStreet=${encodeURIComponent(m.street1)}&toStreet2=${encodeURIComponent(m.street2 || "")}&toCity=${encodeURIComponent(m.city)}&toState=${encodeURIComponent(m.state)}&toZip=${encodeURIComponent(m.zip)}&occasion=${encodeURIComponent(m.occasionType === "birthday" ? "Birthday" : m.occasionType === "anniversary" ? "Anniversary" : "Congratulations")}&step=1`;
-
-                    return (
-                      <div
-                        key={m.id}
-                        className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-amber-200/60 shadow-2xs flex flex-col justify-between gap-3"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1">
-                              <span>{occasionDisplay.emoji}</span>
-                              <span>{m.occasionTitle || occasionDisplay.label}</span>
-                            </span>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                m.daysUntil <= 14
-                                  ? "bg-rose-100 text-rose-800 border border-rose-200 animate-pulse"
-                                  : "bg-stone-100 text-stone-700"
-                              }`}
-                            >
-                              {m.daysUntil === 0
-                                ? "Today!"
-                                : m.daysUntil === 1
-                                ? "Tomorrow"
-                                : `In ${m.daysUntil} days`}
-                            </span>
-                          </div>
-
-                          <h4 className="text-sm font-bold text-stone-900 pt-1">
-                            {m.firstName} {m.lastName}
-                          </h4>
-                          <p className="text-xs text-stone-500 font-medium">
-                            {dateFormatted}
-                          </p>
-                          {m.remindMe && (
-                            <p className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              <span>14-day email reminder active</span>
-                            </p>
-                          )}
-                        </div>
-
-                        <Link
-                          href={builderUrl}
-                          className="w-full py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Send {occasionDisplay.label} Card &rarr;</span>
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* SAVED RECIPIENTS */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -539,7 +392,7 @@ export default function AccountDashboardPage() {
                     Saved Recipient Addresses
                   </h2>
                   <p className="text-xs text-stone-500">
-                    Contacts appear inside the card builder for 1-click address autofill.
+                    Use a saved address to prefill the recipient fields of a supported notice review.
                   </p>
                 </div>
 
@@ -553,20 +406,7 @@ export default function AccountDashboardPage() {
                     <Upload className="w-3.5 h-3.5 text-stone-600" />
                     <span>Import Contacts</span>
                   </button>
-                  {orders.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await refreshAccount();
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl border border-stone-200 transition cursor-pointer"
-                      title="Sync recipients from all past card orders"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Sync from Orders ({orders.length})</span>
-                      <span className="sm:hidden">Sync ({orders.length})</span>
-                    </button>
-                  )}
+
                   <button
                     onClick={() => {
                       setEditingAddress(null);
@@ -583,9 +423,9 @@ export default function AccountDashboardPage() {
               {!account?.savedAddresses || account.savedAddresses.length === 0 ? (
                 <div className="bg-white rounded-3xl p-8 border border-stone-200 text-center space-y-3 max-w-md mx-auto">
                   <BookOpen className="w-8 h-8 mx-auto text-stone-400" />
-                  <h3 className="text-sm font-bold text-stone-900">Your Address Book is empty</h3>
+                  <h3 className="text-sm font-bold text-stone-900">No saved recipient addresses</h3>
                   <p className="text-xs text-stone-500">
-                    Save friends, family, or clients to autofill their addresses when writing cards.
+                    Save recipient addresses to prefill a notice review. Imported occasion dates remain historical contact details.
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                     <button
@@ -595,17 +435,7 @@ export default function AccountDashboardPage() {
                       <Upload className="w-3.5 h-3.5 text-stone-600" />
                       <span>Import CSV / vCard</span>
                     </button>
-                    {orders.length > 0 && (
-                      <button
-                        onClick={async () => {
-                          await refreshAccount();
-                        }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-900 text-white text-xs font-semibold rounded-xl hover:bg-black transition cursor-pointer shadow-sm"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Sync from Orders ({orders.length})</span>
-                      </button>
-                    )}
+
                     <button
                       onClick={() => {
                         setEditingAddress(null);
@@ -622,80 +452,28 @@ export default function AccountDashboardPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {account.savedAddresses.map((addr) => {
-                      const cardBuilderUrl = `/?toName=${encodeURIComponent(`${addr.firstName} ${addr.lastName}`.trim())}&toStreet=${encodeURIComponent(addr.street1)}&toStreet2=${encodeURIComponent(addr.street2 || "")}&toCity=${encodeURIComponent(addr.city)}&toState=${encodeURIComponent(addr.state)}&toZip=${encodeURIComponent(addr.zip)}${addr.occasionType ? `&occasion=${encodeURIComponent(addr.occasionType === "birthday" ? "Birthday" : addr.occasionType === "anniversary" ? "Anniversary" : "Congratulations")}` : ""}`;
-                      const hasOccasion = addr.occasionMonth && addr.occasionDay;
-                      const occasionDisplay = hasOccasion ? getOccasionTypeDisplay(addr.occasionType || "birthday") : null;
-                      const daysUntil = hasOccasion ? calculateDaysUntilNextOccasion(addr.occasionMonth!, addr.occasionDay!) : null;
+                      const legacyOccasion = addr.occasionMonth && addr.occasionDay
+                        ? `Historical occasion on file: ${addr.occasionMonth}/${addr.occasionDay}${addr.occasionYear ? `/${addr.occasionYear}` : ""}. This does not create a deadline reminder.`
+                        : "";
 
                       return (
-                        <div
-                          key={addr.id}
-                          className="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm flex flex-col justify-between space-y-3"
-                        >
+                        <div key={addr.id} className="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm flex flex-col justify-between space-y-3">
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                {addr.label || "Recipient"}
-                              </span>
-                              <button
-                                onClick={() => deleteAddress(addr.id)}
-                                className="text-stone-400 hover:text-rose-600 transition p-1 cursor-pointer"
-                                title="Delete Contact"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">{addr.label || "Recipient"}</span>
+                              <button type="button" onClick={async () => { if (!window.confirm(`Delete ${addr.firstName} ${addr.lastName} from your address book?`)) return; setAccountError(""); try { await deleteAddress(addr.id); } catch (cause) { setAccountError(cause instanceof Error ? cause.message : "Could not delete this contact."); } }} className="text-stone-400 hover:text-rose-600 transition p-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500 rounded-lg" title="Delete contact" aria-label={`Delete ${addr.firstName} ${addr.lastName}`}><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
-
-                            <h3 className="text-sm font-bold text-stone-900 pt-1">
-                              {addr.firstName} {addr.lastName}
-                            </h3>
+                            <h3 className="text-sm font-bold text-stone-900 pt-1">{addr.firstName} {addr.lastName}</h3>
                             <p className="text-xs text-stone-600">{addr.street1}</p>
                             {addr.street2 && <p className="text-xs text-stone-600">{addr.street2}</p>}
-                            <p className="text-xs text-stone-600">
-                              {addr.city}, {addr.state} {addr.zip}
-                            </p>
-
-                            {hasOccasion && occasionDisplay && (
-                              <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
-                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-700 bg-stone-50 px-2 py-0.5 rounded-lg border border-stone-200/60">
-                                  <span>{occasionDisplay.emoji}</span>
-                                  <span>
-                                    {formatOccasionDate(addr.occasionMonth!, addr.occasionDay!, addr.occasionYear)}
-                                    {daysUntil !== null && daysUntil <= 30 && (
-                                      <span className="text-amber-700 font-semibold ml-1">
-                                        ({daysUntil === 0 ? "today" : `in ${daysUntil}d`})
-                                      </span>
-                                    )}
-                                  </span>
-                                </span>
-                                {addr.remindMe && (
-                                  <span className="text-[10px] text-emerald-700 font-medium flex items-center gap-0.5" title="14-day email reminder active">
-                                    <Bell className="w-3 h-3 text-emerald-600" />
-                                    <span>Reminder</span>
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                            <p className="text-xs text-stone-600">{addr.city}, {addr.state} {addr.zip}</p>
+                            {legacyOccasion && <p className="pt-2 text-[11px] text-stone-500">{legacyOccasion}</p>}
                           </div>
-
-                          <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
-                            <button
-                              onClick={() => {
-                                setEditingAddress(addr);
-                                setIsAddressModalOpen(true);
-                              }}
-                              className="text-stone-500 hover:text-stone-800 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                              <span>Edit</span>
-                            </button>
-
-                            <Link
-                              href={cardBuilderUrl}
-                              className="text-amber-700 hover:text-amber-900 font-semibold text-[11px] flex items-center gap-1"
-                            >
-                              <span>Send Card &rarr;</span>
-                            </Link>
+                          <div className="pt-2 border-t border-stone-100 flex flex-col gap-3">
+                            <NoticePrefillChooser recipient={addr} sender={account?.defaultReturnAddress} notices={ALL_NOTICE_CARTRIDGES} />
+                            <div className="flex items-center justify-between">
+                              <button type="button" onClick={() => { setEditingAddress(addr); setIsAddressModalOpen(true); }} className="min-h-10 text-stone-600 hover:text-stone-900 flex items-center gap-1 text-xs font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-lg px-2"><Edit2 className="w-3 h-3" /><span>Edit address</span></button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -710,7 +488,7 @@ export default function AccountDashboardPage() {
                       </div>
                       <div>
                         <span className="font-semibold text-stone-800">Have an address book in Apple Contacts, Google, or Excel?</span>
-                        <p className="text-[11px] text-stone-500">Easily bulk-import names, addresses, and milestone dates with zero data prying.</p>
+                        <p className="text-[11px] text-stone-500">Bulk-import names, addresses, and historical occasion metadata. Imports never create deadline reminders.</p>
                       </div>
                     </div>
                     <button
@@ -725,16 +503,22 @@ export default function AccountDashboardPage() {
               )}
             </div>
 
+            <NoticeDeadlineReminders
+              notices={ALL_NOTICE_CARTRIDGES.map(({ slug, title }) => ({ slug, title }))}
+              savedAddresses={account?.savedAddresses || []}
+              sender={account?.defaultReturnAddress}
+            />
+
             {/* DEFAULT RETURN ADDRESS */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-stone-100">
                 <div>
                   <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-stone-500" />
-                    Default Return Address (Sender)
+                    Default Return Address
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Pre-fills the top-left return corner on your greeting card envelopes.
+                    Pre-fills sender details when preparing a notice.
                   </p>
                 </div>
 
@@ -752,8 +536,14 @@ export default function AccountDashboardPage() {
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    await updateDefaultReturnAddress(returnForm);
-                    setIsEditingReturn(false);
+                    setReturnAddressMessage("");
+                    try {
+                      await updateDefaultReturnAddress(returnForm);
+                      setIsEditingReturn(false);
+                      setReturnAddressMessage("Return address saved.");
+                    } catch (cause) {
+                      setReturnAddressMessage(cause instanceof Error ? cause.message : "Could not save return address.");
+                    }
                   }}
                   className="space-y-4 max-w-xl"
                 >
@@ -885,6 +675,7 @@ export default function AccountDashboardPage() {
               ) : (
                 <p className="text-xs text-stone-400 italic">No default return address set yet.</p>
               )}
+              {returnAddressMessage && <p role="status" className="text-sm text-stone-700">{returnAddressMessage}</p>}
             </div>
           </div>
         )}
@@ -897,30 +688,6 @@ export default function AccountDashboardPage() {
           onClose={() => setIsAddressModalOpen(false)}
           onSave={async (savedData) => {
             await saveAddress(savedData);
-            if (savedData.remindMe && savedData.occasionMonth && savedData.occasionDay && user?.email) {
-              await fetch("/api/reminders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  userId: user.uid,
-                  userEmail: user.email,
-                  recipientName: `${savedData.firstName} ${savedData.lastName}`.trim(),
-                  occasionType: savedData.occasionType || "birthday",
-                  occasionTitle:
-                    savedData.occasionTitle ||
-                    `${savedData.firstName}'s ${
-                      savedData.occasionType
-                        ? savedData.occasionType.charAt(0).toUpperCase() + savedData.occasionType.slice(1)
-                        : "Milestone"
-                    }`,
-                  month: Number(savedData.occasionMonth),
-                  day: Number(savedData.occasionDay),
-                  year: savedData.occasionYear ? Number(savedData.occasionYear) : undefined,
-                  remindDaysBefore: savedData.remindDaysBefore || 14,
-                  optIn: true,
-                }),
-              }).catch((err) => console.warn("Notice syncing reminder:", err));
-            }
             setIsAddressModalOpen(false);
           }}
         />
@@ -956,27 +723,27 @@ function ContactModal({
     state: initialAddress?.state || "",
     zip: initialAddress?.zip || "",
     country: "USA",
-    occasionType: (initialAddress?.occasionType || "birthday") as OccasionType,
-    occasionTitle: initialAddress?.occasionTitle || "",
-    occasionMonth: initialAddress?.occasionMonth ? String(initialAddress.occasionMonth) : "",
-    occasionDay: initialAddress?.occasionDay ? String(initialAddress.occasionDay) : "",
-    occasionYear: initialAddress?.occasionYear ? String(initialAddress.occasionYear) : "",
-    remindMe: initialAddress?.remindMe !== undefined ? initialAddress.remindMe : true,
-    remindDaysBefore: initialAddress?.remindDaysBefore || 14,
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setSaveError("");
     try {
       await onSave({
         ...form,
-        occasionMonth: form.occasionMonth ? Number(form.occasionMonth) : undefined,
-        occasionDay: form.occasionDay ? Number(form.occasionDay) : undefined,
-        occasionYear: form.occasionYear ? Number(form.occasionYear) : undefined,
-        remindMe: Boolean(form.occasionMonth && form.occasionDay && form.remindMe),
+        ...(initialAddress?.occasionType ? { occasionType: initialAddress.occasionType } : {}),
+        ...(initialAddress?.occasionTitle ? { occasionTitle: initialAddress.occasionTitle } : {}),
+        ...(initialAddress?.occasionMonth ? { occasionMonth: initialAddress.occasionMonth } : {}),
+        ...(initialAddress?.occasionDay ? { occasionDay: initialAddress.occasionDay } : {}),
+        ...(initialAddress?.occasionYear ? { occasionYear: initialAddress.occasionYear } : {}),
+        ...(initialAddress?.remindMe !== undefined ? { remindMe: initialAddress.remindMe } : {}),
+        ...(initialAddress?.remindDaysBefore ? { remindDaysBefore: initialAddress.remindDaysBefore } : {}),
       });
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : "Could not save this contact.");
     } finally {
       setSaving(false);
     }
@@ -1094,115 +861,8 @@ function ContactModal({
             </div>
           </div>
 
-          {/* Milestone Occasion & Opt-in Reminder */}
-          <div className="pt-3 border-t border-stone-200/80 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-amber-600" />
-                <span>Card Milestone &amp; Reminder (Optional)</span>
-              </label>
-              <span className="text-[10px] text-stone-400 font-medium">14-day lead time</span>
-            </div>
-
-            {/* Occasion Type Pills */}
-            <div className="grid grid-cols-5 gap-1 text-[11px]">
-              {[
-                { type: "birthday" as OccasionType, label: "Birthday", emoji: "🎂" },
-                { type: "anniversary" as OccasionType, label: "Anniv.", emoji: "🥂" },
-                { type: "holiday" as OccasionType, label: "Holiday", emoji: "🎄" },
-                { type: "milestone" as OccasionType, label: "Milestone", emoji: "🏆" },
-                { type: "custom" as OccasionType, label: "Other", emoji: "⭐️" },
-              ].map((pill) => (
-                <button
-                  key={pill.type}
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, occasionType: pill.type }))}
-                  className={`py-1.5 px-1 rounded-xl text-center font-medium border transition cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                    form.occasionType === pill.type
-                      ? "bg-amber-500/10 border-amber-500/60 text-amber-950 font-bold shadow-2xs"
-                      : "bg-stone-50 border-stone-200/80 text-stone-600 hover:bg-stone-100"
-                  }`}
-                >
-                  <span className="text-xs">{pill.emoji}</span>
-                  <span className="text-[10px] leading-none truncate">{pill.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Month & Day Pickers */}
-            <div className="grid grid-cols-12 gap-2 pt-1">
-              <div className="col-span-5">
-                <label className="block text-[10px] font-semibold text-stone-500 mb-1">
-                  Month
-                </label>
-                <select
-                  value={form.occasionMonth}
-                  onChange={(e) => setForm((p) => ({ ...p, occasionMonth: e.target.value }))}
-                  className="w-full px-2 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                >
-                  <option value="">Select Month</option>
-                  {MONTH_NAMES.map((name, idx) => (
-                    <option key={name} value={idx + 1}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-span-3">
-                <label className="block text-[10px] font-semibold text-stone-500 mb-1">
-                  Day
-                </label>
-                <select
-                  value={form.occasionDay}
-                  onChange={(e) => setForm((p) => ({ ...p, occasionDay: e.target.value }))}
-                  className="w-full px-2 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                >
-                  <option value="">Day</option>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-span-4">
-                <label className="block text-[10px] font-semibold text-stone-500 mb-1">
-                  Year (Opt.)
-                </label>
-                <input
-                  type="number"
-                  min="1900"
-                  max="2099"
-                  placeholder="e.g. 1990"
-                  value={form.occasionYear}
-                  onChange={(e) => setForm((p) => ({ ...p, occasionYear: e.target.value }))}
-                  className="w-full px-2 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-            </div>
-
-            {/* Opt-in Email Reminder Checkbox */}
-            {form.occasionMonth && form.occasionDay && (
-              <label className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-300/60 cursor-pointer animate-in fade-in duration-150">
-                <input
-                  type="checkbox"
-                  checked={form.remindMe}
-                  onChange={(e) => setForm((p) => ({ ...p, remindMe: e.target.checked }))}
-                  className="mt-0.5 w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-stone-300 cursor-pointer"
-                />
-                <div className="text-xs">
-                  <span className="font-bold text-amber-950 block">
-                    Remind me 14 days before via email
-                  </span>
-                  <span className="text-[11px] text-amber-900/80 leading-tight block">
-                    Allows ample time to ink in real pen and deliver via USPS First Class so it arrives before their celebration.
-                  </span>
-                </div>
-              </label>
-            )}
-          </div>
+          {initialAddress?.occasionMonth && initialAddress?.occasionDay && <p className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600">Historical occasion metadata ({initialAddress.occasionMonth}/{initialAddress.occasionDay}{initialAddress.occasionYear ? `/${initialAddress.occasionYear}` : ""}) is retained as contact data only. It will not create a notice deadline reminder.</p>}
+          {saveError && <p role="alert" className="text-sm text-rose-800">{saveError}</p>}
 
           <div className="flex items-center gap-2 pt-3">
             <button
