@@ -15,7 +15,7 @@ const MCP_TOOLS = [
   {
     name: 'list_docket_notices',
     description:
-      'Lists all available statutory Notice Cartridges on DocketStamp with their slugs, titles, descriptions, categories, recommended tiers, and required fields.',
+      'Lists available document-preparation templates with their slugs, titles, descriptions, categories, suggested mailing tiers, and required fields.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -30,7 +30,7 @@ const MCP_TOOLS = [
   {
     name: 'search_verified_recipients',
     description:
-      'Searches the 38 pre-verified institutional recipients (credit bureaus, collection agencies, telecom, insurance, tech hardware OEMs) by brand name or category.',
+      'Searches institutional recipient directory suggestions by brand name or category. Results do not confirm the required legal or contract-specific submission channel.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -49,7 +49,7 @@ const MCP_TOOLS = [
   {
     name: 'stage_certified_notice',
     description:
-      'Stages a certified postal notice draft on DocketStamp for a human user to review, adopt signature, and dispatch via USPS. Enforces NAICS 713940 fitness exclusions. Returns a 1-tap review URL.',
+      'Stages a document-preparation request for a human to review and returns a review URL. Staging does not send or file a notice. The user must confirm any recipient and required submission channel.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -59,7 +59,7 @@ const MCP_TOOLS = [
         },
         recipientId: {
           type: 'string',
-          description: 'Pre-verified institutional recipient ID (e.g. leg_wth, cra_eqf, col_pra)',
+          description: 'Institutional recipient directory suggestion ID (e.g. leg_wth, cra_eqf, col_pra)',
         },
         customRecipient: {
           type: 'object',
@@ -94,7 +94,7 @@ const MCP_TOOLS = [
         recommendedTier: {
           type: 'string',
           enum: ['first_class', 'certified', 'certified_return_receipt'],
-          description: 'Recommended USPS dispatch tier',
+          description: 'Suggested USPS mailing service if the user later places an order',
         },
       },
       required: ['noticeSlug'],

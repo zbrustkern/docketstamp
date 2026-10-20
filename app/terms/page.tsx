@@ -69,7 +69,7 @@ export default function TermsPage() {
               DocketStamp is a software-driven document preparation and programmatic physical postal transmission utility operated by <strong>Western Amalgamated</strong> (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;).
             </p>
             <p>
-              DocketStamp provides deterministic, state-specific notice templates formatted according to published statutes and contract conventions. Senders furnish their own factual statements, dates, and amounts. DocketStamp does not review answers for legal sufficiency, draw legal conclusions, or provide legal strategies.
+              DocketStamp provides fixed correspondence templates for users to complete with factual statements, dates, and amounts. The templates do not determine which law applies or establish that a sender is legally entitled to a requested outcome. DocketStamp does not review answers for legal sufficiency, draw legal conclusions, or provide legal strategies.
             </p>
           </section>
 
@@ -88,15 +88,15 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="font-serif text-lg font-bold text-white flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-200 text-xs font-mono flex items-center justify-center font-bold">3</span>
-              Postal Transmission &amp; USPS Tracking Evidentiary Standards
+              Mailing Services and Provider Records
             </h2>
             <p>
-              Physical printing and postal induction are fulfilled programmatically through our postal infrastructure partners (Lob REST API). Once tendered to the United States Postal Service (&ldquo;USPS&rdquo;), transit times are subject to USPS operating conditions.
+              Orders are submitted to a postal fulfillment provider after checkout. Processing, USPS acceptance, transit, and tracking depend on provider and USPS events; an order confirmation does not itself establish USPS acceptance or delivery.
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-xs text-slate-400">
-              <li><strong>Tier 1 (First-Class):</strong> Includes USPS Intelligent Mail Barcode (IMb) tracking.</li>
-              <li><strong>Tier 2 (Certified Mail®):</strong> Provides official USPS Certified tracking numbers and certificate of mailing proof.</li>
-              <li><strong>Tier 3 (Certified Mail® + ERR):</strong> Includes USPS Electronic Return Receipt with recipient signature capture.</li>
+              <li><strong>Tier 1 (First-Class):</strong> Tracking information may be limited; order status is shown when provided.</li>
+              <li><strong>Tier 2 (Certified Mail®):</strong> Tracking and postal status records are shown when provided by the provider or USPS.</li>
+              <li><strong>Tier 3 (Certified Mail® + Return Receipt):</strong> An Electronic Return Receipt is requested; a record is shown if supplied.</li>
             </ul>
           </section>
 
@@ -104,10 +104,10 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="font-serif text-lg font-bold text-white flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-200 text-xs font-mono flex items-center justify-center font-bold">4</span>
-              Digital Signature Adoption &amp; Legal Responsibility
+              Typed Signature and User-Provided Information
             </h2>
             <p>
-              When a user clicks &ldquo;Adopt Signature &amp; Stamp&rdquo;, they authorize DocketStamp to place a formal electronic signature line (<code>/s/ [Full Name]</code>) and an official registry stamp on the printable document. The user affirms under penalty of perjury that all factual assertions in the instrument are true and correct.
+              When a user adopts a typed signature, DocketStamp records that choice and places the typed signature line (<code>/s/ [Full Name]</code>) on the prepared notice. The user is responsible for reviewing the document and the factual information they supplied. The typed signature line is not a court filing or a sworn statement.
             </p>
           </section>
         </div>

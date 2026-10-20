@@ -481,7 +481,7 @@ export async function processPaidOrder(
         order.serviceLevel === "CERTIFIED_RETURN_RECEIPT"
           ? "USPS Certified Mail® + Return Receipt"
           : order.serviceLevel === "FIRST_CLASS"
-          ? "Standard First-Class Dispatch"
+          ? "USPS First-Class Mail"
           : "USPS Certified Mail®";
 
       const recipientStreet = [order.recipientAddress?.street1, order.recipientAddress?.street2].filter(Boolean).join(", ");
@@ -497,7 +497,7 @@ export async function processPaidOrder(
         trackingNumber: fulfillment.trackingNumber,
         orderId,
       });
-      console.log(`[OrderProcessor] Sent official docket dispatch receipt email to ${recipientEmail} (Docket: ${docketId})`);
+      console.log(`[OrderProcessor] Sent order-submission status email to ${recipientEmail} (Docket: ${docketId})`);
     } catch (receiptEmailErr) {
       console.warn(`[OrderProcessor] Notice sending dispatch receipt email to ${recipientEmail}:`, receiptEmailErr);
     }
@@ -569,7 +569,7 @@ export async function processPaidOrder(
     console.warn("[OrderProcessor] Notice recording fulfillment_submitted telemetry:", telErr);
   }
 
-  console.log(`[OrderProcessor] Order ${orderId} successfully dispatched! Lob Letter ID: ${fulfillment.order_id}`);
+  console.log(`[OrderProcessor] Order ${orderId} was submitted to postal fulfillment. Lob Letter ID: ${fulfillment.order_id}`);
 
   return {
     success: true,

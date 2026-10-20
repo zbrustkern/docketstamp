@@ -1,8 +1,7 @@
 /**
- * Master Notice Cartridge Registry & Pricing Tier Metadata
+ * Master document template registry and postal service metadata
  *
- * Exports all deterministic Notice Cartridges for DocketStamp and their 3-tier USPS pricing.
- * Conforms to Sections 2 and 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Exports deterministic document templates and three USPS mailing service options.
  */
 
 import { NoticeTemplateDefinition, MailTierId, PricingTierMetadata } from '../types';
@@ -101,22 +100,21 @@ export function getNoticesByCategory(
 }
 
 /**
- * Official 3-Tier USPS Pricing Model (Section 2)
+ * USPS mailing service options and pricing.
  */
 export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
   first_class: {
     id: 'first_class',
-    name: 'Standard First-Class Dispatch',
+    name: 'Standard First-Class Mail',
     priceCents: 1295,
     formattedPrice: '$12.95',
     lobExtraService: undefined,
-    description: 'Standard USPS First-Class Mail with Intelligent Mail barcode tracking',
+    description: 'Standard USPS First-Class Mail. Tracking information may be limited.',
     features: [
-      'Official Clerk\'s Docket Stamp registry recording',
-      'USPS CASS™ address verification & standardization',
-      'Standard USPS First-Class transit (1–5 business days)',
-      'USPS Intelligent Mail® Barcode (IMb) tracking',
-      'Digital PDF Certificate of Dispatch archive',
+      'DocketStamp record of the prepared notice',
+      'USPS address standardization when available',
+      'Mailing status and tracking details when provided',
+      'Copy of the prepared notice',
     ],
   },
   certified: {
@@ -125,14 +123,13 @@ export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
     priceCents: 1995,
     formattedPrice: '$19.95',
     lobExtraService: 'certified',
-    description: 'USPS Certified Mail with official proof of mailing and chain of custody tracking',
+    description: 'USPS Certified Mail with tracking and status records from USPS as available.',
     features: [
-      'Official Clerk\'s Docket Stamp registry recording',
-      'USPS Certified Mail® barcode banner & tracking number',
-      'USPS electronic proof of acceptance and delivery scan',
-      'Admissible in court & administrative proceedings',
-      'USPS CASS™ address standardization',
-      'Permanent digital docket record & PDF proof',
+      'DocketStamp record of the prepared notice',
+      'USPS Certified Mail® service and tracking number',
+      'USPS acceptance and delivery records when available',
+      'USPS address standardization when available',
+      'Copies of the prepared notice and available status records',
     ],
   },
   certified_return_receipt: {
@@ -141,13 +138,12 @@ export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
     priceCents: 2795,
     formattedPrice: '$27.95',
     lobExtraService: 'certified_return_receipt',
-    description: 'USPS Certified Mail with Electronic Return Receipt green card signature proof',
+    description: 'USPS Certified Mail with an Electronic Return Receipt request; USPS records are shown when available.',
     features: [
       'Everything in USPS Certified Mail®',
-      'Electronic Return Receipt (ERR) signed recipient proof',
-      'Legally conclusive delivery signature & date verification',
-      'Highest evidentiary standard for landlord & bureau notices',
-      'Official USPS signature certificate archived in docket',
+      'Electronic Return Receipt request',
+      'Return-receipt record if provided by USPS',
+      'Separate records for available acceptance, tracking, and delivery events',
     ],
   },
 };

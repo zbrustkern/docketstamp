@@ -43,6 +43,7 @@ function baseValues(notice: (typeof ALL_NOTICE_CARTRIDGES)[number]): Record<stri
         if (field.key === 'senderFullName') values[field.key] = 'Taylor Morgan';
         else if (field.key === 'recipientFormalName') values[field.key] = 'Example Recipient LLC';
         else if (field.key === 'ssnLast4') values[field.key] = '1234';
+        else if (field.key === 'basisForRequest') values[field.key] = 'My records show the deposit was paid and no refund has been received.';
         else if (/email/i.test(field.key)) values[field.key] = 'taylor@example.com';
         else if (/(account|serial|policy|reference|number)/i.test(field.key)) values[field.key] = 'ACC-12345';
         else if (/address/i.test(field.key)) values[field.key] = '123 Main Street, Apt 4';
@@ -121,7 +122,7 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
     }).success, false);
   });
 
-  it('strips unknown and renderer-owned form keys and derives statutory text from jurisdiction', () => {
+  it('strips unknown and renderer-owned form keys and ignores user-supplied statutory text', () => {
     const rawValues = {
       ...baseValues(securityDepositNotice),
       propertyState: 'IN',
@@ -150,14 +151,12 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
       executionDate: 'October 20, 2026',
     });
     const printedText = document.rawParagraphs.join('\n');
-    assert.match(printedText, /Ind\. Code § 32-31-3-12/);
-    assert.match(printedText, /45 days/);
-    assert.doesNotMatch(printedText, /USER SUPPLIED CITATION|one hour|USER ADDRESS/);
+    assert.doesNotMatch(printedText, /Ind\. Code §|45 days|USER SUPPLIED CITATION|one hour|USER ADDRESS/);
     assert.equal(document.docketId, 'DS-2026-ABC123');
     assert.equal(document.signatureBlock.executionDate, 'October 20, 2026');
   });
 
-  it('preserves line 2 in preview text, normalized addresses, and the Lob mailing payload source', () => {
+  it('preserves line 2 in normalized addresses used by the Lob mailing payload', () => {
     const values = {
       ...baseValues(preArbitrationDisputeNotice),
       senderAddressLine1: '19 Lake Avenue',
@@ -183,12 +182,16 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
       docketId: 'DS-2026-ABC123',
       executionDate: 'October 20, 2026',
     });
-    const printedText = document.rawParagraphs.join('\n');
-    assert.match(printedText, /19 Lake Avenue, Apartment 7B, Chicago, IL 60601-1234/);
+    assert.equal(document.senderAddress.address_line1, '19 Lake Avenue');
     assert.equal(document.senderAddress.address_line2, 'Apartment 7B');
+    assert.equal(document.senderAddress.address_city, 'Chicago');
+    assert.equal(document.senderAddress.address_state, 'IL');
+    assert.equal(document.senderAddress.address_zip, '60601-1234');
+    assert.equal(document.recipientAddress.address_line1, '400 West Lake Street');
     assert.equal(document.recipientAddress.address_line2, 'Suite 1200');
-    const html = renderLobHtmlPayload(document);
-    assert.match(html, /19 Lake Avenue, Apartment 7B, Chicago, IL 60601-1234/);
+    assert.equal(document.recipientAddress.address_city, 'Chicago');
+    assert.equal(document.recipientAddress.address_state, 'IL');
+    assert.equal(document.recipientAddress.address_zip, '60606');
 
     const structuredValues = baseValues(preArbitrationDisputeNotice);
     for (const key of [
@@ -279,8 +282,10 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
 
   it('renders every declared field-choice combination at every mail tier without external side effects', () => {
     let rendered = 0;
+    let expectedRenders = 0;
     for (const notice of ALL_NOTICE_CARTRIDGES) {
       const combinations = allDefinedCombinations(notice);
+      expectedRenders += combinations.length * MAIL_TIERS.length;
       for (const overrides of combinations) {
         const rawValues = { ...baseValues(notice), ...overrides };
         const validated = validateNoticeInput(notice, rawValues);
@@ -303,6 +308,7 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
         }
       }
     }
-    assert.equal(rendered, 621);
+    assert.equal(rendered, expectedRenders);
+    assert.equal(rendered, 603);
   });
 });

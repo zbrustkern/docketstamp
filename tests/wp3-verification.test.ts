@@ -32,7 +32,6 @@ import {
   searchVerifiedRecipients,
 } from '../src/lib/docket/data/verified-recipients';
 
-import { getStateStatute } from '../src/lib/docket/data/state-statutes';
 import { UPL_COMPLIANCE_FOOTER_TEXT } from '../src/lib/docket/guardrails';
 
 describe('WP-3 Verification Gate: Interactive Workspace & Drawer Engine', () => {
@@ -48,11 +47,11 @@ describe('WP-3 Verification Gate: Interactive Workspace & Drawer Engine', () => 
 
     it('resolves cartridges by short aliases', () => {
       assert.equal(getNoticeBySlug('intent-to-vacate')?.slug, 'tenant-notice-of-intent-to-vacate');
-      assert.equal(getNoticeBySlug('security-deposit-return')?.slug, 'security-deposit-return-demand-letter');
+      assert.equal(getNoticeBySlug('security-deposit-return')?.slug, 'security-deposit-accounting-request');
       assert.equal(getNoticeBySlug('tenant-repair')?.slug, 'tenant-repair-and-maintenance-notice');
-      assert.equal(getNoticeBySlug('credit-bureau-dispute')?.slug, 'fcra-credit-bureau-written-dispute-letter');
-      assert.equal(getNoticeBySlug('debt-validation')?.slug, 'fdcpa-30-day-debt-validation-letter');
-      assert.equal(getNoticeBySlug('service-cancellation')?.slug, 'written-contract-and-policy-cancellation-letter');
+      assert.equal(getNoticeBySlug('credit-bureau-dispute')?.slug, 'credit-report-dispute-request');
+      assert.equal(getNoticeBySlug('debt-validation')?.slug, 'debt-dispute-information-request');
+      assert.equal(getNoticeBySlug('service-cancellation')?.slug, 'service-cancellation-request');
     });
   });
 
@@ -112,50 +111,42 @@ describe('WP-3 Verification Gate: Interactive Workspace & Drawer Engine', () => 
       });
 
       // Eleanor Vance should be populated
-      const senderToken = partialDoc.paragraphs
+      const moveOutToken = partialDoc.paragraphs
         .flatMap((p) => p)
-        .find((t) => t.key === 'senderFullName');
-      assert.ok(senderToken);
-      assert.equal(senderToken.isFilled, true);
-      assert.equal(senderToken.content, 'Eleanor Vance');
+        .find((t) => t.key === 'moveOutDate');
+      assert.ok(moveOutToken);
+      assert.equal(moveOutToken.isFilled, true);
+      assert.equal(moveOutToken.content, '2026-11-30');
     });
   });
 
-  describe('4. Smart State Statute Lookup (Notice #2)', () => {
-    it('live-updates statuteCitation and statuteDeadline based on selected state', () => {
-      // California
+  describe('4. Deposit request scope', () => {
+    it('keeps state-specific citations and deadlines out when prerequisites are not collected', () => {
       const caDoc = interpolateNotice({
         notice: securityDepositNotice,
         userValues: {
-          leasedPremisesState: 'CA',
+          propertyState: 'CA',
         },
         docketId: 'DS-2026-CA-DEP',
       });
 
-      const caStatute = getStateStatute('CA');
-      assert.ok(caStatute);
-      assert.equal(caStatute.statuteCitation, 'Cal. Civ. Code § 1950.5(g)');
-      assert.equal(caStatute.returnDeadlineDays, 21);
-
-      // Check that CA citation is interpolated into document paragraphs
       const caTokens = caDoc.paragraphs.flatMap((p) => p);
       const citationToken = caTokens.find((t) => t.key === 'statuteCitation');
-      assert.ok(citationToken);
-      assert.equal(citationToken.content, 'Cal. Civ. Code § 1950.5(g)');
+      assert.equal(securityDepositNotice.usesStateStatuteLookup, false);
+      assert.equal(citationToken, undefined);
+      assert.ok(!caDoc.rawParagraphs.some((p) => p.includes('Cal. Civ. Code')));
+      assert.ok(!caDoc.rawParagraphs.some((p) => p.includes('21 calendar days')));
 
-      // New York
       const nyDoc = interpolateNotice({
         notice: securityDepositNotice,
         userValues: {
-          leasedPremisesState: 'NY',
+          propertyState: 'NY',
         },
         docketId: 'DS-2026-NY-DEP',
       });
 
-      const nyTokens = nyDoc.paragraphs.flatMap((p) => p);
-      const nyCitation = nyTokens.find((t) => t.key === 'statuteCitation');
-      assert.ok(nyCitation);
-      assert.equal(nyCitation.content, 'N.Y. Gen. Oblig. Law § 7-108(1-a)(e)');
+      assert.ok(!nyDoc.rawParagraphs.some((p) => p.includes('N.Y. Gen. Oblig. Law')));
+      assert.ok(!nyDoc.rawParagraphs.some((p) => p.includes('14 days')));
     });
   });
 
@@ -220,7 +211,7 @@ describe('WP-3 Verification Gate: Interactive Workspace & Drawer Engine', () => 
 
       const footer = UPL_COMPLIANCE_FOOTER_TEXT(docketId);
       assert.ok(footer.includes(docketId));
-      assert.ok(footer.includes('DOCKET RECORD & DISPATCH CERTIFICATION'));
+      assert.ok(footer.includes('DOCUMENT PREPARATION RECORD'));
     });
   });
 });

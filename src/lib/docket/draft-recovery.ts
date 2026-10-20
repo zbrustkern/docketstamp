@@ -35,6 +35,7 @@ import {
 import { isFitnessEntity } from './guardrails';
 import { STATE_STATUTES } from './data/state-statutes';
 import { getVerifiedRecipientById } from './data/verified-recipients';
+import { getNoticeBySlug } from './notices';
 
 export interface DraftValidationResult {
   isValid: boolean;
@@ -165,7 +166,7 @@ export function validateNoticeDraft(
   const senderLine1 = values.senderAddressLine1 || '';
   if (!isValidStreetAddress(senderLine1)) {
     fieldErrors['senderAddressLine1'] =
-      'Please enter your street address with number and street (e.g., 123 Main St or P.O. Box 100).';
+      'Please enter your sender mailing street address with number and street (e.g., 123 Main St or P.O. Box 100).';
   }
 
   orderedFieldKeys.push('senderCity');
@@ -375,6 +376,16 @@ export function getDraftStorageKey(slug: string): string {
   return `docketstamp_draft_v2_${slug.trim().toLowerCase()}`;
 }
 
+function getDraftSlugCandidates(slug: string): { canonicalSlug: string; slugs: string[] } {
+  const notice = getNoticeBySlug(slug);
+  const canonicalSlug = notice?.slug || slug.trim().toLowerCase();
+  const slugs = [...new Set([
+    canonicalSlug,
+    ...(notice?.aliases || []).map((alias) => alias.trim().toLowerCase()),
+  ])];
+  return { canonicalSlug, slugs };
+}
+
 /**
  * Persists notice draft in sessionStorage (tab-scoped, no sensitive persistence in localStorage)
  */
@@ -389,15 +400,16 @@ export function saveNoticeDraft(
 ): void {
   if (typeof window === 'undefined') return;
   try {
+    const { canonicalSlug } = getDraftSlugCandidates(slug);
     const payload: StoredNoticeDraft = {
-      slug,
+      slug: canonicalSlug,
       userValues: draft.userValues,
       selectedRecipientId: draft.selectedRecipientId || null,
       selectedTier: draft.selectedTier,
       docketId: draft.docketId,
       savedAt: Date.now(),
     };
-    window.sessionStorage.setItem(getDraftStorageKey(slug), JSON.stringify(payload));
+    window.sessionStorage.setItem(getDraftStorageKey(canonicalSlug), JSON.stringify(payload));
   } catch {
     // Graceful fallback for storage quota or privacy mode restrictions
   }
@@ -409,11 +421,36 @@ export function saveNoticeDraft(
 export function loadNoticeDraft(slug: string): StoredNoticeDraft | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.sessionStorage.getItem(getDraftStorageKey(slug));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || parsed.slug !== slug) return null;
-    return parsed as StoredNoticeDraft;
+    const { canonicalSlug, slugs } = getDraftSlugCandidates(slug);
+    const canonicalKey = getDraftStorageKey(canonicalSlug);
+    const canonicalRaw = window.sessionStorage.getItem(canonicalKey);
+
+    for (const candidateSlug of slugs) {
+      const key = getDraftStorageKey(candidateSlug);
+      const raw = candidateSlug === canonicalSlug
+        ? canonicalRaw
+        : window.sessionStorage.getItem(key);
+      if (!raw) continue;
+
+      const parsed = JSON.parse(raw);
+      const storedSlug = parsed && typeof parsed === 'object' && typeof parsed.slug === 'string'
+        ? parsed.slug.trim().toLowerCase()
+        : '';
+      if (!parsed || typeof parsed !== 'object' || storedSlug !== candidateSlug) continue;
+
+      const recovered: StoredNoticeDraft = { ...parsed, slug: canonicalSlug } as StoredNoticeDraft;
+      // Copy a legacy draft into the canonical namespace only when it is empty.
+      // Keep the original key and never overwrite any pre-existing canonical data.
+      if (candidateSlug !== canonicalSlug && canonicalRaw === null) {
+        try {
+          window.sessionStorage.setItem(canonicalKey, JSON.stringify(recovered));
+        } catch {
+          // The recovered legacy draft is still returned if storage is read-only or full.
+        }
+      }
+      return recovered;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -425,7 +462,10 @@ export function loadNoticeDraft(slug: string): StoredNoticeDraft | null {
 export function clearNoticeDraft(slug: string): void {
   if (typeof window === 'undefined') return;
   try {
-    window.sessionStorage.removeItem(getDraftStorageKey(slug));
+    const { slugs } = getDraftSlugCandidates(slug);
+    for (const candidate of slugs) {
+      window.sessionStorage.removeItem(getDraftStorageKey(candidate));
+    }
   } catch {
     // Ignore
   }

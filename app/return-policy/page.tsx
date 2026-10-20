@@ -54,7 +54,7 @@ export default function ReturnPolicyPage() {
               Service Guarantee &amp; Physical Mail Policy:
             </p>
             <p className="leading-relaxed">
-              Because DocketStamp prints individualized legal notices and tenders them directly into the physical United States Postal Service mail stream with live barcodes, <strong>cancellations cannot be processed once physical printing and postal induction have occurred.</strong> However, if an order is cancelled prior to postal processing, or if a verified printing or transmission defect occurs, <strong>we provide a 100% full refund or free immediate redispatch.</strong>
+              Orders are submitted to a postal fulfillment provider after checkout. Cancellation options depend on processing status. If an order is cancelled before postal processing, or a printing or transmission defect is confirmed, the available remedy is handled under the terms below.
             </p>
           </div>
 
@@ -65,10 +65,10 @@ export default function ReturnPolicyPage() {
               Custom Legal Notice &amp; Postal Dispatch Services
             </h2>
             <p>
-              Notices prepared through DocketStamp are generated deterministically based on sender-provided factual parameters and are printed on demand for immediate physical transmission via USPS First-Class, USPS Certified Mail®, or USPS Certified Mail® with Electronic Return Receipt.
+              Notices are prepared from sender-provided information. After checkout, orders may be submitted for USPS First-Class, USPS Certified Mail®, or USPS Certified Mail® with an Electronic Return Receipt request.
             </p>
             <p>
-              Because postage, tracking barcodes, and physical envelopes are permanently affixed upon induction into the postal stream, physical returns are not accepted.
+              Provider and USPS status information is shown when it is received. Whether a mailing or postal record meets a legal service requirement depends on the applicable law and circumstances.
             </p>
           </section>
 
@@ -79,7 +79,7 @@ export default function ReturnPolicyPage() {
               Cancellations Before Postal Dispatch
             </h2>
             <p>
-              If you identify an error in your document variables or need to cancel before physical processing has commenced, contact us immediately at <a href="mailto:support@docketstamp.com" className="text-sky-400 underline font-medium">support@docketstamp.com</a> with your Docket ID (e.g., <code>DS-2026-XXXXX</code>). If postal induction has not yet taken place, we will immediately cancel the dispatch and issue a 100% refund to your original payment method.
+              If you identify an error in your document variables or need to request cancellation, contact <a href="mailto:support@docketstamp.com" className="text-sky-400 underline font-medium">support@docketstamp.com</a> as soon as possible with your Docket ID (e.g., <code>DS-2026-XXXXX</code>). We will review the recorded order and provider status and confirm whether cancellation is still possible. If cancelled before postal processing, we will issue the refund described in this policy.
             </p>
           </section>
 
@@ -90,7 +90,7 @@ export default function ReturnPolicyPage() {
               Delivery Failures &amp; Undeliverable Addresses
             </h2>
             <p>
-              DocketStamp verifies recipient addresses against USPS Coding Accuracy Support System (CASS) standards prior to dispatch. If a mailpiece is returned as undeliverable due to an outdated recipient address or refusal by the addressee, the official USPS return scan and physical postmark serve as legal proof of attempted service. Re-dispatch to an updated address can be requested at cost.
+              Address standardization or verification may be available from the postal provider, but it does not guarantee delivery or legal sufficiency. If a return status is reported, it will be shown when available. Whether any mailing record is legally sufficient proof of service depends on the applicable law and circumstances; consult a qualified lawyer. Re-dispatch to an updated address can be requested at cost.
             </p>
           </section>
 
@@ -101,7 +101,7 @@ export default function ReturnPolicyPage() {
               UPL &amp; Legal Advice Disclaimer
             </h2>
             <p className="text-xs text-slate-400 italic">
-              DocketStamp is an automated document preparation and USPS postal dispatch platform, not a law firm, and does not provide legal advice, legal opinions, or legal representation. Refund claims based on legal outcomes or court decisions cannot be accepted.
+              DocketStamp provides self-help document preparation and postal mailing services. It is not a law firm and does not provide legal advice, legal opinions, or legal representation. Refund claims based on legal outcomes or court decisions cannot be accepted.
             </p>
           </section>
         </div>

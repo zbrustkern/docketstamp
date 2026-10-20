@@ -214,9 +214,7 @@ export interface SendDocketDispatchReceiptEmailParams {
 }
 
 /**
- * Dispatches an official customer transactional dispatch receipt email.
- * Dark-slate / institutional style containing docket record, service level,
- * recipient summary, tracking link, and mandatory UPL compliance footer.
+ * Sends a customer status email after the mailing provider accepts an order request.
  */
 export async function sendDocketDispatchReceiptEmail({
   toEmail,
@@ -239,21 +237,21 @@ export async function sendDocketDispatchReceiptEmail({
     recipientAddressSummary ||
     (recipientSummary ? (recipientSummary.split("—")[1] || recipientSummary).trim() : "");
 
-  const subject = `Official Docket Dispatched: ${docketId} (${serviceLevelLabel})`;
+  const subject = `Mailing order submitted: ${docketId} (${serviceLevelLabel})`;
   const docketUrl = `https://docketstamp.com/docket/${docketId}`;
   const uplFooter = UPL_COMPLIANCE_FOOTER_TEXT(docketId);
 
   const textBody = `
-DocketStamp Official Dispatch Registry
+DocketStamp Order Status
 ======================================
-Official Dispatch Certification & Receipt
+Mailing Request Submitted
 
 DOCKET ID:       ${docketId}
 SERVICE LEVEL:   ${serviceLevelLabel}
 RECIPIENT:       ${effectiveRecipientName}
 DESTINATION:     ${effectiveAddressSummary}
-${trackingNumber ? `USPS TRACKING:   ${trackingNumber}\n` : ""}${orderId ? `ORDER ID:        ${orderId}\n` : ""}
-LIVE DOCKET TRACKING & PROOF RECORD:
+${trackingNumber ? `PROVIDER TRACKING: ${trackingNumber}\n` : ""}${orderId ? `ORDER ID:         ${orderId}\n` : ""}
+ORDER STATUS:
 ${docketUrl}
 
 --------------------------------------
@@ -283,13 +281,13 @@ ${uplFooter}
 <body>
   <div class="card">
     <div class="header">
-      <span class="badge">Official USPS Dispatch</span>
-      <h1 class="title">Formal Legal Notice Dispatched</h1>
+      <span class="badge">Submitted to mailing provider</span>
+      <h1 class="title">Mailing request submitted</h1>
       <div class="docket-id">DOCKET ID: ${escapeHtml(docketId)}</div>
     </div>
 
     <p style="font-size: 14px; line-height: 1.6; color: #CBD5E1; margin: 0 0 16px 0;">
-      Your administrative instrument has been processed, verified via USPS CASS™, and inducted into the postal stream.
+      Your order was accepted by the mailing fulfillment provider. This does not confirm USPS acceptance or delivery. Tracking and postal status records appear when supplied by the provider.
     </p>
 
     <table class="details-table">
@@ -312,7 +310,7 @@ ${uplFooter}
       ${
         trackingNumber
           ? `<tr>
-        <td class="label">USPS Tracking</td>
+        <td class="label">Provider tracking</td>
         <td class="value" style="font-family: ui-monospace, Menlo, monospace; color: #10B981; font-weight: bold;">${escapeHtml(
           trackingNumber
         )}</td>
@@ -322,13 +320,13 @@ ${uplFooter}
     </table>
 
     <div style="text-align: center;">
-      <a href="${escapeHtml(docketUrl)}" class="btn" style="color: #ffffff;">View Official Docket Record &rarr;</a>
+      <a href="${escapeHtml(docketUrl)}" class="btn" style="color: #ffffff;">View order status &rarr;</a>
     </div>
 
     <div class="footer">
-      <strong>STATUTORY DOCKET NOTICE:</strong> ${escapeHtml(uplFooter)}
+      <strong>DOCUMENT PREPARATION DISCLOSURE:</strong> ${escapeHtml(uplFooter)}
       <br/><br/>
-      DocketStamp Official Registry &bull; Dispatched via Western Amalgamated &bull; <a href="https://docketstamp.com" style="color: #38BDF8; text-decoration: none;">docketstamp.com</a>
+      DocketStamp Order Status &bull; Mailing request submitted by Western Amalgamated &bull; <a href="https://docketstamp.com" style="color: #38BDF8; text-decoration: none;">docketstamp.com</a>
     </div>
   </div>
 </body>
@@ -341,7 +339,7 @@ ${uplFooter}
     process.env["resend-api-key"];
 
   const fromEmail = process.env.RESEND_DISPATCH_FROM_EMAIL || "dispatch@docketstamp.com";
-  const fromHeader = `DocketStamp Official Registry <${fromEmail}>`;
+  const fromHeader = `DocketStamp Orders <${fromEmail}>`;
 
   if (resendApiKey) {
     try {

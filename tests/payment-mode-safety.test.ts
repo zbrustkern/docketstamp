@@ -50,6 +50,7 @@ async function runPaymentModeSafetyTests() {
           recipientFormalName: "Carmel Property Group", recipientAddressLine1: "18 Main Street", recipientCity: "Carmel", recipientState: "IN", recipientZip: "46032",
           propertyState: "IN", vacatedPremisesAddress: "77 Lake Street, Unit 5, Chicago, IL 60601", moveOutDate: "2026-09-01",
           depositAmount: "$1,500.00", amountReceivedToDate: "$0.00", balanceRequested: "$1,500.00", responseDays: "14 calendar days",
+          basisForRequest: "My records show the deposit was paid and no refund has been received.",
         },
         signatureAdoption: { adopted: true, affirmed: true, signerName: "Taylor Morgan" },
       }),

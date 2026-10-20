@@ -8,7 +8,6 @@ import {
   Clock,
   Truck,
   ExternalLink,
-  Download,
   ArrowLeft,
   FileText,
   Mail,
@@ -24,8 +23,8 @@ interface DocketPageProps {
 export async function generateMetadata({ params }: DocketPageProps): Promise<Metadata> {
   const { docketId } = await params;
   return {
-    title: `Docket Record ${docketId} | Official Dispatch Certification | DocketStamp`,
-    description: `Official registry record, USPS postal dispatch certification, and physical tracking history for Docket ID ${docketId}.`,
+    title: `Order Record ${docketId} | DocketStamp`,
+    description: `DocketStamp order record and any postal status information available for reference ${docketId}.`,
     robots: {
       index: false,
       follow: false,
@@ -42,8 +41,12 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
 
   const order = await getOrderByDocketId(docketId);
 
+  if (!order) {
+    notFound();
+  }
+
   // Format dates
-  const createdDate = order?.createdAt
+  const createdDate = order.createdAt
     ? new Date(order.createdAt).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
@@ -52,50 +55,60 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
         minute: '2-digit',
         timeZoneName: 'short',
       })
-    : new Date().toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      });
+    : 'Not available';
 
   const trackingNumber = order?.lobTrackingNumber;
-  const proofUrl = order?.lobTrackingUrl || undefined;
+  const trackingUrl = order.lobTrackingUrl || undefined;
   const serviceLevelLabel =
-    order?.serviceLevel === 'CERTIFIED_RETURN_RECEIPT'
+    order.serviceLevel === 'CERTIFIED_RETURN_RECEIPT'
       ? 'USPS Certified Mail® w/ Electronic Return Receipt'
-      : order?.serviceLevel === 'CERTIFIED'
+      : order.serviceLevel === 'CERTIFIED'
       ? 'USPS Certified Mail®'
       : 'USPS First-Class Mail®';
 
-  const isPaid = Boolean(
-    order &&
-      order.status !== 'PENDING_PAYMENT' &&
-      order.status !== 'PAYMENT_VERIFICATION_FAILED'
-  );
+  const isPaid = [
+    'PAYMENT_RECEIVED', 'DISPATCHING', 'PROCESSING_HANDWRYTTEN',
+    'PROCESSING_DISPATCH', 'QUEUED_FOR_FULFILLMENT', 'DISPATCHED_TO_USPS',
+    'MAILED', 'IN_TRANSIT', 'DELIVERED', 'RETURNED_TO_SENDER',
+  ].includes(order.status);
 
   const isSubmittedForMailing =
-    order?.status === 'PAYMENT_RECEIVED' ||
-    order?.status === 'DISPATCHING' ||
-    order?.status === 'QUEUED_FOR_FULFILLMENT';
+    order.status === 'PAYMENT_RECEIVED' ||
+    order.status === 'DISPATCHING' ||
+    order.status === 'PROCESSING_DISPATCH' ||
+    order.status === 'PROCESSING_HANDWRYTTEN' ||
+    order.status === 'QUEUED_FOR_FULFILLMENT';
 
   const isDispatched =
-    order?.status === 'DISPATCHED_TO_USPS' ||
-    order?.status === 'MAILED' ||
-    order?.status === 'DELIVERED';
+    order.status === 'DISPATCHED_TO_USPS' ||
+    order.status === 'MAILED' ||
+    order.status === 'IN_TRANSIT' ||
+    order.status === 'DELIVERED' ||
+    order.status === 'RETURNED_TO_SENDER';
 
-  const isDelivered = order?.status === 'DELIVERED';
+  const isDelivered = order.status === 'DELIVERED';
 
-  const displayStatus = order
-    ? isDelivered
-      ? 'DELIVERED'
-      : isDispatched
-      ? 'DISPATCHED_TO_USPS'
-      : isSubmittedForMailing
-      ? 'SUBMITTED_FOR_MAILING'
-      : order.status === 'PENDING_PAYMENT'
-      ? 'PENDING_PAYMENT'
-      : order.status
-    : 'RECORDED';
+  const displayStatus = isDelivered
+    ? 'Delivery status recorded'
+    : order.status === 'RETURNED_TO_SENDER'
+    ? 'Return status recorded'
+    : order.status === 'IN_TRANSIT'
+    ? 'In-transit status recorded'
+    : order.status === 'MAILED'
+    ? 'Mailed status recorded'
+    : order.status === 'DISPATCHED_TO_USPS'
+    ? 'Dispatch status recorded'
+    : isSubmittedForMailing
+    ? 'Mailing request processing'
+    : order.status === 'PENDING_PAYMENT'
+    ? 'Payment pending'
+    : order.status === 'PAYMENT_VERIFICATION_FAILED'
+    ? 'Payment verification failed'
+    : order.status === 'FAILED'
+    ? 'Processing failed'
+    : 'Order status unavailable';
+
+  const hasAddresses = Boolean(order.recipientAddress && order.returnAddress);
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 font-sans pb-16">
@@ -114,7 +127,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 DocketStamp
               </span>
               <span className="text-[10px] text-slate-400 font-mono block">
-                USPS Certified Mail Registry
+                Order status record
               </span>
             </div>
           </Link>
@@ -122,7 +135,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
               <ShieldCheck className="w-3.5 h-3.5" />
-              RECORD AUTHENTICATED
+              STATUS FROM STORED ORDER DATA
             </span>
           </div>
         </div>
@@ -136,7 +149,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-sky-400 transition"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Return to Registry Home
+            <ArrowLeft className="w-3.5 h-3.5" /> Return to DocketStamp
           </Link>
         </div>
 
@@ -147,21 +160,20 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
             <div>
               <div className="text-[11px] font-mono font-bold text-sky-400 uppercase tracking-wider mb-2">
-                Official USPS Physical Postal Filing
+                DocketStamp order and postal status record
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
-                Docket Registry Record
+                Order Record
               </h1>
               <p className="text-sm text-slate-400 max-w-xl">
-                This verified certification confirms that the legal instrument below was frozen,
-                serialized, and transmitted for physical delivery via the United States Postal Service.
+                This page summarizes the stored order and any postal status information received from the provider. It is not a USPS certificate or proof that a legal service requirement was met.
               </p>
             </div>
 
-            {/* Clerk's Docket Stamp Display Box */}
+            {/* DocketStamp order record summary */}
             <div className="bg-[#FEF3C7] text-slate-900 border-2 border-[#D97706] rounded p-3 w-full md:w-80 font-mono shadow-md">
               <div className="text-[10px] font-bold tracking-wider uppercase text-amber-900 border-b border-amber-300 pb-1 mb-1.5 text-center">
-                Clerk&apos;s Docket Stamp &bull; Post-Dispatch
+                DocketStamp Order Record
               </div>
               <div className="text-xs space-y-1">
                 <div>
@@ -173,7 +185,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                   <span className="text-amber-900">{createdDate}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-amber-950">CLASS: </span>
+                  <span className="font-semibold text-amber-950">SERVICE: </span>
                   <span className="text-amber-900">{serviceLevelLabel}</span>
                 </div>
                 <div>
@@ -190,7 +202,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
         {/* Tracking Timeline */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
           <h2 className="text-sm font-mono uppercase tracking-wider text-slate-400 font-bold mb-6 flex items-center gap-2">
-            <Truck className="w-4 h-4 text-sky-400" /> USPS Fulfillment & Delivery Timeline
+            <Truck className="w-4 h-4 text-sky-400" /> Order and postal status history
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
@@ -231,10 +243,12 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 ) : (
                   <Clock className="w-4 h-4" />
                 )}
-                2. CASS Standardized
+                2. Addresses recorded
               </div>
               <div className="text-[11px] text-slate-400">
-                USPS Coding Accuracy Support System certified delivery point.
+                {hasAddresses
+                  ? 'Recipient and sender mailing addresses are recorded on this order. This does not mean USPS verified them.'
+                  : 'One or more mailing addresses are unavailable in this record.'}
               </div>
             </div>
 
@@ -254,14 +268,14 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 ) : (
                   <Clock className="w-4 h-4" />
                 )}
-                {isDispatched ? '3. Dispatched to USPS' : '3. Submitted for Mailing'}
+                {isDispatched ? '3. Postal status recorded' : '3. Mailing processing'}
               </div>
               <div className="text-[11px] text-slate-400">
                 {isDispatched
-                  ? 'Physical letter printed and injected into USPS mailstream.'
+                  ? 'A dispatch or later postal status is recorded for this order.'
                   : isSubmittedForMailing
-                  ? 'Queued for commercial print and USPS carrier deposit.'
-                  : 'Pending submission to mailing pipeline.'}
+                  ? 'The order is queued or being processed. This does not establish USPS acceptance.'
+                  : 'No mailing-processing status is recorded.'}
               </div>
             </div>
 
@@ -279,88 +293,76 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 ) : (
                   <Clock className="w-4 h-4" />
                 )}
-                4. Physical Delivery
+                4. Delivery status
               </div>
               <div className="text-[11px] text-slate-400">
                 {isDelivered
-                  ? 'Confirmed delivered by postal carrier.'
+                  ? 'A delivery status is recorded for this order.'
                   : order?.expectedDeliveryDate
-                  ? `Est. Delivery: ${order.expectedDeliveryDate}`
-                  : 'Awaiting postal delivery scan. Return Receipt PDF captured after delivery.'}
+                  ? `Provider estimate: ${order.expectedDeliveryDate}`
+                  : 'No delivery status or estimate is currently recorded.'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tracking & Proof Details Grid */}
+        {/* Tracking and document availability */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* USPS Tracking Card */}
+          {/* Provider tracking */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
             <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Mail className="w-4 h-4 text-sky-400" /> USPS Postal Tracking Details
+              <Mail className="w-4 h-4 text-sky-400" /> Postal provider information
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="text-[11px] font-mono text-slate-400 block mb-1">
-                  USPS TRACKING IDENTIFIER
+                  Provider tracking identifier
                 </label>
                 <div className="font-mono text-base font-bold text-sky-400 bg-slate-950 border border-slate-800 rounded px-3 py-2 flex items-center justify-between">
-                  <span>{trackingNumber || 'Pending USPS Ingestion'}</span>
+                  <span>{trackingNumber || 'Not available'}</span>
                 </div>
               </div>
 
-              {trackingNumber && (
+              {trackingUrl && (
                 <a
-                  href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`}
+                  href={trackingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-xs font-mono text-sky-400 hover:text-sky-300 underline font-semibold"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" /> View on Official USPS.com Tracking
+                  <ExternalLink className="w-3.5 h-3.5" /> Open provider tracking
                 </a>
               )}
 
               {order?.expectedDeliveryDate && (
                 <div className="pt-2 text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300">Expected Delivery:</span>{' '}
+                  <span className="font-semibold text-slate-300">Provider delivery estimate:</span>{' '}
                   {order.expectedDeliveryDate}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Letter Proof & Filing Details */}
+          {/* Prepared document and tracking availability */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
             <div>
               <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-sky-400" /> Physical Letter Proof
+                <FileText className="w-4 h-4 text-sky-400" /> Prepared notice
               </h3>
               <p className="text-xs text-slate-400 mb-4">
-                The exact physical letter layout, certified stamp box, and addressee formatting
-                as injected into the postal carrier stream.
+                This page displays order and postal status information. It does not provide a carrier certificate or determine whether legal service requirements were met.
               </p>
             </div>
 
             <div>
-              {proofUrl ? (
-                <a
-                  href={proofUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs font-mono transition"
-                >
-                  <Download className="w-4 h-4" /> Download Certified PDF Proof
-                </a>
-              ) : (
-                <div className="text-xs font-mono text-slate-400 bg-slate-950 p-3 rounded text-center border border-slate-800">
-                  PDF Proof generation in progress — available once processed into the USPS mailstream
-                </div>
-              )}
+              <div className="text-xs font-mono text-slate-400 bg-slate-950 p-3 rounded text-center border border-slate-800">
+                The prepared notice is available from the order workflow when provided. No carrier proof document is available on this page.
+              </div>
               {order?.serviceLevel === 'CERTIFIED_RETURN_RECEIPT' && (
                 <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-800/80 mt-3">
                   <span className="font-semibold text-slate-300">Electronic Return Receipt:</span>{' '}
-                  Signed carrier delivery record PDF is generated following physical delivery.
+                  This service was selected for the order. Any record supplied by the postal provider will appear when available.
                 </div>
               )}
             </div>
@@ -389,7 +391,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
 
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
               <div className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Filing Party (Return Address)
+                Sender (Return Address)
               </div>
               <div className="font-semibold text-white">
                 {order.returnAddress?.firstName} {order.returnAddress?.lastName}
@@ -421,7 +423,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
             <div className="bg-slate-950 border border-slate-800 rounded-lg p-2 overflow-hidden max-h-[600px] overflow-y-auto">
               <iframe
                 srcDoc={order.documentHtml}
-                title="Certified Letter HTML Snapshot"
+                title="Prepared Notice HTML Snapshot"
                 className="w-full h-[800px] border-0 rounded bg-white"
                 sandbox="allow-same-origin"
               />

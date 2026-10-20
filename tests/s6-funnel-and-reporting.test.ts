@@ -600,6 +600,7 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
           depositAmount: '$2,000.00',
           amountReceivedToDate: '$0.00',
           balanceRequested: '$2,000.00',
+          basisForRequest: 'My records show the deposit was paid and no refund has been received.',
           responseDays: '14 calendar days',
         },
         tier: 'first_class',

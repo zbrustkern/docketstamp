@@ -148,9 +148,9 @@ export default function AccountDashboardPage() {
             <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-serif font-bold text-stone-900 mb-2">DocketStamp Registry Account</h1>
+            <h1 className="text-2xl font-serif font-bold text-stone-900 mb-2">DocketStamp Account</h1>
             <p className="text-sm text-stone-500">
-              Sign in to view your notice dispatch history, tracking dockets, and verified recipient contacts.
+              Sign in to view your notice records, available postal updates, and saved addresses.
             </p>
           </div>
           <div className="space-y-3">
@@ -192,7 +192,7 @@ export default function AccountDashboardPage() {
                   DocketStamp
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 border border-sky-200">
-                  Registry Account
+                  Account
                 </span>
               </div>
               <p className="text-xs text-stone-500">{user.email}</p>
@@ -257,7 +257,7 @@ export default function AccountDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-serif font-bold text-stone-900">Notice records and dockets</h2>
-                <p className="text-xs text-stone-500">Review notice records and any available dispatch evidence.</p>
+                <p className="text-xs text-stone-500">Review notice records and any postal-provider updates.</p>
               </div>
 
               <Link
@@ -270,15 +270,15 @@ export default function AccountDashboardPage() {
             </div>
 
             {ordersLoading ? (
-              <div className="p-12 text-center text-stone-400 text-sm">Loading your filing dockets...</div>
+              <div className="p-12 text-center text-stone-400 text-sm">Loading your notice records...</div>
             ) : orders.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 border border-stone-200 text-center space-y-4 max-w-lg mx-auto">
                 <div className="w-12 h-12 mx-auto rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center border border-sky-200">
                   <FileText className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-stone-900">No notices dispatched yet</h3>
+                <h3 className="text-base font-bold text-stone-900">No notice records yet</h3>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Review a supported notice template and enter your factual details. Available postal options and any dispatch confirmation are shown in the notice workflow.
+                  Review a supported notice template and enter your factual details. Available postal options and any provider status updates are shown in the notice workflow.
                 </p>
                 <Link
                   href="/"

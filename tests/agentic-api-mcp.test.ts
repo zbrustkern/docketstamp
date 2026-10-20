@@ -29,7 +29,7 @@ describe('Task 1: Staged Draft API (/api/docket/stage)', () => {
           productOrServiceName: 'Withings Body Smart Scale',
           accountOrSerialIdentifier: 'SN-00998877',
           purchaseDate: '2025-06-15',
-          disputeTriggerCategory: 'Post-Purchase Removal or Paywalling of Advertised Feature',
+          disputeTriggerCategory: 'Feature became unavailable or requires an additional payment',
           factualSummary: 'Vascular age and pulse wave velocity measurements were disabled behind Withings+ subscription.',
         },
         recommendedTier: 'certified_return_receipt',
@@ -41,10 +41,10 @@ describe('Task 1: Staged Draft API (/api/docket/stage)', () => {
 
     const data = await res.json();
     assert.match(data.stageId, /^DS-STAGE-[A-F0-9]{6}$/);
-    assert.equal(data.noticeSlug, 'pre-arbitration-notice-of-dispute-and-refund-request');
+    assert.equal(data.noticeSlug, 'product-complaint-refund-request');
     assert.equal(
       data.reviewUrl,
-      `https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?stage=${data.stageId}`
+      `https://docketstamp.com/notices/product-complaint-refund-request?stage=${data.stageId}`
     );
     assert.ok(Array.isArray(data.missingRequiredFields));
     // requestedResolutionAmount was omitted, so it must be in missingRequiredFields
@@ -65,7 +65,7 @@ describe('Task 1: Staged Draft API (/api/docket/stage)', () => {
     assert.equal(res.status, 200);
     const draft = await res.json();
     assert.equal(draft.stageId, createdStageId);
-    assert.equal(draft.noticeSlug, 'pre-arbitration-notice-of-dispute-and-refund-request');
+    assert.equal(draft.noticeSlug, 'product-complaint-refund-request');
     assert.equal(draft.recipientId, 'leg_wth');
     assert.equal(draft.recipient?.brandName, 'Withings');
     assert.equal(draft.fieldValues.productOrServiceName, 'Withings Body Smart Scale');
@@ -228,9 +228,9 @@ describe('Task 2: Remote MCP Endpoint (/api/mcp)', () => {
     assert.equal(notices.length, 9);
     const slugs = notices.map((n: any) => n.slug);
     assert.ok(slugs.includes('tenant-notice-of-intent-to-vacate'));
-    assert.ok(slugs.includes('pre-arbitration-notice-of-dispute-and-refund-request'));
-    assert.ok(slugs.includes('30-day-mandatory-arbitration-opt-out-notice'));
-    assert.ok(slugs.includes('statutory-health-and-biometric-data-deletion-demand'));
+    assert.ok(slugs.includes('product-complaint-refund-request'));
+    assert.ok(slugs.includes('arbitration-opt-out-procedure-request'));
+    assert.ok(slugs.includes('personal-data-deletion-request'));
   });
 
   it('executes tools/call: search_verified_recipients for Withings and credit bureaus', async () => {
@@ -334,14 +334,14 @@ describe('Task 3: Discovery Manifests (/llms.txt and /.well-known/openapi.json)'
     assert.ok(res.headers.get('content-type')?.includes('text/plain'));
 
     const text = await res.text();
-    assert.ok(text.includes('DocketStamp: Autonomous Agentic Postal Notice & Physical USPS Dispatch System'));
+    assert.ok(text.includes('DocketStamp: Document Preparation and USPS Mailing Service'));
     assert.ok(text.includes('Agents stage, humans sign and pay'));
     assert.ok(text.includes('NAICS 713940'));
     assert.ok(text.includes('POST https://docketstamp.com/api/docket/stage'));
     assert.ok(text.includes('POST https://docketstamp.com/api/mcp'));
-    assert.ok(text.includes('pre-arbitration-notice-of-dispute-and-refund-request'));
-    assert.ok(text.includes('30-day-mandatory-arbitration-opt-out-notice'));
-    assert.ok(text.includes('statutory-health-and-biometric-data-deletion-demand'));
+    assert.ok(text.includes('product-complaint-refund-request'));
+    assert.ok(text.includes('arbitration-opt-out-procedure-request'));
+    assert.ok(text.includes('personal-data-deletion-request'));
     assert.ok(text.includes('leg_wth'));
     assert.ok(text.includes('Withings'));
   });
@@ -353,16 +353,16 @@ describe('Task 3: Discovery Manifests (/llms.txt and /.well-known/openapi.json)'
 
     const spec = await res.json();
     assert.equal(spec.openapi, '3.0.3');
-    assert.equal(spec.info.title, 'DocketStamp Agentic Notice & Physical Postal Dispatch API');
+    assert.equal(spec.info.title, 'DocketStamp Document Preparation & Mailing API');
     assert.ok(spec.paths['/api/docket/stage']);
     assert.ok(spec.paths['/api/docket/stage/{stageId}']);
     assert.ok(spec.paths['/api/mcp']);
 
     const noticeEnum = spec.components.schemas.NoticeSlug.enum;
     assert.equal(noticeEnum.length, 9);
-    assert.ok(noticeEnum.includes('pre-arbitration-notice-of-dispute-and-refund-request'));
-    assert.ok(noticeEnum.includes('30-day-mandatory-arbitration-opt-out-notice'));
-    assert.ok(noticeEnum.includes('statutory-health-and-biometric-data-deletion-demand'));
+    assert.ok(noticeEnum.includes('product-complaint-refund-request'));
+    assert.ok(noticeEnum.includes('arbitration-opt-out-procedure-request'));
+    assert.ok(noticeEnum.includes('personal-data-deletion-request'));
 
     const recipientEnum = spec.components.schemas.VerifiedRecipientId.enum;
     assert.ok(recipientEnum.includes('leg_wth'));

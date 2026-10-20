@@ -1,7 +1,5 @@
 /**
- * Cartridge 04: FCRA § 611 Credit Bureau Written Dispute Notice
- *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Cartridge 04: Credit Report Dispute and Review Request
  */
 
 import { z } from 'zod';
@@ -21,31 +19,30 @@ export const creditBureauDisputeSchema = z.object({
     'Account status (late payment / charge-off) is inaccurate',
     'Account was paid/settled in full but reflects open balance',
     'Duplicate tradeline reporting on file',
-    'Account exceeds statutory 7-year reporting period',
+    'Possible reporting time-limit issue',
   ]),
-  factualExplanation: z.string().min(5, 'Factual statement is required').max(200),
+  factualExplanation: z.string().min(5, 'Factual statement is required').max(600),
 });
 
 export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
   id: 'fcra-credit-bureau-written-dispute-letter',
-  slug: 'fcra-credit-bureau-written-dispute-letter',
-  aliases: ['credit-bureau-dispute', 'fcra-credit-dispute'],
+  slug: 'credit-report-dispute-request',
+  aliases: ['fcra-credit-bureau-written-dispute-letter', 'credit-bureau-dispute', 'fcra-credit-dispute', 'credit-bureau-dispute-letter-fcra-611'],
   category: 'credit_debt',
-  title: 'FCRA § 611 Credit Bureau Written Dispute Notice',
-  shortDescription: 'Formal statutory reinvestigation dispute under 15 U.S.C. § 1681i demanding verification or deletion of inaccurate tradelines.',
-  documentHeaderTitle: 'WRITTEN NOTICE OF CREDIT FILE INACCURACY AND REINVESTIGATION REQUEST',
-  reLineTemplate: 'RE: FCRA § 611 Consumer File Dispute (15 U.S.C. § 1681i) — SSN Ending in XXX-XX-{{ssnLast4}} | DOB: {{senderDob}}',
+  title: 'Credit Report Dispute and Review Request',
+  shortDescription: 'A written request to review a credit-report item the user identifies as inaccurate. It does not determine which legal procedure or deadline applies.',
+  documentHeaderTitle: 'CREDIT REPORT DISPUTE AND REVIEW REQUEST',
+  reLineTemplate: 'RE: Credit Report Item Dispute — {{furnisherName}}',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_credit_bureau',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'FCRA Credit Bureau Dispute Letter | Send via USPS Certified Mail | DocketStamp',
-    description: 'Demand a 30-day statutory credit bureau reinvestigation under FCRA 15 U.S.C. § 1681i to Equifax, Experian, or TransUnion via USPS Certified Mail with return receipt.',
+    title: 'Credit Report Dispute Letter | DocketStamp',
+    description: 'Prepare a written request asking a credit bureau to review an item you identify as inaccurate. Applicable procedures and deadlines may depend on the facts.',
     targetKeywords: [
       'credit bureau dispute letter',
-      'fcra 611 dispute letter certified mail',
       'credit report inaccuracy letter',
-      'credit bureau reinvestigation request',
+      'credit bureau review request',
       'written dispute equifax experian transunion',
     ],
   },
@@ -82,7 +79,7 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'DATE OF BIRTH',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'Required by credit bureaus to locate and verify your consumer credit file.',
+      helperText: 'An identifying detail for this request. Enter the date shown on your credit report if it asks for one.',
       maxLength: 15,
     },
     {
@@ -144,11 +141,11 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
           value: 'Duplicate tradeline reporting on file',
         },
         {
-          label: 'Account exceeds statutory 7-year reporting period',
-          value: 'Account exceeds statutory 7-year reporting period',
+          label: 'Possible reporting time-limit issue',
+          value: 'Possible reporting time-limit issue',
         },
       ],
-      helperText: 'Categorical basis for your FCRA dispute.',
+      helperText: 'Choose the concern that best matches your information; this selection does not decide accuracy or a reporting time limit.',
       maxLength: 80,
     },
     {
@@ -158,15 +155,16 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'FACTUAL STATEMENT',
       inputType: 'textarea_short',
       placeholder: 'e.g., This account was settled for a zero balance on March 15, 2026, but continues to report a past-due balance of $480.',
-      helperText: 'State the specific factual error that needs correction or deletion.',
-      maxLength: 200,
+      helperText: 'Describe the specific facts or records supporting your request for review.',
+      maxLength: 600,
     },
   ],
   zodSchema: creditBureauDisputeSchema,
   bodyParagraphs: [
-    'Pursuant to Section 611 of the Fair Credit Reporting Act (15 U.S.C. § 1681i), I am submitting this formal written notice to dispute inaccurate information currently appearing on my consumer credit file maintained by {{recipientFormalName}}.',
+    'I am writing to dispute the credit-report item identified below on the file maintained by {{recipientFormalName}}.',
     'DISPUTED TRADELINE IDENTIFICATION: Furnisher / Creditor Name: {{furnisherName}} | Account Reference: {{partialAccountNumber}}.',
-    'BASIS OF INACCURACY: {{disputeReason}}. Specifically: {{factualExplanation}}',
-    'In accordance with 15 U.S.C. § 1681i(a), please conduct a reasonable reinvestigation of this item within thirty (30) days of receipt of this notice, verify the completeness and accuracy of the record with the furnishing entity, or delete and modify the inaccurate entry and mail an updated copy of my consumer disclosure to {{senderFullAddress}}.',
+    'My concern is: {{disputeReason}}. The facts or records supporting my request are: {{factualExplanation}}',
+    'Please review the item under the consumer-reporting requirements that apply. If your review shows information is inaccurate or otherwise must be changed, please make any correction or deletion required by law and send me the results. Please provide an updated report if available.',
+    'This letter requests review; it does not establish that a particular procedure, eligibility rule, or deadline applies to my circumstances.',
   ],
 };

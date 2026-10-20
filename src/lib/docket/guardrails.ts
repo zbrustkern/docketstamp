@@ -199,21 +199,21 @@ export function isFitnessEntity(
 }
 
 /**
- * Exact UPL Statutory Compliance Footer specified in §1 Invariant 2 & §5.2.
+ * Self-help disclosure for a prepared document record; it does not report a mailing event.
  */
 export const UPL_COMPLIANCE_FOOTER_TEXT = (docketId: string): string =>
-  `DOCKET RECORD & DISPATCH CERTIFICATION: Prepared and dispatched via DocketStamp.com (Docket ID: ${docketId}). DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, not a law firm, and does not provide legal representation or legal advice.`;
+  `DOCUMENT PREPARATION RECORD: Prepared by DocketStamp.com (Docket ID: ${docketId}). DocketStamp is an automated self-help document preparation and USPS mailing utility, not a law firm, and does not provide legal representation or legal advice.`;
 
 /**
  * Mandatory UPL statutory disclosure text.
  */
 export const UPL_COMPLIANCE_DISCLOSURE =
-  'DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, not a law firm, and does not provide legal representation or legal advice. All templates are deterministic form instruments based on user-provided factual parameters. Use of DocketStamp is subject to our Terms of Service and Privacy Policy.';
+  'DocketStamp is an automated self-help document preparation and USPS mailing utility, not a law firm, and does not provide legal representation or legal advice. All templates are deterministic form instruments based on user-provided factual parameters. Use of DocketStamp is subject to our Terms of Service and Privacy Policy.';
 
 export const STATUTORY_COMPLIANCE_DISCLOSURE = UPL_COMPLIANCE_DISCLOSURE;
 
 export const UPL_SHORT_BADGE =
-  'SELF-HELP DOCUMENT DISPATCH UTILITY • NOT LEGAL ADVICE';
+  'SELF-HELP DOCUMENT PREPARATION • NOT LEGAL ADVICE';
 
 export const CLERK_DOCKET_REGISTRY_TITLE =
-  'DOCKETSTAMP™ OFFICIAL DISPATCH REGISTRY';
+  'DOCKETSTAMP DOCUMENT PREPARATION RECORD';

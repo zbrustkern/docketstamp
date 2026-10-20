@@ -163,6 +163,12 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
   // Handle state change for statutory security deposit
   const handleStateChange = (stateCode: string) => {
     onChange('propertyState', stateCode);
+    if (!notice.usesStateStatuteLookup) {
+      // Preserve the property location without showing or storing a derived legal deadline.
+      onChange('statuteCitation', '');
+      onChange('statuteDeadline', '');
+      return;
+    }
     const statute = getStateStatute(stateCode);
     if (statute) {
       onChange('statuteCitation', statute.statuteCitation);
@@ -341,15 +347,21 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
               }}
             />
             {propertyStateField && userValues[propertyStateField.key] && (
-              <div className="bg-sky-950/50 border border-sky-800 p-2.5 rounded text-[11px] text-sky-300 space-y-1 font-mono">
-                <div><strong>PROPERTY STATUTE:</strong> {getStateStatute(userValues[propertyStateField.key])?.statuteCitation}</div>
-                <div><strong>RETURN DEADLINE:</strong> {getStateStatute(userValues[propertyStateField.key])?.returnDeadlineLabel}</div>
-                <div className="text-[10px] text-slate-400 font-sans">
-                  This selection describes the rental property jurisdiction. It does not set your residence or mailing address.
+              <div className="bg-slate-950/60 border border-slate-700 p-2.5 rounded text-[11px] text-slate-300 space-y-1">
+                <div>
+                  This is the rental property location. It is separate from your residence and mailing addresses.
                 </div>
-                <div className="text-[10px] text-slate-400 font-sans">
-                  {getStateStatute(userValues[propertyStateField.key])?.statutoryNuance}
-                </div>
+                {notice.usesStateStatuteLookup ? (
+                  <>
+                    <div className="font-mono"><strong>STATUTE:</strong> {getStateStatute(userValues[propertyStateField.key])?.statuteCitation}</div>
+                    <div className="font-mono"><strong>DEADLINE:</strong> {getStateStatute(userValues[propertyStateField.key])?.returnDeadlineLabel}</div>
+                    <div className="text-[10px] text-slate-400">{getStateStatute(userValues[propertyStateField.key])?.statutoryNuance}</div>
+                  </>
+                ) : (
+                  <div className="text-[10px] text-slate-400">
+                    The form uses this only to identify the property location; it does not calculate legal eligibility or a deadline.
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -420,7 +432,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
             <div className="bg-slate-950/60 p-3.5 rounded border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-sky-400 font-bold">
-                  Verified recipients
+                  Company directory
                 </span>
                 {notice.recipientMode !== 'verified_credit_bureau' && (
                   <button
@@ -578,7 +590,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
                     <option value="">-- Select Property State --</option>
                     {Object.values(STATE_STATUTES).map((st) => (
                       <option key={st.stateCode} value={st.stateCode}>
-                        {st.stateName} ({st.returnDeadlineLabel})
+                        {notice.usesStateStatuteLookup ? `${st.stateName} (${st.returnDeadlineLabel})` : st.stateName}
                       </option>
                     ))}
                   </select>
@@ -587,7 +599,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
                       {fieldError}
                     </p>
                   )}
-                  {userValues[field.key] && (
+                  {userValues[field.key] && notice.usesStateStatuteLookup && (
                     <div className="bg-sky-950/50 border border-sky-800 p-2.5 rounded text-[11px] text-sky-300 space-y-1 font-mono">
                       <div>
                         <strong>CITATION:</strong> {getStateStatute(userValues[field.key])?.statuteCitation}

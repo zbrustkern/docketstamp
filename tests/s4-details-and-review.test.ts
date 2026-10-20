@@ -255,14 +255,14 @@ describe('S4 Details and Review Acceptance Gate', () => {
     });
 
     it('validates select dropdown options bounded to allowed values', () => {
-      const selectField = intentToVacateNotice.fields.find((f) => f.key === 'leaseNoticePeriod')!;
-      assert.ok(selectField, 'leaseNoticePeriod field must exist');
+      const selectField = securityDepositNotice.fields.find((f) => f.key === 'responseDays')!;
+      assert.ok(selectField, 'responseDays field must exist');
 
       assert.equal(isValidSelectOption(selectField, ''), false);
       assert.equal(isValidSelectOption(selectField, 'invalid_period'), false);
-      assert.equal(isValidSelectOption(selectField, '30-Day'), true);
-      assert.equal(isValidSelectOption(selectField, '60-Day'), true);
-      assert.equal(isValidSelectOption(selectField, 'End-of-Term'), true);
+      assert.equal(isValidSelectOption(selectField, '7 calendar days'), true);
+      assert.equal(isValidSelectOption(selectField, '10 business days'), true);
+      assert.equal(isValidSelectOption(selectField, '14 calendar days'), true);
     });
 
     it('enforces NAICS 713940 fitness blocker on recipient name', () => {
@@ -283,6 +283,7 @@ describe('S4 Details and Review Acceptance Gate', () => {
         depositAmount: '$1,500.00',
         amountReceivedToDate: '$0.00',
         balanceRequested: '$1,500.00',
+        basisForRequest: 'My records show I paid the deposit and have received no refund.',
         responseDays: '14 calendar days',
       });
 
@@ -364,6 +365,7 @@ describe('S4 Details and Review Acceptance Gate', () => {
         depositAmount: '$1,500.00',
         amountReceivedToDate: '$0.00',
         balanceRequested: '$1,500.00',
+        basisForRequest: 'My records show I paid the deposit and have received no refund.',
         responseDays: '14 calendar days',
       });
 
@@ -424,9 +426,9 @@ describe('S4 Details and Review Acceptance Gate', () => {
   describe('4. Session-Scoped Draft Recovery & Strict Precedence Rule', () => {
     it('persists and recovers draft in sessionStorage under scoped key', () => {
       const slug = 'security-deposit-return-demand-letter';
-      const key = getDraftStorageKey(slug);
+      const key = getDraftStorageKey(securityDepositNotice.slug);
 
-      assert.equal(key, 'docketstamp_draft_v2_security-deposit-return-demand-letter');
+      assert.equal(key, 'docketstamp_draft_v2_security-deposit-accounting-request');
 
       saveNoticeDraft(slug, {
         userValues: {
@@ -439,6 +441,8 @@ describe('S4 Details and Review Acceptance Gate', () => {
 
       const loaded = loadNoticeDraft(slug);
       assert.ok(loaded);
+      assert.equal(loaded?.slug, securityDepositNotice.slug);
+      assert.ok(mockSessionStorage[key], 'New writes use the canonical session key');
       assert.equal(loaded?.userValues.senderFullName, 'Recovered User');
       assert.equal(loaded?.userValues.depositAmount, '$2,000.00');
       assert.equal(loaded?.selectedTier, 'certified_return_receipt');
@@ -446,6 +450,59 @@ describe('S4 Details and Review Acceptance Gate', () => {
 
       clearNoticeDraft(slug);
       assert.equal(loadNoticeDraft(slug), null);
+    });
+
+    it('recovers a legacy-slug draft on the canonical route without deleting the legacy copy', () => {
+      const canonicalSlug = securityDepositNotice.slug;
+      const legacySlug = securityDepositNotice.aliases?.[0];
+      assert.ok(legacySlug);
+      const legacyKey = getDraftStorageKey(legacySlug);
+      const canonicalKey = getDraftStorageKey(canonicalSlug);
+      const legacyRaw = JSON.stringify({
+        slug: legacySlug,
+        userValues: { senderFullName: 'Legacy Draft User', balanceRequested: '$800.00' },
+        selectedTier: 'certified',
+        savedAt: 123,
+      });
+      mockSessionStorage[legacyKey] = legacyRaw;
+
+      const recovered = loadNoticeDraft(canonicalSlug);
+      assert.equal(recovered?.slug, canonicalSlug);
+      assert.equal(recovered?.userValues.senderFullName, 'Legacy Draft User');
+      assert.equal(recovered?.userValues.balanceRequested, '$800.00');
+      assert.equal(mockSessionStorage[legacyKey], legacyRaw, 'Legacy draft remains intact after migration');
+      assert.equal(JSON.parse(mockSessionStorage[canonicalKey]).slug, canonicalSlug);
+    });
+
+    it('prefers an existing canonical draft and explicit URL values over legacy alias data', () => {
+      const canonicalSlug = securityDepositNotice.slug;
+      const legacySlug = securityDepositNotice.aliases?.[0];
+      assert.ok(legacySlug);
+      mockSessionStorage[getDraftStorageKey(legacySlug)] = JSON.stringify({
+        slug: legacySlug,
+        userValues: { senderFullName: 'Alias Draft User', moveOutDate: '2026-01-01' },
+        selectedTier: 'certified',
+        savedAt: 100,
+      });
+      saveNoticeDraft(canonicalSlug, {
+        userValues: { senderFullName: 'Canonical Draft User', moveOutDate: '2026-02-02' },
+        selectedTier: 'certified_return_receipt',
+      });
+
+      const resolved = resolveInitialWorkspaceDraft({
+        notice: securityDepositNotice,
+        searchParams: new URLSearchParams('field.moveOutDate=2026-03-03'),
+      });
+      assert.equal(resolved.userValues.senderFullName, 'Canonical Draft User');
+      assert.equal(resolved.userValues.moveOutDate, '2026-03-03');
+      assert.equal(resolved.selectedTier, 'certified_return_receipt');
+      assert.equal(
+        JSON.parse(mockSessionStorage[getDraftStorageKey(legacySlug)]).userValues.senderFullName,
+        'Alias Draft User',
+        'Canonical recovery does not delete the legacy draft'
+      );
+      clearNoticeDraft(canonicalSlug);
+      assert.equal(loadNoticeDraft(canonicalSlug), null, 'Explicit reset removes canonical and legacy copies');
     });
 
     it('enforces strict precedence: explicit URL prefill (?recipientId=) overrides stale session recovery', () => {
@@ -593,7 +650,7 @@ describe('S4 Details and Review Acceptance Gate', () => {
         'UPL disclosure must state not a law firm'
       );
       assert.ok(
-        STATUTORY_COMPLIANCE_DISCLOSURE.includes('automated self-help document preparation and USPS postal dispatch utility'),
+        STATUTORY_COMPLIANCE_DISCLOSURE.includes('automated self-help document preparation and USPS mailing utility'),
         'UPL disclosure must state self-help utility'
       );
     });
@@ -632,12 +689,12 @@ describe('S4 Details and Review Acceptance Gate', () => {
 
       // Verify data-field-key attributes in GuidedFieldDrawer
       assert.ok(
-        drawerSource.includes('data-field-key="senderAddressLine1"'),
-        'GuidedFieldDrawer must annotate senderAddressLine1 with data-field-key'
+        drawerSource.includes('data-field-key={field.key}'),
+        'GuidedFieldDrawer must annotate generated fields with their field key'
       );
       assert.ok(
-        drawerSource.includes('data-field-key="recipientAddressLine1"'),
-        'GuidedFieldDrawer must annotate recipientAddressLine1 with data-field-key'
+        drawerSource.includes('data-field-key={field.key}'),
+        'GuidedFieldDrawer must annotate generated fields with their field key'
       );
       assert.ok(
         drawerSource.includes('id="signature-adoption-control"'),

@@ -1,7 +1,5 @@
 /**
- * Cartridge 07: Pre-Arbitration Notice of Dispute & Feature Paywall Refund Request
- *
- * Conforms verbatim to Section 3 of docs/DOCKETSTAMP_AGENTIC_EXPANSION.md.
+ * Cartridge 07: Product Complaint and Refund Request
  * Invariant 1: Strictly enforces assertNonFitnessEntity() on corporate recipient.
  */
 
@@ -16,10 +14,10 @@ export const preArbitrationDisputeSchema = z.object({
   accountOrSerialIdentifier: z.string().min(2, 'Account or serial identifier is required').max(45),
   purchaseDate: z.string().min(4, 'Purchase or activation date is required').max(30),
   disputeTriggerCategory: z.enum([
-    'Post-Purchase Removal or Paywalling of Advertised Feature',
-    'Unilateral Modification of Material Terms of Service',
-    'Injection of Unsolicited Commercial Advertisements on Hardware',
-    'Breach of Express or Implied Hardware/Software Functionality',
+    'Feature became unavailable or requires an additional payment',
+    'Material service terms changed',
+    'Advertisements appeared on a product or service',
+    'Product or service did not work as expected',
   ]),
   factualSummary: z.string().min(5, 'Factual statement is required').max(200),
   requestedResolutionAmount: z.string().min(1, 'Refund amount is required').max(25),
@@ -36,24 +34,23 @@ export const preArbitrationDisputeSchema = z.object({
 
 export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
   id: 'pre-arbitration-notice-of-dispute-and-refund-request',
-  slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
-  aliases: ['pre-arbitration-dispute', 'pre-arbitration-notice', 'feature-paywall-refund'],
+  slug: 'product-complaint-refund-request',
+  aliases: ['pre-arbitration-notice-of-dispute-and-refund-request', 'pre-arbitration-dispute', 'pre-arbitration-notice', 'feature-paywall-refund', 'smart-device-degraded-functionality-refund-demand'],
   category: 'consumer_rights',
-  title: 'Pre-Arbitration Notice of Dispute & Feature Paywall Refund Request',
-  shortDescription: 'Formal written Pre-Arbitration Notice of Dispute demanding full refund or feature restoration before formal arbitration.',
-  documentHeaderTitle: 'FORMAL PRE-ARBITRATION NOTICE OF DISPUTE AND REFUND REQUEST',
-  reLineTemplate: 'RE: Mandatory Pre-Arbitration Notice of Dispute — {{productOrServiceName}} ({{accountOrSerialIdentifier}})',
+  title: 'Product Complaint and Refund Request',
+  shortDescription: 'A general product or service complaint and refund request. It does not claim to satisfy an agreement-specific pre-arbitration process or preserve a procedural deadline.',
+  documentHeaderTitle: 'PRODUCT OR SERVICE COMPLAINT AND REFUND REQUEST',
+  reLineTemplate: 'RE: Product or Service Concern — {{productOrServiceName}} ({{accountOrSerialIdentifier}})',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_or_manual_corp',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Pre-Arbitration Notice of Dispute & Hardware Feature Refund | Certified Mail | DocketStamp',
-    description: 'Dispatch a formal pre-arbitration notice of dispute and refund demand for post-purchase paywalled features or broken hardware terms via USPS Certified Mail.',
+    title: 'Product Complaint and Refund Request Letter | DocketStamp',
+    description: 'Prepare a written product or service complaint and ask the provider to review a requested refund. Check any agreement-specific dispute process separately.',
     targetKeywords: [
-      'pre-arbitration notice of dispute',
-      'hardware feature paywall refund',
-      'mandatory informal dispute resolution notice',
-      'aaa arbitration demand letter',
+      'product complaint and refund request',
+      'hardware feature refund request',
+      'customer service dispute letter',
       'consumer dispute notice certified mail',
     ],
   },
@@ -75,7 +72,7 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'CORPORATION / LEGAL DEPT',
       inputType: 'text',
       placeholder: 'e.g., Withings Inc. — Legal & Consumer Dispute Dept.',
-      helperText: 'The formal legal name and department of the manufacturer or platform.',
+      helperText: 'The company or contact you want to receive this general complaint. This does not confirm an agreement-required submission channel.',
       maxLength: 80,
     },
     {
@@ -114,26 +111,26 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
       label: 'Dispute Basis',
       docusignTagLabel: 'DISPUTE BASIS',
       inputType: 'select',
-      placeholder: 'Post-Purchase Removal or Paywalling of Advertised Feature',
+      placeholder: 'Feature became unavailable or requires an additional payment',
       options: [
         {
-          label: 'Post-Purchase Removal or Paywalling of Advertised Feature',
-          value: 'Post-Purchase Removal or Paywalling of Advertised Feature',
+          label: 'Feature became unavailable or requires an additional payment',
+          value: 'Feature became unavailable or requires an additional payment',
         },
         {
-          label: 'Unilateral Modification of Material Terms of Service',
-          value: 'Unilateral Modification of Material Terms of Service',
+          label: 'Material service terms changed',
+          value: 'Material service terms changed',
         },
         {
-          label: 'Injection of Unsolicited Commercial Advertisements on Hardware',
-          value: 'Injection of Unsolicited Commercial Advertisements on Hardware',
+          label: 'Advertisements appeared on a product or service',
+          value: 'Advertisements appeared on a product or service',
         },
         {
-          label: 'Breach of Express or Implied Hardware/Software Functionality',
-          value: 'Breach of Express or Implied Hardware/Software Functionality',
+          label: 'Product or service did not work as expected',
+          value: 'Product or service did not work as expected',
         },
       ],
-      helperText: 'The core commercial practice triggering this formal dispute.',
+      helperText: 'Choose the description that best matches your concern; it is not a legal finding.',
       maxLength: 100,
     },
     {
@@ -153,15 +150,15 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'REFUND AMOUNT REQUESTED',
       inputType: 'currency',
       placeholder: '$399.95',
-      helperText: 'Total monetary compensation demanded to resolve the dispute amicably.',
+      helperText: 'Enter the refund amount you are requesting. This is a request, not a determination that the amount is owed.',
       maxLength: 25,
     },
   ],
   zodSchema: preArbitrationDisputeSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned consumer, {{senderFullName}}, hereby submits this formal written Pre-Arbitration Notice of Dispute pursuant to the mandatory informal dispute resolution provisions of the governing Terms of Service for {{productOrServiceName}} (Account/Device Identifier: {{accountOrSerialIdentifier}}, acquired on {{purchaseDate}}).',
-    'NATURE OF DISPUTE: {{disputeTriggerCategory}}. Specifically: {{factualSummary}}',
-    'This post-purchase modification or restriction materially diminishes the core functionality and bargained-for value of {{productOrServiceName}} as represented at the time of purchase.',
-    'REQUESTED RESOLUTION: To resolve this matter amicably prior to the filing of formal consumer arbitration or small claims proceedings, please remit a full refund/settlement in the amount of {{requestedResolutionAmount}} (or confirm permanent restoration of the affected functionality without recurring fees) to {{senderFullName}} at {{senderFullAddress}} within thirty (30) days of receipt of this notice.',
+    'I am writing about {{productOrServiceName}} (account or device identifier {{accountOrSerialIdentifier}}), which I acquired on {{purchaseDate}}.',
+    'The concern I want to raise is: {{disputeTriggerCategory}}. My description is: {{factualSummary}}.',
+    'Please review this concern and let me know how you propose to address it. I request a refund of {{requestedResolutionAmount}}.',
+    'This is a general customer-service request. It does not state that an agreement requires an informal dispute process, that a deadline has been met, or that this letter preserves rights in arbitration or court.',
   ],
 };

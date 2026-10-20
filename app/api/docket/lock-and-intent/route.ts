@@ -62,7 +62,25 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse the template schema, then keep only bounded factual fields and
     // explicitly allowed postal components. Legal metadata remains renderer-owned.
-    const validatedInput = validateNoticeInput(notice, rawUserValues, senderAddress, recipientAddress);
+    let validatedInput: ReturnType<typeof validateNoticeInput>;
+    try {
+      validatedInput = validateNoticeInput(notice, rawUserValues, senderAddress, recipientAddress);
+    } catch (err: unknown) {
+      // A few template refinements use the same prohibited-recipient guard as
+      // the post-parse shared checks. Convert that deliberate rejection into
+      // the stable public conflict response instead of a generic 500.
+      if (err instanceof ConflictOfInterestError) {
+        return NextResponse.json(
+          {
+            error: err.message,
+            code: 'CONFLICT_OF_INTEREST',
+            category: 'PROHIBITED_NAICS_713940',
+          },
+          { status: 400 }
+        );
+      }
+      throw err;
+    }
     if (!validatedInput.success) {
       return NextResponse.json(
         {

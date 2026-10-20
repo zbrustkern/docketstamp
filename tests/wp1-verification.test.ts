@@ -159,6 +159,7 @@ describe('WP-1 Verification Gate', () => {
         depositAmount: '$1,850.00',
         amountReceivedToDate: '$0.00',
         balanceRequested: '$1,850.00',
+        basisForRequest: 'My records show I paid this deposit and have received no refund.',
         responseDays: '10 business days',
       };
       const result = notice.zodSchema.safeParse(validPayload);
@@ -172,10 +173,10 @@ describe('WP-1 Verification Gate', () => {
         senderFullName: 'Jordan Hayes',
         recipientFormalName: 'Skyline Properties',
         leasedPremisesAddress: '512 Elm St, Apt 2B, Chicago, IL 60614',
-        issueCategory: 'Plumbing / Water Leak',
+        issueCategory: 'Plumbing or leak issue',
         dateFirstObserved: '2026-10-01',
         defectDescription: 'Persistent leaking pipe under kitchen sink causing base cabinet saturation.',
-        accessAuthorization: 'Tenant grants maintenance entry with 24-hour advance notice',
+        accessAuthorization: 'Please contact me to arrange a time for inspection or maintenance',
       };
       const result = notice.zodSchema.safeParse(validPayload);
       assert.ok(result.success, `Schema validation failed: ${JSON.stringify(result.error?.issues)}`);
@@ -209,7 +210,7 @@ describe('WP-1 Verification Gate', () => {
         allegedOriginalCreditor: 'Synchrony Bank',
         allegedBalance: '$1,420.50',
         initialContactDate: '2026-10-01',
-        communicationPreference: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+        communicationPreference: 'Please send future responses about this request in writing by U.S. Mail',
       };
       const result = notice.zodSchema.safeParse(validPayload);
       assert.ok(result.success, `Schema validation failed: ${JSON.stringify(result.error?.issues)}`);

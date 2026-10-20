@@ -5,7 +5,7 @@
  *
  * Implements the physical document sheet preview on the Midnight Slate workspace:
  * - 8.5in x 11in proportional aspect ratio
- * - Top-right Clerk's Docket Stamp box with live ink stamp state
+ * - Top-right preparation record with current document state
  * - Interactive FROM / TO address blocks and paragraph tokens:
  *   - Unfilled tokens render as clickable Amber DocuSign action tags
  *   - Filled tokens render as interactive highlighted pills so users always see they can be edited
@@ -59,7 +59,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.05)',
       }}
     >
-      {/* Top Address Zone & Official Dispatch Stamp */}
+      {/* Top Address Zone & Preparation Record */}
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 pt-1">
           {/* Top-Left Return & Destination Address Block (Clickable to Edit) */}
@@ -139,7 +139,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
             </div>
           </div>
 
-          {/* Top-Right Official Dispatch Stamp Box */}
+          {/* Top-Right Preparation Record */}
           <div
             className={`border-[1.5px] border-slate-900 p-3 bg-slate-50 font-mono text-[10px] leading-snug uppercase rounded-sm shadow-sm transition-all duration-300 w-full sm:w-[275px] shrink-0 ${
               isSignatureAdopted
@@ -148,10 +148,10 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
             }`}
           >
             <div className="font-bold text-[10px] tracking-wider border-b border-slate-800 pb-1 mb-1.5 text-center text-slate-900 flex items-center justify-between">
-              <span>DOCKETSTAMP™ DISPATCH RECORD</span>
+              <span>DOCKETSTAMP™ PREPARATION RECORD</span>
               {isSignatureAdopted && (
                 <span className="text-[9px] px-1 bg-emerald-700 text-white font-bold rounded">
-                  STAMPED
+                  PREPARED
                 </span>
               )}
             </div>
@@ -166,7 +166,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
               <span className="text-slate-800">{doc.signatureBlock.executionDate}</span>
             </div>
             <div className="grid grid-cols-[76px_1fr] gap-x-1 py-0.5">
-              <span className="text-slate-600">MAIL CLASS:</span>
+              <span className="text-slate-600">SERVICE:</span>
               <span className="font-semibold text-slate-900 truncate">
                 {tierLabels[selectedTier]}
               </span>

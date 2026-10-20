@@ -63,22 +63,22 @@ export interface CompanyCompatibilityResult {
  */
 export const HARDWARE_OEM_PURPOSE_OPTIONS: CompanyPurposeOption[] = [
   {
-    slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
+    slug: 'product-complaint-refund-request',
     promptSlug: 'smart-device-degraded-functionality-refund-demand',
-    label: 'Request a refund for changed product features',
-    description: 'Notice for connected hardware after a software or policy change',
+    label: 'Request a product or service review and refund',
+    description: 'General complaint and refund request; it does not invoke an agreement-specific dispute process.',
   },
   {
-    slug: '30-day-mandatory-arbitration-opt-out-notice',
+    slug: 'arbitration-opt-out-procedure-request',
     promptSlug: 'arbitration-opt-out-notice-30-day',
-    label: 'Send an arbitration opt-out notice',
-    description: '30-day written opt-out notice after new account or terms',
+    label: 'Ask about arbitration terms and opt-out steps',
+    description: 'Request the agreement and any opt-out procedure; this letter does not exercise an opt-out.',
   },
   {
-    slug: 'statutory-health-and-biometric-data-deletion-demand',
+    slug: 'personal-data-deletion-request',
     promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
-    label: 'Request deletion of personal data',
-    description: 'Formal privacy deletion and opt-out request',
+    label: 'Ask a company to review a data-deletion request',
+    description: 'General account-related request; privacy-law eligibility and process are not determined.',
   },
 ];
 
@@ -88,16 +88,16 @@ export const HARDWARE_OEM_PURPOSE_OPTIONS: CompanyPurposeOption[] = [
  */
 export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
   {
-    slug: 'security-deposit-return-demand-letter',
+    slug: 'security-deposit-accounting-request',
     promptSlug: 'security-deposit-return-demand-letter',
-    aliases: ['security-deposit-return', 'security-deposit-demand'],
-    displayTitle: 'Request a security deposit return',
-    subtitle: 'Demand letter to a landlord or property manager',
+    aliases: ['security-deposit-return-demand-letter', 'security-deposit-return', 'security-deposit-demand'],
+    displayTitle: 'Request deposit accounting and any balance due',
+    subtitle: 'Ask for an itemized security-deposit accounting and any balance you believe remains due.',
     searchAliases: [
       'security deposit',
       'deposit return',
       'deposit refund',
-      'get a security deposit back',
+      'request a security deposit refund',
       'landlord deposit',
       'tenant deposit',
       'apartment deposit',
@@ -105,19 +105,20 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
     ],
     category: 'tenant',
     recipientMode: 'manual_landlord',
-    formalDocumentTitle: getNoticeBySlug('security-deposit-return-demand-letter')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('security-deposit-accounting-request')?.title || '',
     cartridgeId: 'security-deposit-return-demand-letter',
   },
   {
-    slug: 'fcra-credit-bureau-written-dispute-letter',
+    slug: 'credit-report-dispute-request',
     promptSlug: 'credit-bureau-dispute-letter-fcra-611',
     aliases: [
+      'fcra-credit-bureau-written-dispute-letter',
       'credit-bureau-dispute',
       'fcra-credit-dispute',
       'credit-bureau-dispute-letter-fcra-611',
     ],
-    displayTitle: 'Dispute a credit-report error',
-    subtitle: 'Written dispute for Equifax, Experian, or TransUnion',
+    displayTitle: 'Dispute a credit-report item',
+    subtitle: 'Request review of an item you identify as inaccurate.',
     searchAliases: [
       'credit report',
       'credit bureau',
@@ -126,54 +127,51 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'equifax',
       'experian',
       'transunion',
-      'fcra',
-      'fcra 611',
       'tradeline error',
       'credit-bureau-dispute-letter-fcra-611',
     ],
     category: 'credit_debt',
     recipientMode: 'verified_credit_bureau',
-    formalDocumentTitle: getNoticeBySlug('fcra-credit-bureau-written-dispute-letter')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('credit-report-dispute-request')?.title || '',
     cartridgeId: 'fcra-credit-bureau-written-dispute-letter',
   },
   {
-    slug: 'fdcpa-30-day-debt-validation-letter',
+    slug: 'debt-dispute-information-request',
     promptSlug: 'debt-validation-demand-letter-fdcpa-809',
     aliases: [
+      'fdcpa-30-day-debt-validation-letter',
       'debt-validation',
       'debt-validation-request',
       'fdcpa-debt-validation',
       'debt-validation-demand-letter-fdcpa-809',
     ],
-    displayTitle: 'Request debt verification',
-    subtitle: 'Written validation request within the federal notice window',
+    displayTitle: 'Request information about a disputed debt',
+    subtitle: 'General request for balance review and account information.',
     searchAliases: [
       'debt collector',
       'debt validation',
       'verify debt',
       'ask a debt collector to verify a debt',
-      'stop collections',
-      'fdcpa',
-      'fdcpa 809',
       'portfolio recovery',
       'midland credit',
       'debt-validation-demand-letter-fdcpa-809',
     ],
     category: 'credit_debt',
     recipientMode: 'verified_or_manual_debt',
-    formalDocumentTitle: getNoticeBySlug('fdcpa-30-day-debt-validation-letter')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('debt-dispute-information-request')?.title || '',
     cartridgeId: 'fdcpa-30-day-debt-validation-letter',
   },
   {
-    slug: 'written-contract-and-policy-cancellation-letter',
+    slug: 'service-cancellation-request',
     promptSlug: 'contract-membership-cancellation-notice',
     aliases: [
+      'written-contract-and-policy-cancellation-letter',
       'service-policy-cancellation',
       'service-cancellation',
       'contract-membership-cancellation-notice',
     ],
-    displayTitle: 'Cancel a service or policy',
-    subtitle: 'Notice for security, telecom, pest control, warranty, or insurance accounts',
+    displayTitle: 'Request service or policy cancellation',
+    subtitle: 'Written request to cancel a named service or policy; account terms may require separate steps.',
     searchAliases: [
       'cancel service',
       'cancel contract',
@@ -190,7 +188,7 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
     ],
     category: 'cancellation',
     recipientMode: 'verified_or_manual_corp',
-    formalDocumentTitle: getNoticeBySlug('written-contract-and-policy-cancellation-letter')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('service-cancellation-request')?.title || '',
     cartridgeId: 'written-contract-and-policy-cancellation-letter',
   },
   {
@@ -203,7 +201,7 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'notice-of-intent-to-withhold-or-repair-and-deduct',
     ],
     displayTitle: 'Request repairs',
-    subtitle: 'Formal repair notice to a landlord or property manager',
+    subtitle: 'Request inspection or maintenance from a landlord or property manager.',
     searchAliases: [
       'repair',
       'repairs',
@@ -233,7 +231,7 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'lease-termination-non-renewal-notice',
     ],
     displayTitle: 'Give move-out notice',
-    subtitle: 'Written move-out or non-renewal notice',
+    subtitle: 'Written notice describing your current plan to move out.',
     searchAliases: [
       'move out',
       'intent to vacate',
@@ -252,23 +250,24 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
     cartridgeId: 'tenant-notice-of-intent-to-vacate',
   },
   {
-    slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
+    slug: 'product-complaint-refund-request',
     promptSlug: 'smart-device-degraded-functionality-refund-demand',
     aliases: [
+      'pre-arbitration-notice-of-dispute-and-refund-request',
       'pre-arbitration-dispute',
       'pre-arbitration-notice',
       'feature-paywall-refund',
       'smart-device-degraded-functionality-refund-demand',
     ],
-    displayTitle: 'Request a refund for changed product features',
-    subtitle: 'Notice for connected hardware after a software or policy change',
+    displayTitle: 'Request a product or service review and refund',
+    subtitle: 'General complaint and refund request; it does not invoke an agreement-specific dispute process.',
     searchAliases: [
       'hardware refund',
       'device refund',
       'removed features',
       'paywall',
       'smart device',
-      'request a refund for removed device features',
+      'request a refund after a product feature change',
       'sonos',
       'withings',
       'ecobee',
@@ -280,32 +279,28 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'tesla',
       'firmware update',
       'degraded functionality',
-      'smart-device-degraded-functionality-refund-demand',
     ],
     category: 'consumer_rights',
     recipientMode: 'verified_or_manual_corp',
-    formalDocumentTitle: getNoticeBySlug('pre-arbitration-notice-of-dispute-and-refund-request')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('product-complaint-refund-request')?.title || '',
     cartridgeId: 'pre-arbitration-notice-of-dispute-and-refund-request',
   },
   {
-    slug: '30-day-mandatory-arbitration-opt-out-notice',
+    slug: 'arbitration-opt-out-procedure-request',
     promptSlug: 'arbitration-opt-out-notice-30-day',
     aliases: [
+      '30-day-mandatory-arbitration-opt-out-notice',
       'arbitration-opt-out',
       'class-action-opt-out',
       '30-day-arbitration-opt-out',
       'arbitration-opt-out-notice-30-day',
     ],
-    displayTitle: 'Send an arbitration opt-out notice',
-    subtitle: '30-day written opt-out notice after new account or terms',
+    displayTitle: 'Ask about arbitration terms and opt-out steps',
+    subtitle: 'Request the agreement and any procedure; the letter does not exercise an opt-out.',
     searchAliases: [
       'arbitration opt out',
       'opt out of arbitration',
-      'opt out of mandatory arbitration',
-      'mandatory arbitration',
-      'class action waiver',
-      'terms of service opt out',
-      '30 day opt out',
+      'arbitration terms and procedure',
       'arbitration-opt-out-notice-30-day',
       'roku arbitration',
       'sonos arbitration',
@@ -313,36 +308,33 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
     ],
     category: 'consumer_rights',
     recipientMode: 'verified_or_manual_corp',
-    formalDocumentTitle: getNoticeBySlug('30-day-mandatory-arbitration-opt-out-notice')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('arbitration-opt-out-procedure-request')?.title || '',
     cartridgeId: '30-day-mandatory-arbitration-opt-out-notice',
   },
   {
-    slug: 'statutory-health-and-biometric-data-deletion-demand',
+    slug: 'personal-data-deletion-request',
     promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
     aliases: [
+      'statutory-health-and-biometric-data-deletion-demand',
       'biometric-privacy-deletion',
       'health-data-erasure',
       'statutory-data-deletion',
       'ccpa-gdpr-data-deletion-opt-out-request',
     ],
-    displayTitle: 'Request deletion of personal data',
-    subtitle: 'Formal privacy deletion and opt-out request',
+    displayTitle: 'Ask a company to review a data-deletion request',
+    subtitle: 'General account-related request; privacy-law eligibility and process are not determined.',
     searchAliases: [
       'data deletion',
       'delete my data',
       'privacy deletion',
-      'biometric data',
-      'ccpa',
-      'gdpr',
       'data privacy',
       'health data',
       'erasure',
       'revoke consent',
-      'ccpa-gdpr-data-deletion-opt-out-request',
     ],
     category: 'consumer_rights',
     recipientMode: 'verified_or_manual_corp',
-    formalDocumentTitle: getNoticeBySlug('statutory-health-and-biometric-data-deletion-demand')?.title || '',
+    formalDocumentTitle: getNoticeBySlug('personal-data-deletion-request')?.title || '',
     cartridgeId: 'statutory-health-and-biometric-data-deletion-demand',
   },
 ];
@@ -407,17 +399,17 @@ export function getCompatibleSlugsForRecipient(
 
   switch (recipient.category) {
     case 'credit_bureau':
-      return ['fcra-credit-bureau-written-dispute-letter'];
+      return ['credit-report-dispute-request'];
     case 'debt_collector':
-      return ['fdcpa-30-day-debt-validation-letter'];
+      return ['debt-dispute-information-request'];
     case 'home_service':
     case 'telecom_insurance':
-      return ['written-contract-and-policy-cancellation-letter'];
+      return ['service-cancellation-request'];
     case 'tech_hardware_legal':
       return [
-        'pre-arbitration-notice-of-dispute-and-refund-request',
-        '30-day-mandatory-arbitration-opt-out-notice',
-        'statutory-health-and-biometric-data-deletion-demand',
+        'product-complaint-refund-request',
+        'arbitration-opt-out-procedure-request',
+        'personal-data-deletion-request',
       ];
     default:
       return [];

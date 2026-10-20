@@ -142,6 +142,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             depositAmount: '$2,000.00',
             amountReceivedToDate: '$0.00',
             balanceRequested: '$2,000.00',
+            basisForRequest: 'My records show I paid this deposit and have received no refund.',
             responseDays: '10 business days',
           },
         }),
@@ -237,7 +238,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       assert.ok(order.documentHtml.includes(json.docketId), 'Must include docketId in Clerk stamp');
       assert.ok(order.documentHtml.includes('Arthur Dent'), 'Must include signer name in frozen payload');
       assert.ok(order.documentHtml.includes('/s/ Arthur Dent'), 'Must include electronic signature in frozen payload');
-      assert.ok(order.documentHtml.includes('DOCKET RECORD & DISPATCH CERTIFICATION'), 'Must include locked UPL footer');
+      assert.ok(order.documentHtml.includes('DOCUMENT PREPARATION RECORD'), 'Must include the self-help disclosure');
     });
   });
 

@@ -151,15 +151,15 @@ describe('S7 Release Candidate Verification Suite', () => {
       assert.equal(CHOOSER_LETTERS.length, 9, 'Exactly 9 notice cartridges defined in chooser');
 
       const expectedTitles: Record<string, string> = {
-        'security-deposit-return-demand-letter': 'Request a security deposit return',
-        'fcra-credit-bureau-written-dispute-letter': 'Dispute a credit-report error',
+        'security-deposit-accounting-request': 'Request deposit accounting and any balance due',
+        'credit-report-dispute-request': 'Dispute a credit-report item',
         'tenant-repair-and-maintenance-notice': 'Request repairs',
         'tenant-notice-of-intent-to-vacate': 'Give move-out notice',
-        'fdcpa-30-day-debt-validation-letter': 'Request debt verification',
-        'written-contract-and-policy-cancellation-letter': 'Cancel a service or policy',
-        'pre-arbitration-notice-of-dispute-and-refund-request': 'Request a refund for changed product features',
-        '30-day-mandatory-arbitration-opt-out-notice': 'Send an arbitration opt-out notice',
-        'statutory-health-and-biometric-data-deletion-demand': 'Request deletion of personal data',
+        'debt-dispute-information-request': 'Request information about a disputed debt',
+        'service-cancellation-request': 'Request service or policy cancellation',
+        'product-complaint-refund-request': 'Request a product or service review and refund',
+        'arbitration-opt-out-procedure-request': 'Ask about arbitration terms and opt-out steps',
+        'personal-data-deletion-request': 'Ask a company to review a data-deletion request',
       };
 
       for (const letter of CHOOSER_LETTERS) {
@@ -175,9 +175,9 @@ describe('S7 Release Candidate Verification Suite', () => {
     it('presents all 3 deterministic purpose options for ambiguous hardware OEM legal departments (Sonos, Withings)', () => {
       assert.equal(HARDWARE_OEM_PURPOSE_OPTIONS.length, 3, 'Hardware OEMs must present exactly 3 purpose options');
       const slugs = HARDWARE_OEM_PURPOSE_OPTIONS.map((o) => o.slug);
-      assert.ok(slugs.includes('pre-arbitration-notice-of-dispute-and-refund-request'), 'Option 1: Refund/dispute');
-      assert.ok(slugs.includes('30-day-mandatory-arbitration-opt-out-notice'), 'Option 2: Arbitration opt-out');
-      assert.ok(slugs.includes('statutory-health-and-biometric-data-deletion-demand'), 'Option 3: Data deletion');
+      assert.ok(slugs.includes('product-complaint-refund-request'), 'Option 1: General complaint and refund request');
+      assert.ok(slugs.includes('arbitration-opt-out-procedure-request'), 'Option 2: Ask about opt-out procedure');
+      assert.ok(slugs.includes('personal-data-deletion-request'), 'Option 3: General data-deletion request');
 
       // Test Sonos resolution
       const sonosEntry = VERIFIED_RECIPIENTS.find((r) => r.id === 'leg_sns');
@@ -283,7 +283,7 @@ describe('S7 Release Candidate Verification Suite', () => {
       // Empty values: incomplete
       const emptyValidation = validateNoticeDraft(depositNotice, {});
       assert.equal(emptyValidation.isValid, false, 'Empty draft is incomplete');
-      assert.equal(emptyValidation.firstInvalidFieldKey, 'senderFullName', 'First required field is senderFullName');
+      assert.equal(emptyValidation.firstInvalidFieldKey, 'propertyState', 'Property location appears first in tenant intake');
 
       // Fully valid values matching depositNotice schema
       const validValues: Record<string, string> = {
@@ -303,6 +303,7 @@ describe('S7 Release Candidate Verification Suite', () => {
         depositAmount: '$2,500.00',
         amountReceivedToDate: '$0.00',
         balanceRequested: '$2,500.00',
+        basisForRequest: 'My records show I paid the deposit and have received no refund.',
         responseDays: '14 calendar days',
       };
 
@@ -345,6 +346,7 @@ describe('S7 Release Candidate Verification Suite', () => {
       depositAmount: '$2,500.00',
       amountReceivedToDate: '$0.00',
       balanceRequested: '$2,500.00',
+      basisForRequest: 'My records show I paid the deposit and have received no refund.',
       responseDays: '14 calendar days',
     };
 
@@ -392,9 +394,9 @@ describe('S7 Release Candidate Verification Suite', () => {
       const modalSource = fs.readFileSync(path.join(process.cwd(), 'src/components/docket/CheckoutModal.tsx'), 'utf8');
 
       // Step 1: Continue to payment — $X
-      assert.ok(modalSource.includes('Continue to payment — $'), 'Step 1 button copy: Continue to payment — $X');
-      // Step 2: Pay $X and send letter
-      assert.ok(modalSource.includes('Pay $') && modalSource.includes('and send letter'), 'Step 2 button copy: Pay $X and send letter');
+      assert.ok(modalSource.includes('Continue to payment — {currentTierMeta.formattedPrice}'), 'Step 1 button copy states the selected service price');
+      // Step 2: payment authorizes order submission; postal handling is a later event
+      assert.ok(modalSource.includes('Pay {currentTierMeta.formattedPrice} and submit order'), 'Step 2 button copy accurately describes payment and order submission');
     });
 
     it('enforces fulfillment idempotency on /api/checkout/confirm-order', async () => {
@@ -811,7 +813,7 @@ describe('S7 Release Candidate Verification Suite', () => {
       const disclaimerSource = fs.readFileSync(path.join(process.cwd(), 'app/disclaimer/page.tsx'), 'utf8');
 
       // Disclosures present
-      assert.ok(homeSource.includes('automated self-help document preparation and USPS postal dispatch utility'), 'Homepage includes statutory disclosure');
+      assert.ok(homeSource.includes('STATUTORY_COMPLIANCE_DISCLOSURE'), 'Homepage includes self-help and mailing disclosure');
       assert.ok(docketSource.includes('UPL_COMPLIANCE_FOOTER_TEXT'), 'Docket tracking includes statutory disclosure');
       assert.ok(disclaimerSource.includes('STATUTORY_COMPLIANCE_DISCLOSURE'), 'Disclaimer page includes statutory disclosure');
     });
@@ -840,7 +842,7 @@ describe('S7 Release Candidate Verification Suite', () => {
 
     it('Invariant 2: UPL-safe administrative form letter positioning with verbatim disclosures', () => {
       const footerText = UPL_COMPLIANCE_FOOTER_TEXT('DS-2026-TEST');
-      assert.ok(footerText.includes('DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, not a law firm'));
+      assert.ok(footerText.includes('DocketStamp is an automated self-help document preparation and USPS mailing utility, not a law firm'));
       assert.ok(footerText.includes('does not provide legal representation or legal advice'));
     });
 
@@ -863,7 +865,7 @@ describe('S7 Release Candidate Verification Suite', () => {
 
       // Confirm both client document and lob payload derive identically from interpolateNotice output
       assert.equal(doc.docketId, 'DS-2026-PARITY-01');
-      assert.equal(doc.noticeDefinition.slug, 'security-deposit-return-demand-letter');
+      assert.equal(doc.noticeDefinition.slug, 'security-deposit-accounting-request');
     });
 
     it('Invariant 5: Freeze-before-pay snapshot integrity', async () => {
@@ -884,6 +886,7 @@ describe('S7 Release Candidate Verification Suite', () => {
         depositAmount: '$1,500.00',
         amountReceivedToDate: '$0.00',
         balanceRequested: '$1,500.00',
+        basisForRequest: 'My records show I paid the deposit and have received no refund.',
         responseDays: '14 calendar days',
       };
 

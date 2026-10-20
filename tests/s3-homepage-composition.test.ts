@@ -62,10 +62,10 @@ describe('S3 Homepage Composition Acceptance Gate', () => {
     it('renders the 3-step process strip per §8', () => {
       assert.ok(pageSource.includes('1. Choose your letter'));
       assert.ok(pageSource.includes('2. Add your details and review'));
-      assert.ok(pageSource.includes('3. We print and mail via USPS'));
-      assert.ok(pageSource.includes('Pick from 9 formal notice templates'));
-      assert.ok(pageSource.includes('review the exact single-page 8.5'));
-      assert.ok(pageSource.includes('USPS First-Class or Certified Mail®'));
+      assert.ok(pageSource.includes('3. Choose a mailing option'));
+      assert.ok(pageSource.includes('Pick from supported notice templates'));
+      assert.ok(pageSource.includes('review the prepared notice before checkout'));
+      assert.ok(pageSource.includes('Choose an available USPS service'));
     });
 
     it('sources informational pricing strictly from DOCKET_PRICING_TIERS and eliminates Most Popular', () => {

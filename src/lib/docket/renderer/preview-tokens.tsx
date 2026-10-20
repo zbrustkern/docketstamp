@@ -128,25 +128,25 @@ export const ClerksDocketStampBlock: React.FC<{
   return (
     <div
       className={`border-2 border-slate-900 p-2.5 bg-slate-50/70 font-mono text-[10px] leading-tight text-slate-900 uppercase max-w-[280px] shadow-sm select-none ${className}`}
-      data-testid="clerk-docket-stamp"
+      data-testid="preparation-record"
     >
       <div className="font-bold text-[10.5px] tracking-wider border-b border-slate-400 pb-1 mb-1 text-center text-slate-950">
-        DOCKETSTAMP™ DISPATCH REGISTRY
+        DOCKETSTAMP™ PREPARATION RECORD
       </div>
       <div className="flex justify-between py-0.5">
         <span className="text-slate-600">DOCKET ID:</span>
         <span className="font-bold text-slate-900">{docketId}</span>
       </div>
       <div className="flex justify-between py-0.5">
-        <span className="text-slate-600">DISPATCH TIER:</span>
+        <span className="text-slate-600">MAILING SERVICE:</span>
         <span className="font-semibold text-slate-900">{displayService}</span>
       </div>
       <div className="flex justify-between py-0.5">
-        <span className="text-slate-600">REGISTRY UTC:</span>
+        <span className="text-slate-600">PREPARED UTC:</span>
         <span>{timestampUtc}</span>
       </div>
       <div className="flex justify-between items-center pt-1 border-t border-slate-300 mt-1">
-        <span className="text-slate-600">STATUS:</span>
+        <span className="text-slate-600">ADDRESS STATUS:</span>
         <span className={`${verificationConfirmed ? 'text-emerald-700' : 'text-slate-600'} font-bold tracking-tight flex items-center`}>
           <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${verificationConfirmed ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
           {cassStatus}

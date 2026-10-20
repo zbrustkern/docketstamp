@@ -27,10 +27,10 @@ export async function GET() {
   const spec = {
     openapi: '3.0.3',
     info: {
-      title: 'DocketStamp Agentic Notice & Physical Postal Dispatch API',
+      title: 'DocketStamp Document Preparation & Mailing API',
       version: '1.0.0',
       description:
-        'Official API and MCP interface for DocketStamp. Allows autonomous AI agents to stage formal statutory notices (demand letters, credit disputes, arbitration opt-outs, and data deletion requests) for physical USPS First-Class and Certified Mail dispatch. "Agents stage, humans sign and pay."',
+        'API and MCP interface for staging document-preparation requests based on user-provided facts and returning human review links. Templates do not establish legal sufficiency or contract-specific compliance. A human reviews and signs any draft before choosing whether to place a USPS mailing order.',
       contact: {
         name: 'DocketStamp Platform Team',
         url: 'https://docketstamp.com',
@@ -53,9 +53,9 @@ export async function GET() {
     paths: {
       '/api/docket/stage': {
         post: {
-          summary: 'Stage a certified statutory notice draft',
+          summary: 'Stage a document-preparation request',
           description:
-            'Allows an AI agent to pre-populate notice fields, select recipients, and obtain a 1-tap review URL for the human user to sign and dispatch. Enforces NAICS 713940 fitness exclusions.',
+            'Allows an agent to pre-populate request fields and return a review URL for a human. Directory matches are suggestions; the user must confirm the recipient and any required submission channel. Staging does not send or file a notice.',
           operationId: 'stageNoticeDraft',
           requestBody: {
             required: true,
@@ -148,7 +148,7 @@ export async function GET() {
         post: {
           summary: 'Stateless JSON-RPC 2.0 Model Context Protocol (MCP) Streamable HTTP endpoint',
           description:
-            'Enables LLM agents to list notices, search verified corporate recipients, and stage drafts via standard Model Context Protocol methods (initialize, ping, tools/list, tools/call).',
+            'Enables LLM agents to list templates, search recipient directory suggestions, and stage drafts via standard Model Context Protocol methods (initialize, ping, tools/list, tools/call).',
           operationId: 'mcpJsonRpc',
           requestBody: {
             required: true,
@@ -190,17 +190,17 @@ export async function GET() {
         NoticeSlug: {
           type: 'string',
           enum: noticeSlugs,
-          description: 'Canonical slug identifying an active statutory Notice Cartridge.',
+          description: 'Canonical slug identifying an active document-preparation template.',
         },
         VerifiedRecipientId: {
           type: 'string',
           enum: recipientIds,
-          description: 'Pre-verified institutional legal notice recipient identifier.',
+          description: 'Identifier for an institutional recipient directory suggestion.',
         },
         MailTier: {
           type: 'string',
           enum: ['first_class', 'certified', 'certified_return_receipt'],
-          description: 'USPS postal dispatch service level.',
+          description: 'USPS mailing service selected if a later order is placed.',
         },
         PostalAddress: {
           type: 'object',
@@ -250,13 +250,13 @@ export async function GET() {
             },
             noticeSlug: {
               type: 'string',
-              example: 'pre-arbitration-notice-of-dispute-and-refund-request',
+              example: 'product-complaint-refund-request',
             },
             reviewUrl: {
               type: 'string',
               format: 'uri',
               example:
-                'https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?stage=DS-STAGE-84A19F',
+                'https://docketstamp.com/notices/product-complaint-refund-request?stage=DS-STAGE-84A19F',
             },
             missingRequiredFields: {
               type: 'array',

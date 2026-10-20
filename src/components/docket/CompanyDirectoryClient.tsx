@@ -82,7 +82,7 @@ export function CompanyDirectoryClient() {
             <span>Back to DocketStamp</span>
           </Link>
           <div className="text-xs text-slate-400">
-            Official Postal Dispatch Registry
+            Recipient Directory
           </div>
         </div>
       </header>
@@ -96,13 +96,12 @@ export function CompanyDirectoryClient() {
             <span>Institutional Recipient Directory</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-tight">
-            Pre-Addressed Corporate Recipients
+            Corporate and Institutional Mailing Contacts
           </h1>
           <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
-            Browse 38 verified legal notice destinations for credit disputes,
-            debt validation requests, corporate cancellations, and hardware warranty
-            or arbitration opt-out notices. Addresses are pre-formatted for direct
-            USPS postal dispatch.
+            Browse a directory of organizations and their listed mailing addresses.
+            Confirm the recipient and address before use; directory entries are not
+            USPS verification or confirmation that a notice meets a legal procedure.
           </p>
         </div>
 
@@ -270,7 +269,7 @@ export function CompanyDirectoryClient() {
                     {isHardware ? (
                       <div>
                         <div className="text-xs font-semibold text-amber-300 mb-2">
-                          Choose legal notice purpose for {recipient.brandName}:
+                          Choose a letter for {recipient.brandName}:
                         </div>
                         <div className="space-y-1.5">
                           {HARDWARE_OEM_PURPOSE_OPTIONS.map((purpose) => {
@@ -298,12 +297,12 @@ export function CompanyDirectoryClient() {
                           {recipient.category === 'credit_bureau'
                             ? 'Credit file dispute'
                             : recipient.category === 'debt_collector'
-                            ? 'Debt validation demand'
-                            : 'Contract cancellation notice'}
+                            ? 'Debt information request'
+                            : 'Service cancellation request'}
                         </span>
                         <Link
                           href={buildChooserWorkspaceUrl(
-                            compat.suggestedSlug || 'written-contract-and-policy-cancellation-letter',
+                            compat.suggestedSlug || 'service-cancellation-request',
                             recipient.id
                           )}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition shadow-sm"
@@ -345,7 +344,7 @@ export function CompanyDirectoryClient() {
             </a>
           </div>
           <p className="text-[11px] text-slate-400">
-            © {new Date().getFullYear()} DocketStamp. Official postal dispatch and document preparation utility.
+            © {new Date().getFullYear()} DocketStamp. USPS mailing and document preparation utility.
           </p>
         </div>
       </footer>

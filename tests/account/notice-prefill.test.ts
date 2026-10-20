@@ -6,6 +6,7 @@ import { NoticePrefillStageError, stageNoticePrefill } from "../../lib/account/n
 
 const origin = "https://docketstamp.com";
 const slug = "pre-arbitration-notice-of-dispute-and-refund-request";
+const canonicalSlug = "product-complaint-refund-request";
 const stageId = `DS-STAGE-${"A1".repeat(16)}`;
 const recipient: SavedAddress = {
   id: "fixture-recipient", label: "Fixture", firstName: "Riley", lastName: "Sample",
@@ -57,10 +58,10 @@ test("account prefill stages address fields in POST body and returns an opaque s
       },
     });
     assert.equal(staged.stageId.startsWith("DS-STAGE-"), true);
-    assert.equal(staged.reviewUrl, `/notices/${slug}?stage=${staged.stageId}`);
+    assert.equal(staged.reviewUrl, `/notices/${canonicalSlug}?stage=${staged.stageId}`);
     const navigated = new URL(staged.reviewUrl, origin);
     assert.equal(navigated.origin, origin);
-    assert.equal(navigated.pathname, `/notices/${slug}`);
+    assert.equal(navigated.pathname, `/notices/${canonicalSlug}`);
     assert.deepEqual([...navigated.searchParams.keys()], ["stage"]);
     assert.doesNotMatch(staged.reviewUrl, /Riley|Sample|Example|Madison|53703|60601/);
 
@@ -108,12 +109,12 @@ test("invalid stage IDs and unexpected returned routes are rejected", async () =
   }), (error: unknown) => error instanceof NoticePrefillStageError && /response was invalid/.test(error.message));
 
   for (const reviewUrl of [
-    `https://attacker.example/notices/${slug}?stage=${stageId}`,
+    `https://attacker.example/notices/${canonicalSlug}?stage=${stageId}`,
     `${origin}/notices/another-notice?stage=${stageId}`,
-    `${origin}/notices/${slug}?stage=${stageId}&field.recipientAddressLine1=private`,
+    `${origin}/notices/${canonicalSlug}?stage=${stageId}&field.recipientAddressLine1=private`,
   ]) {
     await assert.rejects(stageNoticePrefill({ noticeSlug: slug, recipient }, {
-      origin, fetchImpl: makeFetch({ stageId, noticeSlug: slug, reviewUrl }),
+      origin, fetchImpl: makeFetch({ stageId, noticeSlug: canonicalSlug, reviewUrl }),
     }), (error: unknown) => error instanceof NoticePrefillStageError && /unexpected review route/.test(error.message));
   }
 });

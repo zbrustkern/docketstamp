@@ -1,8 +1,5 @@
 /**
- * Cartridge 02: Statutory Security Deposit Return Request
- *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
- * Automatically pulls governing statutory citations and return deadlines from STATE_STATUTES.
+ * Cartridge 02: Security Deposit Accounting and Balance Request
  */
 
 import { z } from 'zod';
@@ -17,29 +14,30 @@ export const securityDepositSchema = z.object({
   depositAmount: z.string().min(1, 'Deposit amount is required'),
   amountReceivedToDate: z.string().min(1, 'Amount returned/received to date is required'),
   balanceRequested: z.string().min(1, 'Balance requested is required'),
+  basisForRequest: z.string().min(5, 'A brief basis for the requested amount is required').max(300),
   responseDays: z.enum(['7 calendar days', '10 business days', '14 calendar days']),
 });
 
 export const securityDepositNotice: NoticeTemplateDefinition = {
   id: 'security-deposit-return-demand-letter',
-  slug: 'security-deposit-return-demand-letter',
-  aliases: ['security-deposit-return', 'security-deposit-demand'],
+  slug: 'security-deposit-accounting-request',
+  aliases: ['security-deposit-return-demand-letter', 'security-deposit-return', 'security-deposit-demand'],
   category: 'tenant',
-  title: 'Statutory Security Deposit Return Request',
-  shortDescription: 'Statutory demand for return of residential security deposit with exact state code citations, statutory deadlines, and bad-faith penalty warnings.',
-  documentHeaderTitle: 'FORMAL WRITTEN NOTICE: REQUEST FOR RETURN OF SECURITY DEPOSIT',
-  reLineTemplate: 'RE: Security Deposit Return Accounting — {{vacatedPremisesAddress}} ({{statuteCitation}})',
+  title: 'Security Deposit Accounting and Balance Request',
+  shortDescription: 'A general request for an itemized deposit accounting and any balance due. The form does not determine state-law prerequisites or legal entitlement.',
+  documentHeaderTitle: 'SECURITY DEPOSIT ACCOUNTING AND BALANCE REQUEST',
+  reLineTemplate: 'RE: Security Deposit Accounting — {{vacatedPremisesAddress}}',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'manual_landlord',
-  usesStateStatuteLookup: true,
+  usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Security Deposit Demand Letter | 50-State Statutory Citations | DocketStamp',
-    description: 'Demand return of your residential security deposit with exact state statutory citations, return deadlines, and certified mail return receipt proof of delivery.',
+    title: 'Security Deposit Accounting and Balance Request Letter | DocketStamp',
+    description: 'Prepare a written request for a security deposit accounting and any balance you believe remains due. Applicable requirements and deadlines depend on the circumstances.',
     targetKeywords: [
-      'security deposit demand letter',
-      'demand return of security deposit',
-      'landlord security deposit deadline',
-      'statutory deposit refund request',
+      'security deposit accounting letter',
+      'request security deposit return',
+      'security deposit accounting request',
+      'request return of deposit balance',
       'security deposit certified mail letter',
     ],
   },
@@ -67,11 +65,11 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
     {
       key: 'propertyState',
       stepGroup: 'instrument_details',
-      label: 'State Jurisdiction',
+      label: 'Property State',
       docusignTagLabel: 'PROPERTY STATE',
       inputType: 'state_select',
       placeholder: 'TX',
-      helperText: 'Determines the exact governing state statute, mandatory return window, and citations.',
+      helperText: 'State where the rental property is located. This identifies the property location but does not determine legal eligibility or a deadline.',
       maxLength: 2,
     },
     {
@@ -87,11 +85,11 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
     {
       key: 'moveOutDate',
       stepGroup: 'instrument_details',
-      label: 'Key Surrender & Move-Out Date',
+      label: 'Date You Moved Out',
       docusignTagLabel: 'MOVE-OUT DATE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'The date you moved out or otherwise surrendered possession of the premises.',
+      helperText: 'Enter the date you moved out. Do not use this date to represent key return if they occurred separately.',
       maxLength: 30,
     },
     {
@@ -117,18 +115,28 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
     {
       key: 'balanceRequested',
       stepGroup: 'instrument_details',
-      label: 'Remaining Unrefunded Balance Due',
+      label: 'Amount You Are Requesting',
       docusignTagLabel: 'BALANCE DUE',
       inputType: 'currency',
       placeholder: 'e.g., $1,850.00',
-      helperText: 'The unpaid balance of the deposit you are demanding.',
+      helperText: 'Enter the amount you believe remains due. This is your requested amount, not a determination of legal entitlement.',
       maxLength: 20,
+    },
+    {
+      key: 'basisForRequest',
+      stepGroup: 'instrument_details',
+      label: 'Basis for Amount Requested',
+      docusignTagLabel: 'BASIS FOR REQUEST',
+      inputType: 'textarea_short',
+      placeholder: 'e.g., My records show that I paid $1,850 and have received no refund.',
+      helperText: 'Briefly state the records or facts behind the amount you are requesting.',
+      maxLength: 300,
     },
     {
       key: 'responseDays',
       stepGroup: 'instrument_details',
-      label: 'Response & Remittance Deadline',
-      docusignTagLabel: 'RESPONSE DEADLINE',
+      label: 'Requested Response Period',
+      docusignTagLabel: 'REQUESTED RESPONSE PERIOD',
       inputType: 'select',
       placeholder: '10 business days',
       options: [
@@ -136,15 +144,15 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
         { label: '10 business days', value: '10 business days' },
         { label: '14 calendar days', value: '14 calendar days' },
       ],
-      helperText: 'The deadline given to the landlord before initiating formal administrative or legal action.',
+      helperText: 'Choose the response period you are requesting. It is not a legal deadline and does not change a deadline that may apply.',
       maxLength: 20,
     },
   ],
   zodSchema: securityDepositSchema,
   bodyParagraphs: [
-    'This correspondence serves as formal written notice requesting the immediate return of the residential security deposit held in connection with the former tenancy of {{senderFullName}} at {{vacatedPremisesAddress}}.',
-    'I entered {{moveOutDate}} as the move-out date. At the commencement of the tenancy, a security deposit in the amount of {{depositAmount}} was paid. To date, {{amountReceivedToDate}} has been returned, leaving an unrefunded balance of {{balanceRequested}}.',
-    'Please be advised that pursuant to {{propertyState}} statutory provisions ({{statuteCitation}}), the timeframe for delivering a written itemized statement of lawful deductions and refunding the remaining security deposit balance is {{statuteDeadline}} following termination of tenancy and delivery of possession.',
-    'Accordingly, please remit the outstanding balance of {{balanceRequested}} made payable to {{senderFullName}} and mailed to {{senderFullAddress}} within {{responseDays}} of receipt of this notice, so that this matter may be resolved amicably without the need for further administrative or civil proceedings.',
+    'My records show that I paid a security deposit of {{depositAmount}} for {{vacatedPremisesAddress}} and moved out on {{moveOutDate}}. My records also show that I have received {{amountReceivedToDate}} to date.',
+    'Please provide an itemized accounting of the deposit, including any deductions, credits, and amount still held. I request {{balanceRequested}} based on these facts: {{basisForRequest}}.',
+    'The amount above is my request based on my records; it is not a determination of legal entitlement. Please return any deposit balance that is due under applicable law.',
+    'If possible, please respond within {{responseDays}} after receiving this letter. This is a requested response period, not a legal deadline, and it does not change any deadline that may apply.',
   ],
 };

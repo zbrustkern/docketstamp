@@ -52,7 +52,7 @@ describe('1. Staged Draft API (/api/docket/stage & /api/docket/stage/[stageId])'
           productOrServiceName: 'Withings Body Smart Scale',
           accountOrSerialIdentifier: 'SN-00998877',
           purchaseDate: '2025-06-15',
-          disputeTriggerCategory: 'Post-Purchase Removal or Paywalling of Advertised Feature',
+          disputeTriggerCategory: 'Feature became unavailable or requires an additional payment',
           factualSummary: 'Vascular age and pulse wave velocity measurements were disabled behind Withings+ subscription.',
         },
         recommendedTier: 'certified_return_receipt',
@@ -64,10 +64,10 @@ describe('1. Staged Draft API (/api/docket/stage & /api/docket/stage/[stageId])'
 
     const data = await res.json();
     assert.match(data.stageId, /^DS-STAGE-[A-F0-9]{6}$/);
-    assert.equal(data.noticeSlug, 'pre-arbitration-notice-of-dispute-and-refund-request');
+    assert.equal(data.noticeSlug, 'product-complaint-refund-request');
     assert.equal(
       data.reviewUrl,
-      `https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?stage=${data.stageId}`
+      `https://docketstamp.com/notices/product-complaint-refund-request?stage=${data.stageId}`
     );
     assert.ok(Array.isArray(data.missingRequiredFields));
     // requestedResolutionAmount was omitted, so it must be flagged in missingRequiredFields
@@ -88,7 +88,7 @@ describe('1. Staged Draft API (/api/docket/stage & /api/docket/stage/[stageId])'
     assert.equal(res.status, 200);
     const draft = await res.json();
     assert.equal(draft.stageId, createdStageId);
-    assert.equal(draft.noticeSlug, 'pre-arbitration-notice-of-dispute-and-refund-request');
+    assert.equal(draft.noticeSlug, 'product-complaint-refund-request');
     assert.equal(draft.recipientId, 'leg_wth');
     assert.equal(draft.recipient?.brandName, 'Withings');
     assert.equal(draft.fieldValues.productOrServiceName, 'Withings Body Smart Scale');
@@ -121,6 +121,7 @@ describe('1. Staged Draft API (/api/docket/stage & /api/docket/stage/[stageId])'
           moveOutDate: '2026-09-30',
           depositAmount: '$2,000.00',
           balanceRequested: '$2,000.00',
+          basisForRequest: 'My records show I paid this deposit and have received no refund.',
           propertyState: 'TX',
         },
         recommendedTier: 'certified',
@@ -131,7 +132,7 @@ describe('1. Staged Draft API (/api/docket/stage & /api/docket/stage/[stageId])'
     assert.equal(res.status, 201);
     const data = await res.json();
     assert.match(data.stageId, /^DS-STAGE-[A-F0-9]{6}$/);
-    assert.equal(data.noticeSlug, 'security-deposit-return-demand-letter');
+    assert.equal(data.noticeSlug, 'security-deposit-accounting-request');
   });
 
   it('returns 404 for an unknown or expired stageId', async () => {
@@ -313,14 +314,14 @@ describe('2. Remote MCP Endpoint (/api/mcp)', () => {
     assert.equal(notices.length, 9);
     const slugs = notices.map((n: any) => n.slug);
     assert.ok(slugs.includes('tenant-notice-of-intent-to-vacate'));
-    assert.ok(slugs.includes('security-deposit-return-demand-letter'));
+    assert.ok(slugs.includes('security-deposit-accounting-request'));
     assert.ok(slugs.includes('tenant-repair-and-maintenance-notice'));
-    assert.ok(slugs.includes('fcra-credit-bureau-written-dispute-letter'));
-    assert.ok(slugs.includes('fdcpa-30-day-debt-validation-letter'));
-    assert.ok(slugs.includes('written-contract-and-policy-cancellation-letter'));
-    assert.ok(slugs.includes('pre-arbitration-notice-of-dispute-and-refund-request'));
-    assert.ok(slugs.includes('30-day-mandatory-arbitration-opt-out-notice'));
-    assert.ok(slugs.includes('statutory-health-and-biometric-data-deletion-demand'));
+    assert.ok(slugs.includes('credit-report-dispute-request'));
+    assert.ok(slugs.includes('debt-dispute-information-request'));
+    assert.ok(slugs.includes('service-cancellation-request'));
+    assert.ok(slugs.includes('product-complaint-refund-request'));
+    assert.ok(slugs.includes('arbitration-opt-out-procedure-request'));
+    assert.ok(slugs.includes('personal-data-deletion-request'));
   });
 
   it('executes tools/call: search_verified_recipients for Withings and credit bureaus', async () => {
@@ -442,7 +443,9 @@ describe('3. Discovery Manifests (/llms.txt and /.well-known/openapi.json)', () 
 
     const text = await res.text();
     // Core architectural invariants
-    assert.ok(text.includes('DocketStamp: Autonomous Agentic Postal Notice & Physical USPS Dispatch System'));
+    assert.ok(text.includes('DocketStamp: Document Preparation and USPS Mailing Service'));
+    assert.ok(text.includes('A listed company or address does not confirm that a particular legal or contract-required channel is supported.'));
+    assert.ok(!text.includes('Autonomous Agentic Postal Notice & Physical USPS Dispatch System'));
     assert.ok(text.includes('Agents stage, humans sign and pay'));
     assert.ok(text.includes('NAICS 713940'));
     assert.ok(text.includes('POST https://docketstamp.com/api/docket/stage'));
@@ -474,7 +477,9 @@ describe('3. Discovery Manifests (/llms.txt and /.well-known/openapi.json)', () 
 
     const spec = await res.json();
     assert.equal(spec.openapi, '3.0.3');
-    assert.equal(spec.info.title, 'DocketStamp Agentic Notice & Physical Postal Dispatch API');
+    assert.equal(spec.info.title, 'DocketStamp Document Preparation & Mailing API');
+    assert.match(spec.info.description, /do not establish legal sufficiency/i);
+    assert.match(spec.paths['/api/docket/stage'].post.description, /does not send or file a notice/i);
 
     // Required endpoints
     assert.ok(spec.paths['/api/docket/stage'], 'Spec must define path /api/docket/stage');

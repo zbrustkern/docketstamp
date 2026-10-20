@@ -35,24 +35,24 @@ const metaDomainVerification = process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION;
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
+    default: "Prepare and Mail Formal Notices | DocketStamp",
     template: "%s | DocketStamp",
   },
   description:
-    "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
+    "Prepare a written notice, review your details, and choose an available USPS mailing service. DocketStamp is a self-help document preparation service, not a law firm.",
   applicationName: "DocketStamp",
   authors: [{ name: "Western Amalgamated" }],
   creator: "Western Amalgamated",
   publisher: "DocketStamp",
   keywords: [
     "certified mail online",
-    "statutory legal notice",
+    "formal notice preparation",
     "security deposit demand letter",
     "notice of intent to vacate",
     "fcra dispute letter",
     "fdcpa debt validation letter",
     "usps certified mail service",
-    "docket stamp registry",
+    "document preparation service",
     "written contract cancellation",
   ],
   alternates: {
@@ -70,9 +70,9 @@ export const metadata: Metadata = {
       },
   ...(metaDomainVerification ? { verification: { other: { "facebook-domain-verification": metaDomainVerification } } } : {}),
   openGraph: {
-    title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
+    title: "Prepare and Mail Formal Notices | DocketStamp",
     description:
-      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
+      "Prepare a written notice, review your details, and choose an available USPS mailing service. DocketStamp is a self-help document preparation service, not a law firm.",
     url: appUrl,
     siteName: "DocketStamp",
     images: [
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "DocketStamp - Official Document & Certified Mail Dispatch Registry",
+        alt: "DocketStamp document preparation and mailing service",
         type: "image/png",
       },
     ],
@@ -89,9 +89,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
+    title: "Prepare and Mail Formal Notices | DocketStamp",
     description:
-      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
+      "Prepare a written notice, review your details, and choose an available USPS mailing service. DocketStamp is a self-help document preparation service, not a law firm.",
     images: ["/og-image.png"],
   },
   icons: {
@@ -124,9 +124,9 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Product",
-              name: "Official Document & Certified Mail Dispatch Registry",
+              name: "DocketStamp notice preparation and mailing",
               description:
-                "State-specific statutory notices and formal legal letters dispatched via physical USPS First-Class, Certified Mail, and Certified Mail with Electronic Return Receipt.",
+                "Self-help notice preparation with available USPS mailing services. Postal records depend on provider events and the selected service.",
               brand: {
                 "@type": "Brand",
                 name: "DocketStamp",
@@ -134,19 +134,19 @@ export default function RootLayout({
               offers: [
                 {
                   "@type": "Offer",
-                  name: "Standard First-Class Dispatch",
+                  name: "USPS First-Class Mail",
                   price: "12.95",
                   priceCurrency: "USD",
                 },
                 {
                   "@type": "Offer",
-                  name: "USPS Certified Mail® Dispatch",
+                  name: "USPS Certified Mail",
                   price: "19.95",
                   priceCurrency: "USD",
                 },
                 {
                   "@type": "Offer",
-                  name: "USPS Certified Mail® + Electronic Return Receipt",
+                  name: "USPS Certified Mail with Electronic Return Receipt request",
                   price: "27.95",
                   priceCurrency: "USD",
                 },

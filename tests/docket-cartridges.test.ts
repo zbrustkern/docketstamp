@@ -59,14 +59,14 @@ import {
 describe('1. Master Notice Cartridge Registry Integrity (Cartridges 01–09)', () => {
   const EXPECTED_CARTRIDGE_SLUGS = [
     'tenant-notice-of-intent-to-vacate',
-    'security-deposit-return-demand-letter',
+    'security-deposit-accounting-request',
     'tenant-repair-and-maintenance-notice',
-    'fcra-credit-bureau-written-dispute-letter',
-    'fdcpa-30-day-debt-validation-letter',
-    'written-contract-and-policy-cancellation-letter',
-    'pre-arbitration-notice-of-dispute-and-refund-request',
-    '30-day-mandatory-arbitration-opt-out-notice',
-    'statutory-health-and-biometric-data-deletion-demand',
+    'credit-report-dispute-request',
+    'debt-dispute-information-request',
+    'service-cancellation-request',
+    'product-complaint-refund-request',
+    'arbitration-opt-out-procedure-request',
+    'personal-data-deletion-request',
   ];
 
   it('contains exactly 9 cartridges in ALL_NOTICE_CARTRIDGES', () => {
@@ -270,14 +270,14 @@ describe('2. 1-Page Lob 8.5in x 11in Letter Shell & Maximum Character Length Str
         `Cartridge ${cartridge.slug} must enforce fixed 8.5x11in overflow:hidden body bounds`
       );
 
-      // 2. Clerk's Docket Stamp
+      // 2. Preparation record
       assert.ok(
         html.includes('docket-stamp-box'),
         `Cartridge ${cartridge.slug} must contain docket-stamp-box class`
       );
       assert.ok(
-        html.includes('DOCKETSTAMP™ OFFICIAL DISPATCH REGISTRY'),
-        `Cartridge ${cartridge.slug} must contain official dispatch registry header`
+        html.includes('DOCKETSTAMP™ PREPARATION RECORD') && !html.includes('OFFICIAL DISPATCH REGISTRY'),
+        `Cartridge ${cartridge.slug} must identify the prepared-notice record without claiming dispatch`
       );
       assert.ok(
         html.includes(docketId),

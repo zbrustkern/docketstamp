@@ -486,7 +486,7 @@ const DocumentWorkspaceInner: React.FC<{
                 Click any amber tag on paper to focus corresponding input
               </span>
               <span className="hidden lg:inline text-slate-500">
-                Standard single-page letter format
+                8.5 × 11 notice preview
               </span>
             </div>
 

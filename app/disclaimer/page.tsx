@@ -94,7 +94,7 @@ export default function DisclaimerPage() {
               Deterministic User-Supplied Factual Parameters
             </h2>
             <p>
-              All instruments prepared on DocketStamp are deterministic form templates populated strictly with factual parameters, dates, citations, and recipient addresses provided or selected directly by the user.
+              Prepared documents combine facts supplied by the user and, when selected, recipient directory details with fixed wording from the chosen template. A template may include legal references supplied by DocketStamp; DocketStamp does not determine whether those references apply to a user's facts or situation.
             </p>
             <p>
               DocketStamp does not conduct open-ended AI generation of legal claims, nor does it recommend factual allegations, negotiate settlements, or verify the substantive legal veracity of your statements. Senders bear sole and exclusive responsibility for the truthfulness, completeness, accuracy, and legal consequence of all factual statements, signature adoptions, and notice claims transmitted through the platform.
@@ -108,10 +108,10 @@ export default function DisclaimerPage() {
               Irreversibility of Physical USPS Mail Induction
             </h2>
             <p>
-              DocketStamp induces physical print and postal mail instruments into the United States Postal Service stream immediately or near-immediately upon payment authorization and clerk lock snapshot generation.
+              After checkout, DocketStamp attempts to submit the order to a postal fulfillment provider. Check the order record for its processing status; a payment confirmation does not establish provider submission or USPS acceptance.
             </p>
             <p>
-              Because physical printing, envelopment, CASS barcoding, and USPS induction commence programmatically via automated API pipelines, <strong>physical mail dispatches cannot be recalled, intercepted, cancelled, or refunded once submitted to the postal stream</strong>. Users must carefully review their on-screen proof sheet before adopting their signature and executing payment.
+              A payment confirmation does not establish that USPS accepted a mailpiece. Once production or postal processing has begun, changes or cancellation may no longer be possible. Review the prepared notice and order details before checkout, and use the order page for recorded status updates.
             </p>
           </section>
 
@@ -132,7 +132,7 @@ export default function DisclaimerPage() {
           {/* Institutional Contact Footnote */}
           <div className="pt-6 border-t border-slate-700/80 text-xs text-slate-400 space-y-1">
             <p className="font-mono text-slate-300 font-semibold">WESTERN AMALGAMATED &bull; DOCKET REGISTRY COMPLIANCE</p>
-            <p>Official registry inquiries and compliance correspondence: <span className="font-mono text-slate-200">legal@docketstamp.com</span></p>
+            <p>Business and compliance correspondence: <span className="font-mono text-slate-200">legal@docketstamp.com</span></p>
           </div>
         </div>
       </main>

@@ -22,7 +22,7 @@ function generateLlmsTxt(): string {
 - **Category**: \`${n.category}\`
 - **Document Header**: "${n.documentHeaderTitle}"
 - **Recommended USPS Tier**: \`${n.recommendedTier}\` (${DOCKET_PRICING_TIERS[n.recommendedTier]?.formattedPrice || '$19.95'})
-- **Recipient Mode**: \`${n.recipientMode}\`
+- **Recipient Selection**: ${n.recipientMode.startsWith('manual') ? 'Enter recipient details manually and confirm the correct recipient and submission channel.' : 'A directory suggestion may be selected; confirm the correct recipient and any required submission channel.'}
 - **Description**: ${n.shortDescription}
 - **Fields**:
 ${fieldsList || '    - (No specific dynamic fields)'}
@@ -37,28 +37,28 @@ ${fieldsList || '    - (No specific dynamic fields)'}
     )
     .join('\n');
 
-  return `# DocketStamp: Autonomous Agentic Postal Notice & Physical USPS Dispatch System
+  return `# DocketStamp: Document Preparation and USPS Mailing Service
 
 > **Core Architectural Invariant**: "Agents stage, humans sign and pay."
-> AI agents (Claude, ChatGPT, cursor agents, local CLI tools) can stage partially or fully populated formal statutory notices without an API key, OAuth flow, or payment credentials.
+> AI agents (Claude, ChatGPT, cursor agents, local CLI tools) can stage partially or fully populated document requests using user-provided facts, without payment credentials.
 > The agent delivers a 1-Tap Review Link to the human user: \`https://docketstamp.com/notices/[slug]?stage=DS-STAGE-XXXXXX\`.
-> The human user reviews the rendered 8.5x11 physical letter, adopts an electronic signature, and executes payment via Apple Pay or credit card for physical USPS postal dispatch.
+> The human user reviews the draft, adopts an electronic signature, and completes payment before a USPS mailing order is submitted. Provider and USPS events are reported separately when available.
 
 ---
 
-## 1. Statutory Guardrails & Compliance Disclosures
-- **UPL Compliance**: DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, NOT a law firm, and does not provide legal representation or legal advice. All notice cartridges are deterministic form instruments where factual parameters are supplied by the user or staging agent.
-- **Strict Conflict-of-Interest Exclusion (NAICS 713940)**: DocketStamp strictly excludes gyms, health clubs, fitness centers, and fitness membership billing disputes (NAICS 713940). Staged requests referencing gyms or fitness clubs will be rejected with HTTP 400 (\`CONFLICT_OF_INTEREST\`). Connected hardware, consumer electronics, and home appliance manufacturers (Withings, Garmin, Ecobee, LG, Samsung, Canon, Sonos, Roku, etc.) ARE fully supported.
+## 1. Template Scope and Limitations
+- **UPL Compliance**: DocketStamp is an automated self-help document preparation and USPS mailing utility, NOT a law firm, and does not provide legal representation or legal advice. Templates are deterministic and use facts supplied by the user.
+- **Strict Conflict-of-Interest Exclusion (NAICS 713940)**: DocketStamp excludes gyms, health clubs, fitness centers, and fitness membership billing disputes (NAICS 713940). Staged requests referencing gyms or fitness clubs will be rejected with HTTP 400 (\`CONFLICT_OF_INTEREST\`). A listed company or address does not confirm that a particular legal or contract-required channel is supported.
 
 ---
 
-## 2. Dispatch Tiers & USPS Pricing
+## 2. USPS Mailing Options & Pricing
 1. **Standard First-Class Mail (\`first_class\`)**: $12.95
-   - Official Clerk's Docket Stamp registry recording & USPS IMb barcode tracking.
+   - Document record and tracking information when provided.
 2. **USPS Certified Mail® (\`certified\`)**: $19.95
-   - USPS Certified Mail tracking number, electronic proof of acceptance, admissible in court.
+   - USPS Certified Mail tracking number and USPS status records when available.
 3. **USPS Certified Mail® + Return Receipt (\`certified_return_receipt\`)**: $27.95
-   - Electronic Return Receipt (ERR) green card signature proof. Legally conclusive delivery date verification.
+   - Electronic Return Receipt request; a USPS record is shown if returned.
 
 ---
 
@@ -67,11 +67,11 @@ Agents can direct human users to interactive notice workspaces via two methods:
 
 ### Method A: Staged Draft Review Link (Recommended)
 \`https://docketstamp.com/notices/{slug}?stage={stageId}\`
-Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?stage=DS-STAGE-84A19F\`
+Example: \`https://docketstamp.com/notices/product-complaint-refund-request?stage=DS-STAGE-84A19F\`
 
 ### Method B: Direct URL Query Parameter Pre-fill
 \`https://docketstamp.com/notices/{slug}?recipientId={recipientId}&tier={tier}&field.{fieldKey}={value}\`
-Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?recipientId=leg_wth&tier=certified_return_receipt&field.productOrServiceName=Withings+Body+Smart+Scale\`
+Example: \`https://docketstamp.com/notices/product-complaint-refund-request?recipientId=leg_wth&tier=certified_return_receipt&field.productOrServiceName=Withings+Body+Smart+Scale\`
 
 ---
 
@@ -81,7 +81,7 @@ Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and
   - Body:
 \`\`\`json
 {
-  "noticeSlug": "pre-arbitration-notice-of-dispute-and-refund-request",
+  "noticeSlug": "product-complaint-refund-request",
   "recipientId": "leg_wth",
   "customRecipient": {
     "name": "Withings Inc. — Legal Dept.",
@@ -101,8 +101,8 @@ Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and
     "productOrServiceName": "Withings Body Smart Scale",
     "accountOrSerialIdentifier": "SN-98234-A",
     "purchaseDate": "2025-04-12",
-    "disputeTriggerCategory": "Post-Purchase Removal or Paywalling of Advertised Feature",
-    "factualSummary": "Pulse wave velocity feature was moved behind a paid subscription post-purchase.",
+    "disputeTriggerCategory": "Feature became unavailable or requires an additional payment",
+    "factualSummary": "The feature I used is no longer available without an additional monthly payment.",
     "requestedResolutionAmount": "$99.95"
   },
   "recommendedTier": "certified_return_receipt"
@@ -112,8 +112,8 @@ Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and
 \`\`\`json
 {
   "stageId": "DS-STAGE-84A19F",
-  "noticeSlug": "pre-arbitration-notice-of-dispute-and-refund-request",
-  "reviewUrl": "https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?stage=DS-STAGE-84A19F",
+  "noticeSlug": "product-complaint-refund-request",
+  "reviewUrl": "https://docketstamp.com/notices/product-complaint-refund-request?stage=DS-STAGE-84A19F",
   "missingRequiredFields": ["senderFullName"],
   "pricingTiers": { ... },
   "expiresAt": "2026-10-23T..."
@@ -129,20 +129,20 @@ Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and
 - **Protocol**: JSON-RPC 2.0 Streamable HTTP MCP
 - **Tools**:
   1. \`list_docket_notices\`: Lists all Notice Cartridges, descriptions, and field schemas.
-  2. \`search_verified_recipients\`: Searches pre-verified institutional recipients by brand name or category.
+  2. \`search_verified_recipients\`: Searches recipient address suggestions by brand name or category. A result does not establish the required legal or contractual submission channel.
   3. \`stage_certified_notice\`: Validates inputs, creates staged draft, and returns review link.
 
 ---
 
-## 6. Official Statutory Notice Cartridge Catalog (${notices.length} Active Cartridges)
+## 6. Document Template Catalog (${notices.length} Active Templates)
 
 ${noticesListMarkdown}
 
 ---
 
-## 7. Pre-Verified Institutional Recipients Registry (${recipients.length} Verified Recipients)
+## 7. Recipient Address Suggestions (${recipients.length} Entries)
 
-| ID | Brand Name | Category | Formal Legal Recipient Line | Location | Recommended Tier | Required Identifiers Hint |
+| ID | Brand Name | Category | Recipient Name | Location | Recommended Tier | Identification Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 ${recipientsTableRows}
 `;

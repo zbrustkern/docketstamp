@@ -19,9 +19,9 @@ import { HeaderUserNav } from '@/src/components/docket/HeaderUserNav';
 import { InteractiveHomeWorkbench } from '@/src/components/docket/InteractiveHomeWorkbench';
 
 export const metadata = {
-  title: 'DocketStamp | Prepare and Mail Formal Legal Notices via USPS',
+  title: 'Prepare and Mail Formal Notices | DocketStamp',
   description:
-    'Choose a legal notice, add your details, and review your single-page letter before paying. Printed and mailed via USPS First-Class or Certified Mail®.',
+    'Choose a notice template, add your details, review the prepared document, and select an available USPS mailing service.',
 };
 
 export default function HomePage() {
@@ -30,15 +30,13 @@ export default function HomePage() {
       id: 'first_class',
       name: 'USPS First-Class Mail',
       price: DOCKET_PRICING_TIERS.first_class.formattedPrice,
-      tag: 'Standard Dispatch',
+      tag: 'Standard Mail',
       description:
-        'Physical printing on crisp 8.5" × 11" paper, envelope, postage, and Intelligent Mail® barcode tracking included.',
+        'Choose USPS First-Class Mail for your order. USPS tracking or status information may be limited.',
       features: [
-        'Single-page 8.5" × 11" physical print',
-        'USPS CASS™ address standardization',
-        'Intelligent Mail® barcode tracking',
-        'Permanent digital PDF docket record',
-        'Standard transit: 1–5 business days',
+        'Prepared notice copy available in your order',
+        'Order status shown as recorded',
+        'Postal updates shown when provided',
       ],
       isRecommended: false,
     },
@@ -46,15 +44,13 @@ export default function HomePage() {
       id: 'certified',
       name: 'USPS Certified Mail®',
       price: DOCKET_PRICING_TIERS.certified.formattedPrice,
-      tag: 'Recommended for Legal Notices',
+      tag: 'Certified Mail option',
       description:
-        'Official USPS Certified Mail banner, USPS tracking number, and electronic proof of acceptance and delivery.',
+        'Choose USPS Certified Mail. Tracking and postal status details appear when available from the provider.',
       features: [
-        'Official USPS Certified green banner',
-        'Dedicated USPS Certified tracking number',
-        'Chain-of-custody USPS scan history',
-        'Electronic proof of delivery scan',
-        'Admissible in formal proceedings',
+        'USPS Certified Mail service requested for the order',
+        'Tracking information when provided',
+        'Acceptance or delivery events shown when received',
       ],
       isRecommended: true,
     },
@@ -62,15 +58,13 @@ export default function HomePage() {
       id: 'certified_return_receipt',
       name: 'Certified Mail® + Return Receipt',
       price: DOCKET_PRICING_TIERS.certified_return_receipt.formattedPrice,
-      tag: 'Signed Delivery Record',
+      tag: 'Return Receipt option',
       description:
-        'Includes everything in Certified Mail plus official USPS Electronic Return Receipt with recipient signature PDF.',
+        'Choose Certified Mail with an Electronic Return Receipt request. A receipt record appears if USPS provides one.',
       features: [
         'Everything in USPS Certified Mail®',
-        'Official USPS Electronic Return Receipt (ERR)',
-        'Recipient signature PDF record',
-        'Delivery date, time, and address proof',
-        'Permanent legal record archive',
+        'Electronic Return Receipt requested',
+        'Receipt and tracking records when provided',
       ],
       isRecommended: false,
     },
@@ -80,32 +74,32 @@ export default function HomePage() {
     {
       question: 'What is included in the price?',
       answer:
-        'Every mailing includes single-page physical printing on 8.5" × 11" paper, professional envelope, USPS postage, address verification, and a digital PDF copy with permanent tracking records. There are no subscriptions or hidden fees.',
+        'The displayed price is for the selected preparation and mailing service. Your order record shows available document and postal information; provider status and receipt records depend on what the postal provider returns.',
     },
     {
       question: 'How does USPS Certified Mail® differ from First-Class Mail?',
       answer:
-        'USPS First-Class Mail includes Intelligent Mail® barcode transit tracking. USPS Certified Mail® provides official proof of mailing with a dedicated USPS tracking number, chain-of-custody scans, and delivery confirmation. Certified Mail with Return Receipt also includes an Electronic Return Receipt with recipient signature record.',
+        'The options use different USPS services. Tracking, acceptance, delivery, and return-receipt information are shown only when supplied by the provider. DocketStamp does not determine whether a mailing record satisfies a legal proof-of-service requirement.',
     },
     {
       question: 'Do I need an account to send a letter?',
       answer:
-        'No. DocketStamp supports full guest checkout—you can prepare, review, pay, and dispatch without creating an account. If you choose to sign in, your dockets and tracking records are automatically saved to your account.',
+        'No. You can prepare a notice and check out as a guest. The order page shows the order details and any postal records available for that order.',
     },
     {
       question: 'How do pre-addressed corporate recipients work?',
       answer:
-        'DocketStamp maintains official legal department notice addresses for 38 major companies (credit reporting agencies, debt collectors, and connected hardware manufacturers). When you select a company, its address is populated automatically. You can also enter any custom recipient address manually.',
+        'The directory provides recipient names and address information for listed organizations. Verify the recipient and address for your situation before placing an order. You can also enter a recipient manually.',
     },
     {
       question: 'Is DocketStamp a law firm?',
       answer:
-        'No. DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, not a law firm. We do not provide legal advice, representation, or outcome guarantees. All notices use standardized statutory templates.',
+        'No. DocketStamp provides self-help document preparation and mailing services. It is not a law firm and does not provide legal advice or representation. Templates may not fit every situation or current legal requirement; consider consulting a qualified lawyer about your circumstances.',
     },
     {
       question: 'Can I review my letter before paying?',
       answer:
-        'Yes. You can review the exact 8.5" × 11" document with all your details filled in before entering payment information. Your letter is only printed and dispatched after your final review and payment confirmation.',
+        'Yes. Review the prepared notice and the order details before checkout. After payment, the order page reports the processing and postal status recorded for that order.',
     },
   ];
 
@@ -123,7 +117,7 @@ export default function HomePage() {
                 DOCKETSTAMP<span className="text-sky-400">™</span>
               </span>
               <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-sans font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                USPS Certified Mail® Service
+              Notice preparation and mailing
               </span>
             </div>
           </Link>
@@ -166,7 +160,7 @@ export default function HomePage() {
               How DocketStamp Works
             </h2>
             <p className="text-xs sm:text-sm text-slate-400">
-              From digital draft to official USPS physical delivery in three simple steps.
+              Prepare a notice, review the order, and choose a mailing service.
             </p>
           </div>
 
@@ -180,7 +174,7 @@ export default function HomePage() {
                   1. Choose your letter
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Pick from 9 formal notice templates or search 38 pre-addressed corporate recipients.
+                  Pick from supported notice templates or browse recipient address information.
                 </p>
               </div>
             </div>
@@ -194,7 +188,7 @@ export default function HomePage() {
                   2. Add your details and review
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Fill in the highlighted fields and review the exact single-page 8.5&quot; &times; 11&quot; letter before paying.
+                  Enter your facts and review the prepared notice before checkout.
                 </p>
               </div>
             </div>
@@ -205,10 +199,10 @@ export default function HomePage() {
               </div>
               <div className="space-y-1">
                 <h3 className="font-sans text-sm font-bold text-white">
-                  3. We print and mail via USPS
+                  3. Choose a mailing option
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Your letter is printed, enveloped, and dispatched via USPS First-Class or Certified Mail®.
+                  Choose an available USPS service. Your order page shows provider updates when received.
                 </p>
               </div>
             </div>
@@ -226,7 +220,7 @@ export default function HomePage() {
             Transparent USPS Pricing
           </h2>
           <p className="text-xs sm:text-sm text-slate-400">
-            Every order includes single-page physical printing, envelope, USPS postage, and tracking. No subscriptions.
+            Review the service and price shown at checkout. Postal records vary by service and provider updates.
           </p>
         </div>
 
@@ -300,7 +294,7 @@ export default function HomePage() {
         </div>
 
         <p className="text-center text-xs text-slate-400 max-w-xl mx-auto">
-          Delivery options and postage tiers are selected after reviewing your letter in the workspace. All prices include printing, envelope, and USPS postage.
+          Mailing options and prices are shown for review before checkout. Available provider records depend on the selected service.
         </p>
       </section>
 
@@ -314,17 +308,17 @@ export default function HomePage() {
           <div className="space-y-1 text-center sm:text-left">
             <div className="font-sans font-bold text-white text-sm flex items-center justify-center sm:justify-start gap-2">
               <Building2 className="w-4 h-4 text-sky-400" />
-              <span>Looking for a specific corporate legal department?</span>
+              <span>Looking for a specific organization?</span>
             </div>
             <p className="text-xs text-slate-400">
-              DocketStamp maintains pre-addressed legal notice destinations for 38 major credit bureaus, debt collectors, and hardware OEMs.
+              The directory lists recipient names and mailing addresses for selected organizations. Verify the address before use.
             </p>
           </div>
           <Link
             href="/companies"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 hover:border-slate-600 transition shrink-0"
           >
-            <span>Browse all 38 companies</span>
+            <span>Browse the directory</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -340,7 +334,7 @@ export default function HomePage() {
             Frequently Asked Questions
           </h2>
           <p className="text-xs sm:text-sm text-slate-400">
-            Honest information about our document preparation and USPS postal dispatch service.
+            Information about notice preparation and available USPS mailing options.
           </p>
         </div>
 
@@ -376,7 +370,7 @@ export default function HomePage() {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Automated Legal Notice Preparation &amp; USPS Certified Mail® Dispatch Service
+                Self-help notice preparation and mailing options
               </p>
             </div>
             <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-sans">
@@ -395,12 +389,6 @@ export default function HomePage() {
               <Link href="/return-policy" className="hover:text-slate-200 transition">
                 Refund Policy
               </Link>
-              <Link
-                href="/docket/DS-2026-88419-X"
-                className="text-sky-400 hover:text-sky-300 transition"
-              >
-                Sample Tracking Record
-              </Link>
               <Link href="/account" className="hover:text-slate-200 transition">
                 My Account
               </Link>
@@ -415,16 +403,16 @@ export default function HomePage() {
 
           <div className="pt-4 border-t border-slate-900 text-[11px] leading-relaxed text-slate-400 font-sans max-w-5xl space-y-2">
             <p>
-              <strong>SELF-HELP COMPLIANCE DISCLOSURE:</strong> {STATUTORY_COMPLIANCE_DISCLOSURE}
+              <strong>SELF-HELP DISCLOSURE:</strong> {STATUTORY_COMPLIANCE_DISCLOSURE}
             </p>
             <p className="font-mono text-[10px] text-slate-500">
-              {UPL_COMPLIANCE_FOOTER_TEXT('DS-2026-OFFICIAL')}
+              {UPL_COMPLIANCE_FOOTER_TEXT('DS-2026-DEMO')}
             </p>
           </div>
 
           <div className="text-[11px] font-sans text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>&copy; 2026 Western Amalgamated. All rights reserved.</span>
-            <span>Printed &amp; Dispatched via U.S. Postal Service®</span>
+            <span>Postal status is shown when available from the provider.</span>
           </div>
         </div>
       </footer>

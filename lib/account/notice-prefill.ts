@@ -1,4 +1,5 @@
 import type { SavedAddress, MailingAddress } from "@/lib/types";
+import { getNoticeBySlug } from "@/src/lib/docket/notices";
 
 export interface NoticePrefillInput {
   noticeSlug: string;
@@ -39,6 +40,9 @@ export async function stageNoticePrefill(
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.noticeSlug)) {
     throw new NoticePrefillStageError("Choose a supported notice before continuing.");
   }
+  const notice = getNoticeBySlug(input.noticeSlug);
+  if (!notice) throw new NoticePrefillStageError("Choose a supported notice before continuing.");
+  const canonicalSlug = notice.slug;
 
   const recipient = input.recipient;
   const sender = input.sender;
@@ -94,7 +98,7 @@ export async function stageNoticePrefill(
   const stageId = data?.stageId;
   const responseSlug = data?.noticeSlug;
   const reviewUrl = data?.reviewUrl;
-  if (typeof stageId !== "string" || !/^DS-STAGE-[A-F0-9]{32}$/.test(stageId) || responseSlug !== input.noticeSlug || typeof reviewUrl !== "string") {
+  if (typeof stageId !== "string" || !/^DS-STAGE-[A-F0-9]{32}$/.test(stageId) || responseSlug !== canonicalSlug || typeof reviewUrl !== "string") {
     throw new NoticePrefillStageError("The saved draft response was invalid. Please retry.");
   }
 
@@ -107,7 +111,7 @@ export async function stageNoticePrefill(
     throw new NoticePrefillStageError("The saved draft returned an unexpected review route.");
   }
 
-  const expectedPath = `/notices/${input.noticeSlug}`;
+  const expectedPath = `/notices/${canonicalSlug}`;
   const params = [...parsedUrl.searchParams.entries()];
   if (parsedUrl.pathname !== expectedPath || parsedUrl.hash || params.length !== 1 || params[0][0] !== "stage" || params[0][1] !== stageId) {
     throw new NoticePrefillStageError("The saved draft returned an unexpected review route.");

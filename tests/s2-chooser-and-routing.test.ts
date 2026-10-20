@@ -79,58 +79,58 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
 
       const expected = [
         {
-          slug: 'security-deposit-return-demand-letter',
+          slug: 'security-deposit-accounting-request',
           promptSlug: 'security-deposit-return-demand-letter',
-          displayTitle: 'Request a security deposit return',
-          subtitle: 'Demand letter to a landlord or property manager',
+          displayTitle: 'Request deposit accounting and any balance due',
+          subtitle: 'Ask for an itemized security-deposit accounting and any balance you believe remains due.',
         },
         {
-          slug: 'fcra-credit-bureau-written-dispute-letter',
+          slug: 'credit-report-dispute-request',
           promptSlug: 'credit-bureau-dispute-letter-fcra-611',
-          displayTitle: 'Dispute a credit-report error',
-          subtitle: 'Written dispute for Equifax, Experian, or TransUnion',
+          displayTitle: 'Dispute a credit-report item',
+          subtitle: 'Request review of an item you identify as inaccurate.',
         },
         {
-          slug: 'fdcpa-30-day-debt-validation-letter',
+          slug: 'debt-dispute-information-request',
           promptSlug: 'debt-validation-demand-letter-fdcpa-809',
-          displayTitle: 'Request debt verification',
-          subtitle: 'Written validation request within the federal notice window',
+          displayTitle: 'Request information about a disputed debt',
+          subtitle: 'General request for balance review and account information.',
         },
         {
-          slug: 'written-contract-and-policy-cancellation-letter',
+          slug: 'service-cancellation-request',
           promptSlug: 'contract-membership-cancellation-notice',
-          displayTitle: 'Cancel a service or policy',
-          subtitle: 'Notice for security, telecom, pest control, warranty, or insurance accounts',
+          displayTitle: 'Request service or policy cancellation',
+          subtitle: 'Written request to cancel a named service or policy; account terms may require separate steps.',
         },
         {
           slug: 'tenant-repair-and-maintenance-notice',
           promptSlug: 'notice-of-intent-to-withhold-or-repair-and-deduct',
           displayTitle: 'Request repairs',
-          subtitle: 'Formal repair notice to a landlord or property manager',
+          subtitle: 'Request inspection or maintenance from a landlord or property manager.',
         },
         {
           slug: 'tenant-notice-of-intent-to-vacate',
           promptSlug: 'lease-termination-non-renewal-notice',
           displayTitle: 'Give move-out notice',
-          subtitle: 'Written move-out or non-renewal notice',
+          subtitle: 'Written notice describing your current plan to move out.',
         },
         {
-          slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
+          slug: 'product-complaint-refund-request',
           promptSlug: 'smart-device-degraded-functionality-refund-demand',
-          displayTitle: 'Request a refund for changed product features',
-          subtitle: 'Notice for connected hardware after a software or policy change',
+          displayTitle: 'Request a product or service review and refund',
+          subtitle: 'General complaint and refund request; it does not invoke an agreement-specific dispute process.',
         },
         {
-          slug: '30-day-mandatory-arbitration-opt-out-notice',
+          slug: 'arbitration-opt-out-procedure-request',
           promptSlug: 'arbitration-opt-out-notice-30-day',
-          displayTitle: 'Send an arbitration opt-out notice',
-          subtitle: '30-day written opt-out notice after new account or terms',
+          displayTitle: 'Ask about arbitration terms and opt-out steps',
+          subtitle: 'Request the agreement and any procedure; the letter does not exercise an opt-out.',
         },
         {
-          slug: 'statutory-health-and-biometric-data-deletion-demand',
+          slug: 'personal-data-deletion-request',
           promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
-          displayTitle: 'Request deletion of personal data',
-          subtitle: 'Formal privacy deletion and opt-out request',
+          displayTitle: 'Ask a company to review a data-deletion request',
+          subtitle: 'General account-related request; privacy-law eligibility and process are not determined.',
         },
       ];
 
@@ -163,13 +163,17 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
     });
 
     it('indexes all aliases so direct lookup never fails', () => {
-      const fcraMeta = CHOOSER_METADATA_BY_SLUG['credit-bureau-dispute-letter-fcra-611'];
-      assert.ok(fcraMeta);
-      assert.equal(fcraMeta.slug, 'fcra-credit-bureau-written-dispute-letter');
-
-      const depositMeta = CHOOSER_METADATA_BY_SLUG['security-deposit-return-demand-letter'];
-      assert.ok(depositMeta);
-      assert.equal(depositMeta.displayTitle, 'Request a security deposit return');
+      for (const notice of ALL_NOTICE_CARTRIDGES) {
+        const meta = getLetterMetadata(notice.slug);
+        assert.ok(meta, `Chooser metadata must resolve canonical slug ${notice.slug}`);
+        assert.equal(meta.slug, notice.slug);
+        assert.equal(normalizeToCanonicalSlug(notice.slug), notice.slug);
+        for (const alias of notice.aliases || []) {
+          assert.equal(getNoticeBySlug(alias), notice, `Template alias ${alias} must resolve`);
+          assert.equal(getLetterMetadata(alias)?.slug, notice.slug, `Chooser alias ${alias} must normalize`);
+          assert.equal(normalizeToCanonicalSlug(alias), notice.slug, `Alias ${alias} must route canonically`);
+        }
+      }
     });
   });
 
@@ -178,7 +182,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       const res = searchChooser('deposit return');
       assert.equal(res.isFitnessBlocked, false);
       assert.ok(res.letters.length >= 1, 'Should match at least 1 letter');
-      assert.equal(res.letters[0].slug, 'security-deposit-return-demand-letter');
+      assert.equal(res.letters[0].slug, 'security-deposit-accounting-request');
       assert.equal(res.companies.length, 0, 'No companies should match deposit return');
     });
 
@@ -187,7 +191,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       assert.equal(res.isFitnessBlocked, false);
 
       const hasFcraLetter = res.letters.some(
-        (l) => l.slug === 'fcra-credit-bureau-written-dispute-letter'
+        (l) => l.slug === 'credit-report-dispute-request'
       );
       assert.ok(hasFcraLetter, 'Must match FCRA credit dispute letter');
 
@@ -200,7 +204,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       assert.equal(res.isFitnessBlocked, false);
 
       const hasHardwareLetter = res.letters.some(
-        (l) => l.slug === 'pre-arbitration-notice-of-dispute-and-refund-request'
+        (l) => l.slug === 'product-complaint-refund-request'
       );
       assert.ok(hasHardwareLetter, 'Must match hardware refund letter');
 
@@ -225,9 +229,9 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       assert.equal(hardwareRecipients.length, 8, 'Must have exactly 8 hardware recipients');
 
       const expectedCompatibleSlugs = [
-        'pre-arbitration-notice-of-dispute-and-refund-request',
-        '30-day-mandatory-arbitration-opt-out-notice',
-        'statutory-health-and-biometric-data-deletion-demand',
+        'product-complaint-refund-request',
+        'arbitration-opt-out-procedure-request',
+        'personal-data-deletion-request',
       ];
 
       for (const recipient of hardwareRecipients) {
@@ -260,15 +264,15 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       assert.equal(HARDWARE_OEM_PURPOSE_OPTIONS.length, 3);
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[0].label,
-        'Request a refund for changed product features'
+        'Request a product or service review and refund'
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[1].label,
-        'Send an arbitration opt-out notice'
+        'Ask about arbitration terms and opt-out steps'
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[2].label,
-        'Request deletion of personal data'
+        'Ask a company to review a data-deletion request'
       );
     });
   });
@@ -410,18 +414,18 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
   describe('7. Continuous Workspace URL Generation', () => {
     it('builds workspace URL with compatible recipient parameter', () => {
       const url = buildChooserWorkspaceUrl(
-        'fcra-credit-bureau-written-dispute-letter',
+        'credit-report-dispute-request',
         'cra_eqf'
       );
       assert.equal(
         url,
-        '/notices/fcra-credit-bureau-written-dispute-letter?recipientId=cra_eqf'
+        '/notices/credit-report-dispute-request?recipientId=cra_eqf'
       );
     });
 
     it('builds workspace URL without recipient when no recipient is selected', () => {
       const url = buildChooserWorkspaceUrl('security-deposit-return-demand-letter');
-      assert.equal(url, '/notices/security-deposit-return-demand-letter');
+      assert.equal(url, '/notices/security-deposit-accounting-request');
     });
 
     it('strips incompatible recipientId when paired with an incompatible letter', () => {
@@ -430,7 +434,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
         'security-deposit-return-demand-letter',
         'cra_eqf'
       );
-      assert.equal(url, '/notices/security-deposit-return-demand-letter');
+      assert.equal(url, '/notices/security-deposit-accounting-request');
     });
 
     it('normalizes prompt slug to canonical slug in URL', () => {
@@ -440,7 +444,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       );
       assert.equal(
         url,
-        '/notices/fcra-credit-bureau-written-dispute-letter?recipientId=cra_exp'
+        '/notices/credit-report-dispute-request?recipientId=cra_exp'
       );
     });
 

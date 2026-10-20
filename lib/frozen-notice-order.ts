@@ -22,6 +22,11 @@ export function validateFrozenNoticeOrder(order: Order): string | null {
     !Number.isFinite(evidence.lockedAt) ||
     !evidence.signatureAdoption.affirmationVersion
   ) return "SIGNATURE_ADOPTION_EVIDENCE_REQUIRED";
-  if (!order.documentHtml.includes("DOCKET RECORD & DISPATCH CERTIFICATION")) return "UPL_FOOTER_REQUIRED";
+  // New orders use a truthful preparation footer. Accept the old marker only
+  // for already-frozen historical snapshots that predate this wording change.
+  if (
+    !order.documentHtml.includes("DOCUMENT PREPARATION RECORD:") &&
+    !order.documentHtml.includes("DOCKET RECORD & DISPATCH CERTIFICATION")
+  ) return "UPL_FOOTER_REQUIRED";
   return null;
 }

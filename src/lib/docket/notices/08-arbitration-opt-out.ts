@@ -1,7 +1,5 @@
 /**
- * Cartridge 08: 30-Day Mandatory Arbitration & Class-Action Waiver Opt-Out Notice
- *
- * Conforms verbatim to Section 3 of docs/DOCKETSTAMP_AGENTIC_EXPANSION.md.
+ * Cartridge 08: Arbitration Terms and Opt-Out Procedure Request
  * Invariant 1: Strictly enforces assertNonFitnessEntity() on corporate recipient.
  */
 
@@ -28,25 +26,23 @@ export const arbitrationOptOutSchema = z.object({
 
 export const arbitrationOptOutNotice: NoticeTemplateDefinition = {
   id: '30-day-mandatory-arbitration-opt-out-notice',
-  slug: '30-day-mandatory-arbitration-opt-out-notice',
-  aliases: ['arbitration-opt-out', 'class-action-opt-out', '30-day-arbitration-opt-out'],
+  slug: 'arbitration-opt-out-procedure-request',
+  aliases: ['30-day-mandatory-arbitration-opt-out-notice', 'arbitration-opt-out', 'class-action-opt-out', '30-day-arbitration-opt-out', 'arbitration-opt-out-notice-30-day'],
   category: 'consumer_rights',
-  title: '30-Day Mandatory Arbitration & Class-Action Waiver Opt-Out Notice',
-  shortDescription: 'Formal timely written election opting out of mandatory binding arbitration and class-action waivers under updated consumer terms.',
-  documentHeaderTitle: 'FORMAL WRITTEN NOTICE OF OPT-OUT FROM ARBITRATION AND CLASS WAIVER',
-  reLineTemplate: 'RE: Timely Notice of Opt-Out from Mandatory Arbitration — {{productOrPlatformName}} ({{accountIdentifier}})',
+  title: 'Arbitration Terms and Opt-Out Procedure Request',
+  shortDescription: 'A general request for the agreement version and any opt-out steps. This letter does not itself exercise or confirm an opt-out, timeliness, or preservation of rights.',
+  documentHeaderTitle: 'REQUEST FOR ARBITRATION TERMS AND ANY OPT-OUT PROCEDURE',
+  reLineTemplate: 'RE: Request for Agreement Information — {{productOrPlatformName}} ({{accountIdentifier}})',
   recommendedTier: 'certified',
   recipientMode: 'verified_or_manual_corp',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Mandatory Arbitration Opt-Out Notice Letter | USPS Certified Mail | DocketStamp',
-    description: 'Exercise your right to opt out of mandatory binding arbitration and class-action waivers within 30 days of updated terms using tracked USPS Certified Mail.',
+    title: 'Arbitration Agreement Information Request | DocketStamp',
+    description: 'Request the agreement version associated with your account and information about any opt-out process. This form does not itself submit an opt-out.',
     targetKeywords: [
-      'arbitration opt out letter',
-      'opt out of mandatory arbitration notice',
-      'class action waiver opt out',
-      '30 day arbitration opt out notice',
-      'roku arbitration opt out letter',
+      'arbitration agreement information request',
+      'arbitration opt-out process information',
+      'request arbitration terms',
     ],
   },
   fields: [
@@ -66,8 +62,8 @@ export const arbitrationOptOutNotice: NoticeTemplateDefinition = {
       label: 'Company / Legal Department',
       docusignTagLabel: 'COMPANY / LEGAL DEPT',
       inputType: 'text',
-      placeholder: 'e.g., Roku, Inc. — General Counsel & Arbitration Opt-Out',
-      helperText: 'The official company name and legal address designated in the arbitration opt-out clause.',
+      placeholder: 'e.g., Roku, Inc. — Legal Department',
+      helperText: 'The company or contact for this information request. This does not confirm an agreement-required opt-out channel.',
       maxLength: 80,
     },
     {
@@ -77,7 +73,7 @@ export const arbitrationOptOutNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'COMPANY / PLATFORM NAME',
       inputType: 'text',
       placeholder: 'e.g., Roku Smart OS Platform',
-      helperText: 'The specific product, service, or platform whose arbitration clause you are opting out of.',
+      helperText: 'The product or service connected to the agreement you want the company to identify.',
       maxLength: 60,
     },
     {
@@ -93,18 +89,18 @@ export const arbitrationOptOutNotice: NoticeTemplateDefinition = {
     {
       key: 'termsEffectiveOrPurchaseDate',
       stepGroup: 'instrument_details',
-      label: 'Terms / Purchase Date',
-      docusignTagLabel: 'TERMS / PURCHASE DATE',
+      label: 'Date Associated with the Agreement',
+      docusignTagLabel: 'AGREEMENT DATE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'The date updated terms were published/accepted, or date device was acquired.',
+      helperText: 'The date you associate with the agreement, if known. It does not identify the agreement version or establish an opt-out period.',
       maxLength: 30,
     },
   ],
   zodSchema: arbitrationOptOutSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned consumer and account holder, {{senderFullName}}, hereby exercises the right to formally opt out of the mandatory binding arbitration provision and class-action waiver set forth in the Terms of Service or User Agreement governing {{productOrPlatformName}} (accepted or effective on {{termsEffectiveOrPurchaseDate}}).',
-    'ACCOUNT & DEVICE IDENTIFICATION: Consumer Name: {{senderFullName}} | Registered Account / Email / Device Identifier: {{accountIdentifier}} | Registered Mailing Address: {{senderFullAddress}}.',
-    'Please record this timely postmarked election in my permanent account file confirming that I retain all rights to resolve disputes before a court or regulatory agency of competent jurisdiction, and mail written confirmation of this opt-out registration to {{senderFullAddress}}.',
+    'I am writing about the agreement associated with {{productOrPlatformName}} and the account identifier {{accountIdentifier}}. The date I associate with the agreement is {{termsEffectiveOrPurchaseDate}}.',
+    'Please send me the agreement version associated with this account and explain any opt-out procedure, including its deadline, required submission channel, and scope, if an opt-out is available.',
+    'This is an information request only. It does not itself exercise an opt-out, establish that a deadline or required channel has been met, or determine which rights or procedures apply.',
   ],
 };

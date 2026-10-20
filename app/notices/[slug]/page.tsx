@@ -20,19 +20,19 @@ export async function generateMetadata({ params }: NoticePageProps): Promise<Met
   if (!notice) {
     return {
       title: 'Notice Not Found | DocketStamp',
-      description: 'The requested statutory notice template could not be located.',
+      description: 'The requested document-preparation template could not be located.',
     };
   }
 
   return {
-    title: `${notice.title} | USPS Certified Mail Dispatch | DocketStamp`,
+    title: `${notice.title} | USPS Mailing Options | DocketStamp`,
     description: notice.seoMeta.description || notice.shortDescription,
     keywords: notice.seoMeta.targetKeywords,
     alternates: {
       canonical: `https://docketstamp.com/notices/${notice.slug}`,
     },
     openGraph: {
-      title: `${notice.title} | DocketStamp Official Dispatch`,
+      title: `${notice.title} | DocketStamp`,
       description: notice.seoMeta.description || notice.shortDescription,
       url: `https://docketstamp.com/notices/${notice.slug}`,
       siteName: 'DocketStamp',

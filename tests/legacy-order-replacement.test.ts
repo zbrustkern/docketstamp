@@ -40,6 +40,7 @@ const userValues = {
   depositAmount: "$1,500.00",
   amountReceivedToDate: "$0.00",
   balanceRequested: "$1,500.00",
+  basisForRequest: "My records show I paid the deposit and have received no refund.",
   responseDays: "14 calendar days",
 };
 

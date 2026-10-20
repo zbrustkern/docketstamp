@@ -52,6 +52,7 @@ describe('Docket lock route input boundary', () => {
             depositAmount: '$1,500.00',
             amountReceivedToDate: '$0.00',
             balanceRequested: '$1,500.00',
+            basisForRequest: 'My records show the deposit was paid and no refund has been received.',
             responseDays: '7 calendar days',
             senderAddressLine1: '42 Current Street',
             senderAddressLine2: 'Apartment 6A',
@@ -88,14 +89,15 @@ describe('Docket lock route input boundary', () => {
       const result = JSON.parse(responseText);
       const order = await getOrderById(result.orderId);
       assert.ok(order?.documentHtml);
-      assert.match(order.documentHtml!, /Ind\. Code § 32-31-3-12/);
-      assert.match(order.documentHtml!, /45 days/);
+      assert.doesNotMatch(order.documentHtml!, /Ind\. Code §|45 days/);
+      assert.match(order.documentHtml!, /My records show the deposit was paid/);
       assert.match(order.documentHtml!, /88 Rental Lane, Unit 2, Carmel, IN 46032/);
-      assert.match(order.documentHtml!, /42 Current Street, Apartment 6A, Indianapolis, IN 46204/);
       assert.doesNotMatch(order.documentHtml!, /USER SUPPLIED CITATION|one hour|guaranteed treble damages|untrusted field/);
       assert.equal(order.returnAddress.street1, '42 Current Street');
       assert.equal(order.returnAddress.street2, 'Apartment 6A');
+      assert.equal(order.returnAddress.city, 'Indianapolis');
       assert.equal(order.returnAddress.state, 'IN');
+      assert.equal(order.returnAddress.zip, '46204');
       assert.equal(order.recipientAddress.street2, 'Suite 300');
     } finally {
       for (const [key, value] of original) {

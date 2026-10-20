@@ -683,6 +683,28 @@
       "owner": "order compatibility",
       "reason": "Exact legacy-provider field/status read, truthful historical label, explicit retired-route response, or rejection guard. New dispatch writes remain canonical Lob-only.",
       "retirement": "Retire only after historical data/read callers are reconciled and provider-proof access remains truthful; keep explicit denial guards as regression policy."
+    },
+    {
+      "id": "reviewed-compatibility-063",
+      "file": "app/docket/[docketId]/page.tsx",
+      "category": "provider",
+      "match": "^(?:HANDWRYTTEN)$",
+      "context": "^'PAYMENT_RECEIVED', 'DISPATCHING', 'PROCESSING_HANDWRYTTEN',$",
+      "maxMatches": 1,
+      "owner": "order compatibility",
+      "reason": "Historical processing status is retained for read-only order status compatibility; the page presents provider submission and postal events separately.",
+      "retirement": "Retire after historical order statuses and readers are migrated; do not remove compatibility before persisted records are reconciled."
+    },
+    {
+      "id": "reviewed-compatibility-064",
+      "file": "app/docket/[docketId]/page.tsx",
+      "category": "provider",
+      "match": "^(?:HANDWRYTTEN)$",
+      "context": "^order.status === 'PROCESSING_HANDWRYTTEN' \\|\\|$",
+      "maxMatches": 1,
+      "owner": "order compatibility",
+      "reason": "Historical processing status is retained for read-only order status compatibility; the page presents provider submission and postal events separately.",
+      "retirement": "Retire after historical order statuses and readers are migrated; do not remove compatibility before persisted records are reconciled."
     }
   ]
 }

@@ -84,7 +84,7 @@ describe('bounded address intake', () => {
     });
 
     assert.equal(validation.isValid, false);
-    assert.match(validation.fieldErrors.senderAddressLine1, /sender street address/i);
+    assert.match(validation.fieldErrors.senderAddressLine1, /sender mailing street address/i);
   });
 
   it('renders the rental address before sender and recipient, with separate roles and forwarding address', () => {
@@ -148,7 +148,7 @@ describe('bounded address intake', () => {
     assert.match(html, /aria-label="sender mailing street address"[^>]*value="1 Return Road"/);
     assert.match(html, /aria-label="sender mailing unit, apartment, or suite"[^>]*value="Unit 7"/);
     assert.match(html, /aria-label="recipient destination street address"[^>]*value="9 Recipient Avenue"/);
-    assert.match(html, /Where the landlord must remit your security deposit refund and accounting[\s\S]*sender mailing \/ return address/);
+    assert.match(html, /Enter the rental location for this notice[\s\S]*separate from your sender mailing address[\s\S]*Sender &amp; Return Address/);
   });
 
   it('treats ZIP results as user-confirmed suggestions and preserves manual or restored city/state', () => {

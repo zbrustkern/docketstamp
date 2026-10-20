@@ -5,10 +5,10 @@
  *
  * Implements Sprint S5 conforming to Sections 7.7, 7.8, 8, 9, and 10 of
  * docs/DOCKETSTAMP_HOME_CONVERSION_DESIGN_SPEC.md:
- * - One labeled delivery tier selector (Choose USPS delivery speed & tracking, role="radiogroup")
+ * - One labeled USPS mailing-service selector (role="radiogroup")
  * - 3-tier pricing model from DOCKET_PRICING_TIERS ($12.95 First-Class, $19.95 Certified, $27.95 Certified + Return Receipt)
- * - Optional recommendation badge on Certified Mail ("Recommended for formal notices")
- * - Accurate action button copy: "Continue to payment — $X" (Step 1) vs "Pay $X and send letter" (Step 2)
+ * - Service options without delivery-time or legal-proof guarantees
+ * - Action button copy distinguishes payment from later mailing-provider events
  * - Accessible dialog semantics: role="dialog", aria-modal="true", Escape key handling, focus return
  * - Error preservation: failed initialization/payment preserves email, tier, and draft values
  * - Safe lock invalidation: tier or draft content changes invalidate previous clientSecret and create fresh lock
@@ -218,7 +218,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     e.preventDefault();
     const cleanEmail = email.trim();
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setErrorMessage('Please enter a valid email address for delivery and tracking notifications.');
+      setErrorMessage('Please enter a valid email address for order information.');
       return;
     }
 
@@ -374,26 +374,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Modal Header */}
             <div>
               <div className="text-[10px] font-mono text-sky-400 font-bold uppercase tracking-wider mb-0.5">
-                DOCKET RECORD: {lockedAttempt?.docketId || doc.docketId}
+                ORDER REFERENCE: {lockedAttempt?.docketId || doc.docketId}
               </div>
               <h2 id="checkout-modal-title" className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                Choose USPS delivery speed & tracking
+                Choose a USPS mailing service
               </h2>
               <p id="checkout-modal-desc" className="text-xs text-slate-400 mt-0.5 leading-snug">
-                Choose your USPS delivery speed and tracking level. All letters are printed on single-page 8.5&quot; × 11&quot; paper and deposited directly into the USPS mailstream.
+                Select the mailing service for this order. Delivery time, tracking, and available postal records depend on USPS and provider updates.
               </p>
             </div>
 
             {/* Delivery Tiers (role="radiogroup") */}
             <div
               role="radiogroup"
-              aria-label="Choose USPS delivery speed & tracking"
+              aria-label="Choose USPS mailing service"
               className="space-y-2"
             >
               {(Object.keys(DOCKET_PRICING_TIERS) as MailTierId[]).map((tierId) => {
                 const meta = DOCKET_PRICING_TIERS[tierId];
                 const isSelected = selectedTier === tierId;
-                const isRecommended = tierId === 'certified';
 
                 return (
                   <div
@@ -438,17 +437,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                     <p className="text-xs text-slate-400 pl-6 leading-snug">
                       {tierId === 'first_class'
-                        ? 'Standard 8.5x11 First-Class delivery with USPS Intelligent Mail barcode routing.'
+                        ? 'USPS First-Class Mail; tracking information may be limited.'
                         : tierId === 'certified'
-                        ? 'Official USPS Certified Mail barcode tracking and postal acceptance scan proof.'
-                        : 'USPS Certified Mail tracking plus electronic return receipt signature record after delivery.'}
+                        ? 'USPS Certified Mail; tracking and postal records appear when available.'
+                        : 'USPS Certified Mail with an Electronic Return Receipt request; any returned record appears when available.'}
                     </p>
-
-                    {isRecommended && (
-                      <span className="mt-1.5 ml-6 inline-block text-[9px] font-mono bg-sky-950 text-sky-300 border border-sky-800 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
-                        Recommended for formal notices
-                      </span>
-                    )}
                   </div>
                 );
               })}
@@ -460,7 +453,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 htmlFor="checkout-email"
                 className="text-xs font-semibold text-slate-200 block mb-1"
               >
-                Where should we send your receipt and tracking updates?
+                Where should we send your order email?
               </label>
               <input
                 id="checkout-email"
@@ -477,7 +470,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500"
               />
               <span className="text-[10.5px] text-slate-400 block mt-0.5">
-                USPS tracking number, acceptance scan proof, and certificate of mailing will be dispatched to this address.
+                We use this email for order information and any status message sent by the provider.
               </span>
             </div>
 
@@ -508,13 +501,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               )}
               <div className="flex justify-between items-center gap-3">
-                <span className="text-slate-400">Delivery Speed:</span>
+                <span className="text-slate-400">Mailing Service:</span>
                 <span className="text-right text-slate-200 font-medium">
                   {currentTierMeta.name}
                 </span>
               </div>
               <div className="border-t border-slate-800/80 pt-1 flex justify-between items-center text-sm">
-                <span className="font-bold text-white">Total USPS Fulfillment:</span>
+                <span className="font-bold text-white">Total:</span>
                 <span className="font-bold text-sky-400 font-mono text-base">
                   {currentTierMeta.formattedPrice}
                 </span>
@@ -585,10 +578,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Payment Confirmed
               </div>
               <h2 id="checkout-modal-title" className="text-xl font-bold text-white tracking-tight">
-                Submitted for Mailing
+                Order recorded
               </h2>
               <p id="checkout-modal-desc" className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Clerk&apos;s Docket Record <strong className="font-mono text-white">{lockedAttempt.docketId}</strong> has been frozen and queued for physical delivery. Receipt and tracking updates dispatched to <strong className="text-white">{email}</strong>.
+                Payment confirmation is recorded for order <strong className="font-mono text-white">{lockedAttempt.docketId}</strong>. See the order record for processing and postal updates when available. Payment confirmation does not establish USPS acceptance or delivery.
               </p>
             </div>
 
@@ -607,15 +600,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </div>
 
-              {/* Status 2: Mailing submission */}
+              {/* Status 2: Fulfillment status */}
               <div className="p-3.5 bg-slate-950/70 border border-sky-500/30 rounded-lg flex items-start gap-3">
                 <Clock className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                 <div>
                   <div className="text-xs font-bold text-sky-300 font-mono">
-                    2. Submitted for Mailing
+                    2. Order processing
                   </div>
                   <div className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                    Transmitted to USPS physical print and dispatch pipeline. Formatted to single-page 8.5&quot; × 11&quot; geometry with Lob clear zones preserved.
+                    Check the order record for current processing status. Payment confirmation does not establish postal-provider submission.
                   </div>
                 </div>
               </div>
@@ -625,14 +618,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <Truck className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                 <div>
                   <div className="text-xs font-bold text-slate-300 font-mono">
-                    3. Postal Tracking & Proof
+                    3. Provider updates and records
                   </div>
                   <div className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
                     {selectedTier === 'certified_return_receipt'
-                      ? 'USPS Certified Mail tracking activates upon post office acceptance scan. Electronic Return Receipt signature PDF is generated by the USPS carrier after delivery.'
+                      ? 'Tracking and Electronic Return Receipt records are shown if the postal provider supplies them.'
                       : selectedTier === 'certified'
-                      ? 'USPS Certified Mail tracking identifier will activate upon initial post office acceptance scan proof.'
-                      : 'USPS Intelligent Mail barcode routing activates upon carrier intake.'}
+                      ? 'Tracking and acceptance records are shown if the postal provider supplies them.'
+                      : 'Available First-Class Mail status information may be limited.'}
                   </div>
                 </div>
               </div>
@@ -658,7 +651,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 href={`/docket/${lockedAttempt.docketId}`}
                 className="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider font-mono transition shadow-lg flex items-center justify-center gap-1.5"
               >
-                <span>View Docket Record</span>
+                <span>View order status</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
@@ -939,7 +932,7 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
               <span>Processing payment...</span>
             </>
           ) : (
-            <span>Pay {currentTierMeta.formattedPrice} and send letter</span>
+            <span>Pay {currentTierMeta.formattedPrice} and submit order</span>
           )}
         </button>
       </div>
@@ -1124,7 +1117,7 @@ const FallbackSimulatedPaymentForm: React.FC<PaymentStepFormProps> = ({
               <span>Processing payment...</span>
             </>
           ) : (
-            <span>Pay {currentTierMeta.formattedPrice} and send letter</span>
+            <span>Pay {currentTierMeta.formattedPrice} and submit order</span>
           )}
         </button>
       </div>

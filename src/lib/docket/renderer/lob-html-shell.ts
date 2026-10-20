@@ -1,12 +1,11 @@
 /**
- * Lob 8.5" x 11" Physical Letter HTML/CSS Print Shell
+ * Lob 8.5" x 11" notice HTML/CSS print shell
  *
- * Implements the exact 1-page court-ready geometry specified in Section 9 of
- * docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md:
- * - 0in to 1.80in top clear zone for USPS Certified Mail banner and window envelopes
- * - Top-Right Clerk's Docket Stamp box at top: 1.85in; right: 0.60in; width: 3.15in
+ * Implements the print geometry currently used by the notice renderer:
+ * - 0in to 1.80in top clear zone for the selected mailing-service banner and window envelopes
+ * - Top-Right DocketStamp preparation record at top: 1.85in; right: 0.60in; width: 3.15in
  * - Letter body container starting strictly at top: 3.35in; left: 0.75in; right: 0.75in
- * - Signature block with /s/ Full Name electronic signature line
+ * - Signature block with a typed signature line
  * - Locked 6.8pt UPL compliance footer at bottom: 0.40in
  */
 
@@ -30,7 +29,7 @@ function escapeHtml(str: string): string {
 }
 
 /**
- * Generates the self-contained 1-page 8.5in x 11in HTML string for Lob /v1/letters
+ * Generates the self-contained 8.5in x 11in HTML string for Lob /v1/letters
  */
 export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
   const safeDocketId = escapeHtml(doc.docketId);
@@ -71,7 +70,7 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
     background: #FFFFFF;
     overflow: hidden;
   }
-  /* Top-Right Clerk's Docket Stamp Box (Clears left window & top certified banner) */
+  /* Top-Right preparation record box (Clears left window & top service banner) */
   .docket-stamp-box {
     position: absolute;
     top: 1.85in;
@@ -158,13 +157,13 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
 </style>
 </head>
 <body>
-  <!-- Top-Right Clerk's Docket Stamp Box -->
+  <!-- Top-Right DocketStamp Preparation Record -->
   <div class="docket-stamp-box">
-    <div class="docket-stamp-header">DOCKETSTAMP™ OFFICIAL DISPATCH REGISTRY</div>
+    <div class="docket-stamp-header">DOCKETSTAMP™ PREPARATION RECORD</div>
     <div><strong>DOCKET ID:</strong>  ${safeDocketId}</div>
-    <div><strong>FILED UTC:</strong>  ${safeTimestamp}</div>
-    <div><strong>DISPATCH:</strong>   ${safeTier}</div>
-    <div><strong>ROUTING:</strong>    ${safeCassStatus}</div>
+    <div><strong>PREPARED UTC:</strong>  ${safeTimestamp}</div>
+    <div><strong>MAILING SERVICE:</strong>   ${safeTier}</div>
+    <div><strong>ADDRESS STATUS:</strong>    ${safeCassStatus}</div>
   </div>
 
   <!-- Letter Body Content Zone -->
@@ -177,9 +176,9 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
       ${paragraphsHtml}
     </div>
 
-    <!-- Formal Signature Block -->
+    <!-- Typed Signature Block -->
     <div class="signature-block">
-      <div style="font-size: 9pt;">Respectfully submitted,</div>
+      <div style="font-size: 9pt;">Sincerely,</div>
       <div class="signature-line">${safeFormalSig}</div>
       <div style="font-size: 8pt; color: #475569;">
         ${safeSigner} &bull; Executed on ${safeExecDate} &bull; Docket ID: ${safeDocketId}
@@ -189,7 +188,7 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
     ${enclosuresHtml}
   </div>
 
-  <!-- Locked UPL Compliance Footer (0.40in from bottom) -->
+  <!-- UPL Compliance Footer (0.40in from bottom) -->
   <div class="compliance-footer">
     ${UPL_COMPLIANCE_FOOTER_TEXT(doc.docketId)}
   </div>

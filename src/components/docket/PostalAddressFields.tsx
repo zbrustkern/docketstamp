@@ -337,7 +337,7 @@ export const PostalAddressFields: React.FC<PostalAddressFieldsProps> = ({
               </p>
               {role === 'rentalProperty' && (
                 <p className="mt-1 text-[10px] leading-snug text-slate-400">
-                  Using this suggestion also sets the property state used in state-specific notice details. Verify it before continuing.
+                  Using this suggestion also fills the property-address state. It does not determine which law applies; verify the address before continuing.
                 </p>
               )}
             </div>

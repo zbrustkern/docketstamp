@@ -3,7 +3,7 @@
  *
  * Verifies:
  * 1. interpolateNotice() pure deterministic AST and token generation.
- * 2. renderLobHtmlPayload() exact 1-page 8.5in x 11in geometry, Clerk Docket Stamp box,
+ * 2. renderLobHtmlPayload() 8.5in x 11in geometry, preparation-record box,
  *    and locked UPL compliance footer.
  * 3. verifyUsAddress() CASS verification behavior with staging mock fallback.
  * 4. dispatchDocketLetter() mapping:
@@ -70,7 +70,7 @@ describe('WP-2 Verification Gate', () => {
       assert.equal(doc1.docketId, 'DS-2026-STATIC1-IL');
     });
 
-    it('injects statutory citations and deadlines for Notice #2 when usesStateStatuteLookup is true', () => {
+    it('keeps uncollected state-law prerequisites and deadlines out of the deposit request', () => {
       const userValues = {
         senderFullName: 'Marcus Vance',
         recipientFormalName: 'Oakridge Properties Inc.',
@@ -80,6 +80,7 @@ describe('WP-2 Verification Gate', () => {
         depositAmount: '$2,500.00',
         amountReceivedToDate: '$0.00',
         balanceRequested: '$2,500.00',
+        basisForRequest: 'My records show I paid this deposit and have received no refund.',
         responseDays: '10 business days',
       };
 
@@ -89,10 +90,11 @@ describe('WP-2 Verification Gate', () => {
         docketId: 'DS-2026-CA001-CA',
       });
 
-      // California: Cal. Civ. Code § 1950.5(g) and 21 calendar days
-      assert.ok(doc.reLine.includes('Cal. Civ. Code § 1950.5'));
-      assert.ok(doc.rawParagraphs.some((p) => p.includes('Cal. Civ. Code § 1950.5')));
-      assert.ok(doc.rawParagraphs.some((p) => p.includes('21 calendar days')));
+      assert.equal(securityDepositNotice.usesStateStatuteLookup, false);
+      assert.ok(!doc.reLine.includes('Cal. Civ. Code'));
+      assert.ok(!doc.rawParagraphs.some((p) => p.includes('Cal. Civ. Code')));
+      assert.ok(!doc.rawParagraphs.some((p) => p.includes('21 calendar days')));
+      assert.ok(doc.rawParagraphs.some((p) => p.includes('requested response period, not a legal deadline')));
     });
 
     it('formats unfilled variables as DocuSign-style tokens with isFilled: false', () => {
@@ -150,11 +152,13 @@ describe('WP-2 Verification Gate', () => {
       assert.ok(html.includes('width: 8.5in;'));
       assert.ok(html.includes('height: 11in;'));
 
-      // 2. Clerk Docket Stamp Box coordinates
+      // 2. Preparation record box coordinates
       assert.ok(html.includes('top: 1.85in;'));
       assert.ok(html.includes('right: 0.60in;'));
       assert.ok(html.includes('width: 3.15in;'));
-      assert.ok(html.includes('DOCKETSTAMP™ OFFICIAL DISPATCH REGISTRY'));
+      assert.ok(html.includes('DOCKETSTAMP™ PREPARATION RECORD'));
+      assert.ok(html.includes('PREPARED UTC'));
+      assert.ok(!html.includes('OFFICIAL DISPATCH REGISTRY'));
       assert.ok(html.includes('DS-2026-GEO001-OR'));
       assert.ok(html.includes('USPS CERTIFIED + RETURN RECEIPT'));
 
@@ -169,7 +173,7 @@ describe('WP-2 Verification Gate', () => {
 
       // 5. UPL Statutory Footer at 0.40in bottom
       assert.ok(html.includes('bottom: 0.40in;'));
-      assert.ok(html.includes('DOCKET RECORD & DISPATCH CERTIFICATION: Prepared and dispatched via DocketStamp.com'));
+      assert.ok(html.includes('DOCUMENT PREPARATION RECORD: Prepared by DocketStamp.com'));
       assert.ok(html.includes('DS-2026-GEO001-OR'));
       assert.ok(html.includes('not a law firm'));
       assert.ok(html.includes('legal representation'));
@@ -199,6 +203,7 @@ describe('WP-2 Verification Gate', () => {
           depositAmount: '$1,800.00',
           amountReceivedToDate: '$0.00',
           balanceRequested: '$1,800.00',
+          basisForRequest: 'My records show the deposit was paid and no refund has been received.',
           responseDays: '14 calendar days',
         };
         const docketId = 'DS-2026-ABC123';
@@ -235,10 +240,10 @@ describe('WP-2 Verification Gate', () => {
         assert.equal(order.docketId, docketId);
 
         // The route and the interactive review fixture use the same interpolation
-        // function. Ignore the generated FILED UTC timestamp, which is intentionally
+        // function. Ignore the generated PREPARED UTC timestamp, which is intentionally
         // fresh on each render, and compare the remaining print payload exactly.
         const withoutTimestamp = (html: string) => html.replace(
-          /(<strong>FILED UTC:<\/strong>\s*)[^<]+/,
+          /(<strong>PREPARED UTC:<\/strong>\s*)[^<]+/,
           '$1[TIMESTAMP]'
         );
         assert.equal(withoutTimestamp(order.documentHtml), withoutTimestamp(previewHtml));
