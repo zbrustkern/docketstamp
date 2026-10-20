@@ -143,5 +143,4 @@ export const biometricPrivacyDeletionNotice: NoticeTemplateDefinition = {
     'Pursuant to {{applicablePrivacyFramework}}, I formally request the complete and permanent deletion of all personal, telemetry, health, and biometric records linked to {{accountEmailOrId}} across your production databases, analytics warehouses, and third-party data processors.',
     'Please immediately cease all promotional communications tied to my device usage and mail written certification confirming complete data erasure to {{senderFullAddress}} within the applicable statutory response period.',
   ],
-  enclosuresLine: 'Enclosure: Formal Identity Verification Statement & Account Record Reference',
 };

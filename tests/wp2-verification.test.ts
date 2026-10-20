@@ -112,6 +112,17 @@ describe('WP-2 Verification Gate', () => {
       assert.equal(moveOutToken.isFilled, false);
       assert.equal(moveOutToken.docusignTagLabel, 'VACATE DATE');
     });
+
+    it('does not claim address verification unless the dispatch workflow supplies it', () => {
+      const doc = interpolateNotice({
+        notice: intentToVacateNotice,
+        userValues: { senderFullName: 'Alex Rivera' },
+        docketId: 'DS-2026-ADDRESS-STATUS',
+      });
+
+      assert.equal(doc.clerkStamp.cassStatus, 'ADDRESS VERIFICATION NOT CONFIRMED');
+      assert.doesNotMatch(renderLobHtmlPayload(doc), /CASS™ VERIFIED/);
+    });
   });
 
   describe('2. Lob 8.5x11 Single-Page HTML Shell Geometry', () => {

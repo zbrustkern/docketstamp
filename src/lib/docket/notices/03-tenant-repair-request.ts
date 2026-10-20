@@ -147,5 +147,4 @@ export const tenantRepairNotice: NoticeTemplateDefinition = {
     'This condition materially affects the normal residential use and maintenance of the premises. Regarding contractor or maintenance access to inspect and remedy this condition: {{accessAuthorization}}.',
     'Please provide written confirmation within five (5) business days of the scheduled inspection and repair date so that an accurate maintenance record may be maintained by all parties.',
   ],
-  enclosuresLine: 'Enclosure: Photographic Documentation of Reported Defect',
 };

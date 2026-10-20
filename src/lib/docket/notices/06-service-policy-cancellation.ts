@@ -134,5 +134,4 @@ export const serviceCancellationNotice: NoticeTemplateDefinition = {
     'Please process this termination effective as of {{effectiveCancellationDate}}, and permanently revoke all recurring automatic billing authorizations (ACH, debit, or credit card drafts) connected to this account following the effective cancellation date.',
     'Should any pro-rated unearned premium refund or final closing statement apply to Account/Policy Number {{accountOrPolicyNumber}}, please remit the balance and written confirmation of account closure to {{senderFullAddress}}.',
   ],
-  enclosuresLine: 'Enclosure: Written Revocation of Recurring Billing Authorization',
 };

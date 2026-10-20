@@ -164,5 +164,4 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
     'This post-purchase modification or restriction materially diminishes the core functionality and bargained-for value of {{productOrServiceName}} as represented at the time of purchase.',
     'REQUESTED RESOLUTION: To resolve this matter amicably prior to the filing of formal consumer arbitration or small claims proceedings, please remit a full refund/settlement in the amount of {{requestedResolutionAmount}} (or confirm permanent restoration of the affected functionality without recurring fees) to {{senderFullName}} at {{senderFullAddress}} within thirty (30) days of receipt of this notice.',
   ],
-  enclosuresLine: 'Enclosure: Proof of Purchase & Contemporaneous Product Documentation',
 };

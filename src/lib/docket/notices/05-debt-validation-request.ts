@@ -132,5 +132,4 @@ export const debtValidationNotice: NoticeTemplateDefinition = {
     'Please provide documentary verification of this obligation, including: (a) the name and address of the original creditor; (b) an itemized accounting of the principal balance and any interest or fees assessed; and (c) documentation establishing your organization\'s legal authority to collect this alleged obligation.',
     'Pursuant to 15 U.S.C. § 1692g(b), please cease collection activities on this disputed account until written verification is mailed to {{senderFullAddress}}. Furthermore: {{communicationPreference}}.',
   ],
-  enclosuresLine: 'Enclosure: Copy of Initial Collection Communication (Front Page)',
 };

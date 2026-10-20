@@ -139,6 +139,31 @@ describe('1. Master Notice Cartridge Registry Integrity (Cartridges 01–09)', (
       }
     }
   });
+
+  it('does not claim unprovided attachments and grounds tenant statements in entered facts', () => {
+    for (const cartridge of ALL_NOTICE_CARTRIDGES) {
+      assert.equal(
+        'enclosuresLine' in cartridge,
+        false,
+        `${cartridge.slug} must not list attachments that DocketStamp does not collect`,
+      );
+      assert.ok(
+        cartridge.bodyParagraphs.every((paragraph) => !/\benclosures?\s*:/i.test(paragraph)),
+        `${cartridge.slug} must not assert that an attachment is enclosed`,
+      );
+    }
+
+    assert.match(
+      intentToVacateNotice.bodyParagraphs[1],
+      /intend for the tenancy to conclude.*{{moveOutDate}}/,
+    );
+    assert.doesNotMatch(intentToVacateNotice.bodyParagraphs[1], /written notice provisions|governing lease agreement/i);
+    assert.match(
+      securityDepositNotice.bodyParagraphs[1],
+      /entered {{moveOutDate}} as the move-out date/i,
+    );
+    assert.doesNotMatch(securityDepositNotice.bodyParagraphs[1], /keys|access devices|surrendered/i);
+  });
 });
 
 describe('2. 1-Page Lob 8.5in x 11in Letter Shell & Maximum Character Length Stress Test', () => {

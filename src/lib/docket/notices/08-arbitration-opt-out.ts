@@ -107,5 +107,4 @@ export const arbitrationOptOutNotice: NoticeTemplateDefinition = {
     'ACCOUNT & DEVICE IDENTIFICATION: Consumer Name: {{senderFullName}} | Registered Account / Email / Device Identifier: {{accountIdentifier}} | Registered Mailing Address: {{senderFullAddress}}.',
     'Please record this timely postmarked election in my permanent account file confirming that I retain all rights to resolve disputes before a court or regulatory agency of competent jurisdiction, and mail written confirmation of this opt-out registration to {{senderFullAddress}}.',
   ],
-  enclosuresLine: 'Enclosure: Copy of Account Profile / Hardware Registration Documentation',
 };

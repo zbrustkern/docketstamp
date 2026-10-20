@@ -114,7 +114,7 @@ export const ClerksDocketStampBlock: React.FC<{
   serviceLevel: string;
   cassStatus?: string;
   className?: string;
-}> = ({ docketId, timestampUtc, serviceLevel, cassStatus = 'CASS ADDRESS VERIFIED', className = '' }) => {
+}> = ({ docketId, timestampUtc, serviceLevel, cassStatus = 'ADDRESS VERIFICATION NOT CONFIRMED', className = '' }) => {
   const serviceLevelLabels: Record<string, string> = {
     first_class: 'USPS FIRST-CLASS MAIL®',
     certified: 'USPS CERTIFIED MAIL®',
@@ -122,6 +122,8 @@ export const ClerksDocketStampBlock: React.FC<{
   };
 
   const displayService = serviceLevelLabels[serviceLevel] || serviceLevel.toUpperCase();
+  const verificationConfirmed = /VERIFIED|CONFIRMED/i.test(cassStatus)
+    && !/NOT CONFIRMED|NOT VERIFIED/i.test(cassStatus);
 
   return (
     <div
@@ -145,8 +147,8 @@ export const ClerksDocketStampBlock: React.FC<{
       </div>
       <div className="flex justify-between items-center pt-1 border-t border-slate-300 mt-1">
         <span className="text-slate-600">STATUS:</span>
-        <span className="text-emerald-700 font-bold tracking-tight flex items-center">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1 animate-pulse" />
+        <span className={`${verificationConfirmed ? 'text-emerald-700' : 'text-slate-600'} font-bold tracking-tight flex items-center`}>
+          <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${verificationConfirmed ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
           {cassStatus}
         </span>
       </div>

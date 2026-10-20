@@ -91,7 +91,7 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'MOVE-OUT DATE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'The date physical possession was surrendered and keys were returned.',
+      helperText: 'The date you moved out or otherwise surrendered possession of the premises.',
       maxLength: 30,
     },
     {
@@ -143,9 +143,8 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
   zodSchema: securityDepositSchema,
   bodyParagraphs: [
     'This correspondence serves as formal written notice requesting the immediate return of the residential security deposit held in connection with the former tenancy of {{senderFullName}} at {{vacatedPremisesAddress}}.',
-    'Full possession of the premises was surrendered on {{moveOutDate}}, and all keys and access devices were returned. At the commencement of the tenancy, a security deposit in the amount of {{depositAmount}} was paid. To date, {{amountReceivedToDate}} has been returned, leaving an unrefunded balance of {{balanceRequested}}.',
+    'I entered {{moveOutDate}} as the move-out date. At the commencement of the tenancy, a security deposit in the amount of {{depositAmount}} was paid. To date, {{amountReceivedToDate}} has been returned, leaving an unrefunded balance of {{balanceRequested}}.',
     'Please be advised that pursuant to {{propertyState}} statutory provisions ({{statuteCitation}}), the timeframe for delivering a written itemized statement of lawful deductions and refunding the remaining security deposit balance is {{statuteDeadline}} following termination of tenancy and delivery of possession.',
     'Accordingly, please remit the outstanding balance of {{balanceRequested}} made payable to {{senderFullName}} and mailed to {{senderFullAddress}} within {{responseDays}} of receipt of this notice, so that this matter may be resolved amicably without the need for further administrative or civil proceedings.',
   ],
-  enclosuresLine: 'Enclosures: Move-in Inspection Report, Move-out Documentation, Proof of Key Delivery',
 };

@@ -291,7 +291,10 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
     userValues,
     docketId = generateDocketId(undefined, userValues.propertyState || userValues.rentalState || userValues.state),
     serviceLevel = notice.recommendedTier,
-    cassStatus = 'USPS CASS™ VERIFIED',
+    // Address verification is an operational result, not a template default. The
+    // dispatch workflow may supply a confirmed status after validation; until
+    // then the frozen document must not imply USPS/CASS verification occurred.
+    cassStatus = 'ADDRESS VERIFICATION NOT CONFIRMED',
     executionDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
     senderAddress = {},
     recipientAddress = {},

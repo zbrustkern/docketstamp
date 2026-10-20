@@ -169,5 +169,4 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
     'BASIS OF INACCURACY: {{disputeReason}}. Specifically: {{factualExplanation}}',
     'In accordance with 15 U.S.C. § 1681i(a), please conduct a reasonable reinvestigation of this item within thirty (30) days of receipt of this notice, verify the completeness and accuracy of the record with the furnishing entity, or delete and modify the inaccurate entry and mail an updated copy of my consumer disclosure to {{senderFullAddress}}.',
   ],
-  enclosuresLine: 'Enclosure: Supporting Consumer Tradeline Documentation',
 };

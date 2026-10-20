@@ -38,7 +38,7 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
   const safeReLine = escapeHtml(doc.reLine);
   const safeTimestamp = escapeHtml(doc.clerkStamp.timestampUtc);
   const safeTier = escapeHtml(TIER_DISPATCH_LABELS[doc.clerkStamp.serviceLevel] || doc.clerkStamp.serviceLevel.toUpperCase());
-  const safeCassStatus = escapeHtml(doc.clerkStamp.cassStatus || 'USPS CASS™ VERIFIED');
+  const safeCassStatus = escapeHtml(doc.clerkStamp.cassStatus || 'ADDRESS VERIFICATION NOT CONFIRMED');
   const safeSigner = escapeHtml(doc.signatureBlock.signerName);
   const safeFormalSig = escapeHtml(doc.signatureBlock.formalSignature);
   const safeExecDate = escapeHtml(doc.signatureBlock.executionDate);

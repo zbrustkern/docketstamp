@@ -109,9 +109,8 @@ export const intentToVacateNotice: NoticeTemplateDefinition = {
   zodSchema: intentToVacateSchema,
   bodyParagraphs: [
     'PLEASE TAKE NOTICE that the undersigned tenant(s), {{senderFullName}}, hereby provide formal written {{leaseNoticePeriod}} notice of intent to vacate and terminate tenancy for the residential premises located at {{leasedPremisesAddress}}.',
-    'In accordance with the written notice provisions of the governing lease agreement, tenancy will conclude and full possession of the premises will be surrendered on or before {{moveOutDate}}.',
+    'I intend for the tenancy to conclude and to surrender possession of the premises on or before {{moveOutDate}}.',
     'Please provide schedule availability for a joint move-out walkthrough inspection prior to the surrender date. All keys, fobs, and access devices will be returned upon final surrender of the unit.',
     'Kindly forward the full accounting and refund of the residential security deposit to the following forwarding address: {{forwardingAddress}}.',
   ],
-  enclosuresLine: 'Enclosure: Written Key Surrender & Inspection Acknowledgement',
 };
