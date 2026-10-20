@@ -25,6 +25,7 @@ import { getNoticeBySlug } from '@/lib/docket/notices';
 import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/interpolate';
 import { LivePaperSheet } from './LivePaperSheet';
 import { GuidedFieldDrawer } from './GuidedFieldDrawer';
+import { lookupPostalCodeLocally } from './postal-code-lookup-client';
 import { StickyExecutionBar } from './StickyExecutionBar';
 import { CheckoutModal } from './CheckoutModal';
 import { AgentStagedBanner } from './AgentStagedBanner';
@@ -523,6 +524,7 @@ const DocumentWorkspaceInner: React.FC<{
             onReviewLetter={handleReviewLetter}
             onCompleteDrawer={() => setIsCheckoutOpen(true)}
             onResetDraft={handleResetDraft}
+            postalCodeLookup={lookupPostalCodeLocally}
           />
         </aside>
       </div>

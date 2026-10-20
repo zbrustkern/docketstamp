@@ -325,15 +325,28 @@ export const PostalAddressFields: React.FC<PostalAddressFieldsProps> = ({
           </p>
         ) : (
           <div className="flex items-center justify-between gap-3 rounded border border-sky-800 bg-sky-950/50 p-2.5">
-            <p className="text-[11px] text-sky-200" role="status">
-              ZIP suggestion: {suggestionState.suggestion.city}, {suggestionState.suggestion.state}
-            </p>
+            <div>
+              <p className="text-[11px] text-sky-200" role="status">
+                Postal city/state suggestion: {suggestionState.suggestion.city}, {suggestionState.suggestion.state}
+              </p>
+              <p className="mt-1 text-[10px] leading-snug text-slate-400">
+                Postal location only. Confirm it matches this address. A ZIP does not establish residence or legal jurisdiction. Data by{' '}
+                <a href="https://www.geonames.org/" target="_blank" rel="noreferrer" className="underline">
+                  GeoNames (CC BY 4.0)
+                </a>.
+              </p>
+              {role === 'rentalProperty' && (
+                <p className="mt-1 text-[10px] leading-snug text-slate-400">
+                  Using this suggestion also sets the property state used in state-specific notice details. Verify it before continuing.
+                </p>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleUseSuggestion}
               className="shrink-0 rounded bg-sky-700 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-sky-600"
             >
-              Use for this address
+              {role === 'rentalProperty' ? 'Use for this property' : 'Use for this address'}
             </button>
           </div>
         )
