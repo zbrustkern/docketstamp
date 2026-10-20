@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import crypto from "crypto";
 
-export const ADMIN_COOKIE_NAME = "smn_admin_session";
+export const ADMIN_COOKIE_NAME = "docketstamp_admin_session";
+export const LEGACY_ADMIN_COOKIE_NAME = "smn_admin_session";
 
 /**
  * Verified user accounts authorized to access the DocketStamp admin portal.

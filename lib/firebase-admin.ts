@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { Order, ImageCachePoolItem, DiscountCode, SystemIncident } from "./types";
 import { optimizeCoverImage } from "./image-optimizer";
+import { resolveFirebaseConfig } from "./firebase-config";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "mock-firestore.json");
@@ -328,27 +329,13 @@ export function sanitizeFirestoreData<T extends Record<string, any>>(data: T): T
 
 // Singleton check for Real vs Mock Firebase Admin
 function initializeFirebase() {
-  const isStagingEnv =
-    process.env.ENVIRONMENT === "staging" ||
-    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
-    (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging")) ||
-    (typeof process.env.FIREBASE_CONFIG === "string" &&
-      process.env.FIREBASE_CONFIG.includes("docketstamp-staging"));
-
-  const projectId =
-    process.env.FIREBASE_PROJECT_ID ||
-    process.env.GOOGLE_CLOUD_PROJECT ||
-    (isStagingEnv ? "docketstamp-staging" : undefined) ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    "docketstamp";
+  const projectId = getExpectedFirebaseProjectId();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
   if (process.env.USE_MOCK_FIRESTORE === 'true') {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('[Firebase Admin Critical] USE_MOCK_FIRESTORE is strictly prohibited in production.');
+    if (isHostedOrProductionRuntime()) {
+      throw new Error('[Firebase Admin Critical] USE_MOCK_FIRESTORE is strictly prohibited in hosted and production runtimes.');
     }
     console.log('[Firebase Admin] Using disk-persisted mock Firestore store (.data/mock-firestore.json) via USE_MOCK_FIRESTORE.');
     if (admin.apps.length === 0) {
@@ -360,6 +347,9 @@ function initializeFirebase() {
   }
 
   if (admin.apps.length > 0) {
+    if (admin.apps[0]?.options.projectId !== projectId) {
+      throw new Error("[Firebase Admin Critical] Existing Admin app project does not match configured DocketStamp project.");
+    }
     return { db: configureDb(admin.firestore()), isMock: false };
   }
 
@@ -398,6 +388,10 @@ function initializeFirebase() {
     }
   }
 
+  if (isHostedOrProductionRuntime()) {
+    throw new Error('[Firebase Admin Critical] Live Firebase Admin initialization failed; refusing mock Firestore fallback in hosted and production runtimes.');
+  }
+
   console.log("[Firebase Admin] Using disk-persisted mock Firestore store (.data/mock-firestore.json).");
   if (admin.apps.length === 0) {
     try {
@@ -411,17 +405,52 @@ function initializeFirebase() {
 
 const { db: firestoreDb, isMock: isFirestoreMock } = initializeFirebase();
 
-/**
- * Safely decodes the payload of a JWT without verifying signature.
- */
-function decodeJwtPayload(jwt: string): Record<string, any> | null {
-  try {
-    const parts = jwt.split(".");
-    if (parts.length !== 3) return null;
-    return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
-  } catch {
-    return null;
+export type FirebaseAuthTestVerifier = (token: string, projectId: string) => Promise<admin.auth.DecodedIdToken | null>;
+let firebaseAuthTestVerifier: FirebaseAuthTestVerifier | null = null;
+
+function isHostedOrProductionRuntime() {
+  return process.env.NODE_ENV === "production" || Boolean(
+    process.env.K_SERVICE || process.env.FIREBASE_CONFIG || process.env.GAE_ENV ||
+    process.env.APPHOSTING_BACKEND_ID
+  );
+}
+
+/** Explicit offline-only verifier injection. Hosted runtimes can never enable this path. */
+export function setFirebaseAuthTestVerifier(verifier: FirebaseAuthTestVerifier | null) {
+  if (verifier && (
+    process.env.NODE_ENV !== "test" ||
+    process.env.FIREBASE_AUTH_TEST_VERIFIER !== "true" ||
+    isHostedOrProductionRuntime()
+  )) {
+    throw new Error("Firebase Auth test verifier is available only in explicitly configured offline tests.");
   }
+  firebaseAuthTestVerifier = verifier;
+}
+
+function getExpectedFirebaseProjectId() {
+  const isStagingEnv =
+    process.env.ENVIRONMENT === "staging" ||
+    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
+    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
+    (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging")) ||
+    (typeof process.env.FIREBASE_CONFIG === "string" && process.env.FIREBASE_CONFIG.includes("docketstamp-staging"));
+  const configuredProjectId = resolveFirebaseConfig({
+    ENVIRONMENT: isStagingEnv ? "staging" : process.env.ENVIRONMENT,
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  }).projectId;
+  if (process.env.GOOGLE_CLOUD_PROJECT && process.env.GOOGLE_CLOUD_PROJECT !== configuredProjectId) {
+    throw new Error("Firebase Admin project mismatch: GOOGLE_CLOUD_PROJECT does not match the configured DocketStamp project.");
+  }
+  return configuredProjectId;
 }
 
 /**
@@ -436,80 +465,69 @@ export async function verifyFirebaseIdToken(
   }
   const cleanToken = token.trim();
 
-  // 1. Mock token support for unit testing and local fixture execution
   if (cleanToken.startsWith("mock_token_")) {
-    const uid = cleanToken.replace("mock_token_", "");
-    return {
-      uid,
-      email: uid.includes("@") ? uid : `${uid}@example.com`,
-      email_verified: true,
-      auth_time: Math.floor(Date.now() / 1000),
-      iss: "https://securetoken.google.com/docketstamp",
-      aud: "docketstamp",
-      sub: uid,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    } as unknown as admin.auth.DecodedIdToken;
+    if (!firebaseAuthTestVerifier || process.env.NODE_ENV !== "test" ||
+        process.env.FIREBASE_AUTH_TEST_VERIFIER !== "true" || isHostedOrProductionRuntime()) return null;
+    const expectedProjectId = getExpectedFirebaseProjectId();
+    try {
+      return validateVerifiedFirebaseClaims(
+        await firebaseAuthTestVerifier(cleanToken, expectedProjectId),
+        expectedProjectId,
+      );
+    } catch (err) {
+      console.warn("[Auth] Offline test token verifier rejected token:", err);
+      return null;
+    }
   }
 
-  const payload = decodeJwtPayload(cleanToken);
+  const expectedProjectId = getExpectedFirebaseProjectId();
 
-  // 2. Ensure Firebase Admin app exists for Auth
-  const targetProject =
-    (payload?.aud as string) ||
-    process.env.FIREBASE_PROJECT_ID ||
-    process.env.GOOGLE_CLOUD_PROJECT ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    "docketstamp";
-
+  // Initialize only for the configured project. Never select a trust boundary from JWT claims.
   if (admin.apps.length === 0) {
     try {
-      admin.initializeApp({ projectId: targetProject });
+      admin.initializeApp({ projectId: expectedProjectId });
     } catch (_e) {}
   }
+  const appProjectId = admin.apps[0]?.options.projectId;
+  if (appProjectId !== expectedProjectId) {
+    console.error(`[Auth] Refusing Firebase Admin app for unexpected or unconfigured project; expected configured DocketStamp project.`);
+    return null;
+  }
 
-  // 3. Cryptographic verification via Firebase Admin SDK
+  // Firebase Admin checks signature, issuer, audience, expiry, and revocation.
+  return verifyFirebaseIdTokenWithVerifier(
+    cleanToken,
+    expectedProjectId,
+    (value, checkRevoked) => admin.auth().verifyIdToken(value, checkRevoked),
+  );
+}
+
+/** Shared fail-closed boundary, exported for deterministic offline contract tests. */
+export async function verifyFirebaseIdTokenWithVerifier(
+  token: string,
+  expectedProjectId: string,
+  verifier: (token: string, checkRevoked: true) => Promise<admin.auth.DecodedIdToken>,
+): Promise<admin.auth.DecodedIdToken | null> {
   try {
-    return await admin.auth().verifyIdToken(cleanToken);
+    return validateVerifiedFirebaseClaims(await verifier(token, true), expectedProjectId);
   } catch (err) {
-    // In non-production environments (local development, test sandboxes without Google cert egress),
-    // allow verified Firebase Auth tokens with valid structure issued by Google
-    if (process.env.NODE_ENV !== "production" && payload) {
-      const allowedProjects = new Set([
-        "docketstamp",
-        "docketstamp-staging",
-        "sendmynotes-2a417",
-        process.env.FIREBASE_PROJECT_ID,
-        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      ].filter(Boolean));
-
-      const nowSec = Math.floor(Date.now() / 1000);
-      const isGoogleIssuer =
-        typeof payload.iss === "string" &&
-        payload.iss.startsWith("https://securetoken.google.com/");
-      const isValidAud = allowedProjects.has(payload.aud);
-      const isNotExpired = typeof payload.exp === "number" && payload.exp > nowSec;
-
-      if (isGoogleIssuer && isValidAud && isNotExpired && payload.sub) {
-        return {
-          uid: payload.sub,
-          email: payload.email,
-          email_verified: Boolean(payload.email_verified),
-          name: payload.name,
-          picture: payload.picture,
-          auth_time: payload.auth_time || nowSec,
-          iss: payload.iss,
-          aud: payload.aud,
-          exp: payload.exp,
-          iat: payload.iat || nowSec,
-          sub: payload.sub,
-        } as unknown as admin.auth.DecodedIdToken;
-      }
-    }
-
     console.warn("[Auth] Failed to verify Firebase ID token:", err);
     return null;
   }
+}
+
+function validateVerifiedFirebaseClaims(
+  decoded: admin.auth.DecodedIdToken | null,
+  expectedProjectId: string,
+): admin.auth.DecodedIdToken | null {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (!decoded || decoded.aud !== expectedProjectId ||
+      decoded.iss !== `https://securetoken.google.com/${expectedProjectId}` ||
+      typeof decoded.exp !== "number" || !Number.isFinite(decoded.exp) || decoded.exp <= nowSeconds ||
+      typeof decoded.uid !== "string" || decoded.uid.length === 0 || decoded.sub !== decoded.uid) {
+    return null;
+  }
+  return decoded;
 }
 
 export { firestoreDb, isFirestoreMock };
@@ -699,5 +717,3 @@ export async function resolveIncidentsForOrder(
     return 0;
   }
 }
-
-

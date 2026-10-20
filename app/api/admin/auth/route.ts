@@ -7,6 +7,7 @@ import {
   isAuthorizedAdminEmail,
   AUTHORIZED_ADMIN_EMAILS,
   ADMIN_COOKIE_NAME,
+  LEGACY_ADMIN_COOKIE_NAME,
 } from "@/lib/admin-auth";
 import { verifyFirebaseIdToken } from "@/lib/firebase-admin";
 import {
@@ -111,6 +112,15 @@ export async function POST(req: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 8, // 8 hours
     });
+    response.cookies.set({
+      name: LEGACY_ADMIN_COOKIE_NAME,
+      value: "",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
 
     return response;
   } catch (err: unknown) {
@@ -124,6 +134,15 @@ export async function DELETE() {
   const response = NextResponse.json({ success: true });
   response.cookies.set({
     name: ADMIN_COOKIE_NAME,
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set({
+    name: LEGACY_ADMIN_COOKIE_NAME,
     value: "",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

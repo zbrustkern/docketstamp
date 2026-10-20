@@ -1,3 +1,4 @@
+import "../helpers/firebase-auth-test-verifier";
 import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
@@ -495,7 +496,7 @@ async function runS0SafeguardsTests() {
     // Verify /api/admin/lob-status reports honest unverified probe status
     const lobStatusReq = new NextRequest("http://localhost:3000/api/admin/lob-status", {
       method: "GET",
-      headers: { Cookie: `smn_admin_session=${validToken}` },
+      headers: { Cookie: `docketstamp_admin_session=${validToken}` },
     });
     const lobStatusRes = await getLobStatus(lobStatusReq);
     assert.strictEqual(lobStatusRes.status, 200);
@@ -510,7 +511,7 @@ async function runS0SafeguardsTests() {
     console.log("6️⃣ Testing held direct admin mutation endpoints (409 ADMIN_ACTION_HELD_S0)...");
     const authHeaders = {
       "Content-Type": "application/json",
-      Cookie: `smn_admin_session=${validToken}`,
+      Cookie: `docketstamp_admin_session=${validToken}`,
     };
 
     const heldEndpoints: Array<{

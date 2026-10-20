@@ -1,3 +1,4 @@
+import "./helpers/firebase-auth-test-verifier";
 import { NextRequest } from "next/server";
 import {
   isAuthorizedAdminEmail,
@@ -148,7 +149,7 @@ async function runTests() {
     zekeAuthData.success === true &&
     zekeAuthData.email === "zbrustkern@gmail.com" &&
     zekeCookie.includes(ADMIN_COOKIE_NAME),
-    "Authorized login for zbrustkern@gmail.com returns HTTP 200 and sets smn_admin_session cookie"
+    "Authorized login for zbrustkern@gmail.com returns HTTP 200 and sets the DocketStamp session cookie"
   );
 
   // D: Authorized account sentral@gmail.com succeeds

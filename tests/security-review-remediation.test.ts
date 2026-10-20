@@ -1,3 +1,4 @@
+import "./helpers/firebase-auth-test-verifier";
 import { NextRequest } from "next/server";
 import {
   getAdminSecret,
@@ -133,8 +134,8 @@ async function runSecurityRemediationTests() {
   const zekeAuthData = await zekeAuthRes.json();
   const setCookieHeader = zekeAuthRes.headers.get("set-cookie") || "";
   assert(
-    zekeAuthRes.status === 200 && zekeAuthData.success === true && setCookieHeader.includes("smn_admin_session="),
-    "Authorized admin zbrustkern@gmail.com logs in via ID token and receives smn_admin_session cookie"
+    zekeAuthRes.status === 200 && zekeAuthData.success === true && setCookieHeader.includes("docketstamp_admin_session="),
+    "Authorized admin zbrustkern@gmail.com logs in via ID token and receives DocketStamp session cookie"
   );
 
   const sentralAuthReq = new NextRequest("http://localhost:3000/api/admin/auth", {
@@ -145,7 +146,7 @@ async function runSecurityRemediationTests() {
   const sentralAuthRes = await adminAuthPost(sentralAuthReq);
   const sentralAuthData = await sentralAuthRes.json();
   const sentralCookieHeader = sentralAuthRes.headers.get("set-cookie") || "";
-  const cookieMatch = sentralCookieHeader.match(/smn_admin_session=([^;]+)/);
+  const cookieMatch = sentralCookieHeader.match(/docketstamp_admin_session=([^;]+)/);
   const sentralSessionToken = cookieMatch ? cookieMatch[1] : "";
 
   assert(
@@ -164,7 +165,7 @@ async function runSecurityRemediationTests() {
   // Verify that downstream admin GET routes accept this cookie
   const checkAuthWithCookieReq = new NextRequest("http://localhost:3000/api/admin/auth", {
     method: "GET",
-    headers: { cookie: `smn_admin_session=${sentralSessionToken}` },
+    headers: { cookie: `docketstamp_admin_session=${sentralSessionToken}` },
   });
   const checkAuthWithCookieRes = await adminAuthGet(checkAuthWithCookieReq);
   const checkAuthWithCookieData = await checkAuthWithCookieRes.json();
@@ -175,7 +176,7 @@ async function runSecurityRemediationTests() {
 
   const metricsWithCookieReq = new NextRequest("http://localhost:3000/api/admin/metrics", {
     method: "GET",
-    headers: { cookie: `smn_admin_session=${sentralSessionToken}` },
+    headers: { cookie: `docketstamp_admin_session=${sentralSessionToken}` },
   });
   const metricsWithCookieRes = await adminMetricsGet(metricsWithCookieReq);
   assert(

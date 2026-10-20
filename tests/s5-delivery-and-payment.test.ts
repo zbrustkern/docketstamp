@@ -1,3 +1,4 @@
+import "./helpers/firebase-auth-test-verifier";
 import test, { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -473,7 +474,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       let threw = false;
       try {
         execSync(
-          'npx tsx -e \'process.env.NODE_ENV="production"; process.env.USE_MOCK_FIRESTORE="true"; require("./lib/firebase-admin");\'',
+          'node --import tsx -e \'process.env.NODE_ENV="production"; process.env.USE_MOCK_FIRESTORE="true"; require("./lib/firebase-admin");\'',
           { stdio: 'pipe' }
         );
       } catch (err: any) {
@@ -483,7 +484,7 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
         const message = err.message || '';
         const output = `${stderr}\n${stdout}\n${message}`;
         assert.ok(
-          output.includes('[Firebase Admin Critical] USE_MOCK_FIRESTORE is strictly prohibited in production.'),
+          output.includes('[Firebase Admin Critical] USE_MOCK_FIRESTORE is strictly prohibited in hosted and production runtimes.'),
           `Expected fail-closed error message, got: ${output}`
         );
       }

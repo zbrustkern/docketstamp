@@ -13,7 +13,8 @@ async function run() {
   process.env.ADMIN_SESSION_SIGNING_KEY = 'offline_outbound_email_signing_fixture';
   process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
   process.env.ENVIRONMENT = 'staging';
-  process.env.FIREBASE_PROJECT_ID = 'docketstamp-offline-fixture';
+  process.env.FIREBASE_PROJECT_ID = 'docketstamp-staging';
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'docketstamp-staging';
   const { POST, GET } = await import('../../app/api/admin/outbound-email/route');
   const token = generateAdminSessionToken();
   const request = (body?: unknown, origin = 'http://localhost:3000') => new NextRequest('http://localhost:3000/api/admin/outbound-email', {
