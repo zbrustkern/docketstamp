@@ -1,0 +1,35 @@
+{
+  "mode": "dry_run_only",
+  "source": "legacy-orders.json",
+  "manifest": ".delivery/runs/2026-10-20-legacy-replacement/fixture-migration.json",
+  "beforeCounts": {
+    "total": 5,
+    "canonicalV2": 1,
+    "legacy": 2,
+    "unknownKind": 2,
+    "lob": 1,
+    "handwrytten": 1,
+    "unknownProvider": 3,
+    "conflicts": 1,
+    "frozenHtml": 2,
+    "integrityEvidence": 1
+  },
+  "afterCounts": {
+    "total": 5,
+    "canonicalV2": 1,
+    "legacy": 2,
+    "unknownKind": 2,
+    "lob": 1,
+    "handwrytten": 1,
+    "unknownProvider": 3,
+    "conflicts": 1,
+    "frozenHtml": 2,
+    "integrityEvidence": 1
+  },
+  "changes": 2,
+  "quarantined": 2,
+  "checkpoint": {
+    "lastOrderId": "fixture_unknown_provider",
+    "complete": true
+  }
+}

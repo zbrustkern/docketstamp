@@ -1,8 +1,8 @@
 # SPRINT-0010 — DocketStamp documentation and verification authority
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Complete
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_docs`
 
 ## Pyramid index
@@ -50,4 +50,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+README and architecture now describe supported DocketStamp behavior. Unreferenced predecessor modules and obsolete suites are byte-preserved in documented archives with hashes and named replacement coverage. Supported TypeScript/build/tests pass without excluding current source. Recursive active code/config audit has zero unclassified matches and 78 exact bounded compatibility matches with owner, context, quota and retirement conditions. Duplicate identical favicon was removed after local preview found the route conflict.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

@@ -1,8 +1,8 @@
 # SPRINT-0007 — Recipient-first account and order history
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Active
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_accounts`
 
 ## Pyramid index
@@ -48,4 +48,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+Recipient notice chooser, private staged prefill, saved addresses, secure order DTO and truthful provider history are integrated (b7f8c9f, 01f93b5, 4eb3dbb, 453034c, db33aad). Automated prefill/hydration, recovery, authorization and history checks pass. Public account/admin/notice screens were checked in Chrome; notice viewport 390px has no horizontal overflow. Remaining acceptance: authenticated account desktop/mobile keyboard walkthrough through saved recipient, review/sign and mocked checkout. Do not claim that live browser journey is verified.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

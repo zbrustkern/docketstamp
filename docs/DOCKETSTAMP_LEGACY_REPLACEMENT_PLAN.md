@@ -10,9 +10,11 @@ The [discovery inventory](evidence/docketstamp-legacy-inventory-2026-10-20.json)
 
 Read-only Firebase CLI checks verified the registered web apps in both DocketStamp projects. Public Auth configuration requests confirmed that the former staging fallback key resolves to project number `910796604705` with SendMyNotes authorized domains. The real staging project is `267056924276` and already authorizes `staging.docketstamp.com`. Production's real project is `937129689950`; its source fallback also contained another project's web app identity. Both correct keys pass project-number and domain checks using `npm run verify:firebase-auth`.
 
-The staging backend is correctly associated with its staging web app and has environment name `staging`. The full cloud environment override list remains unverified: the local gcloud CLI has no active account. SDK configuration and backend association were readable through the authenticated Firebase CLI. No cloud changes or deployment were performed.
+The staging backend and effective public runtime environment were verified through the authenticated Firebase CLI. The deployed staging identity is correct; see the run deployment evidence. No production rollout occurred.
 
-## Completed repair, pending rollout
+The evidence paragraphs below describe the initial discovery snapshot, not the current implementation. Current execution results and remaining acceptance are authoritative in Sprints 0004–0010 and the run verification report.
+
+## Completed Firebase repair and verified staging rollout
 
 - Replaced staging and production Firebase web identities with complete SDK configurations obtained from Firebase, including API key, app ID, sender ID and Firebase measurement ID.
 - Made checked-in App Hosting manifests explicit about the complete public identity at BUILD and RUNTIME.

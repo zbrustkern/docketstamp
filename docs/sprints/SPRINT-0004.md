@@ -1,8 +1,8 @@
 # SPRINT-0004 — Firebase trust and admin session boundaries
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Complete
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_identity`
 
 ## Pyramid index
@@ -49,4 +49,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+Pinned Firebase server trust, verified Google admin login and canonical cookies are integrated (0a8f79c, db33aad). Offline trust/account tests include forged, wrong-project, expired/revoked, hosted-mock refusal and verified-email ownership. Public Auth project/domain checks and deployed staging identity passed. Interactive Google login remains an explicitly unperformed operator smoke check.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

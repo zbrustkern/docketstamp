@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "runId": "replacement-verification",
+  "sourceFingerprint": "5347118362de1a584b180cf6bdbdffc744531b75f6cc0c533832e50824a6f0b1",
+  "dryRun": true,
+  "generatedAt": "2026-10-20T21:17:54.032Z",
+  "beforeCounts": {
+    "total": 5,
+    "canonicalV2": 1,
+    "legacy": 2,
+    "unknownKind": 2,
+    "lob": 1,
+    "handwrytten": 1,
+    "unknownProvider": 3,
+    "conflicts": 1,
+    "frozenHtml": 2,
+    "integrityEvidence": 1
+  },
+  "afterCounts": {
+    "total": 5,
+    "canonicalV2": 1,
+    "legacy": 2,
+    "unknownKind": 2,
+    "lob": 1,
+    "handwrytten": 1,
+    "unknownProvider": 3,
+    "conflicts": 1,
+    "frozenHtml": 2,
+    "integrityEvidence": 1
+  },
+  "processedOrderIds": [
+    "fixture_canonical_notice",
+    "fixture_conflicting_provider_ids",
+    "fixture_legacy_hw_only",
+    "fixture_legacy_lob_only",
+    "fixture_unknown_provider"
+  ],
+  "changes": [
+    {
+      "migrationId": "ed453661c16fa4cd643081a6",
+      "orderId": "fixture_legacy_hw_only",
+      "provider": "handwrytten",
+      "reference": "hw_fixture_002",
+      "patch": {
+        "postalProvider": "handwrytten",
+        "postalProviderReference": "hw_fixture_002"
+      }
+    },
+    {
+      "migrationId": "3632ef32a715cae6217f8dbd",
+      "orderId": "fixture_legacy_lob_only",
+      "provider": "lob",
+      "reference": "ltr_fixture_lob_001",
+      "patch": {
+        "postalProvider": "lob",
+        "postalProviderReference": "ltr_fixture_lob_001"
+      }
+    }
+  ],
+  "quarantined": [
+    {
+      "orderId": "fixture_conflicting_provider_ids",
+      "reason": "PROVIDER_PROVENANCE_CONFLICT"
+    },
+    {
+      "orderId": "fixture_unknown_provider",
+      "reason": "PROVIDER_PROVENANCE_UNKNOWN"
+    }
+  ],
+  "rollbackMappings": [
+    {
+      "migrationId": "ed453661c16fa4cd643081a6",
+      "orderId": "fixture_legacy_hw_only",
+      "restore": {}
+    },
+    {
+      "migrationId": "3632ef32a715cae6217f8dbd",
+      "orderId": "fixture_legacy_lob_only",
+      "restore": {}
+    }
+  ],
+  "checkpoint": {
+    "lastOrderId": "fixture_unknown_provider",
+    "complete": true
+  }
+}

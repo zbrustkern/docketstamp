@@ -13,7 +13,14 @@ testEnv.USE_MOCK_FIRESTORE = "true";
 testEnv.LOB_WEBHOOK_SECRET = "lob-webhook-test-secret-high-entropy-2026";
 
 function orderFixture(id: string, overrides: Record<string, unknown> = {}): Order {
+  const documentHtml = '<html><body>Frozen notice DOCKET RECORD & DISPATCH CERTIFICATION</body></html>';
   return {
+    noticeId: 'security-deposit-return-demand-letter', noticeType: 'security-deposit-return-demand-letter',
+    docketId: 'DS-2026-FIXTURE', serviceLevel: 'CERTIFIED', documentHtml,
+    documentIntegrityEvidence: {
+      schemaVersion: 1, algorithm: 'sha256', digest: crypto.createHash('sha256').update(documentHtml).digest('hex'),
+      lockedAt: 100, signatureAdoption: { signerName: 'Sender Example', adoptedAt: 99, affirmationVersion: 'signature-adoption-v1' },
+    },
     id,
     customerEmail: "tracking-test@example.com",
     status: "DISPATCHED_TO_USPS",

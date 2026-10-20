@@ -146,17 +146,6 @@
       "retirement": "Retire only after historical data/read callers are reconciled and provider-proof access remains truthful; keep explicit denial guards as regression policy."
     },
     {
-      "id": "reviewed-compatibility-013",
-      "file": "app/api/webhooks/lob/route.ts",
-      "category": "provider",
-      "match": "^(?:handwrytten)$",
-      "context": "^!letterId\\ \\|\\|\\ provenance\\.provider\\ ===\\ \"handwrytten\"\\ \\|\\|$",
-      "maxMatches": 1,
-      "owner": "order compatibility",
-      "reason": "Exact legacy-provider field/status read, truthful historical label, explicit retired-route response, or rejection guard. New dispatch writes remain canonical Lob-only.",
-      "retirement": "Retire only after historical data/read callers are reconciled and provider-proof access remains truthful; keep explicit denial guards as regression policy."
-    },
-    {
       "id": "reviewed-compatibility-014",
       "file": "components/AttributionTracker.tsx",
       "category": "namespace",

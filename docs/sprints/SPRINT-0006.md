@@ -1,8 +1,8 @@
 # SPRINT-0006 — Legacy order inventory and migration tooling
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Complete
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_orders`
 
 ## Pyramid index
@@ -48,4 +48,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+Fixture-only inventory and resumable migration plans are implemented. Independent two-batch dry-run completed with two proposed annotations and two quarantines; source/run/cursor binding, unchanged bytes, rollback maps and no external effects are covered. Actual data inventory/apply and identity linkage remain outside this sprint. See fixture-inventory.json and fixture-migration-summary.json in the run.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

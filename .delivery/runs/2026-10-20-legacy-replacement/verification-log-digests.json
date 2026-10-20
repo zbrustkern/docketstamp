@@ -1,0 +1,19 @@
+{
+  "logs": [
+    {
+      "path": "/tmp/docketstamp-replacement-release-tests.txt",
+      "sha256": "d9afdca511a56995b7312ced3d6dee179ecb183d4426edea07d7fdf0efceefcd",
+      "exitCode": 0
+    },
+    {
+      "path": "/tmp/docketstamp-replacement-release-tsc.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "path": "/tmp/docketstamp-replacement-release-build.txt",
+      "sha256": "2fb82a2db956aac776f978826744d0125a2297ac283771e32ab9b415e92eaf23",
+      "exitCode": 0
+    }
+  ]
+}

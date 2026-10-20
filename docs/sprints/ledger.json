@@ -32,64 +32,64 @@
       "id": "SPRINT-0004",
       "title": "Firebase trust and admin session boundaries",
       "path": "docs/sprints/SPRINT-0004.md",
-      "status": "active",
+      "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:40:49.843800-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     },
     {
       "id": "SPRINT-0005",
       "title": "Canonical notice orders and payment entry points",
       "path": "docs/sprints/SPRINT-0005.md",
-      "status": "active",
+      "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:40:49.843800-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     },
     {
       "id": "SPRINT-0006",
       "title": "Legacy order inventory and migration tooling",
       "path": "docs/sprints/SPRINT-0006.md",
-      "status": "planned",
+      "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:39:42.671407-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     },
     {
       "id": "SPRINT-0007",
       "title": "Recipient-first account and order history",
       "path": "docs/sprints/SPRINT-0007.md",
-      "status": "planned",
+      "status": "active",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:39:42.671407-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     },
     {
       "id": "SPRINT-0008",
       "title": "One-time notice deadline reminders",
       "path": "docs/sprints/SPRINT-0008.md",
-      "status": "active",
+      "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:40:49.843800-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     },
     {
       "id": "SPRINT-0009",
       "title": "Notice analytics and provider/admin namespace migration",
       "path": "docs/sprints/SPRINT-0009.md",
-      "status": "planned",
+      "status": "active",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:39:42.671407-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     },
     {
       "id": "SPRINT-0010",
       "title": "DocketStamp documentation and verification authority",
       "path": "docs/sprints/SPRINT-0010.md",
-      "status": "planned",
+      "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
-      "updated_at": "2026-10-20T15:39:42.671407-05:00"
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
     }
   ]
 }

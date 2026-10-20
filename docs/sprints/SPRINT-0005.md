@@ -1,8 +1,8 @@
 # SPRINT-0005 — Canonical notice orders and payment entry points
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Complete
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_orders`
 
 ## Pyramid index
@@ -50,4 +50,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+Canonical frozen notice/provenance and paid/free authorization are integrated (64db645, 22bf6c1, db33aad, 44f12e3). New v2 payment hashes bind adoption evidence; historical markerless payment hash shape is preserved. Mocked concurrent/replayed/out-of-order postal and payment paths pass. Legacy/provider-conflict IDs cannot trigger Lob. No actual charge or postage was initiated.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

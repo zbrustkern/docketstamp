@@ -1,8 +1,8 @@
 # SPRINT-0009 — Notice analytics and provider/admin namespace migration
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Active
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_analytics`
 
 ## Pyramid index
@@ -50,4 +50,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+Explicit per-environment destination verification, namespace migration, notice cohorts and tier/evidence costs are integrated (1e455c8, 6769963). No inherited destination is enabled. Review repairs reject unsupported report filters and scope Meta test codes; only accepted sends can mark tracked. Server CAPI is safely disabled because JSON consent is not proof. Remaining acceptance: build the preferences UI, verified purpose-bound consent issuance/revocation with server GPC enforcement, then test minimized values/dedupe with approved owned destinations. See ../marketing-consent-readiness.md; no environment toggle substitutes for this work.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

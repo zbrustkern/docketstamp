@@ -1,8 +1,8 @@
 # SPRINT-0008 — One-time notice deadline reminders
 
-**Status:** Planned  
-**Run:** `2026-10-20-legacy-replacement`  
-**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)  
+**Status:** Complete
+**Run:** `2026-10-20-legacy-replacement`
+**Source:** `1226a9c` (verified Firebase repair atop `c4ede76`)
 **Owner:** Codex coordinator; requested gpt-6-luna executor `luna_reminders`
 
 ## Pyramid index
@@ -48,4 +48,6 @@ Planning provenance: Codex synthesis plus actual gpt-6-luna read-only feasibilit
 
 ## Execution evidence
 
-Pending.
+One-time date/timezone/consent/ownership reminders and transactional delivery claims are integrated (b67f837, b7f8c9f, 97a258c, db33aad). Date/DST/leap-day/past-date, timezone +14, opt-out, retry and duplicate scheduler tests pass. UI explicitly reports disabled delivery until readiness requirements are met. Scheduler activation, real email and inferred deadlines remain excluded.
+
+Coordinator validation and exact release evidence: [verification report](../../.delivery/runs/2026-10-20-legacy-replacement/verification.md). Luna reports and independent cross-lane reviews are preserved in the same run. Single-app Codex/Luna validation is claimed; no Antigravity review occurred.

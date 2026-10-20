@@ -3,7 +3,7 @@
   "run_id": "2026-10-20-legacy-replacement",
   "workflow": "df-sprint-plan + df-sprint-execute",
   "project_root": "/Users/zeke/code/DocketStamp",
-  "stage": "staging_rollout_and_parallel_foundations",
+  "stage": "verified_replacement_staging_release",
   "status": "active",
   "owner": "Codex coordinator",
   "participants": [
@@ -35,16 +35,19 @@
     "independently verified integration"
   ],
   "checks": [
-    "Auth repair production build passed",
-    "Auth repair pushed to origin/staging at 1226a9c; exact-source rollout started"
+    "npm test exit 0; replacement 135/135",
+    "production build exit 0",
+    "TypeScript exit 0",
+    "legacy audit zero unclassified; 78 bounded compatibility matches",
+    "fixture dry-run resume complete",
+    "public desktop/mobile local smoke checks passed"
   ],
   "open_issues": [
-    "cloud override inventory",
-    "legacy data distribution",
-    "external analytics ownership"
+    "SPRINT-0007 authenticated account keyboard walkthrough",
+    "SPRINT-0009 verifiable consent preferences and destination ownership"
   ],
   "iteration": 1,
   "iteration_limit": 3,
-  "next_action": "Verify auth rollout; integrate isolated Luna foundation commits; dispatch dependent account and analytics packages.",
-  "updated_at": "2026-10-20T15:40:49.843800-05:00"
+  "next_action": "Commit release evidence; push only staging; verify exact-source automatic rollout and public endpoints.",
+  "updated_at": "2026-10-20T21:19:01.470650+00:00"
 }
