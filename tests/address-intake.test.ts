@@ -66,6 +66,27 @@ describe('bounded address intake', () => {
     assert.equal(validation.firstInvalidFieldKey, 'leasedPremisesAddress');
   });
 
+  it('does not treat a rental-property address as the sender mailing address', () => {
+    const validation = validateNoticeDraft(intentToVacateNotice, {
+      senderFullName: 'Taylor Tenant',
+      leasedPremisesAddress: '21 Rental Way',
+      rentalPropertyCity: 'Austin',
+      propertyState: 'TX',
+      rentalPropertyZip: '78701',
+      recipientFormalName: 'Northside Properties',
+      recipientAddressLine1: '9 Recipient Avenue',
+      recipientCity: 'New York',
+      recipientState: 'NY',
+      recipientZip: '10001',
+      moveOutDate: '2026-09-01',
+      leaseNoticePeriod: '30-Day',
+      forwardingAddress: 'PO Box 77, Portland, OR 97201',
+    });
+
+    assert.equal(validation.isValid, false);
+    assert.match(validation.fieldErrors.senderAddressLine1, /sender street address/i);
+  });
+
   it('renders the rental address before sender and recipient, with separate roles and forwarding address', () => {
     const html = renderToStaticMarkup(React.createElement(GuidedFieldDrawer, {
       notice: intentToVacateNotice,

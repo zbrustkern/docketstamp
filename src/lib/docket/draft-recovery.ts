@@ -162,7 +162,7 @@ export function validateNoticeDraft(
 
   // Sender Mailing Address
   orderedFieldKeys.push('senderAddressLine1');
-  const senderLine1 = values.senderAddressLine1 || values.leasedPremisesAddress || '';
+  const senderLine1 = values.senderAddressLine1 || '';
   if (!isValidStreetAddress(senderLine1)) {
     fieldErrors['senderAddressLine1'] =
       'Please enter your street address with number and street (e.g., 123 Main St or P.O. Box 100).';
