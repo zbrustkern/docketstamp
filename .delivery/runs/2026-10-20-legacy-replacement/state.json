@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-20-legacy-replacement",
+  "workflow": "df-sprint-plan + df-sprint-execute",
+  "project_root": "/Users/zeke/code/DocketStamp",
+  "stage": "planning_and_auth_release",
+  "status": "active",
+  "owner": "Codex coordinator",
+  "participants": [
+    "Codex",
+    "gpt-6-luna planning reviewer; implementation assignments pending"
+  ],
+  "source_revision": "c4ede7639e2b6d6207325e50b27dd71f0c226c0e",
+  "inputs": [
+    "AGENTS.md",
+    "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md",
+    "docs/DOCKETSTAMP_AGENTIC_EXPANSION.md",
+    "docs/DOCKETSTAMP_LEGACY_REPLACEMENT_PLAN.md"
+  ],
+  "artifacts": [
+    "intent.md",
+    "INDEX.md",
+    "events.md",
+    "handoff-antigravity.md"
+  ],
+  "acceptance_criteria": [
+    "staging exact-source auth rollout",
+    "testable replacement sprint",
+    "Luna implementation in isolated clones",
+    "independently verified integration"
+  ],
+  "checks": [],
+  "open_issues": [
+    "cloud override inventory",
+    "legacy data distribution",
+    "external analytics ownership"
+  ],
+  "iteration": 1,
+  "iteration_limit": 3,
+  "next_action": "Release authentication repair, synthesize Luna critique, dispatch scoped implementers.",
+  "updated_at": "2026-10-20T15:37:57.804754-05:00"
+}

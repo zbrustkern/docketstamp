@@ -1,0 +1,3 @@
+# Optional independent planning handoff (not dispatched)
+
+Review docs/sprints/SPRINT-0004.md and docs/DOCKETSTAMP_LEGACY_REPLACEMENT_PLAN.md against AGENTS.md and the two governing specifications at source c4ede7639e2b6d6207325e50b27dd71f0c226c0e plus this run's recorded repair commits. Read-only alternate plan/feasibility critique; save findings to this run's antigravity-review.md only if operating with verified project access. Do not deploy, edit source, move customer data or send messages. Identify app/model honestly. No Antigravity result is currently claimed; Luna subagents are the user-selected execution/review lane.
