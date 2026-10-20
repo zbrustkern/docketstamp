@@ -31,6 +31,8 @@ import {
 import { assertNonFitnessEntity, isFitnessEntity } from '@/lib/docket/guardrails';
 import { getChooserLetterBySlug } from '@/lib/docket/chooser-routing';
 import { DraftValidationResult } from '@/lib/docket/draft-recovery';
+import { PostalAddressFields } from './PostalAddressFields';
+import type { AddressPart, PostalCodeLookup } from './address-intake';
 
 export interface GuidedFieldDrawerProps {
   notice: NoticeTemplateDefinition;
@@ -48,6 +50,7 @@ export interface GuidedFieldDrawerProps {
   onReviewLetter: () => void;
   onCompleteDrawer: () => void;
   onResetDraft: () => void;
+  postalCodeLookup?: PostalCodeLookup;
 }
 
 export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
@@ -66,6 +69,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
   onReviewLetter,
   onCompleteDrawer,
   onResetDraft,
+  postalCodeLookup,
 }) => {
   const [recipientSearchQuery, setRecipientSearchQuery] = useState('');
   const [recipientManualMode, setRecipientManualMode] = useState(false);
@@ -131,6 +135,9 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
     });
   };
 
+  const addressErrorFor = (key: string) =>
+    showAllErrors || touchedFields.has(key) ? validation.fieldErrors[key] : undefined;
+
   // Handle smart recipient selection for corporate / bureau notices
   const handleSelectVerifiedRecipient = (recipient: VerifiedRecipientEntry) => {
     try {
@@ -174,10 +181,24 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
     }
   };
 
+  // Tenant property location is separate from sender and recipient mail routes.
+  const isTenantNotice = notice.category === 'tenant';
+  const propertyAddressField = isTenantNotice
+    ? notice.fields.find((field) =>
+        ['leasedPremisesAddress', 'vacatedPremisesAddress'].includes(field.key)
+      )
+    : undefined;
+  const propertyStateField = isTenantNotice
+    ? notice.fields.find((field) => field.key === 'propertyState')
+    : undefined;
+
   // Group fields into sections
   const recipientFields = notice.fields.filter((f) => f.stepGroup === 'recipient');
   const detailFields = notice.fields.filter(
-    (f) => f.stepGroup === 'instrument_details' || (!['recipient', 'sender'].includes(f.stepGroup))
+    (f) =>
+      (f.stepGroup === 'instrument_details' || !['recipient', 'sender'].includes(f.stepGroup)) &&
+      f.key !== propertyAddressField?.key &&
+      f.key !== propertyStateField?.key
   );
   const senderFields = notice.fields.filter((f) => f.stepGroup === 'sender');
 
@@ -291,17 +312,63 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
 
       {/* Drawer Scrollable Body */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-32">
+        {isTenantNotice && propertyAddressField && (
+          <section className="space-y-4" data-testid="rental-property-section">
+            <div className="border-b border-slate-800 pb-2">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center">
+                <span className="w-5 h-5 rounded-full bg-slate-800 text-sky-400 inline-flex items-center justify-center mr-2 text-[10px]">1</span>
+                Rental property address
+              </h3>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                Enter the rental location for this notice. It is separate from your sender mailing address and the recipient&apos;s delivery destination.
+              </p>
+            </div>
+            <PostalAddressFields
+              role="rentalProperty"
+              values={userValues}
+              propertyAddressKey={propertyAddressField.key}
+              primaryField={propertyAddressField}
+              stateField={propertyStateField}
+              activeFieldKey={activeFieldKey}
+              onFieldFocus={onFieldFocus}
+              onFieldBlur={markTouched}
+              errorFor={addressErrorFor}
+              postalCodeLookup={postalCodeLookup}
+              onChange={onChange}
+              onPartChange={(part: AddressPart, key, value) => {
+                if (part === 'state') handleStateChange(value);
+                else onChange(key, value);
+              }}
+            />
+            {propertyStateField && userValues[propertyStateField.key] && (
+              <div className="bg-sky-950/50 border border-sky-800 p-2.5 rounded text-[11px] text-sky-300 space-y-1 font-mono">
+                <div><strong>PROPERTY STATUTE:</strong> {getStateStatute(userValues[propertyStateField.key])?.statuteCitation}</div>
+                <div><strong>RETURN DEADLINE:</strong> {getStateStatute(userValues[propertyStateField.key])?.returnDeadlineLabel}</div>
+                <div className="text-[10px] text-slate-400 font-sans">
+                  This selection describes the rental property jurisdiction. It does not set your residence or mailing address.
+                </div>
+                <div className="text-[10px] text-slate-400 font-sans">
+                  {getStateStatute(userValues[propertyStateField.key])?.statutoryNuance}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         {/* SECTION 1: SENDER (Your details) */}
         <div className="space-y-4">
           <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center">
               <span className="w-5 h-5 rounded-full bg-slate-800 text-sky-400 inline-flex items-center justify-center mr-2 text-[10px]">
-                1
+                {isTenantNotice ? '2' : '1'}
               </span>
               Your details
             </h3>
             <span className="text-[10px] text-slate-400 font-mono">Sender & Return Address</span>
           </div>
+          <p className="text-[11px] leading-relaxed text-slate-400">
+            This is the sender&apos;s mailing and USPS return address. It may differ from the rental property and from a forwarding address.
+          </p>
 
           {senderFields.map((field) => (
             <FieldInputRow
@@ -324,123 +391,16 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
             />
           ))}
 
-          {/* Sender Physical Address Block */}
-          <div className="space-y-3 pt-1">
-            <label className="text-xs font-medium text-slate-300 block">
-              Sender Mailing Address (USPS Return Address)
-            </label>
-
-            <div>
-              <input
-                type="text"
-                data-field-key="senderAddressLine1"
-                placeholder="Street Address (e.g., 742 Evergreen Terrace or P.O. Box 100)"
-                value={userValues.senderAddressLine1 || ''}
-                onChange={(e) => onChange('senderAddressLine1', e.target.value)}
-                onFocus={() => onFieldFocus('senderAddressLine1')}
-                onBlur={() => markTouched('senderAddressLine1')}
-                ref={(el) => { inputRefs.current['senderAddressLine1'] = el; }}
-                className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-                  (showAllErrors || touchedFields.has('senderAddressLine1')) &&
-                  validation.fieldErrors['senderAddressLine1']
-                    ? 'border-rose-500 ring-1 ring-rose-500/50'
-                    : 'border-slate-700'
-                }`}
-                autoComplete="address-line1"
-              />
-              {(showAllErrors || touchedFields.has('senderAddressLine1')) &&
-                validation.fieldErrors['senderAddressLine1'] && (
-                  <p className="text-[11px] text-rose-400 font-sans mt-1">
-                    {validation.fieldErrors['senderAddressLine1']}
-                  </p>
-                )}
-            </div>
-
-            <div className="grid grid-cols-6 gap-2">
-              <div className="col-span-3">
-                <input
-                  type="text"
-                  data-field-key="senderCity"
-                  placeholder="City"
-                  value={userValues.senderCity || ''}
-                  onChange={(e) => onChange('senderCity', e.target.value)}
-                  onFocus={() => onFieldFocus('senderCity')}
-                  onBlur={() => markTouched('senderCity')}
-                  ref={(el) => { inputRefs.current['senderCity'] = el; }}
-                  className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-                    (showAllErrors || touchedFields.has('senderCity')) &&
-                    validation.fieldErrors['senderCity']
-                      ? 'border-rose-500 ring-1 ring-rose-500/50'
-                      : 'border-slate-700'
-                  }`}
-                  autoComplete="address-level2"
-                />
-                {(showAllErrors || touchedFields.has('senderCity')) &&
-                  validation.fieldErrors['senderCity'] && (
-                    <p className="text-[11px] text-rose-400 font-sans mt-1">
-                      {validation.fieldErrors['senderCity']}
-                    </p>
-                  )}
-              </div>
-
-              <div className="col-span-1">
-                <select
-                  data-field-key="senderState"
-                  value={userValues.senderState || ''}
-                  onChange={(e) => onChange('senderState', e.target.value)}
-                  onFocus={() => onFieldFocus('senderState')}
-                  onBlur={() => markTouched('senderState')}
-                  ref={(el) => { inputRefs.current['senderState'] = el; }}
-                  className={`w-full bg-slate-800 border rounded px-1.5 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                    (showAllErrors || touchedFields.has('senderState')) &&
-                    validation.fieldErrors['senderState']
-                      ? 'border-rose-500 ring-1 ring-rose-500/50'
-                      : 'border-slate-700'
-                  }`}
-                >
-                  <option value="">ST</option>
-                  {Object.keys(STATE_STATUTES).map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
-                {(showAllErrors || touchedFields.has('senderState')) &&
-                  validation.fieldErrors['senderState'] && (
-                    <p className="text-[11px] text-rose-400 font-sans mt-1">
-                      {validation.fieldErrors['senderState']}
-                    </p>
-                  )}
-              </div>
-
-              <div className="col-span-2">
-                <input
-                  type="text"
-                  data-field-key="senderZip"
-                  placeholder="ZIP"
-                  maxLength={10}
-                  value={userValues.senderZip || ''}
-                  onChange={(e) => onChange('senderZip', e.target.value)}
-                  onFocus={() => onFieldFocus('senderZip')}
-                  onBlur={() => markTouched('senderZip')}
-                  ref={(el) => { inputRefs.current['senderZip'] = el; }}
-                  className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-                    (showAllErrors || touchedFields.has('senderZip')) &&
-                    validation.fieldErrors['senderZip']
-                      ? 'border-rose-500 ring-1 ring-rose-500/50'
-                      : 'border-slate-700'
-                  }`}
-                  autoComplete="postal-code"
-                />
-                {(showAllErrors || touchedFields.has('senderZip')) &&
-                  validation.fieldErrors['senderZip'] && (
-                    <p className="text-[11px] text-rose-400 font-sans mt-1">
-                      {validation.fieldErrors['senderZip']}
-                    </p>
-                  )}
-              </div>
-            </div>
-          </div>
+          <PostalAddressFields
+            role="senderMailing"
+            values={userValues}
+            activeFieldKey={activeFieldKey}
+            onFieldFocus={onFieldFocus}
+            onFieldBlur={markTouched}
+            errorFor={addressErrorFor}
+            postalCodeLookup={postalCodeLookup}
+            onChange={onChange}
+          />
         </div>
 
         {/* SECTION 2: RECIPIENT (Recipient details) */}
@@ -448,7 +408,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
           <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center">
               <span className="w-5 h-5 rounded-full bg-slate-800 text-sky-400 inline-flex items-center justify-center mr-2 text-[10px]">
-                2
+                {isTenantNotice ? '3' : '2'}
               </span>
               Recipient details
             </h3>
@@ -554,117 +514,19 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
           {/* Manual Recipient Address Input (When not using bureau dropdown) */}
           {(recipientManualMode || notice.recipientMode === 'manual_landlord') && (
             <div className="space-y-3 pt-1">
-              <label className="text-xs font-medium text-slate-300 block">
-                Recipient Postal Address (Landlord / Corporate Office)
-              </label>
-
-              <div>
-                <input
-                  type="text"
-                  data-field-key="recipientAddressLine1"
-                  placeholder="Recipient Street Address (e.g., 100 Main St or P.O. Box 740256)"
-                  value={userValues.recipientAddressLine1 || ''}
-                  onChange={(e) => onChange('recipientAddressLine1', e.target.value)}
-                  onFocus={() => onFieldFocus('recipientAddressLine1')}
-                  onBlur={() => markTouched('recipientAddressLine1')}
-                  ref={(el) => { inputRefs.current['recipientAddressLine1'] = el; }}
-                  className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-                    (showAllErrors || touchedFields.has('recipientAddressLine1')) &&
-                    validation.fieldErrors['recipientAddressLine1']
-                      ? 'border-rose-500 ring-1 ring-rose-500/50'
-                      : 'border-slate-700'
-                  }`}
-                />
-                {(showAllErrors || touchedFields.has('recipientAddressLine1')) &&
-                  validation.fieldErrors['recipientAddressLine1'] && (
-                    <p className="text-[11px] text-rose-400 font-sans mt-1">
-                      {validation.fieldErrors['recipientAddressLine1']}
-                    </p>
-                  )}
-              </div>
-
-              <div className="grid grid-cols-6 gap-2">
-                <div className="col-span-3">
-                  <input
-                    type="text"
-                    data-field-key="recipientCity"
-                    placeholder="City"
-                    value={userValues.recipientCity || ''}
-                    onChange={(e) => onChange('recipientCity', e.target.value)}
-                    onFocus={() => onFieldFocus('recipientCity')}
-                    onBlur={() => markTouched('recipientCity')}
-                    ref={(el) => { inputRefs.current['recipientCity'] = el; }}
-                    className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-                      (showAllErrors || touchedFields.has('recipientCity')) &&
-                      validation.fieldErrors['recipientCity']
-                        ? 'border-rose-500 ring-1 ring-rose-500/50'
-                        : 'border-slate-700'
-                    }`}
-                  />
-                  {(showAllErrors || touchedFields.has('recipientCity')) &&
-                    validation.fieldErrors['recipientCity'] && (
-                      <p className="text-[11px] text-rose-400 font-sans mt-1">
-                        {validation.fieldErrors['recipientCity']}
-                      </p>
-                    )}
-                </div>
-
-                <div className="col-span-1">
-                  <select
-                    data-field-key="recipientState"
-                    value={userValues.recipientState || ''}
-                    onChange={(e) => onChange('recipientState', e.target.value)}
-                    onFocus={() => onFieldFocus('recipientState')}
-                    onBlur={() => markTouched('recipientState')}
-                    ref={(el) => { inputRefs.current['recipientState'] = el; }}
-                    className={`w-full bg-slate-800 border rounded px-1.5 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                      (showAllErrors || touchedFields.has('recipientState')) &&
-                      validation.fieldErrors['recipientState']
-                        ? 'border-rose-500 ring-1 ring-rose-500/50'
-                        : 'border-slate-700'
-                    }`}
-                  >
-                    <option value="">ST</option>
-                    {Object.keys(STATE_STATUTES).map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
-                  {(showAllErrors || touchedFields.has('recipientState')) &&
-                    validation.fieldErrors['recipientState'] && (
-                      <p className="text-[11px] text-rose-400 font-sans mt-1">
-                        {validation.fieldErrors['recipientState']}
-                      </p>
-                    )}
-                </div>
-
-                <div className="col-span-2">
-                  <input
-                    type="text"
-                    data-field-key="recipientZip"
-                    placeholder="ZIP"
-                    maxLength={10}
-                    value={userValues.recipientZip || ''}
-                    onChange={(e) => onChange('recipientZip', e.target.value)}
-                    onFocus={() => onFieldFocus('recipientZip')}
-                    onBlur={() => markTouched('recipientZip')}
-                    ref={(el) => { inputRefs.current['recipientZip'] = el; }}
-                    className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-                      (showAllErrors || touchedFields.has('recipientZip')) &&
-                      validation.fieldErrors['recipientZip']
-                        ? 'border-rose-500 ring-1 ring-rose-500/50'
-                        : 'border-slate-700'
-                    }`}
-                  />
-                  {(showAllErrors || touchedFields.has('recipientZip')) &&
-                    validation.fieldErrors['recipientZip'] && (
-                      <p className="text-[11px] text-rose-400 font-sans mt-1">
-                        {validation.fieldErrors['recipientZip']}
-                      </p>
-                    )}
-                </div>
-              </div>
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                Use the recipient&apos;s mailing destination. It may differ from both the rental property and your sender return address.
+              </p>
+              <PostalAddressFields
+                role="recipientDestination"
+                values={userValues}
+                activeFieldKey={activeFieldKey}
+                onFieldFocus={onFieldFocus}
+                onFieldBlur={markTouched}
+                errorFor={addressErrorFor}
+                postalCodeLookup={postalCodeLookup}
+                onChange={onChange}
+              />
             </div>
           )}
         </div>
@@ -674,7 +536,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
           <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center">
               <span className="w-5 h-5 rounded-full bg-slate-800 text-sky-400 inline-flex items-center justify-center mr-2 text-[10px]">
-                3
+                {isTenantNotice ? '4' : '3'}
               </span>
               Letter details
             </h3>
@@ -767,7 +629,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
           <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center">
               <span className="w-5 h-5 rounded-full bg-slate-800 text-sky-400 inline-flex items-center justify-center mr-2 text-[10px]">
-                4
+                {isTenantNotice ? '5' : '4'}
               </span>
               Review and sign
             </h3>
@@ -938,7 +800,9 @@ const FieldInputRow: React.FC<FieldInputRowProps> = ({
 
       {field.helperText && (
         <p className="text-[11px] text-slate-400 font-sans leading-tight">
-          {field.helperText}
+          {field.key === 'forwardingAddress'
+            ? field.helperText + ' This may differ from your sender mailing / return address.'
+            : field.helperText}
         </p>
       )}
 

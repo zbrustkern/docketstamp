@@ -22,6 +22,7 @@ import {
 } from '@/lib/docket/types';
 import { getVerifiedRecipientById } from '@/lib/docket/data/verified-recipients';
 import { getStateStatute } from '@/lib/docket/data/state-statutes';
+import { getGuidedFieldsInVisualOrder } from '@/components/docket/address-intake';
 
 export interface UseAgentHydrationOptions {
   notice: NoticeTemplateDefinition;
@@ -420,7 +421,7 @@ export function useAgentHydration({
     const missingKeys: string[] = [];
     let firstEmpty: string | null = null;
 
-    for (const field of notice.fields) {
+    for (const field of getGuidedFieldsInVisualOrder(notice)) {
       const val = effectiveValues[field.key];
       if (!isValueFilled(val)) {
         missingKeys.push(field.key);
