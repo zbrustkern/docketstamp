@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { ADMIN_COOKIE_NAME, getAdminSessionEmail, isAuthorizedAdminEmail, verifyAdminAuth } from '@/lib/admin-auth';
 
-export const CAPABILITIES = ['reports.read', 'evidence.private', 'postal.reconcile', 'postal.dispatch', 'postal.comp', 'money.reconcile', 'offers.manage', 'incidents.manage', 'controls.manage', 'alerts.send'] as const;
+export const CAPABILITIES = ['reports.read', 'evidence.private', 'postal.reconcile', 'postal.dispatch', 'postal.comp', 'money.reconcile', 'offers.manage', 'incidents.manage', 'controls.manage', 'alerts.send', 'outreach.send'] as const;
 export type Capability = typeof CAPABILITIES[number];
 export type AdminRole = 'viewer' | 'operator' | 'commercial' | 'owner';
 const roleCaps: Record<AdminRole, readonly Capability[]> = {

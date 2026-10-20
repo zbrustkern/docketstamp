@@ -47,6 +47,12 @@ env:
     availability:
       - RUNTIME
 
+  # Outbound admin correspondence is server-only; never compile into browser assets.
+  - variable: RESEND_API_KEY
+    secret: resend-key
+    availability:
+      - RUNTIME
+
   # Invariant 6: Staging deterministic address verification / mock CASS
   - variable: LOB_ENV
     value: staging_mock_cass

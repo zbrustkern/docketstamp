@@ -9,6 +9,15 @@
       "chapter_id": null,
       "run_id": "2026-10-19-staging-preview-reliability",
       "updated_at": "2026-10-19T00:00:00-05:00"
+    },
+    {
+      "id": "SPRINT-0002",
+      "title": "Admin Outgoing Email Composer",
+      "path": "docs/sprints/SPRINT-0002.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-19-admin-outgoing-email",
+      "updated_at": "2026-10-19T23:00:00-05:00"
     }
   ]
 }

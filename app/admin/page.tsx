@@ -68,6 +68,7 @@ import { AdminFeatureFlagsTab } from "@/components/admin/AdminFeatureFlagsTab";
 import { OrderJourneyDrawer } from "@/components/admin/OrderJourneyDrawer";
 import { CampaignPerformanceWidget } from "@/components/admin/CampaignPerformanceWidget";
 import { HighIntentCartsWidget } from "@/components/admin/HighIntentCartsWidget";
+import { OutgoingEmailPanel } from "@/components/admin/OutgoingEmailPanel";
 
 export default function AdminDashboardPage() {
   const { user, signInWithGoogle, signOut: authSignOut } = useAuth();
@@ -78,7 +79,7 @@ export default function AdminDashboardPage() {
   const [authError, setAuthError] = useState("");
 
   // Tab Navigation State
-  const [activeTab, setActiveTab] = useState<"orders" | "margins" | "discounts" | "scenarios" | "incidents" | "flags">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "margins" | "discounts" | "scenarios" | "incidents" | "flags" | "email">("orders");
 
   // Margins, Ad Spend & Campaign Attribution State
   const [adSpendInput, setAdSpendInput] = useState<string>("0.00");
@@ -1186,6 +1187,19 @@ export default function AdminDashboardPage() {
               }`}>
                 V3
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("email")}
+              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
+                activeTab === "email"
+                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-sky-600 sm:text-sky-900 sm:shadow-none sm:ring-0 font-semibold"
+                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 shrink-0" />
+              <span>Outgoing Email</span>
             </button>
           </nav>
         </div>
@@ -3305,6 +3319,7 @@ export default function AdminDashboardPage() {
         {activeTab === "flags" && (
           <AdminFeatureFlagsTab />
         )}
+        {activeTab === "email" && <OutgoingEmailPanel />}
       </main>
 
       {/* MOBILE PERSISTENT BOTTOM NAVIGATION (Thumb zone) */}
