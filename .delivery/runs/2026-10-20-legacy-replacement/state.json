@@ -3,7 +3,7 @@
   "run_id": "2026-10-20-legacy-replacement",
   "workflow": "df-sprint-plan + df-sprint-execute",
   "project_root": "/Users/zeke/code/DocketStamp",
-  "stage": "verified_replacement_staging_release",
+  "stage": "staging_deployed_remaining_acceptance",
   "status": "active",
   "owner": "Codex coordinator",
   "participants": [
@@ -12,7 +12,7 @@
     "gpt-6-luna orders/migration executor",
     "gpt-6-luna reminder executor"
   ],
-  "source_revision": "c4ede7639e2b6d6207325e50b27dd71f0c226c0e",
+  "source_revision": "ed6193659384ed8395b00c5b9f397bbc041334c0",
   "inputs": [
     "AGENTS.md",
     "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md",
@@ -40,7 +40,10 @@
     "TypeScript exit 0",
     "legacy audit zero unclassified; 78 bounded compatibility matches",
     "fixture dry-run resume complete",
-    "public desktop/mobile local smoke checks passed"
+    "public desktop/mobile local smoke checks passed",
+    "Exact-source automatic staging build013 READY and rollout008 SUCCEEDED",
+    "Public admin/account/favicon 200; retired checkout410; correct staging client chunks",
+    "Remote main unchanged; no production rollout"
   ],
   "open_issues": [
     "SPRINT-0007 authenticated account keyboard walkthrough",
@@ -48,6 +51,6 @@
   ],
   "iteration": 1,
   "iteration_limit": 3,
-  "next_action": "Commit release evidence; push only staging; verify exact-source automatic rollout and public endpoints.",
-  "updated_at": "2026-10-20T21:19:01.470650+00:00"
+  "next_action": "Complete SPRINT-0007 authenticated staging keyboard journey; implement SPRINT-0009 verified consent preferences before any marketing enablement.",
+  "updated_at": "2026-10-20T21:24:36.908384+00:00"
 }

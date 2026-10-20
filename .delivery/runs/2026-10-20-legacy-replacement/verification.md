@@ -28,3 +28,7 @@ Analytics destinations require explicit environment verification. Unsupported re
 Main integrated commits: 0a8f79c, b67f837, 64db645, b7f8c9f, 22bf6c1, 01f93b5, 1e455c8, 4eb3dbb, 453034c, 6769963, db33aad and 44f12e3. Final adoption/cursor repair 34d874e17344b041cedc51793ec61fcb19002a66 was applied by reviewed file hunks rather than cherry-picking because its isolated clone represented newly shared files as additions. Existing stronger checkpoint tests were retained and extended. Postal merge kept canonical queued-state and analytics changes; its duplicate regression fixture was updated to a complete frozen notice so it exercises the dispatch guard rather than failing earlier snapshot validation.
 
 Exact deployed source and cloud/public verification belong in deployment.md. The authenticated browser journey and consent feature remain open even if staging rollout succeeds.
+
+## Additional final checks
+
+Admin contracts and reporting oracles passed. The finance oracle initially saw accumulated local mock-store records (24 obligations versus its fresh-fixture expectation of 3); rerunning in a newly created isolated temporary mock-store directory passed. This was test state contamination, not a finance code change. All 23 archived original files match their manifest SHA-256. Both online Firebase project/domain checks pass. The staging rollout and public checks passed; see deployment.md.
