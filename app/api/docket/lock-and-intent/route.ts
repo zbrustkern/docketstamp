@@ -4,12 +4,13 @@ import { getNoticeBySlug, DOCKET_PRICING_TIERS } from '@/lib/docket/notices';
 import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/interpolate';
 import { renderLobHtmlPayload } from '@/lib/docket/renderer/lob-html-shell';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/lib/docket/guardrails';
-import { MailTierId, PostalAddress, DocketAddress } from '@/lib/docket/types';
+import { MailTierId } from '@/lib/docket/types';
 import { saveOrder, updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
 import { createCardPaymentIntent } from '@/lib/stripe';
 import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
 import { createDocumentIntegrityEvidence } from '@/lib/docket/integrity-evidence';
+import { validateNoticeInput } from '@/lib/docket/input-validation';
 
 export async function POST(req: NextRequest) {
   let failureCode:
@@ -18,11 +19,14 @@ export async function POST(req: NextRequest) {
     | 'CHECKOUT_UNAVAILABLE' = 'CHECKOUT_UNAVAILABLE';
   try {
     const body = await req.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Checkout request must be an object.' }, { status: 400 });
+    }
 
     const {
       slug,
       noticeSlug,
-      userValues = {},
+      userValues: rawUserValues = {},
       tier,
       selectedTier,
       customerEmail = '',
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
       entrySource,
       signatureAdoption,
       marketingConsent = false,
-    } = body;
+    } = body as Record<string, any>;
 
     const noticeKey = slug || noticeSlug;
     if (!noticeKey) {
@@ -56,32 +60,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Strict Conflict-of-Interest & Guardrail Verification (Invariant 1)
+    // 2. Parse the template schema, then keep only bounded factual fields and
+    // explicitly allowed postal components. Legal metadata remains renderer-owned.
+    const validatedInput = validateNoticeInput(notice, rawUserValues, senderAddress, recipientAddress);
+    if (!validatedInput.success) {
+      return NextResponse.json(
+        {
+          error: 'Document fields failed validation.',
+          details: validatedInput.issues,
+        },
+        { status: 400 }
+      );
+    }
+    const userValues = validatedInput.userValues;
+    const safeSenderAddress = validatedInput.senderAddress;
+    const safeRecipientAddress = validatedInput.recipientAddress;
+
     try {
-      if (userValues.recipientFormalName) {
-        assertNonFitnessEntity(userValues.recipientFormalName);
+      for (const key of [
+        'recipientFormalName',
+        'serviceProviderName',
+        'collectionAgencyName',
+        'serviceTypeLabel',
+        'creditorName',
+        'disputedAccountName',
+      ]) {
+        const value = userValues[key];
+        if (value) assertNonFitnessEntity(value);
       }
-      if (userValues.serviceProviderName) {
-        assertNonFitnessEntity(userValues.serviceProviderName);
-      }
-      if (userValues.collectionAgencyName) {
-        assertNonFitnessEntity(userValues.collectionAgencyName);
-      }
-      if (userValues.serviceTypeLabel) {
-        assertNonFitnessEntity(userValues.serviceTypeLabel);
-      }
-      if (userValues.creditorName) {
-        assertNonFitnessEntity(userValues.creditorName);
-      }
-      if (userValues.disputedAccountName) {
-        assertNonFitnessEntity(userValues.disputedAccountName);
-      }
-      if (recipientAddress?.name) {
-        assertNonFitnessEntity(recipientAddress.name);
-      }
-      if (recipientAddress?.company) {
-        assertNonFitnessEntity(recipientAddress.company);
-      }
+      if (safeRecipientAddress.name) assertNonFitnessEntity(safeRecipientAddress.name);
+      if (safeRecipientAddress.company) assertNonFitnessEntity(safeRecipientAddress.company);
     } catch (err: unknown) {
       if (err instanceof ConflictOfInterestError) {
         return NextResponse.json(
@@ -94,18 +102,6 @@ export async function POST(req: NextRequest) {
         );
       }
       throw err;
-    }
-
-    // 3. Schema Validation against Cartridge Definition
-    const parsedFields = notice.zodSchema.safeParse(userValues);
-    if (!parsedFields.success) {
-      return NextResponse.json(
-        {
-          error: 'Document fields failed statutory validation.',
-          details: parsedFields.error.flatten(),
-        },
-        { status: 400 }
-      );
     }
 
     if (
@@ -154,7 +150,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Generate / Validate Immutable Docket ID
     const docketId =
-      clientDocketId && /^DS-2026-[A-Z0-9]{6}$/.test(clientDocketId)
+      typeof clientDocketId === 'string' && /^DS-2026-[A-Z0-9]{6}$/.test(clientDocketId)
         ? clientDocketId
         : generateDocketId();
 
@@ -164,8 +160,8 @@ export async function POST(req: NextRequest) {
       userValues,
       docketId,
       serviceLevel: activeTier,
-      senderAddress,
-      recipientAddress,
+      senderAddress: safeSenderAddress,
+      recipientAddress: safeRecipientAddress,
     });
 
     const frozenHtmlPayload = renderLobHtmlPayload(interpolatedDoc);

@@ -20,6 +20,7 @@ import {
 } from '../types';
 import { getStateStatute } from '../data/state-statutes';
 import { CLERK_DOCKET_REGISTRY_TITLE } from '../guardrails';
+import { omitServerDerivedNoticeValues } from '../derived-fields';
 
 export interface InterpolateOptions {
   notice: NoticeTemplateDefinition;
@@ -77,17 +78,6 @@ function resolveStatutoryValues(
       result.statuteSummary = statute.statuteSummary || statute.statutoryNuance;
       result.propertyState = statute.stateName;
       result.stateName = statute.stateName;
-    } else {
-      result.statuteCitation = 'Applicable State Security Deposit Statute';
-      result.statutoryCitation = 'Applicable State Security Deposit Statute';
-      result.statuteDeadline = 'the statutory deadline';
-      result.returnDeadlineDays = '30';
-      result.returnDeadlineLabel = '30 days';
-      result.statutoryNuance = 'Statutory notice period required under state residential tenancy act.';
-      result.penaltyClause = 'Statutory penalties provided under applicable state law';
-      result.statuteSummary = 'State residential security deposit regulations';
-      result.propertyState = stateCode || 'Governing Jurisdiction';
-      result.stateName = stateCode || 'Governing Jurisdiction';
     }
   }
 
@@ -119,22 +109,24 @@ function normalizeValues(
   executionDate: string
 ): Record<string, string> {
   const s = getAddressFields(senderAddress);
-  const senderLine1 = s.line1 || userValues.senderAddressLine1 || userValues.leasedPremisesAddress || userValues.rentalPropertyAddress || '';
-  const senderCity = s.city || userValues.senderCity || userValues.rentalCity || '';
-  const senderState = s.state || userValues.senderState || userValues.rentalState || '';
-  const senderZip = s.zip || userValues.senderZip || userValues.rentalZip || '';
+  const senderLine1 = s.line1 || userValues.senderAddressLine1 || '';
+  const senderLine2 = s.line2 || userValues.senderAddressLine2 || '';
+  const senderCity = s.city || userValues.senderCity || '';
+  const senderState = s.state || userValues.senderState || '';
+  const senderZip = s.zip || userValues.senderZip || '';
 
-  const senderFullAddress = [senderLine1, senderCity && `${senderCity}, ${senderState} ${senderZip}`]
+  const senderFullAddress = [senderLine1, senderLine2, senderCity && `${senderCity}, ${senderState} ${senderZip}`]
     .filter(Boolean)
     .join(', ');
 
   const r = getAddressFields(recipientAddress);
   const recipientLine1 = r.line1 || userValues.recipientAddressLine1 || '';
+  const recipientLine2 = r.line2 || userValues.recipientAddressLine2 || '';
   const recipientCity = r.city || userValues.recipientCity || '';
   const recipientState = r.state || userValues.recipientState || '';
   const recipientZip = r.zip || userValues.recipientZip || '';
 
-  const recipientFullAddress = [recipientLine1, recipientCity && `${recipientCity}, ${recipientState} ${recipientZip}`]
+  const recipientFullAddress = [recipientLine1, recipientLine2, recipientCity && `${recipientCity}, ${recipientState} ${recipientZip}`]
     .filter(Boolean)
     .join(', ');
 
@@ -300,13 +292,19 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
     recipientAddress = {},
   } = options;
 
+  // Form callers may include legacy or staged values. Drop renderer-owned
+  // values before resolving legal metadata or constructing the document.
+  const factualValues = omitServerDerivedNoticeValues(userValues);
+
   // 1. Merge statutory lookups with user values
-  const statutoryValues = resolveStatutoryValues(notice, userValues);
-  const normalized = normalizeValues(userValues, senderAddress, recipientAddress, docketId, executionDate);
+  const statutoryValues = resolveStatutoryValues(notice, factualValues);
+  const normalized = normalizeValues(factualValues, senderAddress, recipientAddress, docketId, executionDate);
 
   const mergedValues: Record<string, string> = {
-    ...statutoryValues,
     ...normalized,
+    ...statutoryValues,
+    docketId,
+    executionDate,
   };
 
   // 2. Build RE line and subject
@@ -336,22 +334,22 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
   const resolvedSender: DocketAddress = {
     name: mergedValues.senderFullName || s.name || '[SENDER NAME]',
     company: s.company || senderAddress.company,
-    address_line1: s.line1 || userValues.senderAddressLine1 || mergedValues.leasedPremisesAddress || '[SENDER ADDRESS]',
-    address_line2: s.line2 || undefined,
-    address_city: s.city || userValues.senderCity || userValues.rentalCity || '',
-    address_state: s.state || userValues.senderState || userValues.rentalState || userValues.propertyState || '',
-    address_zip: s.zip || userValues.senderZip || userValues.rentalZip || '',
+    address_line1: s.line1 || factualValues.senderAddressLine1 || '[SENDER ADDRESS]',
+    address_line2: s.line2 || factualValues.senderAddressLine2 || undefined,
+    address_city: s.city || factualValues.senderCity || '',
+    address_state: s.state || factualValues.senderState || '',
+    address_zip: s.zip || factualValues.senderZip || '',
     address_country: 'US',
   };
 
   const resolvedRecipient: DocketAddress = {
     name: mergedValues.recipientFormalName || r.name || '[RECIPIENT NAME]',
     company: r.company || recipientAddress.company,
-    address_line1: r.line1 || userValues.recipientAddressLine1 || '[RECIPIENT ADDRESS]',
-    address_line2: r.line2 || undefined,
-    address_city: r.city || userValues.recipientCity || '',
-    address_state: r.state || userValues.recipientState || '',
-    address_zip: r.zip || userValues.recipientZip || '',
+    address_line1: r.line1 || factualValues.recipientAddressLine1 || '[RECIPIENT ADDRESS]',
+    address_line2: r.line2 || factualValues.recipientAddressLine2 || undefined,
+    address_city: r.city || factualValues.recipientCity || '',
+    address_state: r.state || factualValues.recipientState || '',
+    address_zip: r.zip || factualValues.recipientZip || '',
     address_country: 'US',
   };
 

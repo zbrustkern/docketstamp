@@ -93,6 +93,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
                   className="text-[11px] text-slate-600 mt-0.5 cursor-pointer hover:text-slate-900"
                 >
                   {doc.senderAddress.address_line1}
+                  {doc.senderAddress.address_line2 && <><br />{doc.senderAddress.address_line2}</>}
                   {doc.senderAddress.address_city && `, ${doc.senderAddress.address_city}`}
                   {doc.senderAddress.address_state && `, ${doc.senderAddress.address_state}`}{' '}
                   {doc.senderAddress.address_zip || ''}
@@ -129,6 +130,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
                   className="text-[11px] text-slate-600 mt-0.5 cursor-pointer hover:text-slate-900"
                 >
                   {doc.recipientAddress.address_line1}
+                  {doc.recipientAddress.address_line2 && <><br />{doc.recipientAddress.address_line2}</>}
                   {doc.recipientAddress.address_city && `, ${doc.recipientAddress.address_city}`}
                   {doc.recipientAddress.address_state && `, ${doc.recipientAddress.address_state}`}{' '}
                   {doc.recipientAddress.address_zip || ''}
