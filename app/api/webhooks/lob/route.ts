@@ -7,7 +7,8 @@ import {
   updateOrderStatus,
 } from "@/lib/firebase-admin";
 import { Order, OrderStatus } from "@/lib/types";
-import { readOrderRecord, resolvePostalProvenance } from "@/lib/order-record";
+import { resolvePostalProvenance } from "@/lib/order-record";
+import { validateFrozenNoticeOrder } from "@/lib/frozen-notice-order";
 
 /**
  * Maps Lob webhook events to internal OrderStatus lifecycle states.
@@ -185,9 +186,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const record = readOrderRecord(order);
     const provenance = resolvePostalProvenance(order);
-    if (record.schemaVersion !== 2 || record.kind !== "notice") {
+    if (validateFrozenNoticeOrder(order)) {
       return NextResponse.json({ received: true, matched: false, ignored: "LEGACY_ORDER" });
     }
     if (

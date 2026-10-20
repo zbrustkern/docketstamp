@@ -6,12 +6,14 @@ import { NextRequest } from "next/server";
 import { POST as lockAndIntentPost } from "../app/api/docket/lock-and-intent/route";
 import { POST as completeFreeOrderPost } from "../app/api/checkout/complete-free-order/route";
 import { POST as legacyCreateIntentPost } from "../app/api/checkout/create-intent/route";
-import { getOrderById, getOrderByLobLetterId, getOrdersCollection, saveDiscountCode, updateOrderStatus } from "../lib/firebase-admin";
+import { getOrderById, getOrderByLobLetterId, getOrdersCollection, saveDiscountCode, saveOrder, updateOrderStatus } from "../lib/firebase-admin";
 import { processPaidOrder } from "../lib/order-processor";
-import { dispatchAuthorizedObligation } from "../lib/admin-console/postal/dispatch";
+import { dispatchAuthorizedObligation, resolvePostalObligation } from "../lib/admin-console/postal/dispatch";
 import { serverEnvironment } from "../lib/admin-console/commands/access";
+import { recordPaymentAuthority } from "../lib/admin-console/finance/authority";
 import { classifyLegacyOrder, planLegacyOrderMigration } from "../lib/legacy-order-migration";
-import { readOrderRecord, resolvePostalProvenance, validateFrozenNoticeOrder } from "../lib/order-record";
+import { readOrderRecord, resolvePostalProvenance } from "../lib/order-record";
+import { validateFrozenNoticeOrder } from "../lib/frozen-notice-order";
 
 const originalEnv = { ...process.env };
 before(() => {
@@ -66,8 +68,100 @@ test("legacy provider adapter keeps a real Handwrytten reference away from Lob",
     provider: "unknown", reference: "hw_1", evidence: "conflict",
   });
   assert.equal(resolvePostalProvenance({ postalProvider: "lob", postalProviderReference: "ltr_explicit" }).reference, "ltr_explicit");
+  assert.deepEqual(resolvePostalProvenance({ postalProvider: "lob", postalProviderReference: "ltr_canonical", lobLetterId: "ltr_stale" }), {
+    provider: "unknown", reference: "ltr_canonical", evidence: "conflict",
+  });
+  assert.deepEqual(resolvePostalProvenance({ postalProvider: "handwrytten", postalProviderReference: "hw_canonical", handwryttenOrderId: "hw_stale" }), {
+    provider: "unknown", reference: "hw_canonical", evidence: "conflict",
+  });
   await getOrdersCollection().doc(legacy.id).set(legacy);
   assert.equal(await getOrderByLobLetterId("hw_real_legacy_1"), null);
+});
+
+test("complete pre-marker Sprint 0003 notice passes the shared dispatch claim once; incomplete and card snapshots fail closed", async () => {
+  const makeHistoricalNotice = (id: string) => {
+    const documentHtml = "<html><body>Frozen notice<br>DOCKET RECORD & DISPATCH CERTIFICATION</body></html>";
+    return {
+      id, noticeId: "security-deposit-return-demand-letter", noticeType: "security-deposit-return-demand-letter",
+      docketId: `DS-2026-${id.slice(-6).toUpperCase()}`, serviceLevel: "CERTIFIED" as const,
+      documentHtml,
+      documentIntegrityEvidence: {
+        schemaVersion: 1 as const, algorithm: "sha256" as const,
+        digest: createHash("sha256").update(documentHtml, "utf8").digest("hex"),
+        lockedAt: Date.now(),
+        signatureAdoption: { signerName: "Taylor Morgan", adoptedAt: Date.now(), affirmationVersion: "signature-adoption-v1" },
+      },
+      status: "PENDING_PAYMENT" as const, amountInCents: 1995, finalAmountInCents: 1995,
+      customerEmail: "legacy-notice@example.test",
+      recipientAddress: { firstName: "Carmel", lastName: "Property Group", street1: "18 Main Street", city: "Carmel", state: "IN", zip: "46032" },
+      returnAddress: { firstName: "Taylor", lastName: "Morgan", street1: "77 Lake Street", city: "Chicago", state: "IL", zip: "60601" },
+    };
+  };
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousStripeKey = process.env.STRIPE_SECRET_KEY;
+  (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+  process.env.STRIPE_SECRET_KEY = "sk_test_markerless_fixture_key";
+  process.env.LOB_ENV = "staging_mock_cass";
+  const historical = makeHistoricalNotice(`legacy_frozen_${Date.now()}`) as any;
+  const paymentIntentId = `pi_markerless_${historical.id}`;
+  historical.stripePaymentId = paymentIntentId;
+  await saveOrder(historical);
+  assert.equal(validateFrozenNoticeOrder(historical as any), null);
+  assert.equal(readOrderRecord(historical).schemaVersion, 1);
+
+  const recordedPayment = await recordPaymentAuthority({
+    id: paymentIntentId, object: "payment_intent", amount: 1995, amount_received: 1995,
+    currency: "usd", status: "succeeded", livemode: false, metadata: { orderId: historical.id },
+  } as any, {
+    eventId: `evt_markerless_${historical.id}`, eventType: "payment_intent.succeeded",
+    eventLivemode: false, occurredAt: Date.now(),
+  });
+  assert.equal(recordedPayment.accepted, true, JSON.stringify(recordedPayment));
+
+  let submissions = 0;
+  const submit = async () => {
+    submissions += 1;
+    return { success: true, mode: "mock" as const, isSimulatedMock: false, letterId: "ltr_legacy_fixture_once" };
+  };
+  const dispatchInput = { orderId: historical.id, actorId: "test:legacy", evidenceRef: "test:legacy-payment", resolveObligation: resolvePostalObligation, submit };
+  const first = await dispatchAuthorizedObligation({ ...dispatchInput, requestId: "legacy_notice_request_1" });
+  const duplicate = await dispatchAuthorizedObligation({ ...dispatchInput, requestId: "legacy_notice_request_2" });
+  assert.equal(first.status, "accepted", JSON.stringify(first));
+  assert.equal(duplicate.status, "blocked");
+  assert.equal(submissions, 1);
+
+  const invalidSnapshots = [
+    { ...historical, documentHtml: `${historical.documentHtml}<p>tampered</p>` },
+    { ...historical, documentIntegrityEvidence: undefined },
+    { id: "legacy_card_fixture", frontImageUrl: "https://example.test/card.png", printedMessage: "Hello" },
+  ];
+  for (const [index, invalid] of invalidSnapshots.entries()) {
+    assert.notEqual(validateFrozenNoticeOrder(invalid as any), null);
+    const blocked = await dispatchAuthorizedObligation({
+      ...dispatchInput, orderId: `invalid_legacy_snapshot_${index}`, requestId: `invalid_legacy_request_${index}`,
+      resolveObligation: async () => null,
+    });
+    assert.equal(blocked.status, "blocked");
+  }
+  assert.equal(submissions, 1);
+
+  const historicalFree = {
+    ...makeHistoricalNotice(`legacy_free_frozen_${Date.now()}`),
+    paymentMethod: "PROMO_CODE", discountCode: "HISTORICAL_FREE_FIXTURE",
+    amountInCents: 0, finalAmountInCents: 0,
+  };
+  await saveOrder(historicalFree as any);
+  const freeReplay = await completeFreeOrderPost(new NextRequest("http://localhost:3000/api/checkout/complete-free-order", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId: historicalFree.id, discountCode: historicalFree.discountCode }),
+  }));
+  assert.equal(freeReplay.status, 409);
+  assert.equal((await freeReplay.json()).code, "LEGACY_FREE_AUTHORITY_REQUIRES_RECONCILIATION");
+
+  if (previousNodeEnv === undefined) delete (process.env as Record<string, string | undefined>).NODE_ENV;
+  else (process.env as Record<string, string | undefined>).NODE_ENV = previousNodeEnv;
+  if (previousStripeKey === undefined) delete process.env.STRIPE_SECRET_KEY;
+  else process.env.STRIPE_SECRET_KEY = previousStripeKey;
 });
 
 test("card checkout returns a retired response before any PaymentIntent can be created", async () => {

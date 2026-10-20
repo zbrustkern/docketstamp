@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { POST as createIntentPost } from "../app/api/checkout/create-intent/route";
+import { POST as lockAndIntentPost } from "../app/api/docket/lock-and-intent/route";
 import { POST as stripeWebhookPost } from "../app/api/webhooks/stripe/route";
 import { POST as confirmOrderPost } from "../app/api/checkout/confirm-order/route";
 import { POST as completeFreeOrderPost } from "../app/api/checkout/complete-free-order/route";
@@ -12,12 +13,11 @@ import {
   PaymentModeConfigError,
 } from "../lib/payment-mode";
 import {
-  saveOrder,
   getOrderById,
+  updateOrderStatus,
   saveDiscountCode,
 } from "../lib/firebase-admin";
-import { Order, DiscountCode } from "../lib/types";
-import { CARD_FLAT_RATE_CENTS } from "../lib/stripe";
+import { DiscountCode } from "../lib/types";
 
 async function runPaymentModeSafetyTests() {
   console.log("=================================================");
@@ -38,6 +38,25 @@ async function runPaymentModeSafetyTests() {
   }
 
   const originalEnv = { ...process.env };
+
+  const makeFrozenNotice = async (email: string, discountCode?: string) => {
+    const response = await lockAndIntentPost(new NextRequest("http://localhost:3000/api/docket/lock-and-intent", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: "security-deposit-return-demand-letter", tier: "certified", customerEmail: email,
+        ...(discountCode ? { discountCode } : {}),
+        userValues: {
+          senderFullName: "Taylor Morgan", senderAddressLine1: "77 Lake Street, Unit 5", senderCity: "Chicago", senderState: "IL", senderZip: "60601",
+          recipientFormalName: "Carmel Property Group", recipientAddressLine1: "18 Main Street", recipientCity: "Carmel", recipientState: "IN", recipientZip: "46032",
+          propertyState: "IN", vacatedPremisesAddress: "77 Lake Street, Unit 5, Chicago, IL 60601", moveOutDate: "2026-09-01",
+          depositAmount: "$1,500.00", amountReceivedToDate: "$0.00", balanceRequested: "$1,500.00", responseDays: "14 calendar days",
+        },
+        signatureAdoption: { adopted: true, affirmed: true, signerName: "Taylor Morgan" },
+      }),
+    }));
+    if (response.status !== 200) throw new Error(`Canonical notice fixture failed: ${response.status} ${await response.text()}`);
+    return await response.json() as { orderId: string; isFree: boolean; amountCents: number; clientSecret: string | null };
+  };
 
   try {
     // ---------------------------------------------------------------------------
@@ -279,18 +298,10 @@ async function runPaymentModeSafetyTests() {
       body: JSON.stringify(sampleOrderPayload),
     });
 
-    const missingConfigRes = await createIntentPost(missingConfigReq);
+    const missingConfigRes = await createIntentPost();
     const missingConfigData = await missingConfigRes.json();
-    assert(
-      missingConfigRes.status === 503 && !missingConfigData.clientSecret,
-      `Missing live config in production returns 503 (got: ${missingConfigRes.status}, no mock secret)`
-    );
-    assert(
-      !missingConfigData.error.includes("Invalid Stripe live secret key") &&
-        !missingConfigData.error.includes("configured in production") &&
-        missingConfigData.error.includes("Payment is temporarily unavailable"),
-      "Error returned to client is masked and customer-safe"
-    );
+    assert(missingConfigRes.status === 410 && missingConfigData.code === "LEGACY_CHECKOUT_UNSUPPORTED" && !missingConfigData.clientSecret,
+      "Legacy card checkout is retired before Stripe configuration or client mode can initialize payment");
 
     // 3B. Placeholder key with NODE_ENV=production returns 503
     process.env.STRIPE_SECRET_KEY = "sk_test_placeholder_key_for_dev";
@@ -300,11 +311,8 @@ async function runPaymentModeSafetyTests() {
       body: JSON.stringify(sampleOrderPayload),
     });
 
-    const placeholderRes = await createIntentPost(placeholderReq);
-    assert(
-      placeholderRes.status === 503,
-      `Placeholder key in production returns 503 (got: ${placeholderRes.status})`
-    );
+    const placeholderRes = await createIntentPost();
+    assert(placeholderRes.status === 410, `Placeholder-key legacy checkout remains retired (got: ${placeholderRes.status})`);
 
     // 3C. Client-sent mode flag (isMock: true, x-mock-mode) has NO effect
     const clientFlagReq = new NextRequest("http://localhost:3000/api/checkout/create-intent", {
@@ -319,11 +327,10 @@ async function runPaymentModeSafetyTests() {
       }),
     });
 
-    const clientFlagRes = await createIntentPost(clientFlagReq);
-    assert(
-      clientFlagRes.status === 503,
-      `Client-sent isMock: true flag has no effect and cannot bypass production failure (status: ${clientFlagRes.status})`
-    );
+    const clientFlagRes = await createIntentPost();
+    const clientFlagData = await clientFlagRes.json();
+    assert(clientFlagRes.status === 410 && clientFlagData.code === "LEGACY_CHECKOUT_UNSUPPORTED",
+      `Client-sent isMock cannot revive the retired legacy card route (status: ${clientFlagRes.status})`);
 
     // 3D. Valid comp / zero-cost order completes via its own path
     const compCodeId = `COMP100_${Date.now()}`;
@@ -340,24 +347,22 @@ async function runPaymentModeSafetyTests() {
     };
     await saveDiscountCode(compDoc);
 
-    const compReq = new NextRequest("http://localhost:3000/api/checkout/create-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...sampleOrderPayload,
-        discountCode: compCodeId,
-      }),
-    });
-
-    const compRes = await createIntentPost(compReq);
-    const compData = await compRes.json();
+    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+    process.env.ALLOW_LOCAL_MOCK_PAYMENTS = "true";
+    process.env.LOB_ENV = "staging_mock_cass";
+    delete process.env.STRIPE_SECRET_KEY;
+    const compData = await makeFrozenNotice("sender@example.com", compCodeId);
     assert(
-      compRes.status === 200 &&
         compData.isFree === true &&
-        compData.amountInCents === 0 &&
+        compData.amountCents === 0 &&
         compData.clientSecret === null,
-      `Valid comp 100% order completes via free path without Stripe intent (isFree: ${compData.isFree}, amount: ${compData.amountInCents})`
+      `Valid comp 100% notice locks before entering free completion (isFree: ${compData.isFree}, amount: ${compData.amountCents})`
     );
+    const compRes = await completeFreeOrderPost(new NextRequest("http://localhost:3000/api/checkout/complete-free-order", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: compData.orderId, discountCode: compCodeId }),
+    }));
+    assert(compRes.status === 200, `Canonical zero-value discount notice completes through authorized free path (${compRes.status})`);
 
     // ---------------------------------------------------------------------------
     // TEST SUITE 4: Webhook Signature Checks & Test/Live Dispatch Boundary
@@ -390,48 +395,24 @@ async function runPaymentModeSafetyTests() {
     process.env.STRIPE_SECRET_KEY = "sk_test_payment_mode_fixture_12345";
     process.env.TEST_BYPASS_WEBHOOK_SIGNATURE = "true";
     process.env.HANDWRYTTEN_API_KEY = "live_supplier_key_handwrytten_real_looking";
+    process.env.LOB_ENV = "staging_mock_cass";
 
     // Track whether any live fetch was made to api.handwrytten.com
     const originalFetch = global.fetch;
     let liveSupplierFetchCalled = false;
     global.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-      if (urlStr.includes("api.handwrytten.com")) {
+      if (urlStr.includes("api.handwrytten.com") || urlStr.includes("api.lob.com")) {
         liveSupplierFetchCalled = true;
       }
       return originalFetch(input, init);
     };
 
-    const testOrderId = `order_testmode_safety_${Date.now()}`;
-    const testOrder: Order = {
-      id: testOrderId,
-      customerEmail: "buyer@example.com",
-      frontImageUrl: "https://example.com/cover.jpg",
-      printedMessage: "Happy Day",
-      handwrittenNote: "All the best",
-      fontStyleId: "1",
-      recipientAddress: {
-        firstName: "Alice",
-        lastName: "Smith",
-        street1: "100 Pine St",
-        city: "Seattle",
-        state: "WA",
-        zip: "98101",
-      },
-      returnAddress: {
-        firstName: "Bob",
-        lastName: "Jones",
-        street1: "200 Elm St",
-        city: "Seattle",
-        state: "WA",
-        zip: "98101",
-      },
-      status: "PENDING_PAYMENT",
-      amountInCents: CARD_FLAT_RATE_CENTS,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    await saveOrder(testOrder);
+    delete process.env.STRIPE_SECRET_KEY;
+    const { orderId: testOrderId, amountCents } = await makeFrozenNotice("buyer@example.com");
+    const testPaymentIntentId = `pi_test_${testOrderId}`;
+    await updateOrderStatus(testOrderId, { stripePaymentId: testPaymentIntentId });
+    process.env.STRIPE_SECRET_KEY = "sk_test_payment_mode_fixture_12345";
 
     const testPaymentWebhookReq = new NextRequest("http://localhost:3000/api/webhooks/stripe", {
       method: "POST",
@@ -444,9 +425,9 @@ async function runPaymentModeSafetyTests() {
         created: Math.floor(Date.now() / 1000),
         data: {
           object: {
-            id: `pi_test_${testOrderId}`,
-            amount: CARD_FLAT_RATE_CENTS,
-            amount_received: CARD_FLAT_RATE_CENTS,
+            id: testPaymentIntentId,
+            amount: amountCents,
+            amount_received: amountCents,
             currency: "usd",
             status: "succeeded",
             livemode: false,
@@ -472,14 +453,12 @@ async function runPaymentModeSafetyTests() {
 
     const processedOrder = (await getOrderById(testOrderId)) as any;
     assert(
-      (processedOrder?.status === "PROCESSING_DISPATCH" ||
-        processedOrder?.status === "PROCESSING_HANDWRYTTEN") &&
+      processedOrder?.status === "QUEUED_FOR_FULFILLMENT" &&
         processedOrder?.isTest === true &&
         processedOrder?.paymentMode === "stripe_test" &&
-        (processedOrder?.handwryttenOrderId?.startsWith("test_") ||
-          processedOrder?.lobLetterId?.startsWith("test_") ||
-          processedOrder?.lobLetterId?.startsWith("mock_lob_ltr_")),
-      `Order is labelled as test order in database (isTest: ${processedOrder?.isTest}, paymentMode: ${processedOrder?.paymentMode}, HW ID: ${processedOrder?.handwryttenOrderId})`
+        processedOrder?.postalProvider === "unknown" &&
+        !processedOrder?.lobLetterId && !processedOrder?.handwryttenOrderId,
+      `Order is truthfully marked as simulated without real provider ID (status: ${processedOrder?.status}, provider: ${processedOrder?.postalProvider})`
     );
 
     global.fetch = originalFetch;

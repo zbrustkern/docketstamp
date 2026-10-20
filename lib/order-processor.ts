@@ -16,7 +16,7 @@ import { recordServerTelemetry } from "./metrics-rollup";
 import { sendDocketDispatchReceiptEmail } from "./email-alerts";
 import { getStripeClient } from "./stripe";
 import { resolvePaymentMode } from "./payment-mode";
-import { validateFrozenNoticeOrder } from "./order-record";
+import { validateFrozenNoticeOrder } from "./frozen-notice-order";
 
 export interface ProcessPaidOrderResult {
   success: boolean;
@@ -154,7 +154,8 @@ export async function processPaidOrder(
         existingOrder.status === "DISPATCHING" ||
         existingOrder.status === "PROCESSING_DISPATCH" ||
         existingOrder.status === "PROCESSING_HANDWRYTTEN" ||
-        existingOrder.status === "MAILED"
+        existingOrder.status === "MAILED" ||
+        existingOrder.status === "QUEUED_FOR_FULFILLMENT"
       ) {
         throw new DuplicateDispatchError(
           existingOrder.status,

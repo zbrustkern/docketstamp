@@ -3,7 +3,8 @@ import { firestoreDb, sanitizeFirestoreData } from "@/lib/firebase-admin";
 import type { Order } from "@/lib/types";
 import { computeOrderSnapshotHash } from "@/lib/admin-console/finance/authority";
 import { serverEnvironment } from "@/lib/admin-console/commands/access";
-import { readOrderRecord, validateFrozenNoticeOrder } from "@/lib/order-record";
+import { readOrderRecord } from "@/lib/order-record";
+import { validateFrozenNoticeOrder } from "@/lib/frozen-notice-order";
 
 const COLLECTION = "free_authorizations_v1";
 const hashId = (value: string) => crypto.createHash("sha256").update(value).digest("hex");

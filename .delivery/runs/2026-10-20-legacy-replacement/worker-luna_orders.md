@@ -33,3 +33,17 @@ Migration utilities are `scripts/orders/inventory-legacy-orders.ts`, `scripts/or
 - There is intentionally no live migration/apply path. Any production data migration still requires an explicitly reviewed operational workflow and verified source export.
 - Admin page provenance labels are owned by the analytics lane; account/history UI is owned by the account lane. They should consume `resolvePostalProvenance` and avoid direct alias fallback.
 - Full TypeScript validation remains blocked by the pre-existing diagnostics in unrelated modules/tests; changed lane files are clean.
+
+## Follow-up repair (review findings)
+
+- Moved the SHA-256 dispatch gate into server-only `lib/frozen-notice-order.ts`; `lib/order-record.ts` is now a pure browser-safe provenance reader.
+- Complete pre-marker Sprint 0003 paid notices are compatible when required notice/docket/tier metadata, exact HTML digest, signer/adoption evidence, and the mandatory footer all verify. Explicit unsupported markers, modified HTML, absent evidence, incomplete notices, and legacy card orders remain rejected. Free authorization still requires canonical v2, because it is a separate zero-value authority path.
+- Payment confirmation, provider webhook processing, and shared dispatch now rely on the complete frozen-snapshot gate rather than rejecting all markerless records. The dispatch resolver also checks the personal sender before it builds a Lob payload.
+- Explicit postal references that disagree with `lobLetterId` or `handwryttenOrderId` are now reported as provenance conflicts. Simulations expose no fake provider letter ID and store no Lob alias.
+- Migrated active payment-mode, transaction-security, and sender-validation tests to canonical frozen notices and the current free checkout route. They continue to verify signature rejection, payment-mode isolation, exact-one concurrent dispatch claim, sender checks, and no provider ID in simulated mode.
+
+Follow-up checks: legacy/integrity/S5 node tests 29/29 passed; payment-mode safety 26/26 passed; transaction-security 10/10 assertions passed; sender-validation 12/12 assertions passed; `git diff --check` passed. Full TypeScript check still has 63 diagnostics in unrelated files, with no diagnostics in lane-owned changes.
+
+Material migration limitation: these scripts are fixture-only. They do not discover or apply changes to a production Firestore collection; no production export was available or used. A separately reviewed migration operator path is required before any real record annotations are applied.
+
+Historical zero-price notices without a canonical v2 free-authorization fact now receive an explicit `409 LEGACY_FREE_AUTHORITY_REQUIRES_RECONCILIATION` response. The frozen-snapshot compatibility gate still recognizes a complete markerless Sprint 0003 notice, but the older free-payment records lack durable authorization evidence to safely create a new free dispatch fact. They remain operator-reconciliation cases; paid captured notices with valid payment authority can use the compatibility path.

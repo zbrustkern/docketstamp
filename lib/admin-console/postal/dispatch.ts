@@ -4,7 +4,9 @@ import { serverEnvironment } from "@/lib/admin-console/commands/access";
 import { claimDispatchAttempt, finishDispatchAttempt, AttemptAuthority } from "./attempt-store";
 import { getVerifiedPaymentObligation } from "@/lib/admin-console/finance/authority";
 import { getFreeObligation } from "./free-authority";
-import { readOrderRecord, resolvePostalProvenance, validateFrozenNoticeOrder } from "@/lib/order-record";
+import { resolvePostalProvenance } from "@/lib/order-record";
+import { validateFrozenNoticeOrder } from "@/lib/frozen-notice-order";
+import { validatePersonalSender } from "@/lib/order-processor";
 
 function lobAddress(address: any): LobLetterDispatchParams["to"] {
   const fullName = [address.firstName, address.lastName].filter(Boolean).join(" ");
@@ -25,8 +27,8 @@ export async function resolvePostalObligation(orderId: string): Promise<Authoriz
   const proof: any = paid || free;
   if (!proof) return null;
   const order = proof.order;
-  const record = readOrderRecord(order);
-  if (record.schemaVersion !== 2 || record.kind !== "notice" || validateFrozenNoticeOrder(order)) return null;
+  if (validateFrozenNoticeOrder(order)) return null;
+  if (!validatePersonalSender(order.returnAddress).valid) return null;
   const postal = resolvePostalProvenance(order);
   if (postal.provider === "handwrytten") return null;
   const documentHtml = order.documentHtml;
@@ -74,7 +76,8 @@ export type ObligationResolver = (orderId: string) => Promise<AuthorizedObligati
 export type LobSubmitter = (params: LobLetterDispatchParams) => ReturnType<typeof dispatchDocketLetter>;
 
 export type PostalDispatchResult =
-  | { status: "accepted" | "simulated"; attemptId: string; providerLetterId: string; mode: string }
+  | { status: "accepted"; attemptId: string; providerLetterId: string; mode: string }
+  | { status: "simulated"; attemptId: string; mode: string }
   | { status: "uncertain"; attemptId: string; mode: string; diagnostic: "PROVIDER_RESULT_AMBIGUOUS" }
   | { status: "blocked"; reason: string };
 
@@ -145,7 +148,7 @@ export async function dispatchAuthorizedObligation(input: {
   }
   if (submitted.success && submitted.isSimulatedMock === true) {
     await finishDispatchAttempt({ attemptId: claim.attempt.attemptId, state: "simulated", providerErrorCode: "MOCK_SIMULATED", nowMs: input.nowMs });
-    return { status: "simulated", attemptId: claim.attempt.attemptId, providerLetterId: submitted.letterId || `mock:${input.orderId}`, mode };
+    return { status: "simulated", attemptId: claim.attempt.attemptId, mode };
   }
   if (submitted.success && submitted.letterId && submitted.isSimulatedMock !== true && submitted.mode === mode) {
     await finishDispatchAttempt({ attemptId: claim.attempt.attemptId, state: "accepted", providerLetterId: submitted.letterId, nowMs: input.nowMs });

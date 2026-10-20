@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { POST as createIntentPost } from "../app/api/checkout/create-intent/route";
+import { POST as lockAndIntentPost } from "../app/api/docket/lock-and-intent/route";
 import { POST as completeFreeOrderPost } from "../app/api/checkout/complete-free-order/route";
 import { processPaidOrder, validatePersonalSender } from "../lib/order-processor";
-import { fulfillHandwryttenOrder } from "../lib/handwrytten";
+import { resolvePostalProvenance } from "../lib/order-record";
 import {
-  saveOrder,
   getOrderById,
+  updateOrderStatus,
   saveDiscountCode,
 } from "../lib/firebase-admin";
-import { Order, DiscountCode } from "../lib/types";
 
 async function runSenderValidationTests() {
   console.log("=================================================");
@@ -30,6 +30,24 @@ async function runSenderValidationTests() {
 
   const originalEnv = { ...process.env };
   const originalFetch = global.fetch;
+  const makeFrozenNotice = async (email: string, discountCode?: string) => {
+    const response = await lockAndIntentPost(new NextRequest("http://localhost:3000/api/docket/lock-and-intent", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: "security-deposit-return-demand-letter", tier: "certified", customerEmail: email,
+        ...(discountCode ? { discountCode } : {}),
+        userValues: {
+          senderFullName: "Taylor Morgan", senderAddressLine1: "77 Lake Street, Unit 5", senderCity: "Chicago", senderState: "IL", senderZip: "60601",
+          recipientFormalName: "Carmel Property Group", recipientAddressLine1: "18 Main Street", recipientCity: "Carmel", recipientState: "IN", recipientZip: "46032",
+          propertyState: "IN", vacatedPremisesAddress: "77 Lake Street, Unit 5, Chicago, IL 60601", moveOutDate: "2026-09-01",
+          depositAmount: "$1,500.00", amountReceivedToDate: "$0.00", balanceRequested: "$1,500.00", responseDays: "14 calendar days",
+        },
+        signatureAdoption: { adopted: true, affirmed: true, signerName: "Taylor Morgan" },
+      }),
+    }));
+    if (response.status !== 200) throw new Error(`Canonical notice fixture failed: ${response.status} ${await response.text()}`);
+    return await response.json() as { orderId: string; isFree: boolean };
+  };
 
   try {
     // ---------------------------------------------------------------------------
@@ -59,14 +77,14 @@ async function runSenderValidationTests() {
 
     assert(
       validatePersonalSender({
-        firstName: "Aster & Blanche",
+        firstName: "DocketStamp",
         lastName: "Press",
         street1: "123 Main St",
         city: "Austin",
         state: "TX",
         zip: "78701",
       }).valid === false,
-      "Brand name 'Aster & Blanche' / 'Press' is rejected as personal sender"
+      "DocketStamp brand name is rejected as personal sender"
     );
 
     assert(
@@ -88,67 +106,22 @@ async function runSenderValidationTests() {
 
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
     process.env.ALLOW_LOCAL_MOCK_PAYMENTS = "true";
+    process.env.LOB_ENV = "staging_mock_cass";
 
-    const basePayload = {
-      frontImageUrl: "https://example.com/cover.jpg",
-      printedMessage: "Happy Birthday",
-      handwrittenNote: "Have a great day!",
-      recipientAddress: {
-        firstName: "Sarah",
-        lastName: "Connor",
-        street1: "742 Evergreen Terr",
-        city: "Springfield",
-        state: "OR",
-        zip: "97477",
-      },
-      customerEmail: "sender@example.com",
-    };
-
-    // 2A. Request with missing return address name
-    const missingSenderReq = new NextRequest("http://localhost:3000/api/checkout/create-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...basePayload,
-        returnAddress: {
-          firstName: "",
-          street1: "100 Pine St",
-          city: "Seattle",
-          state: "WA",
-          zip: "98101",
-        },
-      }),
-    });
-
-    const missingSenderRes = await createIntentPost(missingSenderReq);
+    // 2A. The old card route is gone; signed notice checkout validates senders.
+    const missingSenderRes = await createIntentPost();
     const missingSenderData = await missingSenderRes.json();
     assert(
-      missingSenderRes.status === 400 && Boolean(missingSenderData.error),
-      `create-intent rejects missing sender name with HTTP 400 (${missingSenderData.error})`
+      missingSenderRes.status === 410 && missingSenderData.code === "LEGACY_CHECKOUT_UNSUPPORTED",
+      "retired card checkout rejects the predecessor flow before payment; current notice checkout validates the sender during lock"
     );
 
-    // 2B. Request with brand name "Aster & Blanche"
-    const brandSenderReq = new NextRequest("http://localhost:3000/api/checkout/create-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...basePayload,
-        returnAddress: {
-          firstName: "Aster & Blanche",
-          lastName: "Press",
-          street1: "100 Pine St",
-          city: "Seattle",
-          state: "WA",
-          zip: "98101",
-        },
-      }),
-    });
-
-    const brandSenderRes = await createIntentPost(brandSenderReq);
+    // 2B. The retired endpoint rejects without initializing any payment flow.
+    const brandSenderRes = await createIntentPost();
     const brandSenderData = await brandSenderRes.json();
     assert(
-      brandSenderRes.status === 400 && brandSenderData.error.includes("Aster & Blanche"),
-      `create-intent rejects brand name 'Aster & Blanche' with HTTP 400 (${brandSenderData.error})`
+      brandSenderRes.status === 410 && brandSenderData.code === "LEGACY_CHECKOUT_UNSUPPORTED",
+      "retired card checkout rejects brand-name card payloads before payment"
     );
 
     // ---------------------------------------------------------------------------
@@ -156,41 +129,14 @@ async function runSenderValidationTests() {
     // ---------------------------------------------------------------------------
     console.log("\n--- 3. Testing Recovery in order-processor for Defective Orders ---");
 
-    const defectiveOrderId = `order_defective_sender_${Date.now()}`;
-    const defectiveOrder: Order = {
-      id: defectiveOrderId,
-      customerEmail: "victim@example.com",
-      frontImageUrl: "https://example.com/cover.jpg",
-      printedMessage: "Hello",
-      handwrittenNote: "Note",
-      fontStyleId: "1",
-      recipientAddress: {
-        firstName: "Jane",
-        lastName: "Doe",
-        street1: "123 Elm St",
-        city: "Austin",
-        state: "TX",
-        zip: "78701",
-      },
-      returnAddress: {
-        firstName: "", // Defective: missing sender name
-        lastName: "",
-        street1: "500 Oak St",
-        city: "Austin",
-        state: "TX",
-        zip: "78701",
-      },
-      status: "PENDING_PAYMENT",
-      amountInCents: 900,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    await saveOrder(defectiveOrder);
+    const { orderId: defectiveOrderId } = await makeFrozenNotice("victim@example.com");
+    await updateOrderStatus(defectiveOrderId, { returnAddress: { firstName: "", lastName: "", street1: "500 Oak St", city: "Austin", state: "TX", zip: "78701" } });
 
     const defectiveProcessResult = await processPaidOrder(
       defectiveOrderId,
-      "pi_simulated_paid_defective",
-      "victim@example.com"
+      `pi_mock_defective_${Date.now()}`,
+      "victim@example.com",
+      { isTest: true, paymentMode: "local_mock" }
     );
 
     assert(
@@ -203,136 +149,19 @@ async function runSenderValidationTests() {
     assert(
       orderInDb?.status === "QUEUED_FOR_FULFILLMENT" &&
         Boolean(orderInDb?.fulfillmentError) &&
-        !orderInDb?.handwryttenOrderId,
+        !orderInDb?.lobLetterId && !orderInDb?.handwryttenOrderId,
       `Order placed in recoverable operator-visible state (error: ${orderInDb?.fulfillmentError})`
     );
 
     // ---------------------------------------------------------------------------
-    // TEST 4: Supplier Payload Mocking: Never Produces Aster & Blanche Sender
+    // TEST 4: Historical provider identifiers remain truthfully attributed
     // ---------------------------------------------------------------------------
-    console.log("\n--- 4. Testing Supplier Dispatch Payload (Mocked Supplier) ---");
-
-    process.env.HANDWRYTTEN_API_KEY = "test_handwrytten_key_audit";
-
-    let singleStepPayloadCaptured: any = null;
-    let customCardPayloadCaptured: any = null;
-
-    const sampleCoverDataUri = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
-
-    global.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-
-      if (urlStr.includes("example.com")) {
-        return new Response(new Uint8Array([1, 2, 3]), {
-          status: 200,
-          headers: { "Content-Type": "image/jpeg" },
-        });
-      }
-
-      if (urlStr.includes("/v2/cards/uploadCustomLogo")) {
-        return new Response(JSON.stringify({ status: "ok", id: 88881 }), { status: 200 });
-      }
-
-      if (urlStr.includes("/v2/cards/createCustomCard")) {
-        if (init?.body) {
-          customCardPayloadCaptured = JSON.parse(init.body as string);
-        }
-        return new Response(JSON.stringify({ status: "ok", card_id: 99991 }), { status: 200 });
-      }
-
-      if (urlStr.includes("/v2/orders/singleStepOrder")) {
-        if (init?.body) {
-          singleStepPayloadCaptured = JSON.parse(init.body as string);
-        }
-        return new Response(JSON.stringify({ status: "ok", order_id: 1234567 }), { status: 200 });
-      }
-
-      return originalFetch(input, init);
-    };
-
-    // 4A. fulfillHandwryttenOrder called with empty sender name refuses dispatch
-    const emptySenderDispatch = await fulfillHandwryttenOrder({
-      imageUrl: sampleCoverDataUri,
-      printedGreeting: "",
-      handwrittenMessage: "My note",
-      fontId: "1",
-      recipient: {
-        firstName: "Alice",
-        lastName: "Smith",
-        street1: "123 Main St",
-        city: "Seattle",
-        state: "WA",
-        zip: "98101",
-      },
-      returnAddress: {
-        firstName: "", // missing
-        lastName: "",
-        street1: "456 Oak St",
-        city: "Seattle",
-        state: "WA",
-        zip: "98101",
-      },
-    });
-
+    console.log("\n--- 4. Testing Historical Postal Provider Provenance ---");
+    const oldHandwryttenRecord = { id: "legacy_hw", handwryttenOrderId: "hw_123456" };
     assert(
-      emptySenderDispatch.success === false,
-      "fulfillHandwryttenOrder refuses dispatch when sender first name is missing"
-    );
-    assert(
-      singleStepPayloadCaptured === null,
-      "singleStepOrder was NOT called with missing sender name"
-    );
-
-    // 4B. fulfillHandwryttenOrder called with valid personal sender dispatches without brand names in sender fields
-    const validPersonalDispatch = await fulfillHandwryttenOrder({
-      orderId: "order_sender_test_99",
-      imageUrl: sampleCoverDataUri,
-      printedGreeting: "Dear Friend",
-      handwrittenMessage: "Thinking of you!",
-      fontId: "1",
-      recipient: {
-        firstName: "Alice",
-        lastName: "Smith",
-        street1: "123 Main St",
-        city: "Seattle",
-        state: "WA",
-        zip: "98101",
-      },
-      returnAddress: {
-        firstName: "Michael",
-        lastName: "Scott",
-        street1: "1725 Slough Ave",
-        city: "Scranton",
-        state: "PA",
-        zip: "18503",
-      },
-    });
-
-    assert(
-      validPersonalDispatch.success === true && Boolean(singleStepPayloadCaptured),
-      "singleStepOrder dispatched successfully with personal sender"
-    );
-
-    assert(
-      singleStepPayloadCaptured?.sender_first_name === "Michael",
-      `sender_first_name is personal name (got: '${singleStepPayloadCaptured?.sender_first_name}')`
-    );
-
-    assert(
-      singleStepPayloadCaptured?.sender_last_name === "Scott",
-      `sender_last_name is personal name (got: '${singleStepPayloadCaptured?.sender_last_name}')`
-    );
-
-    assert(
-      singleStepPayloadCaptured?.sender_first_name !== "Aster & Blanche" &&
-        singleStepPayloadCaptured?.sender_last_name !== "Press",
-      "Supplier sender payload strictly does NOT contain 'Aster & Blanche' or 'Press'"
-    );
-
-    // 4C. Assert physical A&B backplate / colophon logic is preserved
-    assert(
-      customCardPayloadCaptured?.back_type === "logo",
-      "Card creation preserves physical backplate logo type for physical colophon"
+      resolvePostalProvenance(oldHandwryttenRecord).provider === "handwrytten" &&
+        resolvePostalProvenance(oldHandwryttenRecord).reference === "hw_123456",
+      "A historical Handwrytten ID remains labeled Handwrytten and is not promoted to Lob"
     );
 
     // ---------------------------------------------------------------------------
@@ -353,13 +182,9 @@ async function runSenderValidationTests() {
       updatedAt: Date.now(),
     });
 
-    const defectiveFreeOrderId = `order_free_defect_${Date.now()}`;
-    await saveOrder({
-      ...defectiveOrder,
-      id: defectiveFreeOrderId,
-      amountInCents: 0,
-      discountCode: freeCode,
-    });
+    const { orderId: defectiveFreeOrderId, isFree } = await makeFrozenNotice("victim@example.com", freeCode);
+    assert(isFree, "Free sender fixture uses a canonical 100% discounted notice");
+    await updateOrderStatus(defectiveFreeOrderId, { returnAddress: { firstName: "", lastName: "", street1: "500 Oak St", city: "Austin", state: "TX", zip: "78701" } });
 
     const freeOrderReq = new NextRequest("http://localhost:3000/api/checkout/complete-free-order", {
       method: "POST",

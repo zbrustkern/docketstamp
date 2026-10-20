@@ -2,15 +2,11 @@ import { NextRequest } from "next/server";
 import { POST as stripeWebhookPost } from "../app/api/webhooks/stripe/route";
 import { POST as confirmOrderPost } from "../app/api/checkout/confirm-order/route";
 import { processPaidOrder } from "../lib/order-processor";
+import { POST as lockAndIntentPost } from "../app/api/docket/lock-and-intent/route";
 import {
-  saveOrder,
   getOrderById,
   updateOrderStatus,
-  getOrdersCollection,
-  firestoreDb,
 } from "../lib/firebase-admin";
-import { Order } from "../lib/types";
-import { CARD_FLAT_RATE_CENTS } from "../lib/stripe";
 
 async function runSecurityTests() {
   console.log("=================================================");
@@ -109,37 +105,30 @@ async function runSecurityTests() {
   // ---------------------------------------------------------------------------
   console.log("\n--- 2. Testing Vulnerability 2: Payment Confirmation Invariant Checks ---");
 
-  const testOrderId = `order_sec_test_${Date.now()}`;
-  const baseOrder: Order = {
-    id: testOrderId,
-    customerEmail: "victim@example.com",
-    frontImageUrl: "https://example.com/cover.jpg",
-    printedMessage: "Happy Birthday!",
-    handwrittenNote: "Wishing you the best!",
-    fontStyleId: "1",
-    recipientAddress: {
-      firstName: "Jane",
-      lastName: "Doe",
-      street1: "123 Elm St",
-      city: "Austin",
-      state: "TX",
-      zip: "78701",
-    },
-    returnAddress: {
-      firstName: "Aster",
-      lastName: "Press",
-      street1: "500 Oak St",
-      city: "Austin",
-      state: "TX",
-      zip: "78701",
-    },
-    status: "PENDING_PAYMENT",
-    amountInCents: CARD_FLAT_RATE_CENTS, // 900 cents
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+  process.env.ALLOW_LOCAL_MOCK_PAYMENTS = "true";
+  process.env.LOB_ENV = "staging_mock_cass";
+  delete process.env.STRIPE_SECRET_KEY;
+  (process.env as Record<string, string | undefined>).NODE_ENV = "development";
+  const makeFrozenNotice = async (email: string) => {
+    const response = await lockAndIntentPost(new NextRequest("http://localhost:3000/api/docket/lock-and-intent", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: "security-deposit-return-demand-letter", tier: "certified", customerEmail: email,
+        userValues: {
+          senderFullName: "Taylor Morgan", senderAddressLine1: "77 Lake Street, Unit 5", senderCity: "Chicago", senderState: "IL", senderZip: "60601",
+          recipientFormalName: "Carmel Property Group", recipientAddressLine1: "18 Main Street", recipientCity: "Carmel", recipientState: "IN", recipientZip: "46032",
+          propertyState: "IN", vacatedPremisesAddress: "77 Lake Street, Unit 5, Chicago, IL 60601", moveOutDate: "2026-09-01",
+          depositAmount: "$1,500.00", amountReceivedToDate: "$0.00", balanceRequested: "$1,500.00", responseDays: "14 calendar days",
+        },
+        signatureAdoption: { adopted: true, affirmed: true, signerName: "Taylor Morgan" },
+      }),
+    }));
+    if (response.status !== 200) throw new Error(`Canonical notice fixture failed: ${response.status} ${await response.text()}`);
+    const body = await response.json();
+    return body.orderId as string;
   };
-
-  await saveOrder(baseOrder);
+  const testOrderId = await makeFrozenNotice("victim@example.com");
+  await updateOrderStatus(testOrderId, { stripePaymentId: "" });
 
   // 2A. Missing paymentIntentId fails closed
   const missingPiReq = new NextRequest("http://localhost:3000/api/checkout/confirm-order", {
@@ -170,17 +159,10 @@ async function runSecurityTests() {
   console.log("\n--- 3. Testing Vulnerability 3: Fulfillment Concurrency (Atomic Locking) ---");
 
   process.env.ALLOW_LOCAL_MOCK_PAYMENTS = "true";
-  process.env.STRIPE_SECRET_KEY = "sk_test_mock_secret_key_12345";
-  (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+  delete process.env.STRIPE_SECRET_KEY;
+  (process.env as Record<string, string | undefined>).NODE_ENV = "development";
 
-  const raceOrderId = `order_race_${Date.now()}`;
-  const raceOrder: Order = {
-    ...baseOrder,
-    id: raceOrderId,
-    status: "PENDING_PAYMENT",
-    customerEmail: "racer@example.com",
-  };
-  await saveOrder(raceOrder);
+  const raceOrderId = await makeFrozenNotice("racer@example.com");
 
   // Simulate 10 simultaneous concurrent fulfillment calls (e.g. rapid user clicks + webhooks)
   console.log("Simulating 10 concurrent processPaidOrder requests fired in the exact same millisecond...");
@@ -192,10 +174,7 @@ async function runSecurityTests() {
   const results = await Promise.all(concurrentCalls);
 
   const dispatchedCount = results.filter(
-    (r) =>
-      r.success &&
-      !r.alreadyProcessed &&
-      (r.status === "PROCESSING_DISPATCH" || r.status === "PROCESSING_HANDWRYTTEN")
+    (r) => !r.alreadyProcessed && r.status === "QUEUED_FOR_FULFILLMENT"
   ).length;
 
   const deduplicatedCount = results.filter(
@@ -216,13 +195,13 @@ async function runSecurityTests() {
 
   const finalRaceOrder = await getOrderById(raceOrderId);
   assert(
-    finalRaceOrder?.status === "PROCESSING_DISPATCH" || finalRaceOrder?.status === "PROCESSING_HANDWRYTTEN",
-    `Final order status in database is PROCESSING_DISPATCH (Status: ${finalRaceOrder?.status})`
+    finalRaceOrder?.status === "QUEUED_FOR_FULFILLMENT" && finalRaceOrder?.postalProvider === "unknown",
+    `Final order records simulated local fulfillment with unknown provider (Status: ${finalRaceOrder?.status}, provider: ${finalRaceOrder?.postalProvider})`
   );
 
   assert(
-    !!(finalRaceOrder?.lobLetterId || finalRaceOrder?.handwryttenOrderId),
-    `Order has a valid Postal Dispatch / Letter ID recorded (ID: ${finalRaceOrder?.lobLetterId || finalRaceOrder?.handwryttenOrderId})`
+    !finalRaceOrder?.lobLetterId && !finalRaceOrder?.handwryttenOrderId,
+    "Simulated fulfillment records no real postal provider identifier"
   );
 
   // 3B. Subsequent replay after fulfillment returns alreadyProcessed: true
