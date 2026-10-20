@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "sprints": [
+    {
+      "id": "SPRINT-0001",
+      "title": "Preview, Staging Checkout, and Failure Resilience",
+      "path": "docs/sprints/SPRINT-0001.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-19-staging-preview-reliability",
+      "updated_at": "2026-10-19T00:00:00-05:00"
+    }
+  ]
+}

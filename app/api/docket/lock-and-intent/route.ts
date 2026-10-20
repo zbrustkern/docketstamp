@@ -11,6 +11,10 @@ import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
+  let failureCode:
+    | 'ORDER_PERSISTENCE'
+    | 'PAYMENT_INITIALIZATION'
+    | 'CHECKOUT_UNAVAILABLE' = 'CHECKOUT_UNAVAILABLE';
   try {
     const body = await req.json();
 
@@ -244,9 +248,11 @@ export async function POST(req: NextRequest) {
     };
 
     // Commit snapshot before requesting payment credentials
+    failureCode = 'ORDER_PERSISTENCE';
     await saveOrder(orderRecord);
 
     // 8. Create Stripe PaymentIntent
+    failureCode = 'PAYMENT_INITIALIZATION';
     const paymentIntent = await createCardPaymentIntent({
       orderId,
       customerEmail: customerEmail || undefined,
@@ -276,7 +282,15 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('[/api/docket/lock-and-intent Error]', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error initializing docket order.' },
+      {
+        code: failureCode,
+        error:
+          failureCode === 'ORDER_PERSISTENCE'
+            ? 'We could not save checkout securely.'
+            : failureCode === 'PAYMENT_INITIALIZATION'
+            ? 'We could not initialize secure payment.'
+            : 'We could not prepare checkout.',
+      },
       { status: 500 }
     );
   }

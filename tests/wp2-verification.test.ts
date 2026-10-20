@@ -14,6 +14,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { NextRequest } from 'next/server';
 
 import {
   intentToVacateNotice,
@@ -33,6 +34,9 @@ import {
   verifyUsAddress,
   dispatchDocketLetter,
 } from '../src/lib/fulfillment/lob';
+import { POST as lockAndIntentPost } from '../app/api/docket/lock-and-intent/route';
+import { getOrderById } from '../lib/firebase-admin';
+import { UPL_COMPLIANCE_FOOTER_TEXT } from '../src/lib/docket/guardrails';
 
 describe('WP-2 Verification Gate', () => {
   describe('1. interpolateNotice Engine', () => {
@@ -158,6 +162,85 @@ describe('WP-2 Verification Gate', () => {
       assert.ok(html.includes('DS-2026-GEO001-OR'));
       assert.ok(html.includes('not a law firm'));
       assert.ok(html.includes('legal representation'));
+    });
+
+    it('freezes the same deterministic notice content produced for review, with docket, tier, signature, and UPL disclosure', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      const originalMockPayments = process.env.ALLOW_LOCAL_MOCK_PAYMENTS;
+      process.env.NODE_ENV = 'test';
+      process.env.ALLOW_LOCAL_MOCK_PAYMENTS = 'true';
+
+      try {
+        const userValues = {
+          senderFullName: 'Taylor Morgan',
+          senderAddressLine1: '77 Lake Street, Unit 5',
+          senderCity: 'Chicago',
+          senderState: 'IL',
+          senderZip: '60601',
+          recipientFormalName: 'North Shore Property Group',
+          recipientAddressLine1: '900 Sheridan Road',
+          recipientCity: 'Evanston',
+          recipientState: 'IL',
+          recipientZip: '60201',
+          propertyState: 'IL',
+          vacatedPremisesAddress: '77 Lake Street, Unit 5, Chicago, IL 60601',
+          moveOutDate: '2026-09-30',
+          depositAmount: '$1,800.00',
+          amountReceivedToDate: '$0.00',
+          balanceRequested: '$1,800.00',
+          responseDays: '14 calendar days',
+        };
+        const docketId = 'DS-2026-ABC123';
+        const tier = 'certified_return_receipt' as const;
+        const previewDoc = interpolateNotice({
+          notice: securityDepositNotice,
+          userValues,
+          docketId,
+          serviceLevel: tier,
+        });
+        const previewHtml = renderLobHtmlPayload(previewDoc);
+
+        const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: securityDepositNotice.slug,
+            userValues,
+            tier,
+            docketId,
+            customerEmail: 'parity-fixture@example.com',
+          }),
+        });
+        const response = await lockAndIntentPost(req);
+        if (response.status !== 200) {
+          assert.fail(`lock route rejected parity fixture: ${JSON.stringify(await response.json())}`);
+        }
+        const result = await response.json();
+        const order = await getOrderById(result.orderId);
+        assert.ok(order, 'lock route must persist an order before payment');
+        assert.equal(order.status, 'PENDING_PAYMENT');
+        assert.equal(order.docketId, docketId);
+
+        // The route and the interactive review fixture use the same interpolation
+        // function. Ignore the generated FILED UTC timestamp, which is intentionally
+        // fresh on each render, and compare the remaining print payload exactly.
+        const withoutTimestamp = (html: string) => html.replace(
+          /(<strong>FILED UTC:<\/strong>\s*)[^<]+/,
+          '$1[TIMESTAMP]'
+        );
+        assert.equal(withoutTimestamp(order.documentHtml), withoutTimestamp(previewHtml));
+        assert.ok(order.documentHtml.includes(previewDoc.reLine));
+        assert.ok(order.documentHtml.includes('77 Lake Street, Unit 5, Chicago, IL 60601'));
+        assert.ok(order.documentHtml.includes('14 calendar days'));
+        assert.ok(order.documentHtml.includes('/s/ Taylor Morgan'));
+        assert.ok(order.documentHtml.includes('USPS CERTIFIED + RETURN RECEIPT'));
+        assert.ok(order.documentHtml.includes(UPL_COMPLIANCE_FOOTER_TEXT(docketId)));
+      } finally {
+        if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = originalNodeEnv;
+        if (originalMockPayments === undefined) delete process.env.ALLOW_LOCAL_MOCK_PAYMENTS;
+        else process.env.ALLOW_LOCAL_MOCK_PAYMENTS = originalMockPayments;
+      }
     });
   });
 

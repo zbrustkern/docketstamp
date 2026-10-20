@@ -102,6 +102,7 @@ const DocumentWorkspaceInner: React.FC<{
   const [mobileView, setMobileView] = useState<'document' | 'drawer'>('drawer');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const hasAutoAdvancedRef = useRef(false);
+  const documentPreviewRef = useRef<HTMLElement | null>(null);
 
   // Track keys edited by user to ensure hydration NEVER overwrites user edits
   const userEditedKeysRef = useRef<Set<string>>(new Set());
@@ -339,6 +340,16 @@ const DocumentWorkspaceInner: React.FC<{
     }
   };
 
+  // A completed signature is not consent to start checkout. The explicit review
+  // action must reveal the final letter first, especially on mobile where the
+  // paper sheet is otherwise hidden by the input drawer.
+  const handleReviewLetter = () => {
+    setMobileView('document');
+    requestAnimationFrame(() => {
+      documentPreviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   const handleAdoptSignature = (signerName: string) => {
     emitBusinessEvent({
       eventName: 'signature_adopted',
@@ -431,6 +442,7 @@ const DocumentWorkspaceInner: React.FC<{
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         {/* Left/Center Canvas: Elevated 8.5x11 Live Paper Sheet */}
         <main
+          ref={documentPreviewRef}
           className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 flex justify-center items-start bg-[#0F172A] ${
             mobileView === 'drawer' ? 'hidden md:flex' : 'flex'
           }`}
@@ -495,6 +507,7 @@ const DocumentWorkspaceInner: React.FC<{
             validation={validation}
             onAdoptSignature={handleAdoptSignature}
             onNextRequiredField={handleNextRequiredField}
+            onReviewLetter={handleReviewLetter}
             onCompleteDrawer={() => setIsCheckoutOpen(true)}
             onResetDraft={handleResetDraft}
           />

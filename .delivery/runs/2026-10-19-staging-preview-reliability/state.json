@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-19-staging-preview-reliability",
+  "workflow": "df-sprint-plan",
+  "project_root": "/Users/zeke/code/DocketStamp",
+  "stage": "implementation",
+  "status": "active",
+  "owner": "Codex",
+  "participants": ["Codex (local synthesis)"],
+  "source_revision": "7882796",
+  "inputs": ["intent.md", "apphosting.yaml", "apphosting.staging.yaml", "DocumentWorkspace.tsx", "LivePaperSheet.tsx", "CheckoutModal.tsx", "lock-and-intent/route.ts", "lib/firebase-admin.ts"],
+  "artifacts": ["intent.md", "handoff-antigravity.md", "merge-notes.md", "state.json", "INDEX.md", "../../../docs/sprints/SPRINT-0001.md"],
+  "acceptance_criteria": ["explicit preview", "staging Firestore binding", "safe customer errors", "admin diagnostics", "structured vacated address"],
+  "checks": ["Source inspection complete", "Firebase backend metadata inspected", "Firebase App Hosting documentation reviewed"],
+  "open_issues": ["Backend environment-name/console-override confirmation is an execution-time check", "Independent alternate-app critique pending"],
+  "iteration": 1,
+  "iteration_limit": 3,
+  "next_action": "Implement and verify the review-state repair; staging console correction awaits authenticated Firebase Console access.",
+  "updated_at": "2026-10-19T00:00:00-05:00"
+}

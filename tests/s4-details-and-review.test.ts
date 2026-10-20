@@ -98,6 +98,30 @@ describe('S4 Details and Review Acceptance Gate', () => {
   });
 
   describe('1. 3-Stage Progression & Plain Customer Terminology', () => {
+    it('keeps the signed-draft review action separate from checkout', () => {
+      const drawerSource = fs.readFileSync(
+        path.join(process.cwd(), 'src/components/docket/GuidedFieldDrawer.tsx'),
+        'utf8'
+      );
+      const workspaceSource = fs.readFileSync(
+        path.join(process.cwd(), 'src/components/docket/DocumentWorkspace.tsx'),
+        'utf8'
+      );
+
+      assert.ok(
+        drawerSource.includes('onClick={isSignatureAdopted ? onReviewLetter : onNextRequiredField}'),
+        'Review letter must reveal the letter after signature instead of invoking the next/checkout action'
+      );
+      assert.ok(
+        workspaceSource.includes('const handleReviewLetter = () =>'),
+        'DocumentWorkspace must own an explicit review handler'
+      );
+      assert.ok(
+        workspaceSource.includes("setMobileView('document')"),
+        'Review handler must reveal the mobile paper sheet'
+      );
+    });
+
     it('provides customer-friendly 3-stage progression in GuidedFieldDrawer and StickyExecutionBar', () => {
       const drawerSource = fs.readFileSync(
         path.join(process.cwd(), 'src/components/docket/GuidedFieldDrawer.tsx'),

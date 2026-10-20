@@ -43,6 +43,7 @@ export interface GuidedFieldDrawerProps {
   validation: DraftValidationResult;
   onAdoptSignature: (signerName: string) => void;
   onNextRequiredField: () => void;
+  onReviewLetter: () => void;
   onCompleteDrawer: () => void;
   onResetDraft: () => void;
 }
@@ -58,6 +59,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
   validation,
   onAdoptSignature,
   onNextRequiredField,
+  onReviewLetter,
   onCompleteDrawer,
   onResetDraft,
 }) => {
@@ -848,7 +850,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={onNextRequiredField}
+            onClick={isSignatureAdopted ? onReviewLetter : onNextRequiredField}
             className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded text-xs font-bold uppercase tracking-wider transition border border-slate-700"
           >
             {!validation.isValid

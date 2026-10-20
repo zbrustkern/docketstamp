@@ -45,6 +45,7 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { trackFunnelEvent, getSessionId } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
 import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
+import { checkoutErrorMessage } from '@/lib/docket/checkout-errors';
 
 export interface CheckoutModalProps {
   isOpen: boolean;
@@ -234,6 +235,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
 
+    let publicErrorCode: unknown = 'CHECKOUT_UNAVAILABLE';
     try {
       // If doc.docketId was already locked in a prior attempt that changed, generate a fresh docket ID
       let attemptDocketId = doc.docketId;
@@ -272,7 +274,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to initialize secure checkout session.');
+        publicErrorCode = res.status === 400 ? 'CHECKOUT_VALIDATION' : data?.code;
+        throw new Error('Checkout initialization failed.');
       }
 
       // Record this docket ID as locked
@@ -322,7 +325,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     } catch (err: any) {
       console.error('[Checkout Error]', err);
       // Error preservation: preserve email, tier, and draft values
-      setErrorMessage(err.message || 'An error occurred preparing payment. Please retry.');
+      setErrorMessage(checkoutErrorMessage(publicErrorCode, 'CHECKOUT_UNAVAILABLE'));
     } finally {
       setIsLoading(false);
     }
@@ -454,8 +457,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 required
                 placeholder="you@example.com"
                 value={email}
-                aria-invalid={Boolean(errorMessage)}
-                aria-describedby={errorMessage ? 'checkout-email-error' : undefined}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (errorMessage) setErrorMessage(null);
@@ -470,7 +471,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Error Message with role="alert" */}
             {errorMessage && (
               <div
-                id="checkout-email-error"
+                id="checkout-delivery-error"
                 role="alert"
                 className="p-2.5 bg-rose-950/80 border border-rose-700 rounded-lg text-xs text-rose-200 flex items-start gap-2"
               >
@@ -779,7 +780,7 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
           safeProperties: { result: 'error' },
           logicalKey: `payment-result:${checkoutAttemptId}`,
         });
-        setErrorMessage(confirmError.message || 'Payment confirmation failed. Please try another card.');
+        setErrorMessage(checkoutErrorMessage('PAYMENT_DECLINED', 'PAYMENT_DECLINED'));
         setIsProcessingPayment(false);
         return;
       }
@@ -814,7 +815,7 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
       onPaymentSuccess();
     } catch (err: any) {
       console.error('[Stripe Payment Error]', err);
-      setErrorMessage(err.message || 'Payment failed. Please verify your payment details.');
+      setErrorMessage(checkoutErrorMessage('PAYMENT_DECLINED', 'PAYMENT_DECLINED'));
       setIsProcessingPayment(false);
     }
   };
@@ -877,7 +878,11 @@ const InnerStripePaymentForm: React.FC<PaymentStepFormProps> = ({
               logicalKey: `payment-form-ready:${lockedAttempt.orderId}`,
             });
           }}
-          onLoadError={(err) => setErrorMessage(err.error?.message || 'Could not load payment form.')}
+          onLoadError={() =>
+            setErrorMessage(
+              checkoutErrorMessage('PAYMENT_FORM_UNAVAILABLE', 'PAYMENT_FORM_UNAVAILABLE')
+            )
+          }
         />
       </div>
 
@@ -964,16 +969,14 @@ const FallbackSimulatedPaymentForm: React.FC<PaymentStepFormProps> = ({
       });
 
       const data = await res.json();
-      if (!res.ok && res.status !== 503) {
-        // If server failed with validation error
-        throw new Error(data.error || 'Payment confirmation failed.');
+      if (!res.ok || data?.success !== true) {
+        throw new Error('Payment confirmation failed.');
       }
 
       onPaymentSuccess();
     } catch (err: any) {
       console.warn('[Simulated Payment Notice]', err);
-      // In local dev/test without full stripe configuration, complete simulated flow safely
-      onPaymentSuccess();
+      setErrorMessage(checkoutErrorMessage('PAYMENT_CONFIRMATION', 'PAYMENT_CONFIRMATION'));
     } finally {
       setIsProcessingPayment(false);
     }
