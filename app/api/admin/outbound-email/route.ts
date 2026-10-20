@@ -23,7 +23,7 @@ const store: OutboundEmailStore = {
   async reserve(input): Promise<ReserveResult> {
     const sendRef = firestoreDb.collection(COLLECTION).doc(opaqueId(input.environment, input.requestId));
     const windowStart = Math.floor(Date.parse(input.now) / OUTBOUND_EMAIL_RATE_WINDOW_MS) * OUTBOUND_EMAIL_RATE_WINDOW_MS;
-    const rateRef = firestoreDb.collection(RATE_COLLECTION).doc(opaqueId(input.environment, input.actorId, String(windowStart)));
+    const rateRef = firestoreDb.collection(RATE_COLLECTION).doc(opaqueId(input.environment, input.actorId));
     return firestoreDb.runTransaction(async (tx) => {
       const sendSnap = await tx.get(sendRef);
       if (sendSnap.exists) {
@@ -32,7 +32,8 @@ const store: OutboundEmailStore = {
         return { kind: 'duplicate', record: existing };
       }
       const rateSnap = await tx.get(rateRef);
-      const count = Number(rateSnap.data()?.count || 0);
+      const rateData = rateSnap.data();
+      const count = Number(rateData?.windowStart === new Date(windowStart).toISOString() ? rateData?.count || 0 : 0);
       if (count >= OUTBOUND_EMAIL_RATE_LIMIT) return { kind: 'rate_limited' };
       const record: OutboundEmailRecord & { contentDigest: string } = {
         requestId: input.requestId,
