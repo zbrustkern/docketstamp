@@ -41,7 +41,10 @@ describe('S3 Homepage Composition Acceptance Gate', () => {
 
     it('renders sticky navigation header with compact brand, links, and utilities', () => {
       assert.ok(pageSource.includes('DOCKETSTAMP'), 'Header must render brand mark');
-      assert.ok(pageSource.includes('USPS Certified Mail® Service'), 'Header must render service tagline');
+      assert.ok(
+        pageSource.includes('Notice preparation and mailing'),
+        'Header must describe the preparation and mailing service without implying dispatch'
+      );
       assert.ok(pageSource.includes('href="#how-it-works"'), 'Header must link to #how-it-works');
       assert.ok(pageSource.includes('href="#pricing"'), 'Header must link to #pricing');
       assert.ok(pageSource.includes('href="#faq"'), 'Header must link to #faq');
@@ -91,7 +94,7 @@ describe('S3 Homepage Composition Acceptance Gate', () => {
       assert.ok(pageSource.includes('What is included in the price?'));
       assert.ok(pageSource.includes('How does USPS Certified Mail® differ from First-Class Mail?'));
       assert.ok(pageSource.includes('Do I need an account to send a letter?'));
-      assert.ok(pageSource.includes('guest checkout'));
+      assert.ok(pageSource.includes('check out as a guest'));
       assert.ok(pageSource.includes('How do pre-addressed corporate recipients work?'));
       assert.ok(pageSource.includes('Is DocketStamp a law firm?'));
       assert.ok(pageSource.includes('not a law firm'));
@@ -105,7 +108,6 @@ describe('S3 Homepage Composition Acceptance Gate', () => {
         '/terms',
         '/disclaimer',
         '/return-policy',
-        '/docket/DS-2026-88419-X',
         '/account',
         '/llms.txt',
         '/admin',
@@ -113,6 +115,10 @@ describe('S3 Homepage Composition Acceptance Gate', () => {
       for (const link of requiredLinks) {
         assert.ok(pageSource.includes(`href="${link}"`), `Footer must link to ${link}`);
       }
+      assert.ok(
+        !pageSource.includes('href="/docket/DS-2026-88419-X"'),
+        'Footer must not link to a hard-coded sample docket as if it were a real tracking record'
+      );
 
       assert.ok(
         pageSource.includes('{STATUTORY_COMPLIANCE_DISCLOSURE}'),
