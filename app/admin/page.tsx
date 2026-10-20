@@ -1,5 +1,6 @@
 "use client";
 
+import { googleSignInErrorMessage } from "@/lib/auth-errors";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -196,18 +197,7 @@ export default function AdminDashboardPage() {
         fetchScenarios();
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error authenticating with Google.";
-      if (msg.includes("requests-from-referer") || msg.includes("auth/requests-from-referer")) {
-        setAuthError(
-          "Google Cloud API Key blocked this domain. Please add 'https://docketstamp.com/*' to allowed Website restrictions under Google Cloud Console → APIs & Services → Credentials → API Keys (or Firebase Console)."
-        );
-      } else if (msg.includes("auth/unauthorized-domain")) {
-        setAuthError(
-          "This domain (docketstamp.com) is not yet listed under Authorized Domains in Firebase Authentication. Please add it in Firebase Console → Authentication → Settings → Authorized domains."
-        );
-      } else {
-        setAuthError(msg);
-      }
+      setAuthError(googleSignInErrorMessage(err, { admin: true }));
     } finally {
       setGoogleAuthLoading(false);
     }

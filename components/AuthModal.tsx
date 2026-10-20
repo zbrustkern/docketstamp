@@ -1,5 +1,6 @@
 "use client";
 
+import { googleSignInErrorMessage } from "@/lib/auth-errors";
 import React, { useState } from "react";
 import { X, Mail, Lock, Feather, AlertCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -39,18 +40,7 @@ export function AuthModal({
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Google sign-in error";
-      if (msg.includes("requests-from-referer") || msg.includes("auth/requests-from-referer")) {
-        setError(
-          "Google Cloud API Key blocked this domain. Please add 'https://docketstamp.com/*' to allowed Website restrictions under Google Cloud Console → APIs & Services → Credentials → API Keys."
-        );
-      } else if (msg.includes("auth/unauthorized-domain")) {
-        setError(
-          "This domain (e.g. docketstamp.com) is not yet listed under Authorized Domains in Firebase Authentication. Please add it in Firebase Console → Authentication → Settings → Authorized domains."
-        );
-      } else {
-        setError(msg);
-      }
+      setError(googleSignInErrorMessage(err));
     } finally {
       setLoading(false);
     }

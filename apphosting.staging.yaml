@@ -84,3 +84,40 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # Public Firebase web app identity; all fields must belong to the same project.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "REDACTED_FIREBASE_WEB_API_KEY"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "docketstamp-staging.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "docketstamp-staging.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "267056924276"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:267056924276:web:e8c64af5d4be3d57477321"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-MR8PSNHHP9"
+    availability:
+      - BUILD
+      - RUNTIME

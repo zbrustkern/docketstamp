@@ -1,0 +1,3625 @@
+{
+  "date": "2026-10-20",
+  "scope": "Tracked repository text after Firebase source repair; no git history, ignored local files, cloud data, secrets, or external ad accounts scanned. Lines are discovery leads, not proof all are reachable.",
+  "patterns": {
+    "inherited_brand_or_project": "send[\\s_-]*my[\\s_-]*notes|aster\\s*(?:&|and|&amp;)\\s*blanche",
+    "legacy_provider_contract": "handwrytten",
+    "legacy_browser_namespace": "\\bsmn[_-]",
+    "inherited_firebase_identity": "910796604705|486379422282|G-5DV25FZ7Q8|G-YL7ZK51DTQ",
+    "card_product_behavior": "Handwritten Card|Send Card|greeting card|PROCESSING_HANDWRYTTEN|occasion_reminders|calculateDaysUntilNextOccasion|CARD_FLAT_RATE_CENTS|cover_preset_selected|card_completed|hwDavid",
+    "analytics_destination_requires_ownership_check": "GT-TNPN256B|AW-18474411963|ZzzVCMqAjoUdELvPpOlE|1773518093991339"
+  },
+  "fileCount": 85,
+  "matchingLineCount": 523,
+  "files": [
+    {
+      "file": ".gitignore",
+      "matches": [
+        {
+          "line": 38,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 39,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "ARCHITECTURE.md",
+      "matches": [
+        {
+          "line": 1,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 6,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 12,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 17,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 40,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 41,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 61,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 62,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 74,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 75,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 76,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 77,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 78,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 79,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 80,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 81,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 82,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 83,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 84,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 85,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 86,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 94,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 97,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 128,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 134,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 150,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 222,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 278,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 283,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 284,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 294,
+          "categories": [
+            "inherited_brand_or_project",
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 295,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 298,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 300,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 304,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 306,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 310,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 318,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 321,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 322,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 333,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 351,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 353,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 376,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 381,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 382,
+          "categories": [
+            "inherited_brand_or_project",
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 383,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 386,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 389,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 402,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 410,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 422,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 432,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 448,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 452,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 455,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 456,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 457,
+          "categories": [
+            "inherited_firebase_identity"
+          ]
+        },
+        {
+          "line": 458,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 460,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 469,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 470,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 471,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 472,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 483,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 484,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 486,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 489,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 490,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 492,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 494,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 496,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 497,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 498,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 506,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 507,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 508,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 513,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 526,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 538,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 540,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 543,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 545,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 547,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 548,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 552,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 555,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 558,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 569,
+          "categories": [
+            "inherited_brand_or_project",
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 571,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 572,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "README.md",
+      "matches": [
+        {
+          "line": 1,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 14,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 16,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 19,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 24,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 36,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 43,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 44,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 48,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 59,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 60,
+          "categories": [
+            "inherited_brand_or_project",
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 73,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 84,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 95,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 99,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 100,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 117,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 118,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 119,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 152,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 165,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 180,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 183,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 201,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/account/page.tsx",
+      "matches": [
+        {
+          "line": 42,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 92,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 339,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 628,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 697,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 737,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/admin/page.tsx",
+      "matches": [
+        {
+          "line": 61,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 276,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 300,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 313,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1315,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 1408,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1410,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1495,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1558,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 1656,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1658,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1661,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1663,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1666,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1668,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1671,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1673,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1754,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 1790,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 3173,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/admin/order-proof/route.ts",
+      "matches": [
+        {
+          "line": 24,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 36,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/checkout/complete-free-order/route.ts",
+      "matches": [
+        {
+          "line": 10,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 30,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 57,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 64,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 83,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 99,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 155,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 173,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 189,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 191,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 247,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 265,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 289,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 290,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/checkout/confirm-order/route.ts",
+      "matches": [
+        {
+          "line": 26,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 33,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 165,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/checkout/create-intent/route.ts",
+      "matches": [
+        {
+          "line": 4,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 55,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 62,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 123,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 143,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 161,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 183,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 216,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/discount/validate/route.ts",
+      "matches": [
+        {
+          "line": 4,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 18,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/orders/[id]/route.ts",
+      "matches": [
+        {
+          "line": 34,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/api/webhooks/stripe/route.ts",
+      "matches": [
+        {
+          "line": 89,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "app/order/[id]/page.tsx",
+      "matches": [
+        {
+          "line": 212,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 331,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 360,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 401,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 403,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 404,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 801,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 888,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apphosting.yaml",
+      "matches": [
+        {
+          "line": 68,
+          "categories": [
+            "inherited_firebase_identity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/AttributionTracker.tsx",
+      "matches": [
+        {
+          "line": 11,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 31,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 32,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 59,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 60,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 160,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 161,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 167,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 168,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 183,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 184,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 262,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 263,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/admin/AddressRetryModal.tsx",
+      "matches": [
+        {
+          "line": 58,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/admin/AdminFeatureFlagsTab.tsx",
+      "matches": [
+        {
+          "line": 487,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/admin/CampaignPerformanceWidget.tsx",
+      "matches": [
+        {
+          "line": 130,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 137,
+          "categories": [
+            "inherited_firebase_identity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/admin/CohortAnalytics.tsx",
+      "matches": [
+        {
+          "line": 15,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/admin/HandwryttenStatusWidget.tsx",
+      "matches": [
+        {
+          "line": 35,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/admin/OrderJourneyDrawer.tsx",
+      "matches": [
+        {
+          "line": 199,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 289,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 293,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 296,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/v3/Step4ReviewAndPayment.tsx",
+      "matches": [
+        {
+          "line": 427,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 525,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 671,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 786,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "components/v3/Step5Confirmation.tsx",
+      "matches": [
+        {
+          "line": 183,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 236,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/CANONICAL_PRODUCT_SPECS.md",
+      "matches": [
+        {
+          "line": 1,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 13,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 29,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 41,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 42,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 44,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 46,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 50,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 51,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/CANONICAL_PROJECT_BRIEF.md",
+      "matches": [
+        {
+          "line": 1,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 21,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 22,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 35,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 97,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/DOCKETSTAMP_HOME_CONVERSION_DESIGN_SPEC.md",
+      "matches": [
+        {
+          "line": 34,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/DOCKETSTAMP_HOME_REDESIGN_SPEC.md",
+      "matches": [
+        {
+          "line": 33,
+          "categories": [
+            "inherited_brand_or_project",
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/DOCKETSTAMP_HOME_REDESIGN_SPRINTS.md",
+      "matches": [
+        {
+          "line": 451,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md",
+      "matches": [
+        {
+          "line": 3,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/HANDWRYTTEN_INTEGRATION_AUDIT.md",
+      "matches": [
+        {
+          "line": 1,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 9,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 12,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 15,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 29,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 46,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 47,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 48,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/admin-console/README.md",
+      "matches": [
+        {
+          "line": 11,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/admin-console/REVIEW.md",
+      "matches": [
+        {
+          "line": 11,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 34,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 41,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/admin-console/SPECIFICATION.md",
+      "matches": [
+        {
+          "line": 88,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/admin-console/evidence/PROVENANCE.md",
+      "matches": [
+        {
+          "line": 5,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/admin-console/sprints/S0.md",
+      "matches": [
+        {
+          "line": 9,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/evidence/handwrytten-dimensions-2026-10-11.json",
+      "matches": [
+        {
+          "line": 3,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/evidence/handwrytten-styles-2026-10-11.json",
+      "matches": [
+        {
+          "line": 3,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 12,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "docs/evidence/home-redesign/s6-measurement-and-reporting.md",
+      "matches": [
+        {
+          "line": 34,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 36,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/admin-auth.ts",
+      "matches": [
+        {
+          "line": 4,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 34,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 106,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/admin-console/measurement/client.ts",
+      "matches": [
+        {
+          "line": 22,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 25,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/device-wallet.ts",
+      "matches": [
+        {
+          "line": 80,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/draft/reducer.ts",
+      "matches": [
+        {
+          "line": 52,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/draft/store.ts",
+      "matches": [
+        {
+          "line": 92,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/draft/use-draft.ts",
+      "matches": [
+        {
+          "line": 67,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/env-validator.ts",
+      "matches": [
+        {
+          "line": 11,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 29,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 72,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/feature-flags.ts",
+      "matches": [
+        {
+          "line": 35,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 140,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/firebase-admin.ts",
+      "matches": [
+        {
+          "line": 481,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 572,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/google-ads.ts",
+      "matches": [
+        {
+          "line": 2,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 5,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 8,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 11,
+          "categories": [
+            "inherited_firebase_identity"
+          ]
+        },
+        {
+          "line": 34,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 60,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 88,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 116,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 156,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 158,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/image-optimizer.ts",
+      "matches": [
+        {
+          "line": 5,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/incident-logger.ts",
+      "matches": [
+        {
+          "line": 5,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/meta-ads.ts",
+      "matches": [
+        {
+          "line": 2,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        },
+        {
+          "line": 127,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 162,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 193,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 222,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 223,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 254,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/meta-conversions-api.ts",
+      "matches": [
+        {
+          "line": 8,
+          "categories": [
+            "analytics_destination_requires_ownership_check"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/metrics-rollup.ts",
+      "matches": [
+        {
+          "line": 18,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 151,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 153,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 249,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 250,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 400,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 401,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 517,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 518,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 557,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 558,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 627,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 676,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 760,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/order-processor.ts",
+      "matches": [
+        {
+          "line": 23,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 85,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 86,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 90,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 156,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 161,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 192,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 197,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 420,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 537,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 551,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/reminder-utils.ts",
+      "matches": [
+        {
+          "line": 37,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/reminders.ts",
+      "matches": [
+        {
+          "line": 4,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 8,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 72,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 73,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 103,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/stripe.ts",
+      "matches": [
+        {
+          "line": 27,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/telemetry-reporting.ts",
+      "matches": [
+        {
+          "line": 61,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 73,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/telemetry-schema.ts",
+      "matches": [
+        {
+          "line": 42,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 43,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 172,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 177,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 348,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/telemetry.ts",
+      "matches": [
+        {
+          "line": 28,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 33,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lib/types.ts",
+      "matches": [
+        {
+          "line": 16,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 135,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 136,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 137,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 138,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 139,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 185,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 212,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 222,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 233,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 246,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 247,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 269,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 287,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "package-lock.json",
+      "matches": [
+        {
+          "line": 2,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 8,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/admin-account-binding.test.ts",
+      "matches": [
+        {
+          "line": 103,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 151,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/admin-console/s0-safeguards.test.ts",
+      "matches": [
+        {
+          "line": 309,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 338,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 340,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 498,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 513,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/admin-console/security-t02-t03.test.ts",
+      "matches": [
+        {
+          "line": 40,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 51,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/art-generation-fixtures.test.ts",
+      "matches": [
+        {
+          "line": 212,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 339,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/artwork-harness.test.ts",
+      "matches": [
+        {
+          "line": 5,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/draft.test.ts",
+      "matches": [
+        {
+          "line": 2,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/feature-flags.test.ts",
+      "matches": [
+        {
+          "line": 161,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 163,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 170,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 174,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 180,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 190,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 195,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 202,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 206,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 210,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 215,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 230,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 234,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 243,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 247,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 253,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 257,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/go-live-readiness.test.ts",
+      "matches": [
+        {
+          "line": 5,
+          "categories": [
+            "inherited_brand_or_project",
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 69,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 70,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 73,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 74,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/handwrytten-sync.test.ts",
+      "matches": [
+        {
+          "line": 1,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 3,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 5,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 22,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 28,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 31,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 56,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 59,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 78,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 90,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 100,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 102,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 108,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 116,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/meta-conversions-api.test.ts",
+      "matches": [
+        {
+          "line": 161,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/milestone1.test.ts",
+      "matches": [
+        {
+          "line": 11,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 12,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 62,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 75,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 76,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 80,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 81,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 84,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 85,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 113,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 117,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 118,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 125,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 126,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 127,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 135,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 136,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 144,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/milestone4.test.ts",
+      "matches": [
+        {
+          "line": 10,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 11,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 63,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 92,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 112,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 113,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 114,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 123,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 124,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 126,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 128,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 129,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 139,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 140,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 143,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 144,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/payment-mode-safety.test.ts",
+      "matches": [
+        {
+          "line": 20,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 388,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 392,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 394,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 399,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 430,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 448,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 449,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 470,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 476,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 479,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 482,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/reminders.test.ts",
+      "matches": [
+        {
+          "line": 3,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 26,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 32,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 38,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 106,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/review-remediation.test.ts",
+      "matches": [
+        {
+          "line": 140,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 148,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 150,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 157,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 165,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 349,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 356,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 359,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 415,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 417,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 424,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/scenario-draft-seeding.test.ts",
+      "matches": [
+        {
+          "line": 26,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 32,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 34,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 69,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/security-review-remediation.test.ts",
+      "matches": [
+        {
+          "line": 26,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 64,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 68,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 88,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 95,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 136,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 137,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 148,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 167,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 178,
+          "categories": [
+            "legacy_browser_namespace"
+          ]
+        },
+        {
+          "line": 202,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 204,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 210,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 212,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 227,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 234,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 390,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 391,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 428,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 432,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 451,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/sender-validation.test.ts",
+      "matches": [
+        {
+          "line": 5,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 62,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 69,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 130,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 137,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 150,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 151,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 206,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 211,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 215,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 253,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 254,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 279,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 286,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 287,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 327,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 329,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/target-experience.test.ts",
+      "matches": [
+        {
+          "line": 67,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/telemetry-ingestion.test.ts",
+      "matches": [
+        {
+          "line": 100,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 114,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 124,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 128,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 136,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 142,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 310,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 311,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 327,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        },
+        {
+          "line": 331,
+          "categories": [
+            "inherited_brand_or_project"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/transaction-security.test.ts",
+      "matches": [
+        {
+          "line": 13,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 137,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 198,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 219,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 224,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 225,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/unit-economics.test.ts",
+      "matches": [
+        {
+          "line": 3,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 14,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 30,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 31,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 33,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 36,
+          "categories": [
+            "legacy_provider_contract"
+          ]
+        },
+        {
+          "line": 52,
+          "categories": [
+            "card_product_behavior"
+          ]
+        },
+        {
+          "line": 69,
+          "categories": [
+            "legacy_provider_contract",
+            "card_product_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "tests/visitor-telemetry.test.ts",
+      "matches": [
+        {
+          "line": 40,
+          "categories": [
+            "card_product_behavior"
+          ]
+        }
+      ]
+    }
+  ]
+}

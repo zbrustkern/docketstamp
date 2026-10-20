@@ -1,60 +1,33 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 
-export const PROD_FIREBASE_CONFIG = {
-  apiKey: "REDACTED_FIREBASE_WEB_API_KEY",
-  authDomain: "docketstamp.firebaseapp.com",
-  projectId: "docketstamp",
-  storageBucket: "docketstamp.firebasestorage.app",
-  messagingSenderId: "486379422282",
-  appId: "1:486379422282:web:a236cfa24ef6bf8d7cdcb3",
-  measurementId: "G-5DV25FZ7Q8",
-};
-
-export const STAGING_FIREBASE_CONFIG = {
-  apiKey: "REDACTED_FIREBASE_WEB_API_KEY",
-  authDomain: "docketstamp-staging.firebaseapp.com",
-  projectId: "docketstamp-staging",
-  storageBucket: "docketstamp-staging.firebasestorage.app",
-  messagingSenderId: "910796604705",
-  appId: "1:910796604705:web:34244d4b29bd7ea8362a60",
-  measurementId: "G-YL7ZK51DTQ",
-};
+import { assertFirebaseAppMatches, resolveFirebaseConfig } from "./firebase-config";
+export { PROD_FIREBASE_CONFIG, STAGING_FIREBASE_CONFIG } from "./firebase-config";
 
 export function getClientFirebaseConfig() {
-  const isStaging =
-    process.env.ENVIRONMENT === "staging" ||
-    (typeof window !== "undefined" &&
-      (window.location.hostname.includes("docketstamp-staging") ||
-        window.location.hostname.includes("staging"))) ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    process.env.FIREBASE_PROJECT_ID === "docketstamp-staging" ||
-    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.includes("staging")) ||
-    (typeof process.env.K_SERVICE === "string" && process.env.K_SERVICE.includes("staging"));
-
-  const baseDefaults = isStaging ? STAGING_FIREBASE_CONFIG : PROD_FIREBASE_CONFIG;
-
-  return {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || baseDefaults.apiKey,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || baseDefaults.authDomain,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || baseDefaults.projectId,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || baseDefaults.storageBucket,
-    messagingSenderId:
-      process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || baseDefaults.messagingSenderId,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || baseDefaults.appId,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || baseDefaults.measurementId,
-  };
+  // Next.js only inlines NEXT_PUBLIC values accessed directly at build time.
+  return resolveFirebaseConfig({
+    ENVIRONMENT: process.env.ENVIRONMENT,
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  }, typeof window === "undefined" ? "" : window.location.hostname);
 }
 
 export const getFirebaseApp = (): FirebaseApp => {
   const config = getClientFirebaseConfig();
   if (getApps().length > 0) {
     const existing = getApp();
-    if (existing.options.apiKey && existing.options.projectId === config.projectId) {
-      return existing;
-    }
+    assertFirebaseAppMatches(existing.options, config);
+    return existing;
   }
-  return getApps().length > 0 ? getApp() : initializeApp(config);
+  return initializeApp(config);
 };
 
 export const getFirebaseAuth = (): Auth => {
