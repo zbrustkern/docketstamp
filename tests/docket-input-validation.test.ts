@@ -11,7 +11,19 @@ const MAIL_TIERS = Object.keys(DOCKET_PRICING_TIERS) as Array<keyof typeof DOCKE
 const STATE_CODES = Object.keys(STATE_STATUTES);
 
 function baseValues(notice: (typeof ALL_NOTICE_CARTRIDGES)[number]): Record<string, string> {
-  const values: Record<string, string> = { recipientFormalName: 'Example Recipient LLC' };
+  const values: Record<string, string> = {
+    recipientFormalName: 'Example Recipient LLC',
+    senderAddressLine1: '10 Sender Street',
+    senderAddressLine2: 'Unit 4',
+    senderCity: 'Chicago',
+    senderState: 'IL',
+    senderZip: '60601',
+    recipientAddressLine1: '20 Recipient Street',
+    recipientAddressLine2: 'Suite 300',
+    recipientCity: 'Chicago',
+    recipientState: 'IL',
+    recipientZip: '60606',
+  };
   for (const field of notice.fields) {
     if (field.options?.length) {
       values[field.key] = field.options[0].value;
@@ -92,6 +104,21 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
       ...valid,
       recipientFormalName: 'R'.repeat(81),
     }).success, false);
+    assert.equal(validateNoticeInput(securityDepositNotice, {
+      ...valid,
+      senderAddressLine1: '',
+    }).success, false);
+    const missingRecipientAddress = { ...valid };
+    for (const key of ['recipientAddressLine1', 'recipientCity', 'recipientState', 'recipientZip']) {
+      delete missingRecipientAddress[key];
+    }
+    assert.equal(validateNoticeInput(securityDepositNotice, missingRecipientAddress, undefined, {}).success, false);
+    assert.equal(validateNoticeInput(securityDepositNotice, valid, {
+      addressLine1: 'Different Sender Street',
+      city: 'Chicago',
+      state: 'IL',
+      zip: '60601',
+    }).success, false);
   });
 
   it('strips unknown and renderer-owned form keys and derives statutory text from jurisdiction', () => {
@@ -163,9 +190,14 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
     const html = renderLobHtmlPayload(document);
     assert.match(html, /19 Lake Avenue, Apartment 7B, Chicago, IL 60601-1234/);
 
+    const structuredValues = baseValues(preArbitrationDisputeNotice);
+    for (const key of [
+      'senderAddressLine1', 'senderAddressLine2', 'senderCity', 'senderState', 'senderZip',
+      'recipientAddressLine1', 'recipientAddressLine2', 'recipientCity', 'recipientState', 'recipientZip',
+    ]) delete structuredValues[key];
     const structured = validateNoticeInput(
       preArbitrationDisputeNotice,
-      baseValues(preArbitrationDisputeNotice),
+      structuredValues,
       {
         name: 'Taylor Morgan',
         address_line1: '19 Lake Avenue',
@@ -219,11 +251,11 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
       executionDate: 'October 20, 2026',
     });
 
-    assert.equal(document.senderAddress.address_line1, '[SENDER ADDRESS]');
-    assert.equal(document.senderAddress.address_city, '');
-    assert.equal(document.senderAddress.address_state, '');
-    assert.equal(document.senderAddress.address_zip, '');
-    assert.equal(document.recipientAddress.address_line1, '[RECIPIENT ADDRESS]');
+    assert.equal(document.senderAddress.address_line1, '10 Sender Street');
+    assert.equal(document.senderAddress.address_city, 'Chicago');
+    assert.equal(document.senderAddress.address_state, 'IL');
+    assert.equal(document.senderAddress.address_zip, '60601');
+    assert.equal(document.recipientAddress.address_line1, '20 Recipient Street');
   });
 
   it('retains and formats separate rental-property address parts in the notice field', () => {

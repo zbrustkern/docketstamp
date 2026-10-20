@@ -264,15 +264,30 @@ export function validateNoticeDraft(
     validateSingleNoticeField(field, values[field.key], fieldErrors);
   }
 
+  // Tenant flows display the rental location before sender and recipient details.
+  // Keep validation focus aligned with that visual order so the first error lands
+  // in the first section the user sees.
+  const rentalAddressFirstKeys = notice.category === 'tenant'
+    ? notice.fields
+        .filter((field) =>
+          ['leasedPremisesAddress', 'vacatedPremisesAddress', 'propertyState'].includes(field.key)
+        )
+        .map((field) => field.key)
+    : [];
+  const visualFieldKeys = [
+    ...rentalAddressFirstKeys,
+    ...orderedFieldKeys.filter((key) => !rentalAddressFirstKeys.includes(key)),
+  ];
+
   // Compute missing/invalid fields and progress
   const missingOrInvalidFields: string[] = [];
-  for (const key of orderedFieldKeys) {
+  for (const key of visualFieldKeys) {
     if (fieldErrors[key]) {
       missingOrInvalidFields.push(key);
     }
   }
 
-  const totalCount = orderedFieldKeys.length;
+  const totalCount = visualFieldKeys.length;
   const completedCount = totalCount - missingOrInvalidFields.length;
   const isValid = missingOrInvalidFields.length === 0;
   const firstInvalidFieldKey = missingOrInvalidFields[0] || null;

@@ -123,6 +123,37 @@ function sanitizeAddress(
   return result as Partial<PostalAddress | DocketAddress>;
 }
 
+function validateRequiredMailingAddress(
+  label: 'senderAddress' | 'recipientAddress',
+  structuredAddress: Partial<PostalAddress | DocketAddress>,
+  userValues: Record<string, string>,
+  issues: NoticeInputIssue[]
+) {
+  const structured = structuredAddress as Record<string, string | undefined>;
+  const prefix = label === 'senderAddress' ? 'sender' : 'recipient';
+  const components = [
+    ['addressLine1', `${prefix}AddressLine1`],
+    ['city', `${prefix}City`],
+    ['state', `${prefix}State`],
+    ['zip', `${prefix}Zip`],
+  ] as const;
+
+  for (const [component, userKey] of components) {
+    const structuredValue = structured[component]?.trim() || '';
+    const userValue = userValues[userKey]?.trim() || '';
+    if (structuredValue && userValue) {
+      const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ');
+      if (normalize(structuredValue) !== normalize(userValue)) {
+        issues.push({ path: `${label}.${component}`, message: 'Mailing address fields conflict.' });
+        continue;
+      }
+    }
+    if (!structuredValue && !userValue) {
+      issues.push({ path: `${label}.${component}`, message: 'Complete the mailing address before continuing.' });
+    }
+  }
+}
+
 /**
  * Validate the template's schema values and preserve only explicitly allowed
  * factual inputs. Unknown and derived keys are discarded before interpolation.
@@ -267,6 +298,8 @@ export function validateNoticeInput(
 
   const senderAddress = sanitizeAddress(rawSenderAddress, 'senderAddress', issues);
   const recipientAddress = sanitizeAddress(rawRecipientAddress, 'recipientAddress', issues);
+  validateRequiredMailingAddress('senderAddress', senderAddress, userValues, issues);
+  validateRequiredMailingAddress('recipientAddress', recipientAddress, userValues, issues);
 
   if (issues.length > 0) return { success: false, issues };
   return { success: true, userValues, senderAddress, recipientAddress };

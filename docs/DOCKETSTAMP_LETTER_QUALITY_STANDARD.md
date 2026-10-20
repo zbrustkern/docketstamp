@@ -41,7 +41,7 @@ Severity describes a finding's consequence. It does not reduce the truthfulness 
 
 ## What can be checked automatically
 
-Deterministic validation may enforce required fields, enums, supported state codes, actual calendar dates, amount syntax and arithmetic, configured length limits, protected derived keys, address component preservation, signature-name equality, unresolved-token detection, and parity between the locked values and mailing payload. It can also verify that a legal citation matches an internal reviewed record. It cannot establish that user facts are true, that a landlord or company is legally responsible, that a contract applies, that a legal deadline has begun, or that a remedy is available.
+Deterministic validation may enforce required fields, complete and non-conflicting sender and recipient mailing addresses, enums, supported state codes, actual calendar dates, amount syntax and arithmetic, configured length limits, protected derived keys, address component preservation, signature-name equality, unresolved-token detection, and parity between the locked values and mailing payload. It can also verify that a legal citation matches an internal reviewed record. It cannot establish that user facts are true, that a landlord or company is legally responsible, that a contract applies, that a legal deadline has begun, or that a remedy is available.
 
 Human editorial review assesses whether the document does what its stated purpose promises, whether instructions and requests read clearly, and whether titles, fields, body, preview, PDF, and marketing describe one coherent instrument. Qualified legal review assesses applicable law, coverage, prerequisites, exceptions, current authority, and legally consequential language. Automated tests and a source citation are not substitutes for that review.
 
@@ -53,6 +53,7 @@ Human editorial review assesses whether the document does what its stated purpos
 - [ ] The selected jurisdiction represents the relevant issue and is independent of postal autofill.
 - [ ] Statutory duties, requested response periods, and user-selected deadlines are distinguished.
 - [ ] Currency fields parse, reconcile, and describe what the user is actually requesting.
+- [ ] Sender return and recipient destination addresses each include street, city, state, and ZIP, with conflicting duplicate values rejected.
 - [ ] Legal source and version records exist; unresolved legal review is explicit.
 - [ ] User fields cannot replace citations, deadlines, penalties, status, IDs, or other renderer-owned values.
 - [ ] Signature name, consent, capacity, and affirmation are clear and consistent.
