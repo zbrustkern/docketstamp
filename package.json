@@ -9,7 +9,6 @@
     "lint": "next lint",
     "test:security": "node --import tsx tests/transaction-security.test.ts",
     "test:payment-mode": "node --import tsx tests/payment-mode-safety.test.ts",
-    "test:flags": "node --import tsx tests/feature-flags.test.ts",
     "test:meta": "node --import tsx tests/meta-conversions-api.test.ts",
     "test:telemetry": "node --import tsx tests/visitor-telemetry.test.ts",
     "test:docket": "node --import tsx tests/docket-engine.test.ts",

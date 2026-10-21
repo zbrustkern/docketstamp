@@ -46,11 +46,12 @@ import { trackFunnelEvent, getSessionId } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
 import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
 import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
-import { checkoutErrorMessage } from '@/lib/docket/checkout-errors';
+import { checkoutErrorMessage, isTemplateAvailabilityError } from '@/lib/docket/checkout-errors';
 
 export interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onAvailabilityRefresh?: () => void;
   doc: InterpolatedDocument;
   selectedTier: MailTierId;
   onSelectTier: (tier: MailTierId) => void;
@@ -96,7 +97,8 @@ function computeFingerprint(
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
-  onClose,
+  onClose: closeModal,
+  onAvailabilityRefresh,
   doc,
   selectedTier,
   onSelectTier,
@@ -113,6 +115,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lockedAttempt, setLockedAttempt] = useState<LockedAttempt | null>(null);
+  const availabilityDeniedRef = useRef(false);
+  const onClose = () => {
+    closeModal();
+    if (availabilityDeniedRef.current) {
+      availabilityDeniedRef.current = false;
+      onAvailabilityRefresh?.();
+    }
+  };
 
   // Focus return tracking
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
@@ -285,7 +295,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       const data = await res.json();
       if (!res.ok) {
-        publicErrorCode = res.status === 400 ? 'CHECKOUT_VALIDATION' : data?.code;
+        availabilityDeniedRef.current = isTemplateAvailabilityError(data?.code);
+        publicErrorCode = res.status === 400 && !availabilityDeniedRef.current ? 'CHECKOUT_VALIDATION' : data?.code;
         throw new Error('Checkout initialization failed.');
       }
 

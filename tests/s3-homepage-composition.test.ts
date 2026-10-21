@@ -28,14 +28,14 @@ describe('S3 Homepage Composition Acceptance Gate', () => {
   describe('1. Baseline Hero Copy & Information Architecture', () => {
     it('renders exact §6 hero headline and subheadline in InteractiveHomeWorkbench', () => {
       assert.ok(
-        workbenchSource.includes('Prepare your letter. We’ll print and mail it.'),
-        'Hero must render exact h1: "Prepare your letter. We’ll print and mail it."'
+        workbenchSource.includes('Make it formal. We’ll print and mail it.'),
+        'Hero must render the approved formal-letter headline'
       );
       assert.ok(
         workbenchSource.includes(
-          'Choose a letter, add your details, and review it before paying. Printing and postage included. Certified Mail available.'
+          'Demand your deposit back, dispute an error, or send a cancellation notice. Prepare and review your letter, then send it by USPS. Certified Mail available.'
         ),
-        'Hero must render exact subheadline copy per §6'
+        'Hero must render the approved customer action and USPS copy'
       );
     });
 

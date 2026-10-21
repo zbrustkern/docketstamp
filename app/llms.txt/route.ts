@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getAllNotices, DOCKET_PRICING_TIERS } from '@/src/lib/docket/notices';
 import { getAllVerifiedRecipients } from '@/src/lib/docket/data/verified-recipients';
+import { getPublicTemplateAvailability } from '@/lib/template-policy-store';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-function generateLlmsTxt(): string {
-  const notices = getAllNotices();
+async function generateLlmsTxt(): Promise<string> {
+  const availability = await getPublicTemplateAvailability();
+  const availabilityBySlug = new Map(availability.templates.map((entry) => [entry.slug, entry]));
+  const available = new Set(availability.templates.filter((entry) => entry.available).map((entry) => entry.slug));
+  const notices = getAllNotices().filter((notice) => available.has(notice.slug));
   const recipients = getAllVerifiedRecipients();
 
   const noticesListMarkdown = notices
@@ -13,7 +18,7 @@ function generateLlmsTxt(): string {
       const fieldsList = (n.fields || [])
         .map(
           (f) =>
-            `    - \`${f.key}\` (${f.inputType}${f.maxLength ? `, max ${f.maxLength} chars` : ''}): "${f.label}" | DocuSign Tag: [${f.docusignTagLabel}]${f.helperText ? ` — ${f.helperText}` : ''}${f.options ? ` | Options: ${f.options.map((o) => `"${o.value}"`).join(', ')}` : ''}`
+            `    - \`${f.key}\` (${f.inputType}${f.maxLength ? `, max ${f.maxLength} chars` : ''}): "${f.label}" | DocuSign Tag: [${f.docusignTagLabel}]${f.helperText ? ` — ${f.helperText}` : ''}${f.options ? ` | Options (display label; submit the exact value): ${f.options.map((o) => `"${o.label}" (value: "${o.value}")`).join(', ')}` : ''}`
         )
         .join('\n');
 
@@ -24,6 +29,7 @@ function generateLlmsTxt(): string {
 - **Recommended USPS Tier**: \`${n.recommendedTier}\` (${DOCKET_PRICING_TIERS[n.recommendedTier]?.formattedPrice || '$19.95'})
 - **Recipient Mode**: \`${n.recipientMode}\`
 - **Description**: ${n.shortDescription}
+- **Availability location inputs**: ${availabilityBySlug.get(n.slug)?.requiresResidence ? 'consumerResidenceState required by current geography rules' : 'no residence state currently required'}; ${availabilityBySlug.get(n.slug)?.requiresProperty ? 'propertyState required by current geography rules' : 'no property state currently required'}
 - **Fields**:
 ${fieldsList || '    - (No specific dynamic fields)'}
 `;
@@ -40,9 +46,9 @@ ${fieldsList || '    - (No specific dynamic fields)'}
   return `# DocketStamp: Autonomous Agentic Postal Notice & Physical USPS Dispatch System
 
 > **Core Architectural Invariant**: "Agents stage, humans sign and pay."
-> AI agents (Claude, ChatGPT, cursor agents, local CLI tools) can stage partially or fully populated formal statutory notices without an API key, OAuth flow, or payment credentials.
+> AI agents (Claude, ChatGPT, cursor agents, local CLI tools) can stage partially or fully populated formal letters without an API key, OAuth flow, or payment credentials.
 > The agent delivers a 1-Tap Review Link to the human user: \`https://docketstamp.com/notices/[slug]?stage=DS-STAGE-XXXXXX\`.
-> The human user reviews the rendered 8.5x11 physical letter, adopts an electronic signature, and executes payment via Apple Pay or credit card for physical USPS postal dispatch.
+> The human user reviews the rendered 8.5x11 letter, adopts an electronic signature, and completes payment for USPS postal dispatch.
 
 ---
 
@@ -54,11 +60,11 @@ ${fieldsList || '    - (No specific dynamic fields)'}
 
 ## 2. Dispatch Tiers & USPS Pricing
 1. **Standard First-Class Mail (\`first_class\`)**: $12.95
-   - Official Clerk's Docket Stamp registry recording & USPS IMb barcode tracking.
+   - USPS First-Class Mail service and tracking.
 2. **USPS Certified Mail® (\`certified\`)**: $19.95
-   - USPS Certified Mail tracking number, electronic proof of acceptance, admissible in court.
+   - USPS Certified Mail service and tracking.
 3. **USPS Certified Mail® + Return Receipt (\`certified_return_receipt\`)**: $27.95
-   - Electronic Return Receipt (ERR) green card signature proof. Legally conclusive delivery date verification.
+   - Includes the Return Receipt service.
 
 ---
 
@@ -72,6 +78,7 @@ Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and
 ### Method B: Direct URL Query Parameter Pre-fill
 \`https://docketstamp.com/notices/{slug}?recipientId={recipientId}&tier={tier}&field.{fieldKey}={value}\`
 Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and-refund-request?recipientId=leg_wth&tier=certified_return_receipt&field.productOrServiceName=Withings+Body+Smart+Scale\`
+Staging requests may include \`fieldValues.consumerResidenceState\` (the consumer's explicitly declared residence) and, for tenant notices, \`fieldValues.propertyState\` (the property state). These are policy facts, not recipient or sender-mailing states; include them when requested by availability checks.
 
 ---
 
@@ -134,7 +141,7 @@ Example: \`https://docketstamp.com/notices/pre-arbitration-notice-of-dispute-and
 
 ---
 
-## 6. Official Statutory Notice Cartridge Catalog (${notices.length} Active Cartridges)
+## 6. Formal Letter Catalog (${notices.length} Active Cartridges)
 
 ${noticesListMarkdown}
 
@@ -149,12 +156,16 @@ ${recipientsTableRows}
 }
 
 export async function GET() {
-  const body = generateLlmsTxt();
-  return new NextResponse(body, {
+  try {
+    const body = await generateLlmsTxt();
+    return new NextResponse(body, {
     status: 200,
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'no-store, max-age=0',
     },
-  });
+    });
+  } catch {
+    return new NextResponse('Availability is temporarily unavailable. Retry before staging a notice.', { status: 503, headers: { 'Cache-Control': 'no-store, max-age=0' } });
+  }
 }

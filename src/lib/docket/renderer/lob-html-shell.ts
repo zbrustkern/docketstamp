@@ -98,6 +98,7 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
     left: 0.75in;
     right: 0.75in;
     bottom: 0.80in;
+    overflow-wrap: anywhere;
   }
   .doc-header-title {
     font-size: 10.5pt;
@@ -137,6 +138,8 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
     font-weight: bold;
     border-bottom: 1px solid #334155;
     display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     min-width: 2.8in;
     padding-bottom: 2px;
     margin-top: 8px;

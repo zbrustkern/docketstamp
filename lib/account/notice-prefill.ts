@@ -4,6 +4,7 @@ export interface NoticePrefillInput {
   noticeSlug: string;
   recipient?: SavedAddress | null;
   sender?: MailingAddress | null;
+  policyNexus?: { consumerResidenceState?: string; propertyState?: string };
 }
 
 export interface StagedNoticePrefill {
@@ -62,6 +63,9 @@ export async function stageNoticePrefill(
     set("senderState", sender.state);
     set("senderZip", sender.zip);
   }
+
+  set("consumerResidenceState", input.policyNexus?.consumerResidenceState);
+  set("propertyState", input.policyNexus?.propertyState);
 
   const postalAddress = (address: SavedAddress | MailingAddress) => ({
     name: addressName(address),

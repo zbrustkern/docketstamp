@@ -1,7 +1,7 @@
 /**
  * Cartridge 07: Pre-Arbitration Notice of Dispute & Feature Paywall Refund Request
  *
- * Conforms verbatim to Section 3 of docs/DOCKETSTAMP_AGENTIC_EXPANSION.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  * Invariant 1: Strictly enforces assertNonFitnessEntity() on corporate recipient.
  */
 
@@ -39,21 +39,20 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
   slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
   aliases: ['pre-arbitration-dispute', 'pre-arbitration-notice', 'feature-paywall-refund'],
   category: 'consumer_rights',
-  title: 'Pre-Arbitration Notice of Dispute & Feature Paywall Refund Request',
-  shortDescription: 'Formal written Pre-Arbitration Notice of Dispute demanding full refund or feature restoration before formal arbitration.',
-  documentHeaderTitle: 'FORMAL PRE-ARBITRATION NOTICE OF DISPUTE AND REFUND REQUEST',
-  reLineTemplate: 'RE: Mandatory Pre-Arbitration Notice of Dispute — {{productOrServiceName}} ({{accountOrSerialIdentifier}})',
+  title: 'Feature Refund Demand Letter',
+  shortDescription: 'Demand a refund for a removed or restricted product feature.',
+  documentHeaderTitle: 'FORMAL DEMAND FOR REFUND OR FEATURE RESTORATION',
+  reLineTemplate: 'RE: Product Feature Dispute — {{productOrServiceName}} ({{accountOrSerialIdentifier}})',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_or_manual_corp',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Pre-Arbitration Notice of Dispute & Hardware Feature Refund | Certified Mail | DocketStamp',
-    description: 'Dispatch a formal pre-arbitration notice of dispute and refund demand for post-purchase paywalled features or broken hardware terms via USPS Certified Mail.',
+    title: 'Feature Refund Demand Letter | USPS Mail | DocketStamp',
+    description: 'Prepare a demand for a refund or request for feature restoration based on facts you provide, then send it by USPS.',
     targetKeywords: [
       'pre-arbitration notice of dispute',
       'hardware feature paywall refund',
-      'mandatory informal dispute resolution notice',
-      'aaa arbitration demand letter',
+      'feature removal refund demand',
       'consumer dispute notice certified mail',
     ],
   },
@@ -133,7 +132,7 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
           value: 'Breach of Express or Implied Hardware/Software Functionality',
         },
       ],
-      helperText: 'The core commercial practice triggering this formal dispute.',
+      helperText: 'Choose the issue that best describes your reported dispute.',
       maxLength: 100,
     },
     {
@@ -143,7 +142,7 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'FACTUAL STATEMENT',
       inputType: 'textarea_short',
       placeholder: 'e.g., Feature advertised at time of purchase was placed behind an unexpected monthly subscription fee.',
-      helperText: 'Concise factual description of the diminished functionality or paywall.',
+      helperText: 'Briefly describe what happened, using facts you can support. Check the agreement for any required pre-dispute steps, recipient, method, or deadline. Line breaks are printed as spaces.',
       maxLength: 200,
     },
     {
@@ -153,15 +152,14 @@ export const preArbitrationDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'REFUND AMOUNT REQUESTED',
       inputType: 'currency',
       placeholder: '$399.95',
-      helperText: 'Total monetary compensation demanded to resolve the dispute amicably.',
+      helperText: 'The refund amount you are requesting. The letter does not establish that a contract-specific waiting period or procedure has been met.',
       maxLength: 25,
     },
   ],
   zodSchema: preArbitrationDisputeSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned consumer, {{senderFullName}}, hereby submits this formal written Pre-Arbitration Notice of Dispute pursuant to the mandatory informal dispute resolution provisions of the governing Terms of Service for {{productOrServiceName}} (Account/Device Identifier: {{accountOrSerialIdentifier}}, acquired on {{purchaseDate}}).',
-    'NATURE OF DISPUTE: {{disputeTriggerCategory}}. Specifically: {{factualSummary}}',
-    'This post-purchase modification or restriction materially diminishes the core functionality and bargained-for value of {{productOrServiceName}} as represented at the time of purchase.',
-    'REQUESTED RESOLUTION: To resolve this matter amicably prior to the filing of formal consumer arbitration or small claims proceedings, please remit a full refund/settlement in the amount of {{requestedResolutionAmount}} (or confirm permanent restoration of the affected functionality without recurring fees) to {{senderFullName}} at {{senderFullAddress}} within thirty (30) days of receipt of this notice.',
+    'I, {{senderFullName}}, am writing about {{productOrServiceName}} (Account/Device Identifier: {{accountOrSerialIdentifier}}), acquired on {{purchaseDate}}.',
+    'The issue is {{disputeTriggerCategory}}. Specifically: {{factualSummary}}',
+    'I demand a refund of {{requestedResolutionAmount}} or request restoration of the affected feature. I request a written response within 30 days of receipt, sent to {{senderFullAddress}}.',
   ],
 };

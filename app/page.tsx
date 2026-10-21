@@ -19,9 +19,9 @@ import { HeaderUserNav } from '@/src/components/docket/HeaderUserNav';
 import { InteractiveHomeWorkbench } from '@/src/components/docket/InteractiveHomeWorkbench';
 
 export const metadata = {
-  title: 'DocketStamp | Prepare and Mail Formal Legal Notices via USPS',
+  title: 'DocketStamp | Prepare and Mail Formal Letters via USPS',
   description:
-    'Choose a legal notice, add your details, and review your single-page letter before paying. Printed and mailed via USPS First-Class or Certified Mail®.',
+    'Prepare and review a formal letter, then send it by USPS First-Class or Certified Mail®.',
 };
 
 export default function HomePage() {

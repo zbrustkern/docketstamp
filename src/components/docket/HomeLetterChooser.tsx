@@ -36,6 +36,7 @@ export interface HomeLetterChooserProps {
   className?: string;
   initialSlug?: string | null;
   initialRecipientId?: string | null;
+  availableSlugs: string[];
 }
 
 export function HomeLetterChooser({
@@ -43,8 +44,10 @@ export function HomeLetterChooser({
   className = '',
   initialSlug = null,
   initialRecipientId = null,
+  availableSlugs,
 }: HomeLetterChooserProps) {
   const router = useRouter();
+  const availableSlugSet = useMemo(() => new Set(availableSlugs), [availableSlugs]);
 
   // Search input state
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,7 +62,7 @@ export function HomeLetterChooser({
       const customEvent = event as CustomEvent<{ slug?: string; recipientId?: string }>;
       if (customEvent.detail) {
         const { slug, recipientId } = customEvent.detail;
-        if (slug) {
+        if (slug && availableSlugSet.has(slug)) {
           setSelectedSlug(slug);
         }
         if (recipientId) {
@@ -71,14 +74,16 @@ export function HomeLetterChooser({
     return () => {
       window.removeEventListener('docketstamp:select-notice', handleSelectNoticeEvent);
     };
-  }, []);
+  }, [availableSlugSet]);
 
   // Sync initialSlug prop changes if provided
   useEffect(() => {
-    if (initialSlug && initialSlug !== selectedSlug) {
+    if (initialSlug && availableSlugSet.has(initialSlug) && initialSlug !== selectedSlug) {
       setSelectedSlug(initialSlug);
     }
-  }, [initialSlug]);
+  }, [initialSlug, availableSlugSet]);
+
+  useEffect(() => { if (selectedSlug && !availableSlugSet.has(selectedSlug)) setSelectedSlug(null); }, [availableSlugSet, selectedSlug]);
 
   // Purpose disambiguation state (for tech_hardware_legal recipients like Sonos)
   const [pendingHardwareRecipient, setPendingHardwareRecipient] =
@@ -93,10 +98,12 @@ export function HomeLetterChooser({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Perform search
-  const searchResult = useMemo(
-    () => searchChooser(searchQuery),
-    [searchQuery]
-  );
+  const searchResult = useMemo(() => {
+    const result = searchChooser(searchQuery);
+    const letters = result.letters.filter(letter => availableSlugSet.has(letter.slug));
+    const companies = result.companies.filter(company => resolveRecipientCompatibility(company, null).compatibleSlugs.some(slug => availableSlugSet.has(slug)));
+    return { ...result, letters, companies, totalMatches: letters.length + companies.length };
+  }, [searchQuery, availableSlugSet]);
 
   const selectedRecipient = useMemo(
     () => (selectedRecipientId ? getVerifiedRecipientById(selectedRecipientId) : null),
@@ -105,18 +112,18 @@ export function HomeLetterChooser({
 
   const selectedLetter = useMemo(
     () => CHOOSER_LETTERS.find((l) => l.slug === selectedSlug) || null,
-    [selectedSlug]
+    [selectedSlug, availableSlugSet]
   );
 
   // Check if current selection is complete and ready to continue
   const isComplete = useMemo(() => {
     // CRITICAL: Cannot continue if a fitness entity search is active, even if a letter was selected
     if (searchResult.isFitnessBlocked) return false;
-    if (!selectedSlug) return false;
+    if (!selectedSlug || !availableSlugSet.has(selectedSlug)) return false;
     // If pending hardware recipient needs purpose selection, not complete
     if (pendingHardwareRecipient && !selectedSlug) return false;
     return true;
-  }, [selectedSlug, pendingHardwareRecipient, searchResult.isFitnessBlocked]);
+  }, [selectedSlug, pendingHardwareRecipient, searchResult.isFitnessBlocked, availableSlugSet]);
 
   // Sync selection change to parent if callback provided
   useEffect(() => {
@@ -130,6 +137,7 @@ export function HomeLetterChooser({
   // Handle letter click
   const handleSelectLetter = useCallback(
     (letter: ChooserLetterMetadata) => {
+      if (!availableSlugSet.has(letter.slug)) return;
       setClearedNotice(null);
 
       // If a recipient was previously selected, check compatibility
@@ -166,7 +174,7 @@ export function HomeLetterChooser({
         entrySource: 'home_chooser',
       });
     },
-    [selectedRecipientId, pendingHardwareRecipient]
+    [selectedRecipientId, pendingHardwareRecipient, availableSlugSet]
   );
 
   // Handle company click
@@ -187,19 +195,20 @@ export function HomeLetterChooser({
           setSelectedSlug(null);
           setPendingHardwareRecipient(company);
         }
-      } else if (compat.suggestedSlug) {
+      } else if (compat.suggestedSlug && availableSlugSet.has(compat.suggestedSlug)) {
         // Single purpose (credit bureau, debt collector, service cancellation)
         setSelectedSlug(compat.suggestedSlug);
         setSelectedRecipientId(company.id);
         setPendingHardwareRecipient(null);
       }
     },
-    [selectedSlug]
+    [selectedSlug, availableSlugSet]
   );
 
   // Handle hardware purpose selection
   const handleSelectHardwarePurpose = useCallback(
     (purpose: CompanyPurposeOption) => {
+      if (!availableSlugSet.has(purpose.slug)) return;
       setSelectedSlug(purpose.slug);
       if (pendingHardwareRecipient) {
         setSelectedRecipientId(pendingHardwareRecipient.id);
@@ -207,13 +216,13 @@ export function HomeLetterChooser({
       }
       setClearedNotice(null);
     },
-    [pendingHardwareRecipient]
+    [pendingHardwareRecipient, availableSlugSet]
   );
 
   // Continue to workspace
   const handleContinue = useCallback(() => {
     if (searchResult.isFitnessBlocked) return;
-    if (!selectedSlug) return;
+    if (!selectedSlug || !availableSlugSet.has(selectedSlug)) return;
 
     trackFunnelEvent({
       eventName: 'product_select',
@@ -226,7 +235,7 @@ export function HomeLetterChooser({
 
     const targetUrl = buildChooserWorkspaceUrl(selectedSlug, selectedRecipientId);
     router.push(targetUrl);
-  }, [selectedSlug, selectedRecipientId, searchResult.isFitnessBlocked, router]);
+  }, [selectedSlug, selectedRecipientId, searchResult.isFitnessBlocked, router, availableSlugSet]);
 
   // Reset search
   const handleResetSearch = useCallback(() => {
@@ -424,7 +433,7 @@ export function HomeLetterChooser({
               className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Browse all 9 letters
+              Browse available letters
             </button>
           </div>
         )}
@@ -451,7 +460,7 @@ export function HomeLetterChooser({
             {pendingHardwareRecipient.city}, {pendingHardwareRecipient.state}. Choose your notice purpose:
           </p>
           <div className="space-y-2">
-            {HARDWARE_OEM_PURPOSE_OPTIONS.map((purpose) => (
+            {HARDWARE_OEM_PURPOSE_OPTIONS.filter(purpose => availableSlugSet.has(purpose.slug)).map((purpose) => (
               <button
                 key={purpose.slug}
                 type="button"

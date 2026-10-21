@@ -1,0 +1,22 @@
+[
+  "app/.well-known/openapi.json/route.ts",
+  "app/api/docket/lock-and-intent/route.ts",
+  "app/api/docket/stage/[stageId]/route.ts",
+  "app/api/docket/stage/stage-store.ts",
+  "app/api/mcp/route.ts",
+  "app/llms.txt/route.ts",
+  "app/notices/[slug]/page.tsx",
+  "app/sitemap.ts",
+  "lib/types.ts",
+  "tests/agent-stage-mcp.test.ts",
+  "tests/agentic-api-mcp.test.ts",
+  "tests/sprint-0003-integrity-evidence.test.ts",
+  "app/api/admin/console/templates/route.ts",
+  "app/api/docket/availability/route.ts",
+  "lib/template-policy-store.ts",
+  "src/lib/docket/template-policy.ts",
+  "tests/template-policy-admin-api.test.ts",
+  "tests/template-policy-lock-gate.test.ts",
+  "tests/template-policy-store.test.ts",
+  "tests/template-policy.test.ts"
+]

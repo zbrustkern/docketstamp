@@ -65,34 +65,34 @@ export const HARDWARE_OEM_PURPOSE_OPTIONS: CompanyPurposeOption[] = [
   {
     slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
     promptSlug: 'smart-device-degraded-functionality-refund-demand',
-    label: 'Request a refund for changed product features',
-    description: 'Notice for connected hardware after a software or policy change',
+    label: 'Demand a refund for removed or restricted features',
+    description: 'Demand a refund or request restoration for a removed or restricted feature.',
   },
   {
     slug: '30-day-mandatory-arbitration-opt-out-notice',
     promptSlug: 'arbitration-opt-out-notice-30-day',
     label: 'Send an arbitration opt-out notice',
-    description: '30-day written opt-out notice after new account or terms',
+    description: 'Send an opt-out notice after checking your agreement for eligibility and submission rules.',
   },
   {
     slug: 'statutory-health-and-biometric-data-deletion-demand',
     promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
-    label: 'Request deletion of personal data',
-    description: 'Formal privacy deletion and opt-out request',
+    label: 'Demand deletion of your personal data',
+    description: 'Put your data-deletion demand and consent revocation in writing.',
   },
 ];
 
 /**
  * Curated display definitions for all 9 notice cartridges.
- * Exact titles and subtitles conform to §7.4 and S2 specifications.
+ * Customer-facing titles and subtitles follow the scoped SPRINT-0011 copy authority.
  */
 export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
   {
     slug: 'security-deposit-return-demand-letter',
     promptSlug: 'security-deposit-return-demand-letter',
     aliases: ['security-deposit-return', 'security-deposit-demand'],
-    displayTitle: 'Request a security deposit return',
-    subtitle: 'Demand letter to a landlord or property manager',
+    displayTitle: 'Demand your security deposit back',
+    subtitle: 'Send a formal demand to your landlord or property manager.',
     searchAliases: [
       'security deposit',
       'deposit return',
@@ -145,8 +145,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'fdcpa-debt-validation',
       'debt-validation-demand-letter-fdcpa-809',
     ],
-    displayTitle: 'Request debt verification',
-    subtitle: 'Written validation request within the federal notice window',
+    displayTitle: 'Dispute a debt and demand verification',
+    subtitle: 'Challenge a collection claim and demand written verification.',
     searchAliases: [
       'debt collector',
       'debt validation',
@@ -172,8 +172,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'service-cancellation',
       'contract-membership-cancellation-notice',
     ],
-    displayTitle: 'Cancel a service or policy',
-    subtitle: 'Notice for security, telecom, pest control, warranty, or insurance accounts',
+    displayTitle: 'Cancel a service or policy in writing',
+    subtitle: 'Send written notice to cancel a service or policy.',
     searchAliases: [
       'cancel service',
       'cancel contract',
@@ -202,8 +202,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'repair-maintenance-demand',
       'notice-of-intent-to-withhold-or-repair-and-deduct',
     ],
-    displayTitle: 'Request repairs',
-    subtitle: 'Formal repair notice to a landlord or property manager',
+    displayTitle: 'Demand repairs from your landlord',
+    subtitle: 'Demand repairs and a written response from your landlord.',
     searchAliases: [
       'repair',
       'repairs',
@@ -232,8 +232,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'tenant-vacate-notice',
       'lease-termination-non-renewal-notice',
     ],
-    displayTitle: 'Give move-out notice',
-    subtitle: 'Written move-out or non-renewal notice',
+    displayTitle: 'Give formal move-out notice',
+    subtitle: 'Give your landlord written notice of your planned move-out date.',
     searchAliases: [
       'move out',
       'intent to vacate',
@@ -260,8 +260,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'feature-paywall-refund',
       'smart-device-degraded-functionality-refund-demand',
     ],
-    displayTitle: 'Request a refund for changed product features',
-    subtitle: 'Notice for connected hardware after a software or policy change',
+    displayTitle: 'Demand a refund for removed or restricted features',
+    subtitle: 'Demand a refund or request restoration for a removed product feature.',
     searchAliases: [
       'hardware refund',
       'device refund',
@@ -297,7 +297,7 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'arbitration-opt-out-notice-30-day',
     ],
     displayTitle: 'Send an arbitration opt-out notice',
-    subtitle: '30-day written opt-out notice after new account or terms',
+    subtitle: 'Check your agreement for opt-out eligibility, deadline, method, and address.',
     searchAliases: [
       'arbitration opt out',
       'opt out of arbitration',
@@ -325,8 +325,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'statutory-data-deletion',
       'ccpa-gdpr-data-deletion-opt-out-request',
     ],
-    displayTitle: 'Request deletion of personal data',
-    subtitle: 'Formal privacy deletion and opt-out request',
+    displayTitle: 'Demand deletion of your personal data',
+    subtitle: 'Put your data-deletion demand and consent revocation in writing.',
     searchAliases: [
       'data deletion',
       'delete my data',

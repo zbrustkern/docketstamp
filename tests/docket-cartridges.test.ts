@@ -155,14 +155,14 @@ describe('1. Master Notice Cartridge Registry Integrity (Cartridges 01–09)', (
 
     assert.match(
       intentToVacateNotice.bodyParagraphs[1],
-      /intend for the tenancy to conclude.*{{moveOutDate}}/,
+      /I intend to surrender possession on or before {{moveOutDate}}/,
     );
     assert.doesNotMatch(intentToVacateNotice.bodyParagraphs[1], /written notice provisions|governing lease agreement/i);
     assert.match(
-      securityDepositNotice.bodyParagraphs[1],
-      /entered {{moveOutDate}} as the move-out date/i,
+      securityDepositNotice.bodyParagraphs[0],
+      /My move-out date was {{moveOutDate}}/,
     );
-    assert.doesNotMatch(securityDepositNotice.bodyParagraphs[1], /keys|access devices|surrendered/i);
+    assert.doesNotMatch(securityDepositNotice.bodyParagraphs[0], /keys|access devices|surrendered/i);
   });
 });
 

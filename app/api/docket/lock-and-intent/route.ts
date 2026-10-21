@@ -5,11 +5,13 @@ import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/inter
 import { renderLobHtmlPayload } from '@/lib/docket/renderer/lob-html-shell';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/lib/docket/guardrails';
 import { MailTierId, PostalAddress, DocketAddress } from '@/lib/docket/types';
-import { saveOrder, updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
+import { updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
 import { createCardPaymentIntent } from '@/lib/stripe';
 import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
 import { createDocumentIntegrityEvidence } from '@/lib/docket/integrity-evidence';
+import { createOrderUnderPolicy } from '@/lib/template-policy-store';
+import { PolicyNexus } from '@/src/lib/docket/template-policy';
 
 export async function POST(req: NextRequest) {
   let failureCode:
@@ -56,6 +58,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!userValues || typeof userValues !== 'object' || Array.isArray(userValues)) {
+      return NextResponse.json({ error: 'Document fields must be an object.', code: 'INVALID_FIELD_VALUES' }, { status: 400 });
+    }
+    const policyNexus: PolicyNexus = {
+      consumerResidenceState: (userValues as any).consumerResidenceState,
+      propertyState: (userValues as any).propertyState,
+    };
+
     // 2. Strict Conflict-of-Interest & Guardrail Verification (Invariant 1)
     try {
       if (userValues.recipientFormalName) {
@@ -101,7 +111,7 @@ export async function POST(req: NextRequest) {
     if (!parsedFields.success) {
       return NextResponse.json(
         {
-          error: 'Document fields failed statutory validation.',
+          error: 'Document fields failed validation.',
           details: parsedFields.error.flatten(),
         },
         { status: 400 }
@@ -291,7 +301,14 @@ export async function POST(req: NextRequest) {
 
     // Commit snapshot before requesting payment credentials
     failureCode = 'ORDER_PERSISTENCE';
-    await saveOrder(orderRecord);
+    const policyCommit = await createOrderUnderPolicy(orderRecord as any, notice.slug, policyNexus);
+    if (!policyCommit.ok) {
+      return NextResponse.json({
+        error: policyCommit.decision.message,
+        code: policyCommit.decision.code,
+        details: { requiredFields: policyCommit.decision.requiredFields },
+      }, { status: 403 });
+    }
 
     // A 100% discount is still a fully frozen notice order, but it does not
     // require a zero-dollar Stripe PaymentIntent. The free-order endpoint binds

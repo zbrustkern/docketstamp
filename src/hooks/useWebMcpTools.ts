@@ -13,10 +13,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { NoticeTemplateDefinition, MailTierId } from '@/lib/docket/types';
+import { fetchTemplateAvailability } from '@/src/lib/docket/availability-client';
+import { evaluateTemplateAvailability } from '@/src/lib/docket/template-policy';
 import { getVerifiedRecipientById } from '@/lib/docket/data/verified-recipients';
 
 export interface UseWebMcpToolsOptions {
   notice: NoticeTemplateDefinition;
+  currentValues?: Record<string, string>;
   onUpdateValues: (fields: Record<string, string>) => void;
   onSelectTier?: (tier: MailTierId) => void;
 }
@@ -31,12 +34,15 @@ const TOOL_NAME = 'fill_docket_fields';
 
 export function useWebMcpTools({
   notice,
+  currentValues = {},
   onUpdateValues,
   onSelectTier,
 }: UseWebMcpToolsOptions): UseWebMcpToolsResult {
   const [isSupported, setIsSupported] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const registrationRef = useRef<any>(null);
+  const currentValuesRef = useRef(currentValues);
+  currentValuesRef.current = currentValues;
 
   // Keep latest callbacks in refs so the registered tool always invokes current state handlers
   const onUpdateValuesRef = useRef(onUpdateValues);
@@ -103,6 +109,7 @@ export function useWebMcpTools({
       'recipientState',
       'recipientZip',
       'propertyState',
+      'consumerResidenceState',
     ];
 
     for (const key of standardFields) {
@@ -142,6 +149,13 @@ export function useWebMcpTools({
               }
             }
           }
+
+          // Recheck current policy before browser agents change a draft.
+          const policy = await fetchTemplateAvailability();
+          const entry = policy.templates.find(item => item.slug === notice.slug);
+          if (!entry) return { success: false, code: 'TEMPLATE_UNAVAILABLE', error: 'This notice is not currently available.' };
+          const decision = evaluateTemplateAvailability(entry, { ...currentValuesRef.current, ...updates });
+          if (!decision.allowed) return { success: false, code: decision.code, error: decision.message, requiredFields: decision.requiredFields };
 
           // Handle recipientId resolution
           if (input?.recipientId && typeof input.recipientId === 'string') {

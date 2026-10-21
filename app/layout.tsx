@@ -35,11 +35,11 @@ const metaDomainVerification = process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION;
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
+    default: "DocketStamp | Formal Letter Preparation & USPS Mail",
     template: "%s | DocketStamp",
   },
   description:
-    "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
+    "Prepare and review a formal letter, then send it by USPS First-Class or Certified Mail®. Printing and postage included.",
   applicationName: "DocketStamp",
   authors: [{ name: "Western Amalgamated" }],
   creator: "Western Amalgamated",
@@ -70,9 +70,9 @@ export const metadata: Metadata = {
       },
   ...(metaDomainVerification ? { verification: { other: { "facebook-domain-verification": metaDomainVerification } } } : {}),
   openGraph: {
-    title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
+    title: "DocketStamp | Formal Letter Preparation & USPS Mail",
     description:
-      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
+      "Prepare and review a formal letter, then send it by USPS First-Class or Certified Mail®. Printing and postage included.",
     url: appUrl,
     siteName: "DocketStamp",
     images: [
@@ -89,9 +89,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DocketStamp | Official Document & Certified Mail Dispatch Registry",
+    title: "DocketStamp | Formal Letter Preparation & USPS Mail",
     description:
-      "Formal legal notice preparation and physical USPS First-Class & Certified Mail dispatch registry. Choose a letter, add your details, and review it before paying. Printing and postage included.",
+      "Prepare and review a formal letter, then send it by USPS First-Class or Certified Mail®. Printing and postage included.",
     images: ["/og-image.png"],
   },
   icons: {

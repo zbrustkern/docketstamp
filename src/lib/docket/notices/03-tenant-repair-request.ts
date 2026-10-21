@@ -1,7 +1,7 @@
 /**
  * Cartridge 03: Formal Tenant Request for Essential Repairs
  *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  */
 
 import { z } from 'zod';
@@ -32,16 +32,16 @@ export const tenantRepairNotice: NoticeTemplateDefinition = {
   slug: 'tenant-repair-and-maintenance-notice',
   aliases: ['tenant-repair', 'tenant-repair-request', 'repair-maintenance-demand'],
   category: 'tenant',
-  title: 'Formal Tenant Request for Essential Repairs',
-  shortDescription: 'Written documentation of defective residential habitability condition requesting prompt repair, maintenance remediation, and inspection.',
-  documentHeaderTitle: 'FORMAL WRITTEN NOTICE OF REQUIRED MAINTENANCE AND REPAIRS',
+  title: 'Tenant Repair Demand Letter',
+  shortDescription: 'Demand repairs and a written response from your landlord.',
+  documentHeaderTitle: 'FORMAL DEMAND FOR REPAIRS',
   reLineTemplate: 'RE: Notice of Defective Condition ({{issueCategory}}) — {{leasedPremisesAddress}}',
   recommendedTier: 'certified',
   recipientMode: 'manual_landlord',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Tenant Repair & Maintenance Notice | Send via USPS Certified Mail | DocketStamp',
-    description: 'Document defective rental conditions, habitability failures, and repair requests with proof of physical USPS Certified Mail delivery to your landlord.',
+    title: 'Tenant Repair Demand Letter | USPS Mail | DocketStamp',
+    description: 'Describe a reported rental condition, demand repairs, and request a response and schedule. Send the letter by USPS.',
     targetKeywords: [
       'tenant repair request letter',
       'notice to repair landlord certified mail',
@@ -96,7 +96,7 @@ export const tenantRepairNotice: NoticeTemplateDefinition = {
         { label: 'Appliance / Structural Defect', value: 'Appliance / Structural Defect' },
         { label: 'Pest Infestation', value: 'Pest Infestation' },
       ],
-      helperText: 'Primary habitability or maintenance category of the issue.',
+      helperText: 'Choose the category that best describes the condition you report.',
       maxLength: 40,
     },
     {
@@ -106,7 +106,7 @@ export const tenantRepairNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'DATE FIRST REPORTED',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'When the issue began or when you first brought it to management\'s attention.',
+      helperText: 'When the issue began or when you first brought it to management\'s attention. The five-business-day repair schedule response is your requested period, not a statutory deadline.',
       maxLength: 30,
     },
     {
@@ -116,7 +116,7 @@ export const tenantRepairNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'DESCRIPTION OF CONDITION',
       inputType: 'textarea_short',
       placeholder: 'e.g., Severe water leak beneath bathroom vanity causing standing water and wood deterioration.',
-      helperText: 'Concise factual description of the issue and its impact on the home.',
+      helperText: 'Concise factual description of the issue and its impact on the home. Line breaks are printed as spaces.',
       maxLength: 220,
     },
     {
@@ -136,15 +136,15 @@ export const tenantRepairNotice: NoticeTemplateDefinition = {
           value: 'Tenant requests scheduled appointment prior to entry',
         },
       ],
-      helperText: 'Specify entry terms for inspection and contractor repair work.',
+      helperText: 'State your requested arrangements for inspection or repair access.',
       maxLength: 70,
     },
   ],
   zodSchema: tenantRepairSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned tenant(s), {{senderFullName}}, residing at {{leasedPremisesAddress}}, hereby submit formal written documentation of a condition requiring prompt repair and remediation under the governing lease agreement and applicable residential habitability standards.',
-    'Specifically, the premises are currently experiencing the following issue categorized as {{issueCategory}}, first observed or reported on {{dateFirstObserved}}: {{defectDescription}}',
-    'This condition materially affects the normal residential use and maintenance of the premises. Regarding contractor or maintenance access to inspect and remedy this condition: {{accessAuthorization}}.',
-    'Please provide written confirmation within five (5) business days of the scheduled inspection and repair date so that an accurate maintenance record may be maintained by all parties.',
+    'I, {{senderFullName}}, demand repair of the condition at {{leasedPremisesAddress}}.',
+    'I first observed or reported the {{issueCategory}} condition on {{dateFirstObserved}}: {{defectDescription}}',
+    'For inspection or repair access, my request is: {{accessAuthorization}}.',
+    'Please respond within five business days with a proposed inspection and repair schedule.',
   ],
 };

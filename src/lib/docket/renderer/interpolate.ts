@@ -193,6 +193,57 @@ function normalizeValues(
 }
 
 /**
+ * Keep fixed choice values from becoming unqualified legal claims in customer-facing
+ * copy. The same resolved values feed preview tokens and printed paragraphs.
+ */
+function resolveBoundedCopyValues(
+  notice: NoticeTemplateDefinition,
+  values: Record<string, string>
+): Record<string, string> {
+  const safeValues = { ...values };
+
+  if (notice.id === 'fdcpa-30-day-debt-validation-letter') {
+    const preference = values.communicationPreference;
+    if (preference === 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail') {
+      safeValues.communicationPreference = 'My requested preference is to receive future communications about this matter in writing by U.S. Mail.';
+    } else if (preference === 'Please forward written verification documentation to the mailing address listed above') {
+      safeValues.communicationPreference = 'Please send written verification to the mailing address listed above.';
+    }
+  }
+
+  if (notice.id === 'statutory-health-and-biometric-data-deletion-demand') {
+    const framework = values.applicablePrivacyFramework;
+    if (framework === 'Applicable State Consumer Data & Biometric Privacy Statutes (including CCPA/CPRA, MHMDA, TDPSA, and BIPA)') {
+      safeValues.applicablePrivacyFramework = 'state consumer-data and biometric-privacy protections';
+    } else if (framework === 'General Consumer Data Protection & Revocation of Processing Consent') {
+      safeValues.applicablePrivacyFramework = 'general consumer privacy protections';
+    }
+  }
+
+  return safeValues;
+}
+
+/**
+ * Textarea line breaks and tabs become ordinary spaces so bounded facts remain
+ * a single rendered paragraph in both the preview and the frozen print payload.
+ * The caller's source object is never mutated.
+ */
+function normalizeTextareaWhitespace(
+  notice: NoticeTemplateDefinition,
+  userValues: Record<string, string>
+): Record<string, string> {
+  const normalizedValues = { ...userValues };
+  for (const field of notice.fields) {
+    if (field.inputType !== 'textarea_short') continue;
+    const value = normalizedValues[field.key];
+    if (typeof value === 'string') {
+      normalizedValues[field.key] = value.replace(/\s+/g, ' ').trim();
+    }
+  }
+  return normalizedValues;
+}
+
+/**
  * Evaluates conditional blocks in template text:
  * `{{#key}}content with {{subKey}}{{/key}}` (positive conditional)
  * `{{^key}}fallback content{{/key}}` (inverted conditional)
@@ -300,9 +351,13 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
     recipientAddress = {},
   } = options;
 
-  // 1. Merge statutory lookups with user values
-  const statutoryValues = resolveStatutoryValues(notice, userValues);
-  const normalized = normalizeValues(userValues, senderAddress, recipientAddress, docketId, executionDate);
+  // 1. Merge statutory lookups with presentation-normalized user values.
+  const presentationValues = normalizeTextareaWhitespace(notice, userValues);
+  const statutoryValues = resolveStatutoryValues(notice, presentationValues);
+  const normalized = resolveBoundedCopyValues(
+    notice,
+    normalizeValues(presentationValues, senderAddress, recipientAddress, docketId, executionDate)
+  );
 
   const mergedValues: Record<string, string> = {
     ...statutoryValues,

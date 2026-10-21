@@ -1,7 +1,7 @@
 /**
- * Cartridge 09: Statutory Health, Biometric & Telemetry Data Erasure Demand
+ * Cartridge 09: Consumer Data Deletion Demand
  *
- * Conforms verbatim to Section 3 of docs/DOCKETSTAMP_AGENTIC_EXPANSION.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  * Invariant 1: Strictly enforces assertNonFitnessEntity() on corporate recipient.
  */
 
@@ -39,16 +39,16 @@ export const biometricPrivacyDeletionNotice: NoticeTemplateDefinition = {
   slug: 'statutory-health-and-biometric-data-deletion-demand',
   aliases: ['biometric-privacy-deletion', 'health-data-erasure', 'statutory-data-deletion'],
   category: 'consumer_rights',
-  title: 'Statutory Health, Biometric & Telemetry Data Erasure Demand',
-  shortDescription: 'Formal statutory notice revoking processing consent and demanding permanent erasure of biometric, health, telemetry, and location records.',
-  documentHeaderTitle: 'STATUTORY NOTICE OF CONSENT REVOCATION AND DATA ERASURE DEMAND',
-  reLineTemplate: 'RE: Statutory Data Erasure & Revocation of Consent — Account: {{accountEmailOrId}}',
+  title: 'Personal Data Deletion Demand',
+  shortDescription: 'Put your data-deletion demand and consent revocation in writing.',
+  documentHeaderTitle: 'DEMAND FOR DELETION OF PERSONAL DATA',
+  reLineTemplate: 'RE: Personal Data Deletion Request — Account: {{accountEmailOrId}}',
   recommendedTier: 'certified',
   recipientMode: 'verified_or_manual_corp',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Health & Biometric Data Erasure Demand Letter | USPS Certified Mail | DocketStamp',
-    description: 'Demand complete deletion of biometric, health sensor, telemetry, and location data under CCPA/CPRA, MHMDA, and state privacy laws with USPS Certified Mail tracking.',
+    title: 'Personal Data Deletion Demand | USPS Mail | DocketStamp',
+    description: 'Send a data-deletion demand and consent-revocation request.',
     targetKeywords: [
       'biometric data deletion request letter',
       'health data erasure demand',
@@ -113,7 +113,7 @@ export const biometricPrivacyDeletionNotice: NoticeTemplateDefinition = {
           value: 'Cloud Application & Consumer Profile Account',
         },
       ],
-      helperText: 'The category of hardware appliance or digital service generating records.',
+      helperText: 'Choose the device or service category associated with the data.',
       maxLength: 70,
     },
     {
@@ -122,25 +122,25 @@ export const biometricPrivacyDeletionNotice: NoticeTemplateDefinition = {
       label: 'Statutory Basis',
       docusignTagLabel: 'STATUTORY BASIS',
       inputType: 'select',
-      placeholder: 'Applicable State Consumer Data & Biometric Privacy Statutes (including CCPA/CPRA, MHMDA, TDPSA, and BIPA)',
+      placeholder: 'Potential state privacy framework',
       options: [
         {
-          label: 'Applicable State Consumer Data & Biometric Privacy Statutes (including CCPA/CPRA, MHMDA, TDPSA, and BIPA)',
+          label: 'Potential state privacy framework (coverage depends on the request and applicable law)',
           value: 'Applicable State Consumer Data & Biometric Privacy Statutes (including CCPA/CPRA, MHMDA, TDPSA, and BIPA)',
         },
         {
-          label: 'General Consumer Data Protection & Revocation of Processing Consent',
+          label: 'General consumer privacy request',
           value: 'General Consumer Data Protection & Revocation of Processing Consent',
         },
       ],
-      helperText: 'The legal privacy basis governing your revocation and erasure demand.',
+      helperText: 'Selecting a framework does not establish that it covers your request. Coverage, verification, exceptions, and submission methods may apply.',
       maxLength: 120,
     },
   ],
   zodSchema: biometricPrivacyDeletionSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned consumer, {{senderFullName}}, hereby revokes all prior consent for the collection, secondary profiling, AI training ingestion, or marketing solicitation derived from my {{deviceOrAppCategory}} associated with Account Identifier {{accountEmailOrId}}.',
-    'Pursuant to {{applicablePrivacyFramework}}, I formally request the complete and permanent deletion of all personal, telemetry, health, and biometric records linked to {{accountEmailOrId}} across your production databases, analytics warehouses, and third-party data processors.',
-    'Please immediately cease all promotional communications tied to my device usage and mail written certification confirming complete data erasure to {{senderFullAddress}} within the applicable statutory response period.',
+    'I, {{senderFullName}}, demand deletion of personal data associated with my {{deviceOrAppCategory}} and account {{accountEmailOrId}}, and, where applicable, revoke consent for processing.',
+    'I make this request under {{applicablePrivacyFramework}} to the extent applicable law covers my account and request. Please tell me what verification or designated submission method you require.',
+    'If you retain any data, explain what is retained and why. Send your written response to {{senderFullAddress}}.',
   ],
 };

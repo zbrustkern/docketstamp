@@ -65,7 +65,7 @@ import {
 
 describe('S2 Chooser and Routing Acceptance Gate', () => {
   describe('1. Canonical Slugs, Titles, and Plain Display Metadata', () => {
-    it('maps all 9 cartridges in ALL_NOTICE_CARTRIDGES with exact §7.4 display titles and subtitles', () => {
+    it('maps all 9 cartridges in ALL_NOTICE_CARTRIDGES with the canonical display titles and scoped subtitles', () => {
       assert.equal(
         CHOOSER_LETTERS.length,
         9,
@@ -81,8 +81,8 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
         {
           slug: 'security-deposit-return-demand-letter',
           promptSlug: 'security-deposit-return-demand-letter',
-          displayTitle: 'Request a security deposit return',
-          subtitle: 'Demand letter to a landlord or property manager',
+          displayTitle: 'Demand your security deposit back',
+          subtitle: 'Send a formal demand to your landlord or property manager.',
         },
         {
           slug: 'fcra-credit-bureau-written-dispute-letter',
@@ -93,44 +93,44 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
         {
           slug: 'fdcpa-30-day-debt-validation-letter',
           promptSlug: 'debt-validation-demand-letter-fdcpa-809',
-          displayTitle: 'Request debt verification',
-          subtitle: 'Written validation request within the federal notice window',
+          displayTitle: 'Dispute a debt and demand verification',
+          subtitle: 'Challenge a collection claim and demand written verification.',
         },
         {
           slug: 'written-contract-and-policy-cancellation-letter',
           promptSlug: 'contract-membership-cancellation-notice',
-          displayTitle: 'Cancel a service or policy',
-          subtitle: 'Notice for security, telecom, pest control, warranty, or insurance accounts',
+          displayTitle: 'Cancel a service or policy in writing',
+          subtitle: 'Send written notice to cancel a service or policy.',
         },
         {
           slug: 'tenant-repair-and-maintenance-notice',
           promptSlug: 'notice-of-intent-to-withhold-or-repair-and-deduct',
-          displayTitle: 'Request repairs',
-          subtitle: 'Formal repair notice to a landlord or property manager',
+          displayTitle: 'Demand repairs from your landlord',
+          subtitle: 'Demand repairs and a written response from your landlord.',
         },
         {
           slug: 'tenant-notice-of-intent-to-vacate',
           promptSlug: 'lease-termination-non-renewal-notice',
-          displayTitle: 'Give move-out notice',
-          subtitle: 'Written move-out or non-renewal notice',
+          displayTitle: 'Give formal move-out notice',
+          subtitle: 'Give your landlord written notice of your planned move-out date.',
         },
         {
           slug: 'pre-arbitration-notice-of-dispute-and-refund-request',
           promptSlug: 'smart-device-degraded-functionality-refund-demand',
-          displayTitle: 'Request a refund for changed product features',
-          subtitle: 'Notice for connected hardware after a software or policy change',
+          displayTitle: 'Demand a refund for removed or restricted features',
+          subtitle: 'Demand a refund or request restoration for a removed product feature.',
         },
         {
           slug: '30-day-mandatory-arbitration-opt-out-notice',
           promptSlug: 'arbitration-opt-out-notice-30-day',
           displayTitle: 'Send an arbitration opt-out notice',
-          subtitle: '30-day written opt-out notice after new account or terms',
+          subtitle: 'Check your agreement for opt-out eligibility, deadline, method, and address.',
         },
         {
           slug: 'statutory-health-and-biometric-data-deletion-demand',
           promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
-          displayTitle: 'Request deletion of personal data',
-          subtitle: 'Formal privacy deletion and opt-out request',
+          displayTitle: 'Demand deletion of your personal data',
+          subtitle: 'Put your data-deletion demand and consent revocation in writing.',
         },
       ];
 
@@ -169,7 +169,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
 
       const depositMeta = CHOOSER_METADATA_BY_SLUG['security-deposit-return-demand-letter'];
       assert.ok(depositMeta);
-      assert.equal(depositMeta.displayTitle, 'Request a security deposit return');
+      assert.equal(depositMeta.displayTitle, 'Demand your security deposit back');
     });
   });
 
@@ -260,7 +260,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       assert.equal(HARDWARE_OEM_PURPOSE_OPTIONS.length, 3);
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[0].label,
-        'Request a refund for changed product features'
+        'Demand a refund for removed or restricted features'
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[1].label,
@@ -268,7 +268,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[2].label,
-        'Request deletion of personal data'
+        'Demand deletion of your personal data'
       );
     });
   });

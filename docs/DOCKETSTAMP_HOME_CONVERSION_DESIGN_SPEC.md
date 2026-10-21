@@ -168,3 +168,9 @@ Paid orders/session uses server-verified orders deduped by order ID and correlat
 ## 10. Completion gate
 
 Complete the seven sprint gates with code, browser, and integration evidence. Cover all nine routes, compatible/ambiguous companies, manual recipients, excluded categories, ordinary/staged prefills, optional auth, errors/back/retry, signatures, verification, all tiers, and immutable snapshots. Validate geometry/parity for affected rendering paths. Use mock/staging payment and fulfillment only. No live purchase, postal dispatch, production deployment, or unmeasured conversion claim is included in this build.
+
+---
+
+## Scoped copy authority update — 2026-10-20 (SPRINT-0011)
+
+For customer-facing chooser and hardware-purpose labels, homepage hero, notice titles, SEO copy, and discovery copy, [SPRINT-0011](sprints/SPRINT-0011.md) supersedes conflicting wording above. Use the approved action-led labels and hero copy, with the Security Deposit Demand Letter title and printed heading specified there. Do not claim universal statutory timing, rights, outcomes, evidentiary effect, or attorney authorship. Preserve required disclosures, selection compatibility, internal IDs/slugs, and postal geometry.

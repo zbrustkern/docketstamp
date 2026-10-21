@@ -1,7 +1,7 @@
 /**
  * Cartridge 04: FCRA § 611 Credit Bureau Written Dispute Notice
  *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  */
 
 import { z } from 'zod';
@@ -31,16 +31,16 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
   slug: 'fcra-credit-bureau-written-dispute-letter',
   aliases: ['credit-bureau-dispute', 'fcra-credit-dispute'],
   category: 'credit_debt',
-  title: 'FCRA § 611 Credit Bureau Written Dispute Notice',
-  shortDescription: 'Formal statutory reinvestigation dispute under 15 U.S.C. § 1681i demanding verification or deletion of inaccurate tradelines.',
+  title: 'Credit Report Dispute Letter',
+  shortDescription: 'Dispute a credit-report error and request an investigation.',
   documentHeaderTitle: 'WRITTEN NOTICE OF CREDIT FILE INACCURACY AND REINVESTIGATION REQUEST',
   reLineTemplate: 'RE: FCRA § 611 Consumer File Dispute (15 U.S.C. § 1681i) — SSN Ending in XXX-XX-{{ssnLast4}} | DOB: {{senderDob}}',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_credit_bureau',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'FCRA Credit Bureau Dispute Letter | Send via USPS Certified Mail | DocketStamp',
-    description: 'Demand a 30-day statutory credit bureau reinvestigation under FCRA 15 U.S.C. § 1681i to Equifax, Experian, or TransUnion via USPS Certified Mail with return receipt.',
+    title: 'Credit Report Dispute Letter | USPS Mail | DocketStamp',
+    description: 'Dispute information on a credit report and request a reasonable reinvestigation and any correction required by applicable FCRA rules.',
     targetKeywords: [
       'credit bureau dispute letter',
       'fcra 611 dispute letter certified mail',
@@ -148,7 +148,7 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
           value: 'Account exceeds statutory 7-year reporting period',
         },
       ],
-      helperText: 'Categorical basis for your FCRA dispute.',
+      helperText: 'Choose the reason that best matches the error you report.',
       maxLength: 80,
     },
     {
@@ -158,7 +158,7 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'FACTUAL STATEMENT',
       inputType: 'textarea_short',
       placeholder: 'e.g., This account was settled for a zero balance on March 15, 2026, but continues to report a past-due balance of $480.',
-      helperText: 'State the specific factual error that needs correction or deletion.',
+      helperText: 'State the specific factual error that needs correction or deletion. Line breaks are printed as spaces.',
       maxLength: 200,
     },
   ],
@@ -167,6 +167,6 @@ export const creditBureauDisputeNotice: NoticeTemplateDefinition = {
     'Pursuant to Section 611 of the Fair Credit Reporting Act (15 U.S.C. § 1681i), I am submitting this formal written notice to dispute inaccurate information currently appearing on my consumer credit file maintained by {{recipientFormalName}}.',
     'DISPUTED TRADELINE IDENTIFICATION: Furnisher / Creditor Name: {{furnisherName}} | Account Reference: {{partialAccountNumber}}.',
     'BASIS OF INACCURACY: {{disputeReason}}. Specifically: {{factualExplanation}}',
-    'In accordance with 15 U.S.C. § 1681i(a), please conduct a reasonable reinvestigation of this item within thirty (30) days of receipt of this notice, verify the completeness and accuracy of the record with the furnishing entity, or delete and modify the inaccurate entry and mail an updated copy of my consumer disclosure to {{senderFullAddress}}.',
+    'Under 15 U.S.C. § 1681i, I request a reasonable reinvestigation of the information identified above. Please correct or delete information as required by applicable law, send me the results, and provide an updated consumer disclosure when required.',
   ],
 };

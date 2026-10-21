@@ -1,8 +1,8 @@
 /**
- * Cartridge 02: Statutory Security Deposit Return Request
+ * Cartridge 02: Security Deposit Demand Letter
  *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
- * Automatically pulls governing statutory citations and return deadlines from STATE_STATUTES.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
+ * Keeps the state citation while treating user-selected response periods as requests.
  */
 
 import { z } from 'zod';
@@ -25,21 +25,21 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
   slug: 'security-deposit-return-demand-letter',
   aliases: ['security-deposit-return', 'security-deposit-demand'],
   category: 'tenant',
-  title: 'Statutory Security Deposit Return Request',
-  shortDescription: 'Statutory demand for return of residential security deposit with exact state code citations, statutory deadlines, and bad-faith penalty warnings.',
-  documentHeaderTitle: 'FORMAL WRITTEN NOTICE: REQUEST FOR RETURN OF SECURITY DEPOSIT',
+  title: 'Security Deposit Demand Letter',
+  shortDescription: 'Demand return of your security deposit and request an itemized explanation and supporting records for claimed deductions.',
+  documentHeaderTitle: 'FORMAL DEMAND FOR RETURN OF SECURITY DEPOSIT',
   reLineTemplate: 'RE: Security Deposit Return Accounting — {{vacatedPremisesAddress}} ({{statuteCitation}})',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'manual_landlord',
   usesStateStatuteLookup: true,
   seoMeta: {
-    title: 'Security Deposit Demand Letter | 50-State Statutory Citations | DocketStamp',
-    description: 'Demand return of your residential security deposit with exact state statutory citations, return deadlines, and certified mail return receipt proof of delivery.',
+    title: 'Security Deposit Demand Letter | USPS Mail | DocketStamp',
+    description: 'Prepare a security deposit demand that states your reported amounts, cites the selected state law, and requests an itemized explanation of deductions.',
     targetKeywords: [
       'security deposit demand letter',
       'demand return of security deposit',
-      'landlord security deposit deadline',
-      'statutory deposit refund request',
+      'security deposit demand to landlord',
+      'deposit deduction accounting request',
       'security deposit certified mail letter',
     ],
   },
@@ -71,7 +71,7 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'PROPERTY STATE',
       inputType: 'state_select',
       placeholder: 'TX',
-      helperText: 'Determines the exact governing state statute, mandatory return window, and citations.',
+      helperText: 'Adds a state statutory citation. Legal deadlines can depend on applicable facts and conditions.',
       maxLength: 2,
     },
     {
@@ -87,11 +87,11 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
     {
       key: 'moveOutDate',
       stepGroup: 'instrument_details',
-      label: 'Key Surrender & Move-Out Date',
+      label: 'Move-Out Date',
       docusignTagLabel: 'MOVE-OUT DATE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'The date you moved out or otherwise surrendered possession of the premises.',
+      helperText: 'The date you report moving out or surrendering possession.',
       maxLength: 30,
     },
     {
@@ -127,8 +127,8 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
     {
       key: 'responseDays',
       stepGroup: 'instrument_details',
-      label: 'Response & Remittance Deadline',
-      docusignTagLabel: 'RESPONSE DEADLINE',
+      label: 'Requested Response Period',
+      docusignTagLabel: 'REQUESTED RESPONSE',
       inputType: 'select',
       placeholder: '10 business days',
       options: [
@@ -136,15 +136,14 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
         { label: '10 business days', value: '10 business days' },
         { label: '14 calendar days', value: '14 calendar days' },
       ],
-      helperText: 'The deadline given to the landlord before initiating formal administrative or legal action.',
+      helperText: 'Your requested time for a response. It does not change any statutory deadline.',
       maxLength: 20,
     },
   ],
   zodSchema: securityDepositSchema,
   bodyParagraphs: [
-    'This correspondence serves as formal written notice requesting the immediate return of the residential security deposit held in connection with the former tenancy of {{senderFullName}} at {{vacatedPremisesAddress}}.',
-    'I entered {{moveOutDate}} as the move-out date. At the commencement of the tenancy, a security deposit in the amount of {{depositAmount}} was paid. To date, {{amountReceivedToDate}} has been returned, leaving an unrefunded balance of {{balanceRequested}}.',
-    'Please be advised that pursuant to {{propertyState}} statutory provisions ({{statuteCitation}}), the timeframe for delivering a written itemized statement of lawful deductions and refunding the remaining security deposit balance is {{statuteDeadline}} following termination of tenancy and delivery of possession.',
-    'Accordingly, please remit the outstanding balance of {{balanceRequested}} made payable to {{senderFullName}} and mailed to {{senderFullAddress}} within {{responseDays}} of receipt of this notice, so that this matter may be resolved amicably without the need for further administrative or civil proceedings.',
+    'I demand return of {{balanceRequested}} from my security deposit for {{vacatedPremisesAddress}}. My move-out date was {{moveOutDate}}. I paid {{depositAmount}} and have received {{amountReceivedToDate}} back.',
+    'This demand concerns the security deposit return and accounting requirements addressed in {{statuteCitation}}. If you claim deductions, provide an itemized explanation and supporting records, and remit the undisputed balance.',
+    'Send payment payable to {{senderFullName}} and your written response to {{senderFullAddress}}. I request a response within {{responseDays}} of receipt. This requested response period does not change any statutory deadline.',
   ],
 };

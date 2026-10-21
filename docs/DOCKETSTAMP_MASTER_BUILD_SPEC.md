@@ -573,3 +573,19 @@ When submitting to Lob's `/v1/letters` endpoint (`address_placement: "top_first_
   <!-- Rendered dynamically by renderLobHtmlPayload() -->
 </body>
 </html>
+```
+
+---
+
+## Scoped copy authority update — 2026-10-20 (SPRINT-0011)
+
+For customer-facing chooser titles, deposit copy, deterministic notice prose, SEO metadata, and discovery text, [SPRINT-0011](sprints/SPRINT-0011.md) supersedes conflicting titles and language above. Use first-person demands and requests tied to user-reported facts; preserve state citations without printing unverified generic deposit deadlines or penalty warnings. State legal deadlines remain conditional on applicable facts and law. Distinguish user-selected response periods from statutory clocks. Debt collection suspension, credit-report corrections, arbitration opt-outs, privacy rights, and deletion requests must remain qualified by applicable coverage, conditions, and exceptions. Preserve the six system invariants, canonical slugs, schemas, enum values, footer text, renderer geometry, and snapshot behavior. This update is scoped copy authority, not a 50-state legal clearance.
+
+
+## Template governance authority update — 2026-10-20 (SPRINT-0012)
+
+[SPRINT-0012](sprints/SPRINT-0012.md) adds a persistent availability overlay to the compiled notice registry. Existing nine templates have explicit enabled/unreviewed migration defaults; future templates default paused. Only authorized human administrators can change global/per-template enabled state, review/source metadata and residence/property rules. Current-review requirements bind approval to a content digest and expiration; approval never auto-enables a template. Source labels and operator review records are not legal clearance.
+
+Public discovery and preparation consult current policy. Residence is explicitly declared through `consumerResidenceState`; tenant property state is `propertyState`, the same field used for deposit citations. Neither is inferred from sender/recipient addresses or IP. REST/MCP staging, resumed drafts and server checkout enforce the same policy. New stage/frozen-order persistence reads policy in the same Firestore transaction; locks committed before a policy update remain valid through later payment and dispatch. Store policy revision, digest, declared nexus and decision time with new orders. Paid snapshots and six invariants remain unchanged. Admin revision/digest checks, request idempotency and successful audit records are atomic. Policy read/parse failures deny new work.
+
+The admin panel is a review/availability control, not a legal prose editor. Residence/property gates are the two supported geography dimensions; other factual eligibility rules require separate design and review. The [official-template opportunity review](legal/OFFICIAL_TEMPLATE_PRODUCT_REVIEW_2026-10-20.md) designs a future California area without launching new templates or granting provider/reuse clearance.

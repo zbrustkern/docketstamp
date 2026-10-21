@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getStagedDraft } from '../stage-store';
+import { retrieveStagedDraft } from '../stage-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,23 +30,26 @@ export async function GET(
       );
     }
 
-    const draft = await getStagedDraft(stageId);
+    const result = await retrieveStagedDraft(stageId, {
+      consumerResidenceState: req.nextUrl.searchParams.get('consumerResidenceState') || undefined,
+      propertyState: req.nextUrl.searchParams.get('propertyState') || undefined,
+    });
 
-    if (!draft) {
+    if (!result.ok) {
       return NextResponse.json(
-        { error: `Staged draft '${stageId}' not found or expired.`, code: 'NOT_FOUND' },
-        { status: 404, headers: CORS_HEADERS }
+        { error: result.error, code: result.code, ...(result.details ? { details: result.details } : {}) },
+        { status: result.status, headers: CORS_HEADERS }
       );
     }
 
-    return NextResponse.json(draft, {
+    return NextResponse.json(result.draft, {
       status: 200,
       headers: CORS_HEADERS,
     });
   } catch (err: any) {
     console.error('Unhandled error in GET /api/docket/stage/[stageId]:', err);
     return NextResponse.json(
-      { error: err?.message || 'Internal server error retrieving staged draft.', code: 'INTERNAL_ERROR' },
+      { error: 'We couldn’t retrieve this draft. Please try again.', code: 'INTERNAL_ERROR' },
       { status: 500, headers: CORS_HEADERS }
     );
   }

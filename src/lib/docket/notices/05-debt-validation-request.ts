@@ -1,7 +1,7 @@
 /**
  * Cartridge 05: FDCPA 30-Day Debt Verification & Validation Notice
  *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  */
 
 import { z } from 'zod';
@@ -25,19 +25,19 @@ export const debtValidationNotice: NoticeTemplateDefinition = {
   slug: 'fdcpa-30-day-debt-validation-letter',
   aliases: ['debt-validation', 'debt-validation-request', 'fdcpa-debt-validation'],
   category: 'credit_debt',
-  title: 'FDCPA 30-Day Debt Verification & Validation Notice',
-  shortDescription: 'Statutory 15 U.S.C. § 1692g dispute demanding debt validation, proof of claim authority, and cessation of collection activities.',
-  documentHeaderTitle: 'STATUTORY NOTICE OF DISPUTE AND REQUEST FOR DEBT VALIDATION',
+  title: 'Debt Dispute and Verification Demand',
+  shortDescription: 'Challenge a collection claim and demand written verification.',
+  documentHeaderTitle: 'DEBT DISPUTE AND DEMAND FOR VERIFICATION',
   reLineTemplate: 'RE: Debt Validation Request Pursuant to 15 U.S.C. § 1692g — Reference No: {{collectorReferenceNumber}}',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_or_manual_debt',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'FDCPA Debt Validation Letter | Send via USPS Certified Mail | DocketStamp',
-    description: 'Demand statutory debt validation under 15 U.S.C. § 1692g with cease-and-desist instructions via USPS Certified Mail with Return Receipt proof.',
+    title: 'Debt Dispute and Verification Demand | USPS Mail | DocketStamp',
+    description: 'Dispute an alleged debt and request information about it. FDCPA protections depend on the collector, debt, and timing.',
     targetKeywords: [
       'debt validation letter',
-      'fdcpa 30 day validation request',
+      'fdcpa debt dispute verification request',
       'debt verification demand certified mail',
       'dispute debt collection agency letter',
       '15 usc 1692g validation notice',
@@ -101,35 +101,35 @@ export const debtValidationNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'DATE OF INITIAL NOTICE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'Date of the collection letter or first contact triggering the 30-day window.',
+      helperText: 'Enter the date shown on the communication. This date alone does not establish a validation deadline.',
       maxLength: 30,
     },
     {
       key: 'communicationPreference',
       stepGroup: 'instrument_details',
-      label: 'Communication Directives',
+      label: 'Requested Communication Preference',
       docusignTagLabel: 'COMMUNICATION PREFERENCE',
       inputType: 'select',
-      placeholder: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+      placeholder: 'Prefer future communication in writing by U.S. Mail',
       options: [
         {
-          label: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
+          label: 'Prefer future communications in writing by U.S. Mail',
           value: 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail',
         },
         {
-          label: 'Please forward written verification documentation to the mailing address listed above',
+          label: 'Request written verification at the mailing address above',
           value: 'Please forward written verification documentation to the mailing address listed above',
         },
       ],
-      helperText: 'Specifies lawful communication constraints under FDCPA § 805(c).',
+      helperText: 'Choose a communication request. The selected wording does not establish a legal restriction.',
       maxLength: 100,
     },
   ],
   zodSchema: debtValidationSchema,
   bodyParagraphs: [
-    'This letter serves as formal written notice pursuant to the Fair Debt Collection Practices Act (FDCPA), 15 U.S.C. § 1692g, in response to your communication dated {{initialContactDate}} referencing Account/File No. {{collectorReferenceNumber}} (Alleged Original Creditor: {{allegedOriginalCreditor}}; Alleged Balance: {{allegedBalance}}).',
-    'PLEASE TAKE NOTICE that I formally dispute the validity and amount of the alleged debt referenced above in its entirety and request full statutory verification.',
-    'Please provide documentary verification of this obligation, including: (a) the name and address of the original creditor; (b) an itemized accounting of the principal balance and any interest or fees assessed; and (c) documentation establishing your organization\'s legal authority to collect this alleged obligation.',
-    'Pursuant to 15 U.S.C. § 1692g(b), please cease collection activities on this disputed account until written verification is mailed to {{senderFullAddress}}. Furthermore: {{communicationPreference}}.',
+    'I, {{senderFullName}}, dispute the alleged debt identified in your communication dated {{initialContactDate}}: Reference {{collectorReferenceNumber}}, alleged original creditor {{allegedOriginalCreditor}}, and alleged balance {{allegedBalance}}.',
+    'I demand verification of the alleged debt. Please send information identifying the original creditor and explaining the amount claimed.',
+    'If the FDCPA applies and I submit this written dispute within the validation period, I demand that you cease collection of the disputed debt until you mail verification as required by 15 U.S.C. § 1692g(b). Send your response to {{senderFullAddress}}.',
+    '{{communicationPreference}}',
   ],
 };

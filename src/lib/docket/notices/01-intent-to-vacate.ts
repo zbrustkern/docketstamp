@@ -1,7 +1,7 @@
 /**
  * Cartridge 01: Tenant Notice of Intent to Vacate & Lease Non-Renewal
  *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  */
 
 import { z } from 'zod';
@@ -21,20 +21,20 @@ export const intentToVacateNotice: NoticeTemplateDefinition = {
   slug: 'tenant-notice-of-intent-to-vacate',
   aliases: ['intent-to-vacate', 'tenant-vacate-notice'],
   category: 'tenant',
-  title: 'Tenant Notice of Intent to Vacate & Lease Non-Renewal',
-  shortDescription: 'Formal written notice under governing lease agreement and residential tenancy laws establishing surrender date and forwarding address.',
+  title: 'Formal Move-Out Notice',
+  shortDescription: 'Give your landlord written notice of your planned move-out date.',
   documentHeaderTitle: 'FORMAL NOTICE OF INTENT TO VACATE AND NON-RENEWAL OF LEASE',
   reLineTemplate: 'RE: Notice of Lease Non-Renewal — {{leasedPremisesAddress}}',
   recommendedTier: 'certified',
   recipientMode: 'manual_landlord',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Notice of Intent to Vacate Letter | Send via USPS Certified Mail | DocketStamp',
-    description: 'Execute and dispatch a legally formal 30-day or 60-day Notice of Intent to Vacate to your landlord with USPS Certified Mail tracking and proof of mailing.',
+    title: 'Formal Move-Out Notice | USPS Mail | DocketStamp',
+    description: 'Prepare a written move-out notice, review the letter, and send it by USPS. Check your lease and applicable rules for the notice period.',
     targetKeywords: [
       'notice of intent to vacate',
       'tenant lease non-renewal letter',
-      '30 day notice to vacate landlord',
+      'move out notice to landlord',
       'certified mail tenant notice',
       'surrender of premises letter',
     ],
@@ -73,7 +73,7 @@ export const intentToVacateNotice: NoticeTemplateDefinition = {
     {
       key: 'leaseNoticePeriod',
       stepGroup: 'instrument_details',
-      label: 'Statutory or Lease Notice Period',
+      label: 'Notice Period to State',
       docusignTagLabel: 'NOTICE PERIOD',
       inputType: 'select',
       placeholder: '30-Day',
@@ -82,7 +82,7 @@ export const intentToVacateNotice: NoticeTemplateDefinition = {
         { label: '60-Day Written Notice', value: '60-Day' },
         { label: 'End-of-Term Expiration Notice', value: 'End-of-Term' },
       ],
-      helperText: 'The notice duration required by your lease agreement or state statute.',
+      helperText: 'Choose a notice period to state. Check your lease and applicable rules for the period and required delivery method.',
       maxLength: 20,
     },
     {
@@ -92,7 +92,7 @@ export const intentToVacateNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'VACATE DATE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'The final date on which you will completely vacate and surrender keys.',
+      helperText: 'The date you plan to move out and surrender possession.',
       maxLength: 30,
     },
     {
@@ -108,9 +108,9 @@ export const intentToVacateNotice: NoticeTemplateDefinition = {
   ],
   zodSchema: intentToVacateSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned tenant(s), {{senderFullName}}, hereby provide formal written {{leaseNoticePeriod}} notice of intent to vacate and terminate tenancy for the residential premises located at {{leasedPremisesAddress}}.',
-    'I intend for the tenancy to conclude and to surrender possession of the premises on or before {{moveOutDate}}.',
-    'Please provide schedule availability for a joint move-out walkthrough inspection prior to the surrender date. All keys, fobs, and access devices will be returned upon final surrender of the unit.',
-    'Kindly forward the full accounting and refund of the residential security deposit to the following forwarding address: {{forwardingAddress}}.',
+    'I, {{senderFullName}}, give {{leaseNoticePeriod}} written notice that I plan to move out of {{leasedPremisesAddress}}.',
+    'I intend to surrender possession on or before {{moveOutDate}}.',
+    'Please confirm receipt of this notice and let me know how to arrange any move-out inspection.',
+    'Please send any deposit accounting or refund to this forwarding address: {{forwardingAddress}}.',
   ],
 };

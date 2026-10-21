@@ -151,15 +151,15 @@ describe('S7 Release Candidate Verification Suite', () => {
       assert.equal(CHOOSER_LETTERS.length, 9, 'Exactly 9 notice cartridges defined in chooser');
 
       const expectedTitles: Record<string, string> = {
-        'security-deposit-return-demand-letter': 'Request a security deposit return',
+        'security-deposit-return-demand-letter': 'Demand your security deposit back',
         'fcra-credit-bureau-written-dispute-letter': 'Dispute a credit-report error',
-        'tenant-repair-and-maintenance-notice': 'Request repairs',
-        'tenant-notice-of-intent-to-vacate': 'Give move-out notice',
-        'fdcpa-30-day-debt-validation-letter': 'Request debt verification',
-        'written-contract-and-policy-cancellation-letter': 'Cancel a service or policy',
-        'pre-arbitration-notice-of-dispute-and-refund-request': 'Request a refund for changed product features',
+        'tenant-repair-and-maintenance-notice': 'Demand repairs from your landlord',
+        'tenant-notice-of-intent-to-vacate': 'Give formal move-out notice',
+        'fdcpa-30-day-debt-validation-letter': 'Dispute a debt and demand verification',
+        'written-contract-and-policy-cancellation-letter': 'Cancel a service or policy in writing',
+        'pre-arbitration-notice-of-dispute-and-refund-request': 'Demand a refund for removed or restricted features',
         '30-day-mandatory-arbitration-opt-out-notice': 'Send an arbitration opt-out notice',
-        'statutory-health-and-biometric-data-deletion-demand': 'Request deletion of personal data',
+        'statutory-health-and-biometric-data-deletion-demand': 'Demand deletion of your personal data',
       };
 
       for (const letter of CHOOSER_LETTERS) {

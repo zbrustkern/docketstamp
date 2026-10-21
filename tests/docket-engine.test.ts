@@ -335,7 +335,8 @@ describe('5. Document Interpolation Engine', () => {
     // Check raw paragraphs for injected Texas statute
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Tex. Prop. Code')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('$1,850.00')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('30 days') || p.includes('30 calendar days')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('This requested response period does not change any statutory deadline')));
+    assert.ok(!doc.rawParagraphs.some((p) => /\b30 days\b|statuteDeadline/i.test(p)));
   });
 
   it('interpolates Cartridge 07 Pre-Arbitration Dispute notice accurately', () => {
@@ -357,12 +358,14 @@ describe('5. Document Interpolation Engine', () => {
       serviceLevel: 'certified_return_receipt',
     });
 
-    assert.equal(doc.headerTitle, 'FORMAL PRE-ARBITRATION NOTICE OF DISPUTE AND REFUND REQUEST');
+    assert.equal(doc.headerTitle, 'FORMAL DEMAND FOR REFUND OR FEATURE RESTORATION');
     assert.ok(doc.reLine.includes('Withings Body Scan Smart Scale'));
     assert.ok(doc.reLine.includes('SN-94820184'));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Morgan L. Vance')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Post-Purchase Removal or Paywalling of Advertised Feature')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('$399.95')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('I request a written response within 30 days of receipt')));
+    assert.ok(!doc.rawParagraphs.some((p) => /mandatory informal dispute resolution provisions|within thirty \(30\) days/i.test(p)));
 
     // Test Zod schema validation
     assert.doesNotThrow(() => preArbitrationDisputeNotice.zodSchema.parse(userValues));
@@ -397,7 +400,8 @@ describe('5. Document Interpolation Engine', () => {
     assert.ok(doc.reLine.includes('Roku Smart OS Platform'));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Jordan E. Blake')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('jordan.blake@example.com')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('opt out of the mandatory binding arbitration provision')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('I elect to opt out of mandatory arbitration and any associated class-action waiver to the extent the governing agreement permits')));
+    assert.ok(!doc.rawParagraphs.some((p) => /timely postmarked|retain all rights|court or regulatory agency/i.test(p)));
 
     // Test Zod schema validation
     assert.doesNotThrow(() => arbitrationOptOutNotice.zodSchema.parse(userValues));
@@ -428,11 +432,13 @@ describe('5. Document Interpolation Engine', () => {
       serviceLevel: 'certified',
     });
 
-    assert.equal(doc.headerTitle, 'STATUTORY NOTICE OF CONSENT REVOCATION AND DATA ERASURE DEMAND');
+    assert.equal(doc.headerTitle, 'DEMAND FOR DELETION OF PERSONAL DATA');
     assert.ok(doc.reLine.includes('devon.kessler@example.com'));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Devon R. Kessler')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Connected Health & Biometric Sensor Device')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('CCPA/CPRA')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('to the extent applicable law covers my account and request')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('If you retain any data, explain what is retained and why')));
+    assert.ok(!doc.rawParagraphs.some((p) => /CCPA\/CPRA|complete and permanent deletion|applicable statutory response period/i.test(p)));
 
     // Test Zod schema validation
     assert.doesNotThrow(() => biometricPrivacyDeletionNotice.zodSchema.parse(userValues));

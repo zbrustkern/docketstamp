@@ -1,7 +1,11 @@
 import { MetadataRoute } from "next";
 import { getAllNotices } from "@/src/lib/docket/notices";
+import { getPublicTemplateAvailability } from "@/lib/template-policy-store";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com";
   const lastModified = new Date();
 
@@ -38,7 +42,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const noticeRoutes: MetadataRoute.Sitemap = getAllNotices().map((n) => ({
+  let available = new Set<string>();
+  try { available = new Set((await getPublicTemplateAvailability()).templates.filter((entry) => entry.available).map((entry) => entry.slug)); } catch { /* fail closed: no notice URLs */ }
+  const noticeRoutes: MetadataRoute.Sitemap = getAllNotices().filter((n) => available.has(n.slug)).map((n) => ({
     url: `${baseUrl}/notices/${n.slug}`,
     lastModified,
     changeFrequency: "weekly",

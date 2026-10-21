@@ -1,7 +1,7 @@
 /**
  * Cartridge 06: Written Service Contract & Insurance Policy Cancellation
  *
- * Conforms verbatim to Section 8 of docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md.
+ * Customer-facing copy follows [SPRINT-0011](../../../../docs/sprints/SPRINT-0011.md) scoped authority.
  * Invariant 1: Strictly enforces assertNonFitnessEntity() on corporate recipient and contract fields.
  */
 
@@ -40,16 +40,16 @@ export const serviceCancellationNotice: NoticeTemplateDefinition = {
   slug: 'written-contract-and-policy-cancellation-letter',
   aliases: ['service-policy-cancellation', 'service-cancellation'],
   category: 'cancellation',
-  title: 'Written Service Contract & Insurance Policy Cancellation',
-  shortDescription: 'Formal written directive to cancel recurring service contract or insurance policy, revoke billing drafts, and remit pro-rated refund.',
-  documentHeaderTitle: 'FORMAL WRITTEN NOTICE OF CONTRACT AND POLICY CANCELLATION',
+  title: 'Service or Policy Cancellation Notice',
+  shortDescription: 'Cancel a service or policy in writing and request confirmation.',
+  documentHeaderTitle: 'WRITTEN SERVICE OR POLICY CANCELLATION REQUEST',
   reLineTemplate: 'RE: Written Notice of Cancellation — {{serviceTypeLabel}} | Account/Policy No: {{accountOrPolicyNumber}}',
   recommendedTier: 'certified',
   recipientMode: 'verified_or_manual_corp',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Service & Insurance Policy Cancellation Letter | Certified Mail | DocketStamp',
-    description: 'Execute and dispatch a binding written cancellation notice for home security, warranty, telecom, or insurance policies with USPS Certified Mail tracking.',
+    title: 'Service or Policy Cancellation Notice | USPS Mail | DocketStamp',
+    description: 'Prepare a written service or policy cancellation notice, request your selected effective date, and ask for account confirmation.',
     targetKeywords: [
       'service cancellation letter certified mail',
       'insurance policy cancellation notice',
@@ -114,7 +114,7 @@ export const serviceCancellationNotice: NoticeTemplateDefinition = {
       docusignTagLabel: 'EFFECTIVE CANCELLATION DATE',
       inputType: 'date',
       placeholder: 'YYYY-MM-DD',
-      helperText: 'The date upon which services and billing authorizations must permanently cease.',
+      helperText: 'The date you request for cancellation. Check your agreement for applicable terms and processing requirements.',
       maxLength: 30,
     },
     {
@@ -130,8 +130,8 @@ export const serviceCancellationNotice: NoticeTemplateDefinition = {
   ],
   zodSchema: serviceCancellationSchema,
   bodyParagraphs: [
-    'PLEASE TAKE NOTICE that the undersigned account holder, {{senderFullName}}, hereby submits formal written directive to cancel and terminate the {{serviceTypeLabel}} identified by Account/Policy Number {{accountOrPolicyNumber}} associated with the property at {{servicePropertyAddress}}.',
-    'Please process this termination effective as of {{effectiveCancellationDate}}, and permanently revoke all recurring automatic billing authorizations (ACH, debit, or credit card drafts) connected to this account following the effective cancellation date.',
-    'Should any pro-rated unearned premium refund or final closing statement apply to Account/Policy Number {{accountOrPolicyNumber}}, please remit the balance and written confirmation of account closure to {{senderFullAddress}}.',
+    'I, {{senderFullName}}, give written notice to cancel the {{serviceTypeLabel}} identified by Account/Policy Number {{accountOrPolicyNumber}} for {{servicePropertyAddress}}.',
+    'I request cancellation effective {{effectiveCancellationDate}} and revoke authorization for recurring automatic charges after cancellation takes effect.',
+    'Please confirm the cancellation date and identify any remaining obligations or refund. Send written confirmation to {{senderFullAddress}}.',
   ],
 };

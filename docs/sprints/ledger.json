@@ -90,6 +90,24 @@
       "chapter_id": null,
       "run_id": "2026-10-20-legacy-replacement",
       "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0011",
+      "title": "Forceful demand language and state launch review",
+      "path": "docs/sprints/SPRINT-0011.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-demand-copy",
+      "updated_at": "2026-10-21T00:49:31.179450+00:00"
+    },
+    {
+      "id": "SPRINT-0012",
+      "title": "Template review and availability controls",
+      "path": "docs/sprints/SPRINT-0012.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-template-governance",
+      "updated_at": "2026-10-21T01:25:35.930739+00:00"
     }
   ]
 }
