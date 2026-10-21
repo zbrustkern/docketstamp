@@ -1,11 +1,11 @@
 /** Read-only: verifies the public Auth project behind each checked-in web API key. */
-import { PROD_FIREBASE_CONFIG, STAGING_FIREBASE_CONFIG } from "../lib/firebase-config";
+import { resolveFirebaseConfig } from "../lib/firebase-config";
 
 async function main() {
-  for (const [config, hostname] of [
-    [STAGING_FIREBASE_CONFIG, "staging.docketstamp.com"],
-    [PROD_FIREBASE_CONFIG, "docketstamp.com"],
-  ] as const) {
+  const config = resolveFirebaseConfig(process.env);
+  if (!config.apiKey) throw new Error("Inject NEXT_PUBLIC_FIREBASE_API_KEY from the selected project's Secret Manager first.");
+  const hostname = config.projectId === "docketstamp-staging" ? "staging.docketstamp.com" : "docketstamp.com";
+  {
     const endpoint = new URL("https://identitytoolkit.googleapis.com/v1/projects");
     endpoint.searchParams.set("key", config.apiKey);
     const response = await fetch(endpoint, {

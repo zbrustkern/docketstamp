@@ -1,7 +1,14 @@
-// Public web app identities verified with `firebase apps:sdkconfig` on 2026-10-20.
-// Rotate these as complete configurations; never mix credentials across projects.
+// Public identities contain no API-key values. Keys are injected at build/runtime.
+// Fingerprints preserve the verified project/key binding without storing the key.
+import { sha256 } from "@noble/hashes/sha256";
+import { bytesToHex } from "@noble/hashes/utils";
+
+const API_KEY_SHA256: Record<string, string> = {
+  "docketstamp": "5894bfb30b3986443394b8f114bf9ecf0cccb0ce64e620c6ab656846cbf17507",
+  "docketstamp-staging": "13911b0cd2a264c0f632b0f9a56417811a8e02cba25eb21167bbec1d212c2eb6"
+};
 export const PROD_FIREBASE_CONFIG = {
-  apiKey: "REDACTED_FIREBASE_WEB_API_KEY",
+  apiKey: "",
   authDomain: "docketstamp.firebaseapp.com",
   projectId: "docketstamp",
   storageBucket: "docketstamp.firebasestorage.app",
@@ -11,7 +18,7 @@ export const PROD_FIREBASE_CONFIG = {
 };
 
 export const STAGING_FIREBASE_CONFIG = {
-  apiKey: "REDACTED_FIREBASE_WEB_API_KEY",
+  apiKey: "",
   authDomain: "docketstamp-staging.firebaseapp.com",
   projectId: "docketstamp-staging",
   storageBucket: "docketstamp-staging.firebasestorage.app",
@@ -55,7 +62,6 @@ export function resolveFirebaseConfig(env: FirebaseConfigEnvironment, hostname =
   }
   const config = staging ? STAGING_FIREBASE_CONFIG : PROD_FIREBASE_CONFIG;
   const overrides = {
-    apiKey: env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     storageBucket: env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
@@ -69,7 +75,12 @@ export function resolveFirebaseConfig(env: FirebaseConfigEnvironment, hostname =
       throw new FirebaseConfigurationError(`${key} does not match ${config.projectId}.`);
     }
   }
-  return { ...config };
+  const apiKey = env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+  if (apiKey && bytesToHex(sha256(apiKey)) !== API_KEY_SHA256[config.projectId]) {
+    throw new FirebaseConfigurationError(`apiKey does not match ${config.projectId}.`);
+  }
+  // Server identity checks do not need a browser key. The client requires it.
+  return { ...config, apiKey };
 }
 
 export function assertFirebaseAppMatches(

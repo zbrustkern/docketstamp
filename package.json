@@ -23,9 +23,11 @@
     "test:replacement": "node --import tsx --test --test-concurrency=1 tests/firebase-auth-trust.test.ts tests/account-email-ownership.test.ts tests/order-access-security.test.ts tests/notice-deadline-reminders.test.ts tests/legacy-order-replacement.test.ts tests/lob-webhook-monotonic.test.ts tests/legacy-order-migration-checkpoints.test.ts tests/order-snapshot-integrity-evidence.test.ts tests/sprint-0003-integrity-evidence.test.ts tests/account/notice-prefill.test.ts tests/account/order-history.test.ts tests/marketing-destinations.test.ts tests/meta-capi-readiness.test.ts tests/marketing-consent.test.ts tests/notice-reporting.test.ts tests/postal-provenance.test.ts tests/env-validator-lob.test.ts tests/s4-details-and-review.test.ts tests/s5-delivery-and-payment.test.ts tests/s7-release-candidate.test.ts",
     "test:unit-economics": "node --import tsx tests/unit-economics.test.ts",
     "audit:legacy": "node scripts/audit-legacy-artifacts.mjs --check",
-    "test:template-governance": "node --import tsx --test --test-concurrency=1 tests/template-policy*.test.ts tests/template-availability-client.test.ts tests/admin-template-governance-ui.test.ts tests/checkout-mailing-readiness.test.ts tests/sprint-0011-demand-copy.test.ts"
+    "test:template-governance": "node --import tsx --test --test-concurrency=1 tests/template-policy*.test.ts tests/template-availability-client.test.ts tests/admin-template-governance-ui.test.ts tests/checkout-mailing-readiness.test.ts tests/sprint-0011-demand-copy.test.ts",
+    "audit:credentials": "node scripts/check-credential-hygiene.mjs"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
     "@stripe/react-stripe-js": "^3.1.1",
     "@stripe/stripe-js": "^5.6.0",
     "@types/sharp": "^0.32.0",

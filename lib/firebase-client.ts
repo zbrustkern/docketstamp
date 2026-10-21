@@ -1,12 +1,12 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 
-import { assertFirebaseAppMatches, resolveFirebaseConfig } from "./firebase-config";
+import { assertFirebaseAppMatches, resolveFirebaseConfig, FirebaseConfigurationError } from "./firebase-config";
 export { PROD_FIREBASE_CONFIG, STAGING_FIREBASE_CONFIG } from "./firebase-config";
 
 export function getClientFirebaseConfig() {
   // Next.js only inlines NEXT_PUBLIC values accessed directly at build time.
-  return resolveFirebaseConfig({
+  const config = resolveFirebaseConfig({
     ENVIRONMENT: process.env.ENVIRONMENT,
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -18,6 +18,8 @@ export function getClientFirebaseConfig() {
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
   }, typeof window === "undefined" ? "" : window.location.hostname);
+  if (!config.apiKey) throw new FirebaseConfigurationError("NEXT_PUBLIC_FIREBASE_API_KEY is required; configure it before building the client.");
+  return config;
 }
 
 export const getFirebaseApp = (): FirebaseApp => {

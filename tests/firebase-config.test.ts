@@ -60,9 +60,13 @@ test("an existing wrong Firebase singleton cannot bypass validation", async () =
   const app = initializeApp({ ...current, apiKey: "inherited-key-from-another-project" });
   try { assert.throws(() => getFirebaseApp(), FirebaseConfigurationError); }
   finally { await deleteApp(app); }
-  const correct = getFirebaseApp();
-  try { assert.equal(getFirebaseApp(), correct); }
-  finally { await deleteApp(correct); }
+  if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+    const correct = getFirebaseApp();
+    try { assert.equal(getFirebaseApp(), correct); }
+    finally { await deleteApp(correct); }
+  } else {
+    assert.throws(() => getFirebaseApp(), /NEXT_PUBLIC_FIREBASE_API_KEY is required/);
+  }
 });
 
 test("deployment manifests specify each registered identity at build and runtime", () => {
@@ -70,7 +74,10 @@ test("deployment manifests specify each registered identity at build and runtime
     const yaml = readFileSync(file, "utf8");
     for (const [suffix, value] of Object.entries({ PROJECT_ID: config.projectId, API_KEY: config.apiKey, AUTH_DOMAIN: config.authDomain, STORAGE_BUCKET: config.storageBucket, MESSAGING_SENDER_ID: config.messagingSenderId, APP_ID: config.appId, MEASUREMENT_ID: config.measurementId })) {
       const entry = yaml.split(`- variable: NEXT_PUBLIC_FIREBASE_${suffix}\n`)[1]?.split("- variable:")[0];
-      assert.ok(entry?.includes(value), `${file}: ${suffix}`);
+      if (suffix === "API_KEY") {
+        assert.match(entry!, /secret: firebase-web-api-key/);
+        assert.doesNotMatch(entry!, /value:/);
+      } else assert.ok(entry?.includes(value), `${file}: ${suffix}`);
       assert.match(entry!, /- BUILD/);
       assert.match(entry!, /- RUNTIME/);
     }
@@ -92,4 +99,15 @@ test("admin errors identify actual hostname, project, and referrer while custome
   assert.match(googleSignInErrorMessage(mismatch, options), /rebuild and reload/);
   assert.doesNotMatch(googleSignInErrorMessage(mismatch), /apiKey/);
   assert.equal(googleSignInErrorMessage(new Error("Popup closed")), "Popup closed");
+});
+
+// Run with the project key injected from Secret Manager for the positive integration path.
+test("keys are optional for server identity but mandatory and project-bound for browsers", () => {
+  assert.equal(resolveFirebaseConfig({}).apiKey, "");
+  for (const projectId of ["docketstamp", "docketstamp-staging"]) {
+    assert.throws(() => resolveFirebaseConfig({ NEXT_PUBLIC_FIREBASE_PROJECT_ID: projectId, NEXT_PUBLIC_FIREBASE_API_KEY: "wrong-key" }), /apiKey does not match/);
+  }
+  if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+    assert.equal(resolveFirebaseConfig(process.env).apiKey, process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+  }
 });

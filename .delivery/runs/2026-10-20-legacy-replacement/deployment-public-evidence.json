@@ -51,7 +51,7 @@
     },
     {
       "name": "NEXT_PUBLIC_FIREBASE_API_KEY",
-      "value": "REDACTED_FIREBASE_WEB_API_KEY"
+      "value": "[REDACTED_FIREBASE_WEB_API_KEY]"
     },
     {
       "name": "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",

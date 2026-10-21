@@ -87,7 +87,7 @@ env:
 
   # Public Firebase web app identity; all fields must belong to the same project.
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "REDACTED_FIREBASE_WEB_API_KEY"
+    secret: firebase-web-api-key
     availability:
       - BUILD
       - RUNTIME
