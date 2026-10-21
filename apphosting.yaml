@@ -34,19 +34,24 @@ env:
     availability:
       - RUNTIME
 
-  # Optional secrets to enable once created in Google Cloud Secret Manager:
-  # - variable: LOB_API_KEY
-  #   secret: lob-api-key
-  #   availability:
-  #     - RUNTIME
-  # - variable: LOB_DISPATCH_API_KEY
-  #   secret: lob-api-key
-  #   availability:
-  #     - RUNTIME
-  # - variable: LOB_ADDRESS_VERIFICATION_KEY
-  #   secret: lob-api-key
-  #   availability:
-  #     - RUNTIME
+  # Lob uses one account-level live API key for both the address-verification
+  # and letter APIs. Keep the application variables explicit so staging can
+  # continue to isolate its mock/verification path from dispatch.
+  - variable: LOB_DISPATCH_API_KEY
+    secret: lob-secret
+    availability:
+      - RUNTIME
+
+  - variable: LOB_ADDRESS_VERIFICATION_KEY
+    secret: lob-secret
+    availability:
+      - RUNTIME
+
+  - variable: LOB_WEBHOOK_SECRET
+    secret: lob-webhook-scret
+    availability:
+      - RUNTIME
+
   # - variable: ADMIN_SECRET_KEY
   #   secret: admin-secret-key
   #   availability:
@@ -56,6 +61,13 @@ env:
     value: production
     availability:
       - BUILD
+      - RUNTIME
+
+  # Enables physical-mail dispatch only in production. Staging explicitly
+  # overrides this with staging_mock_cass.
+  - variable: LOB_ENV
+    value: live
+    availability:
       - RUNTIME
 
   - variable: FIREBASE_PROJECT_ID
