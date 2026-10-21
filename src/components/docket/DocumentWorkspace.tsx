@@ -39,6 +39,9 @@ import {
 } from '@/lib/docket/draft-recovery';
 import { trackFunnelEvent } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
+import { useTemplateAvailability } from '@/src/hooks/useTemplateAvailability';
+import { evaluateTemplateAvailability } from '@/src/lib/docket/template-policy';
+import { TemplateLocationFields } from './TemplateLocationFields';
 import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
 
 export interface DocumentWorkspaceProps {
@@ -83,6 +86,7 @@ const DocumentWorkspaceInner: React.FC<{
   initialValues?: Record<string, string>;
 }> = ({ notice, initialValues = {} }) => {
   const searchParams = useSearchParams();
+  const availabilityState = useTemplateAvailability();
 
   // 1. Resolve initial draft values with strict URL prefill precedence
   const initialResolved = useMemo(
@@ -179,6 +183,7 @@ const DocumentWorkspaceInner: React.FC<{
   // Hook 2: Chrome 149+ WebMCP in-browser agent tool integration
   useWebMcpTools({
     notice,
+    currentValues: userValues,
     onUpdateValues: (fields) => {
       setUserValues((prev) => {
         for (const k of Object.keys(fields)) {
@@ -433,6 +438,30 @@ const DocumentWorkspaceInner: React.FC<{
     setActiveFieldKey(notice.fields[0]?.key || null);
   };
 
+  const availability = availabilityState.data?.templates.find(entry => entry.slug === notice.slug);
+  const availabilityDecision = availability ? evaluateTemplateAvailability(availability, userValues) : null;
+  if (availabilityState.loading || availabilityState.error || !availabilityDecision?.allowed) {
+    const locationAvailability = availability ? {
+      ...availability,
+      requiresResidence: availability.requiresResidence || !!availabilityDecision?.requiredFields.includes('consumerResidenceState'),
+      requiresProperty: availability.requiresProperty || !!availabilityDecision?.requiredFields.includes('propertyState'),
+    } : null;
+    const needsLocation = locationAvailability?.available && (locationAvailability.requiresResidence || locationAvailability.requiresProperty);
+    return <main className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100">
+      <div className="mx-auto max-w-lg space-y-5 rounded-xl border border-slate-700 bg-slate-900 p-6">
+        <a href="/" className="text-sm text-sky-400">← Choose a letter</a>
+        <h1 className="text-2xl font-serif font-bold">{notice.title}</h1>
+        {availabilityState.loading ? <p role="status">Checking availability…</p> : availabilityState.error ? <>
+          <p role="alert">{availabilityState.error}</p><button type="button" onClick={availabilityState.refresh} className="rounded-lg bg-sky-700 px-4 py-2 text-white">Try again</button>
+        </> : <>
+          <h2 className="text-lg font-semibold">{needsLocation ? 'Check availability for your location' : 'This letter is currently unavailable'}</h2>
+          {needsLocation && <TemplateLocationFields availability={locationAvailability} values={userValues} onChange={handleFieldValueChange} />}
+          <p role="status" className="text-sm text-slate-300">{availabilityDecision?.message || 'Please choose another available letter.'}</p>
+        </>}
+      </div>
+    </main>;
+  }
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       {/* Sticky Execution Bar */}
@@ -533,6 +562,7 @@ const DocumentWorkspaceInner: React.FC<{
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
+        onAvailabilityRefresh={availabilityState.refresh}
         doc={interpolatedDoc}
         selectedTier={selectedTier}
         onSelectTier={(tier) => setSelectedTier(tier)}

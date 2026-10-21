@@ -1,0 +1,132 @@
+{
+  "checkedAt": "2026-10-21T02:40:11.952Z",
+  "project": "docketstamp",
+  "backend": {
+    "name": "projects/docketstamp/locations/us-central1/backends/docketstamp",
+    "serviceAccount": "firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com",
+    "uri": "docketstamp--docketstamp.us-central1.hosted.app"
+  },
+  "rolloutPolicy": {
+    "codebaseBranch": "main"
+  },
+  "builds": [
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-18-004",
+      "state": "READY",
+      "createTime": "2026-10-18T23:29:02.493454636Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "b97551226aec144d469ca18b01ebc139df66f95c",
+          "hash": "b97551226aec144d469ca18b01ebc139df66f95c",
+          "commitMessage": "fix(admin): remove email address callouts from admin UI and error notices",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/b97551226aec144d469ca18b01ebc139df66f95c",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-18T23:29:00Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-18-003",
+      "state": "READY",
+      "createTime": "2026-10-18T22:24:31.923987443Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "9e78c8066477d38cdce8285b964c3bdb99b717db",
+          "hash": "9e78c8066477d38cdce8285b964c3bdb99b717db",
+          "commitMessage": "feat(home-v2): implement S1-S7 homepage & purchase redesign + account/admin auth binding",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/9e78c8066477d38cdce8285b964c3bdb99b717db",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-18T22:23:34Z"
+        }
+      }
+    }
+  ],
+  "rollouts": [
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-18-004",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-18-004",
+      "createTime": "2026-10-18T23:29:02.558291581Z",
+      "updateTime": "2026-10-18T23:33:01.001840Z"
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-18-003",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-18-003",
+      "createTime": "2026-10-18T22:24:31.984520952Z",
+      "updateTime": "2026-10-18T22:28:50.595174Z"
+    }
+  ],
+  "runtime": {
+    "readyRevision": "projects/docketstamp/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-18-004",
+    "createdRevision": "projects/docketstamp/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-18-004",
+    "condition": {
+      "type": "Ready",
+      "state": "CONDITION_SUCCEEDED",
+      "lastTransitionTime": "2026-10-18T23:32:57.892234Z"
+    },
+    "publicEnvironment": [
+      {
+        "name": "ENVIRONMENT",
+        "value": "production"
+      },
+      {
+        "name": "FIREBASE_PROJECT_ID",
+        "value": "docketstamp"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "value": "docketstamp"
+      },
+      {
+        "name": "NEXT_PUBLIC_APP_URL",
+        "value": "https://docketstamp.com"
+      }
+    ],
+    "credentialModes": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "mode": "live",
+        "secretReference": {
+          "secret": "projects/937129689950/secrets/stripe-secret-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_DISPATCH_API_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_ADDRESS_VERIFICATION_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_API_KEY",
+        "mode": "missing"
+      }
+    ],
+    "secretNames": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "reference": {
+          "secret": "projects/937129689950/secrets/stripe-secret-key",
+          "version": "2"
+        }
+      }
+    ]
+  }
+}

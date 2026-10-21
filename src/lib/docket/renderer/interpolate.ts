@@ -84,6 +84,43 @@ function resolveStatutoryValues(
   return result;
 }
 
+/** Resolve only recognized communication choices to bounded, accurate prose. */
+function resolveBoundedCopyValues(
+  notice: NoticeTemplateDefinition,
+  values: Record<string, string>
+): Record<string, string> {
+  const safeValues = { ...values };
+  if (notice.id === 'fdcpa-30-day-debt-validation-letter') {
+    const preference = values.communicationPreference;
+    if (
+      preference === 'Please send future responses about this request in writing by U.S. Mail' ||
+      preference === 'All future communications regarding this matter must be conducted strictly in writing by U.S. Mail'
+    ) {
+      safeValues.communicationPreference = 'future responses in writing by U.S. Mail';
+    } else if (
+      preference === 'Please send a written response to the mailing address on this notice' ||
+      preference === 'Please forward written verification documentation to the mailing address listed above'
+    ) {
+      safeValues.communicationPreference = 'a written response to the mailing address on this notice';
+    }
+  }
+  return safeValues;
+}
+
+/** Keep bounded textarea facts to one rendered paragraph in preview and print. */
+function normalizeTextareaWhitespace(
+  notice: NoticeTemplateDefinition,
+  userValues: Record<string, string>
+): Record<string, string> {
+  const normalized = { ...userValues };
+  for (const field of notice.fields) {
+    if (field.inputType !== 'textarea_short') continue;
+    const value = normalized[field.key];
+    if (typeof value === 'string') normalized[field.key] = value.replace(/\s+/g, ' ').trim();
+  }
+  return normalized;
+}
+
 function getAddressFields(addr?: Partial<PostalAddress | DocketAddress>) {
   if (!addr) return { line1: '', line2: '', city: '', state: '', zip: '', name: '', company: '' };
   const a = addr as Record<string, string | undefined>;
@@ -296,9 +333,13 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
   // values before resolving legal metadata or constructing the document.
   const factualValues = omitServerDerivedNoticeValues(userValues);
 
-  // 1. Merge statutory lookups with user values
-  const statutoryValues = resolveStatutoryValues(notice, factualValues);
-  const normalized = normalizeValues(factualValues, senderAddress, recipientAddress, docketId, executionDate);
+  // 1. Normalize only bounded display inputs, then merge renderer-owned values.
+  const presentationValues = normalizeTextareaWhitespace(notice, factualValues);
+  const statutoryValues = resolveStatutoryValues(notice, presentationValues);
+  const normalized = resolveBoundedCopyValues(
+    notice,
+    normalizeValues(presentationValues, senderAddress, recipientAddress, docketId, executionDate)
+  );
 
   const mergedValues: Record<string, string> = {
     ...normalized,

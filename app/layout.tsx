@@ -35,11 +35,11 @@ const metaDomainVerification = process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION;
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "Prepare and Mail Formal Notices | DocketStamp",
+    default: "Prepare and Mail Formal Letters | DocketStamp",
     template: "%s | DocketStamp",
   },
   description:
-    "Prepare a written notice, review your details, and choose an available USPS mailing service. DocketStamp is a self-help document preparation service, not a law firm.",
+    "Prepare and review a formal letter, then choose an available USPS mailing service. DocketStamp is an automated self-help document preparation service, not a law firm.",
   applicationName: "DocketStamp",
   authors: [{ name: "Western Amalgamated" }],
   creator: "Western Amalgamated",
@@ -70,9 +70,9 @@ export const metadata: Metadata = {
       },
   ...(metaDomainVerification ? { verification: { other: { "facebook-domain-verification": metaDomainVerification } } } : {}),
   openGraph: {
-    title: "Prepare and Mail Formal Notices | DocketStamp",
+    title: "Prepare and Mail Formal Letters | DocketStamp",
     description:
-      "Prepare a written notice, review your details, and choose an available USPS mailing service. DocketStamp is a self-help document preparation service, not a law firm.",
+      "Prepare and review a formal letter, then choose an available USPS mailing service. DocketStamp is an automated self-help document preparation service, not a law firm.",
     url: appUrl,
     siteName: "DocketStamp",
     images: [
@@ -89,9 +89,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Prepare and Mail Formal Notices | DocketStamp",
+    title: "Prepare and Mail Formal Letters | DocketStamp",
     description:
-      "Prepare a written notice, review your details, and choose an available USPS mailing service. DocketStamp is a self-help document preparation service, not a law firm.",
+      "Prepare and review a formal letter, then choose an available USPS mailing service. DocketStamp is an automated self-help document preparation service, not a law firm.",
     images: ["/og-image.png"],
   },
   icons: {

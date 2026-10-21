@@ -41,7 +41,7 @@ test("account prefill stages address fields in POST body and returns an opaque s
 
     assert.equal(postedUrl, "/api/docket/stage");
     assert.deepEqual(postedBody, {
-      noticeSlug: slug,
+      noticeSlug: canonicalSlug,
       customRecipient: {
         name: "Riley Sample", addressLine1: "123 Example St", addressLine2: "Unit 4",
         city: "Madison", state: "WI", zip: "53703",
@@ -90,7 +90,7 @@ test("stage API rejection preserves the selected notice and address values for r
   const original = { noticeSlug: slug, recipient, sender };
   await assert.rejects(stageNoticePrefill(original, { origin, fetchImpl }), /Draft storage is temporarily unavailable/);
   assert.deepEqual(JSON.parse(capturedBody), {
-    noticeSlug: slug,
+    noticeSlug: canonicalSlug,
     customRecipient: { name: "Riley Sample", addressLine1: "123 Example St", addressLine2: "Unit 4", city: "Madison", state: "WI", zip: "53703" },
     sender: { name: "Casey Sample", addressLine1: "9 Example Ave", addressLine2: "Suite 2", city: "Chicago", state: "IL", zip: "60601" },
     fieldValues: {

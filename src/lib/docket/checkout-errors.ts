@@ -1,14 +1,33 @@
 /** Stable, customer-safe messages for checkout failures. Provider text must stay server-side. */
 export type CheckoutErrorCode =
+  | 'MAILING_UNAVAILABLE'
   | 'CHECKOUT_VALIDATION'
   | 'ORDER_PERSISTENCE'
   | 'PAYMENT_INITIALIZATION'
   | 'CHECKOUT_UNAVAILABLE'
   | 'PAYMENT_DECLINED'
   | 'PAYMENT_FORM_UNAVAILABLE'
-  | 'PAYMENT_CONFIRMATION';
+  | 'PAYMENT_CONFIRMATION'
+  | 'TEMPLATE_UNAVAILABLE' | 'TEMPLATE_ON_HOLD' | 'REVIEW_REQUIRED'
+  | 'TEMPLATE_NOT_FOUND' | 'LOCATION_REQUIRED' | 'INVALID_LOCATION' | 'LOCATION_UNAVAILABLE';
+
+export function isTemplateAvailabilityError(code: unknown): boolean {
+  return typeof code === 'string' && ['TEMPLATE_UNAVAILABLE', 'TEMPLATE_ON_HOLD', 'REVIEW_REQUIRED',
+    'TEMPLATE_NOT_FOUND', 'LOCATION_REQUIRED', 'INVALID_LOCATION', 'LOCATION_UNAVAILABLE'].includes(code);
+}
+
+const AVAILABILITY_CHANGED = 'This letter is no longer available for a new checkout. Nothing was charged. Close checkout to check current availability.';
+const LOCATION_CHANGED = 'Please confirm your location before checkout. Nothing was charged. Close checkout to update your location.';
 
 const CHECKOUT_ERROR_MESSAGES: Record<CheckoutErrorCode, string> = {
+  MAILING_UNAVAILABLE: 'Mailing checkout is temporarily unavailable. Nothing was charged. Your letter details are saved.',
+  TEMPLATE_UNAVAILABLE: AVAILABILITY_CHANGED,
+  TEMPLATE_ON_HOLD: AVAILABILITY_CHANGED,
+  REVIEW_REQUIRED: AVAILABILITY_CHANGED,
+  TEMPLATE_NOT_FOUND: AVAILABILITY_CHANGED,
+  LOCATION_UNAVAILABLE: AVAILABILITY_CHANGED,
+  LOCATION_REQUIRED: LOCATION_CHANGED,
+  INVALID_LOCATION: LOCATION_CHANGED,
   CHECKOUT_VALIDATION:
     'We couldn’t prepare checkout. Please review your letter details and try again.',
   ORDER_PERSISTENCE:

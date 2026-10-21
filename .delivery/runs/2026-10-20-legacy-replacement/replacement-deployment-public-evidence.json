@@ -1,0 +1,104 @@
+{
+  "sourceCommit": "ed6193659384ed8395b00c5b9f397bbc041334c0",
+  "project": "docketstamp-staging",
+  "backend": "docketstamp",
+  "build": {
+    "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-20-013",
+    "state": "READY",
+    "source": "ed6193659384ed8395b00c5b9f397bbc041334c0"
+  },
+  "rollout": {
+    "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-20-008",
+    "state": "SUCCEEDED",
+    "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-20-013",
+    "updateTime": "2026-10-20T21:23:44.609532Z"
+  },
+  "runtime": {
+    "readyRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-20-013",
+    "createdRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-20-013",
+    "condition": {
+      "type": "Ready",
+      "state": "CONDITION_SUCCEEDED",
+      "lastTransitionTime": "2026-10-20T21:23:41.720520Z"
+    },
+    "publicEnvironment": [
+      {
+        "name": "ENVIRONMENT",
+        "value": "staging"
+      },
+      {
+        "name": "FIREBASE_PROJECT_ID",
+        "value": "docketstamp-staging"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "value": "docketstamp-staging"
+      },
+      {
+        "name": "NEXT_PUBLIC_APP_URL",
+        "value": "https://staging.docketstamp.com"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_API_KEY",
+        "value": "REDACTED_FIREBASE_WEB_API_KEY"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+        "value": "docketstamp-staging.firebaseapp.com"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+        "value": "docketstamp-staging.firebasestorage.app"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+        "value": "267056924276"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_APP_ID",
+        "value": "1:267056924276:web:e8c64af5d4be3d57477321"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID",
+        "value": "G-MR8PSNHHP9"
+      }
+    ]
+  },
+  "publicChecks": {
+    "checkedAt": "2026-10-20T21:24:01.022Z",
+    "pages": {
+      "/admin": {
+        "status": 200
+      },
+      "/account": {
+        "status": 200
+      },
+      "/favicon.ico": {
+        "status": 200
+      }
+    },
+    "client": [
+      {
+        "chunk": "/_next/static/chunks/9042-f767074976f85a7a.js",
+        "correctStagingApp": true,
+        "oldApp": false
+      },
+      {
+        "chunk": "/_next/static/chunks/app/layout-a2ea8723c4297a4d.js",
+        "correctStagingApp": true,
+        "oldApp": false
+      },
+      {
+        "chunk": "/_next/static/chunks/6936-b791cd3c472a6b28.js",
+        "correctStagingApp": true,
+        "oldApp": false
+      }
+    ],
+    "retiredCheckout": {
+      "status": 410,
+      "code": "LEGACY_CHECKOUT_UNSUPPORTED"
+    }
+  },
+  "productionMainUnchanged": "b97551226aec144d469ca18b01ebc139df66f95c",
+  "interactiveGoogleLogin": "not performed"
+}

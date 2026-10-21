@@ -164,7 +164,7 @@ describe('Canonical letter-quality safeguards', () => {
   });
 
   it('keeps every generated template within its described request scope', () => {
-    const unsupportedClaims = /\b(?:statutory demand|statutory deadline|exact state statutory|legally binding|legally conclusive|highest evidentiary|admissible in court|proof of mailing|proof of delivery|all rights|timely postmarked|complete and permanent deletion|must permanently cease|binding written cancellation)\b/i;
+    const unsupportedClaims = /\b(?:statutory demand|exact state statutory|legally binding|legally conclusive|highest evidentiary|admissible in court|proof of mailing|proof of delivery|all rights|timely postmarked|complete and permanent deletion|must permanently cease|binding written cancellation)\b/i;
 
     for (const notice of getAllNotices()) {
       const visibleMetadata = [
@@ -187,7 +187,7 @@ describe('Canonical letter-quality safeguards', () => {
       assert.doesNotMatch(visibleMetadata, unsupportedClaims, `${notice.slug} metadata contains an unsupported claim`);
       assert.doesNotMatch(bodyText, unsupportedClaims, `${notice.slug} body contains an unsupported claim`);
       assert.doesNotMatch(bodyText, /enclosures?\s*:/i, `${notice.slug} body must not claim an enclosure`);
-      assert.doesNotMatch(bodyText, /within\s+(?:five|thirty|\d+)\s+(?:calendar\s+|business\s+)?days?/i, `${notice.slug} body must not assert a legal deadline`);
+      assert.doesNotMatch(bodyText, /(?:statutory|legal|contractual) deadline\s+(?:is\s+)?(?:within|of)|deadline\s+of\s+(?:five|thirty|\d+)/i, `${notice.slug} body must not invent a deadline`);
 
       const doc = interpolateDocument({
         notice,
@@ -207,14 +207,20 @@ describe('Canonical letter-quality safeguards', () => {
       notice: securityDepositNotice,
       userValues: {
         ...sampleValuesForNotice(securityDepositNotice),
+        senderFullName: 'Marcus Vance',
+        vacatedPremisesAddress: '402 Pine Street',
+        moveOutDate: 'September 1, 2026',
+        amountReceivedToDate: '$0.00',
+        balanceRequested: '$1,850.00',
+        basisForRequest: 'My records show no refund has arrived.',
         responseDays: '7 calendar days',
       },
     });
     const responseParagraph = doc.rawParagraphs.find((paragraph) => paragraph.includes('requested response period'));
 
     assert.ok(responseParagraph);
-    assert.match(responseParagraph, /If possible, please respond within 7 calendar days/i);
-    assert.match(responseParagraph, /This is a requested response period, not a legal deadline/i);
+    assert.match(responseParagraph, /I request a response within 7 calendar days of receipt/i);
+    assert.match(responseParagraph, /This is my requested response period and does not change any statutory deadline/i);
     assert.doesNotMatch(doc.rawParagraphs.join(' '), /statuteCitation|statuteDeadline/);
   });
 
@@ -432,6 +438,7 @@ describe('5. Document Interpolation Engine', () => {
       rentalState: 'TX',
       surrenderDate: 'September 1, 2026',
       depositAmount: '$1,850.00',
+      responseDays: '7 calendar days',
       forwardingAddress: '8800 Research Blvd, Austin, TX 78758',
     };
 
@@ -442,9 +449,10 @@ describe('5. Document Interpolation Engine', () => {
 
     assert.equal(securityDepositNotice.usesStateStatuteLookup, false);
     assert.ok(doc.rawParagraphs.some((p) => p.includes('$1,850.00')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('any deposit balance that is due under applicable law')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('balance I believe is due')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('I request a response within 7 calendar days of receipt')));
     assert.ok(doc.rawParagraphs.every((p) => !p.includes('Tex. Prop. Code') && !p.includes('statuteDeadline')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('not a legal deadline')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('does not change any statutory deadline')));
   });
 
   it('interpolates Cartridge 07 Pre-Arbitration Dispute notice accurately', () => {
@@ -466,13 +474,16 @@ describe('5. Document Interpolation Engine', () => {
       serviceLevel: 'certified_return_receipt',
     });
 
-    assert.equal(doc.headerTitle, 'PRODUCT OR SERVICE COMPLAINT AND REFUND REQUEST');
+    assert.equal(doc.headerTitle, 'PRODUCT OR SERVICE REFUND DEMAND');
     assert.ok(doc.reLine.includes('Withings Body Scan Smart Scale'));
     assert.ok(doc.reLine.includes('SN-94820184'));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('acquired on 2026-01-15')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('purchased on 2026-01-15')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Feature became unavailable or requires an additional payment')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('does not state that an agreement requires an informal dispute process')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('does not set or change a contract deadline')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('$399.95')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('Please send your written response to')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('within 30 days of receipt')));
+    assert.ok(!doc.rawParagraphs.some((p) => /mandatory informal dispute resolution provisions|within thirty \(30\) days/i.test(p)));
 
     // Test Zod schema validation
     assert.doesNotThrow(() => preArbitrationDisputeNotice.zodSchema.parse(userValues));
@@ -507,7 +518,9 @@ describe('5. Document Interpolation Engine', () => {
     assert.ok(doc.reLine.includes('Roku Smart OS Platform'));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Roku Smart OS Platform')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('jordan.blake@example.com')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('does not itself exercise an opt-out')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('This is an information request only')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('required submission channel')));
+    assert.ok(!doc.rawParagraphs.some((p) => p.includes('I elect to opt out')));
 
     // Test Zod schema validation
     assert.doesNotThrow(() => arbitrationOptOutNotice.zodSchema.parse(userValues));
@@ -537,11 +550,12 @@ describe('5. Document Interpolation Engine', () => {
       serviceLevel: 'certified',
     });
 
-    assert.equal(doc.headerTitle, 'REQUEST TO REVIEW PERSONAL DATA DELETION');
+    assert.equal(doc.headerTitle, 'PERSONAL DATA DELETION DEMAND');
     assert.ok(doc.reLine.includes('devon.kessler@example.com'));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('devon.kessler@example.com')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Connected device or app account')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('does not establish eligibility under any particular privacy law')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('To the extent applicable privacy law covers this request')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('If you retain any data')));
 
     // Test Zod schema validation
     assert.doesNotThrow(() => biometricPrivacyDeletionNotice.zodSchema.parse(userValues));

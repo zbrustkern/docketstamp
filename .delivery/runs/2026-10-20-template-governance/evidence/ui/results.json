@@ -1,0 +1,54 @@
+{
+  "results": [
+    {
+      "case": "typing and saving multi-state rule",
+      "passed": true
+    },
+    {
+      "surface": "admin",
+      "width": 1440,
+      "noOverflow": true
+    },
+    {
+      "case": "paused direct page, chooser, REST creation/resume and MCP",
+      "passed": true
+    },
+    {
+      "surface": "resumed workspace",
+      "width": 1440,
+      "noOverflow": true
+    },
+    {
+      "case": "explicit nexus and old-stage location hydration",
+      "passed": true
+    },
+    {
+      "case": "stale revision conflict reload",
+      "passed": true
+    },
+    {
+      "case": "failed refresh freezes controls until reload",
+      "passed": true
+    },
+    {
+      "surface": "admin viewer",
+      "width": 390,
+      "noOverflow": true
+    },
+    {
+      "surface": "location gate",
+      "width": 390,
+      "noOverflow": true
+    },
+    {
+      "case": "mobile customer policy fetch failure is closed",
+      "passed": true
+    },
+    {
+      "case": "no checkout/dispatch requests or uncaught browser errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "forbiddenRequests": 0
+}

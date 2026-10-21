@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllNotices, getNoticesByCategory } from '@/src/lib/docket/notices';
 import { searchVerifiedRecipients } from '@/src/lib/docket/data/verified-recipients';
 import { createStagedDraft, StageDraftRequest } from '../docket/stage/stage-store';
+import { getPublicTemplateAvailability } from '@/lib/template-policy-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,7 +90,11 @@ const MCP_TOOLS = [
         },
         fieldValues: {
           type: 'object',
-          description: 'Key-value map of notice field variables (partial completion allowed)',
+          description: 'Key-value map of notice fields plus explicit consumerResidenceState and, for tenant notices, propertyState policy facts. Do not infer residence from mailing state.',
+          properties: {
+            consumerResidenceState: { type: 'string', description: 'Explicit consumer residence state, never recipient state.' },
+            propertyState: { type: 'string', description: 'Explicit tenant property state; must match the deposit notice citation state.' },
+          },
         },
         recommendedTier: {
           type: 'string',
@@ -203,7 +208,13 @@ export async function POST(req: NextRequest) {
     // Tool: list_docket_notices
     if (toolName === 'list_docket_notices') {
       const category = toolArgs.category;
-      const cartridges = category ? getNoticesByCategory(category) : getAllNotices();
+      let availability;
+      try { availability = await getPublicTemplateAvailability(); }
+      catch {
+        return NextResponse.json({ jsonrpc: '2.0', id, result: { isError: true, content: [{ type: 'text', text: JSON.stringify({ code: 'AVAILABILITY_UNAVAILABLE', error: 'Availability is temporarily unavailable.' }) }] } }, { headers: { ...CORS_HEADERS, 'Cache-Control': 'no-store' } });
+      }
+      const entries = new Map(availability.templates.map((entry) => [entry.slug, entry]));
+      const cartridges = (category ? getNoticesByCategory(category) : getAllNotices()).filter((notice) => entries.get(notice.slug)?.available);
       const output = cartridges.map((n) => ({
         slug: n.slug,
         title: n.title,
@@ -212,6 +223,12 @@ export async function POST(req: NextRequest) {
         category: n.category,
         recommendedTier: n.recommendedTier,
         recipientMode: n.recipientMode,
+        availability: entries.get(n.slug) ? {
+          requiresResidence: entries.get(n.slug)!.requiresResidence,
+          requiresProperty: entries.get(n.slug)!.requiresProperty,
+          residenceRules: entries.get(n.slug)!.residenceRules,
+          propertyRules: entries.get(n.slug)!.propertyRules,
+        } : undefined,
         fields: (n.fields || []).map((f) => ({
           key: f.key,
           label: f.label,

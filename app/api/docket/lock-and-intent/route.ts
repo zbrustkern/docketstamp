@@ -5,11 +5,14 @@ import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/inter
 import { renderLobHtmlPayload } from '@/lib/docket/renderer/lob-html-shell';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/lib/docket/guardrails';
 import { MailTierId } from '@/lib/docket/types';
-import { saveOrder, updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
+import { updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
 import { createCardPaymentIntent } from '@/lib/stripe';
 import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
 import { createDocumentIntegrityEvidence } from '@/lib/docket/integrity-evidence';
+import { createOrderUnderPolicy } from '@/lib/template-policy-store';
+import { PolicyNexus } from '@/src/lib/docket/template-policy';
+import { isMailingReadyForCheckout } from '@/lib/checkout-readiness';
 import { validateNoticeInput } from '@/lib/docket/input-validation';
 
 export async function POST(req: NextRequest) {
@@ -90,6 +93,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    const policyNexus: PolicyNexus = {
+      consumerResidenceState: rawUserValues.consumerResidenceState,
+      propertyState: rawUserValues.propertyState,
+    };
     const userValues = validatedInput.userValues;
     const safeSenderAddress = validatedInput.senderAddress;
     const safeRecipientAddress = validatedInput.recipientAddress;
@@ -147,6 +154,11 @@ export async function POST(req: NextRequest) {
         { error: `Invalid mail service tier '${activeTier}'.` },
         { status: 400 }
       );
+    }
+
+    // Do not accept payment for a mailing that this environment cannot dispatch.
+    if (!isMailingReadyForCheckout()) {
+      return NextResponse.json({ error: 'Mailing checkout is temporarily unavailable. Nothing was charged.', code: 'MAILING_UNAVAILABLE' }, { status: 503 });
     }
 
     let finalAmountInCents = tierMeta.priceCents;
@@ -305,7 +317,14 @@ export async function POST(req: NextRequest) {
 
     // Commit snapshot before requesting payment credentials
     failureCode = 'ORDER_PERSISTENCE';
-    await saveOrder(orderRecord);
+    const policyCommit = await createOrderUnderPolicy(orderRecord as any, notice.slug, policyNexus);
+    if (!policyCommit.ok) {
+      return NextResponse.json({
+        error: policyCommit.decision.message,
+        code: policyCommit.decision.code,
+        details: { requiredFields: policyCommit.decision.requiredFields },
+      }, { status: 403 });
+    }
 
     // A 100% discount is still a fully frozen notice order, but it does not
     // require a zero-dollar Stripe PaymentIntent. The free-order endpoint binds

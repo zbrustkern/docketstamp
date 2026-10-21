@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllNotices } from '@/src/lib/docket/notices';
 import { getAllVerifiedRecipients } from '@/src/lib/docket/data/verified-recipients';
+import { getPublicTemplateAvailability } from '@/lib/template-policy-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,10 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
-  const notices = getAllNotices();
+  let availability;
+  try { availability = await getPublicTemplateAvailability(); } catch { return NextResponse.json({ error: 'Availability is temporarily unavailable.', code: 'AVAILABILITY_UNAVAILABLE' }, { status: 503, headers: { ...CORS_HEADERS, 'Cache-Control': 'no-store' } }); }
+  const available = new Set(availability.templates.filter((entry) => entry.available).map((entry) => entry.slug));
+  const notices = getAllNotices().filter((notice) => available.has(notice.slug));
   const recipients = getAllVerifiedRecipients();
 
   const noticeSlugs = notices.map((n) => n.slug);
@@ -101,6 +105,9 @@ export async function GET() {
             },
           },
         },
+      },
+      '/api/docket/availability': {
+        get: { summary: 'Read current public template availability', operationId: 'getTemplateAvailability', responses: { '200': { description: 'Availability and required explicit locations' }, '503': { description: 'Policy unavailable; request fails closed' } } },
       },
       '/api/docket/stage/{stageId}': {
         get: {
@@ -233,7 +240,11 @@ export async function GET() {
             fieldValues: {
               type: 'object',
               additionalProperties: true,
-              description: 'Key-value mapping of template variable fields.',
+              description: 'Template fields plus explicit policy facts consumerResidenceState and, for tenant notices, propertyState. Do not infer residence from mailing addresses.',
+              properties: {
+                consumerResidenceState: { type: 'string', description: 'Explicit consumer residence state; never recipient state.' },
+                propertyState: { type: 'string', description: 'Explicit tenant property state; must match the deposit citation field when applicable.' },
+              },
             },
             recommendedTier: {
               $ref: '#/components/schemas/MailTier',
@@ -353,7 +364,7 @@ export async function GET() {
     headers: {
       ...CORS_HEADERS,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'no-store, max-age=0',
     },
   });
 }

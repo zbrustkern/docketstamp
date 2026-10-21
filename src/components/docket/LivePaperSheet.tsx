@@ -63,7 +63,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 pt-1">
           {/* Top-Left Return & Destination Address Block (Clickable to Edit) */}
-          <div className="text-xs font-sans text-slate-700 leading-snug space-y-2.5 flex-1">
+          <div className="min-w-0 max-w-full [overflow-wrap:anywhere] text-xs font-sans text-slate-700 leading-snug space-y-2.5 flex-1">
             {/* FROM BLOCK */}
             <div className="group">
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold block mb-0.5">
@@ -72,7 +72,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
               <button
                 type="button"
                 onClick={() => onTokenClick('senderFullName')}
-                className={`text-left rounded px-1.5 py-0.5 -ml-1.5 transition border ${
+                className={`text-left max-w-full [overflow-wrap:anywhere] rounded px-1.5 py-0.5 -ml-1.5 transition border ${
                   activeFieldKey === 'senderFullName'
                     ? 'bg-amber-100 border-amber-500 text-slate-950 ring-2 ring-amber-400/50'
                     : hasSenderName
@@ -90,7 +90,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
               {doc.senderAddress.address_line1 ? (
                 <div
                   onClick={() => onTokenClick('senderFullAddress')}
-                  className="text-[11px] text-slate-600 mt-0.5 cursor-pointer hover:text-slate-900"
+                  className="max-w-full [overflow-wrap:anywhere] text-[11px] text-slate-600 mt-0.5 cursor-pointer hover:text-slate-900"
                 >
                   {doc.senderAddress.address_line1}
                   {doc.senderAddress.address_line2 && <><br />{doc.senderAddress.address_line2}</>}
@@ -109,7 +109,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
               <button
                 type="button"
                 onClick={() => onTokenClick('recipientFormalName')}
-                className={`text-left rounded px-1.5 py-0.5 -ml-1.5 transition border ${
+                className={`text-left max-w-full [overflow-wrap:anywhere] rounded px-1.5 py-0.5 -ml-1.5 transition border ${
                   activeFieldKey === 'recipientFormalName'
                     ? 'bg-amber-100 border-amber-500 text-slate-950 ring-2 ring-amber-400/50'
                     : hasRecipientName
@@ -127,7 +127,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
               {doc.recipientAddress.address_line1 ? (
                 <div
                   onClick={() => onTokenClick('recipientFullAddress')}
-                  className="text-[11px] text-slate-600 mt-0.5 cursor-pointer hover:text-slate-900"
+                  className="max-w-full [overflow-wrap:anywhere] text-[11px] text-slate-600 mt-0.5 cursor-pointer hover:text-slate-900"
                 >
                   {doc.recipientAddress.address_line1}
                   {doc.recipientAddress.address_line2 && <><br />{doc.recipientAddress.address_line2}</>}
@@ -216,7 +216,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
         </div>
 
         {/* RE Subject Block */}
-        <div className="bg-slate-100/90 border-l-4 border-sky-600 p-2.5 sm:p-3 mb-5 font-sans text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
+        <div className="max-w-full [overflow-wrap:anywhere] bg-slate-100/90 border-l-4 border-sky-600 p-2.5 sm:p-3 mb-5 font-sans text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
           {doc.reLine}
         </div>
 
@@ -226,7 +226,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
           <button
             type="button"
             onClick={() => onTokenClick('recipientFormalName')}
-            className={`inline-flex items-center px-1.5 py-0.5 rounded transition border text-left ${
+            className={`inline-flex max-w-full [overflow-wrap:anywhere] items-center px-1.5 py-0.5 rounded transition border text-left ${
               hasRecipientName
                 ? 'bg-sky-50/90 border-sky-300 text-slate-950 hover:bg-amber-50 hover:border-amber-400'
                 : 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] font-mono text-xs uppercase'
@@ -240,9 +240,9 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
         </div>
 
         {/* Paragraphs with Interactive Fill-In Tags */}
-        <div className="space-y-4 text-[13.5px] sm:text-[14.5px] leading-relaxed text-slate-900 text-justify">
+        <div className="space-y-4 text-[13.5px] sm:text-[14.5px] leading-relaxed text-slate-900 text-justify [overflow-wrap:anywhere]">
           {doc.paragraphs.map((tokens, pIdx) => (
-            <p key={`p-${pIdx}`} className="leading-relaxed">
+            <p key={`p-${pIdx}`} className="leading-relaxed [overflow-wrap:anywhere]">
               {tokens.map((token, tIdx) => {
                 if (token.type === 'text') {
                   return <span key={`t-${pIdx}-${tIdx}`}>{token.content}</span>;
@@ -284,7 +284,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
                     }`}
                     title={`Click to change ${token.docusignTagLabel || token.key}`}
                   >
-                    <span>{token.content}</span>
+                    <span className="max-w-full [overflow-wrap:anywhere]">{token.content}</span>
                   </button>
                 );
               })}
@@ -298,7 +298,7 @@ export const LivePaperSheet: React.FC<LivePaperSheetProps> = ({
           <button
             type="button"
             onClick={() => onTokenClick('senderFullName')}
-            className="inline-block min-w-[260px] border-b border-slate-700 pb-1 my-1.5 text-left hover:bg-amber-50/70 rounded-t px-1 -ml-1 transition cursor-pointer"
+            className="inline-block max-w-full [overflow-wrap:anywhere] min-w-[260px] border-b border-slate-700 pb-1 my-1.5 text-left hover:bg-amber-50/70 rounded-t px-1 -ml-1 transition cursor-pointer"
             title="Click to enter or update your signature name"
           >
             <span

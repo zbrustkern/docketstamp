@@ -1,0 +1,16 @@
+# Run index
+
+- [Intent](intent.md)
+- [Local draft](local-draft.md)
+- [Actual Luna critique](plan-critique.md)
+- [Sprint](../../../docs/sprints/SPRINT-0011.md)
+- [Checkpoint](state.json)
+- [Events](events.md)
+- [Merge notes](merge-notes.md)
+- [Optional unexecuted Antigravity handoff](handoff-antigravity.md)
+- [Implementation report](implementation-report.md)
+- [Independent implementation review](implementation-review.md)
+- [Verification and acceptance evidence](verification.md)
+- [State launch memo](../../../docs/legal/STATE_LAUNCH_REVIEW_2026-10-20.md)
+- [Research provenance](research-provenance.md)
+- [Research review](research-review.md)

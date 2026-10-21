@@ -5,6 +5,7 @@ export interface NoticePrefillInput {
   noticeSlug: string;
   recipient?: SavedAddress | null;
   sender?: MailingAddress | null;
+  policyNexus?: { consumerResidenceState?: string; propertyState?: string };
 }
 
 export interface StagedNoticePrefill {
@@ -67,6 +68,9 @@ export async function stageNoticePrefill(
     set("senderZip", sender.zip);
   }
 
+  set("consumerResidenceState", input.policyNexus?.consumerResidenceState);
+  set("propertyState", input.policyNexus?.propertyState);
+
   const postalAddress = (address: SavedAddress | MailingAddress) => ({
     name: addressName(address),
     addressLine1: address.street1,
@@ -76,7 +80,9 @@ export async function stageNoticePrefill(
     zip: address.zip,
   });
   const payload = {
-    noticeSlug: input.noticeSlug,
+    // Send the cartridge's canonical key at this boundary even when a legacy
+    // URL alias was supplied by the account UI.
+    noticeSlug: canonicalSlug,
     ...(recipient ? { customRecipient: postalAddress(recipient) } : {}),
     ...(sender ? { sender: postalAddress(sender) } : {}),
     fieldValues,

@@ -147,19 +147,19 @@ describe('S7 Release Candidate Verification Suite', () => {
   // AREA 3: DISCOVERY & RECIPIENT COMPATIBILITY
   // ==========================================================================
   describe('Area 3: Discovery, Plain Titles & Recipient Compatibility', () => {
-    it('resolves all 9 canonical letters with plain customer display titles and subtitles matching §7.4', () => {
+    it('resolves all 9 canonical letters with accurate plain customer titles and subtitles', () => {
       assert.equal(CHOOSER_LETTERS.length, 9, 'Exactly 9 notice cartridges defined in chooser');
 
       const expectedTitles: Record<string, string> = {
-        'security-deposit-accounting-request': 'Request deposit accounting and any balance due',
-        'credit-report-dispute-request': 'Dispute a credit-report item',
-        'tenant-repair-and-maintenance-notice': 'Request repairs',
-        'tenant-notice-of-intent-to-vacate': 'Give move-out notice',
-        'debt-dispute-information-request': 'Request information about a disputed debt',
-        'service-cancellation-request': 'Request service or policy cancellation',
-        'product-complaint-refund-request': 'Request a product or service review and refund',
+        'security-deposit-accounting-request': 'Demand a deposit accounting and any balance due',
+        'credit-report-dispute-request': 'Dispute an error on your credit report',
+        'tenant-repair-and-maintenance-notice': 'Demand repairs from your landlord',
+        'tenant-notice-of-intent-to-vacate': 'Give formal move-out notice',
+        'debt-dispute-information-request': 'Dispute a debt and demand verification',
+        'service-cancellation-request': 'Cancel a service or policy in writing',
+        'product-complaint-refund-request': 'Demand a refund for a product or service issue',
         'arbitration-opt-out-procedure-request': 'Ask about arbitration terms and opt-out steps',
-        'personal-data-deletion-request': 'Ask a company to review a data-deletion request',
+        'personal-data-deletion-request': 'Demand deletion of your personal data',
       };
 
       for (const letter of CHOOSER_LETTERS) {

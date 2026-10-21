@@ -19,9 +19,9 @@ import { HeaderUserNav } from '@/src/components/docket/HeaderUserNav';
 import { InteractiveHomeWorkbench } from '@/src/components/docket/InteractiveHomeWorkbench';
 
 export const metadata = {
-  title: 'Prepare and Mail Formal Notices | DocketStamp',
+  title: 'DocketStamp | Prepare and Mail Formal Letters via USPS',
   description:
-    'Choose a notice template, add your details, review the prepared document, and select an available USPS mailing service.',
+    'Prepare and review a formal letter, then send it using an available USPS mailing service. DocketStamp is not a law firm and does not provide legal advice.',
 };
 
 export default function HomePage() {

@@ -157,17 +157,6 @@
       "retirement": "Remove a migration reader only after old browser/session usage is reconciled; deny references remain permanent security evidence."
     },
     {
-      "id": "reviewed-compatibility-015",
-      "file": "components/admin/AdminFeatureFlagsTab.tsx",
-      "category": "namespace",
-      "match": "^(?:smn_rework_v3)$",
-      "context": "^Set\\ <code\\ className=\"bg\\-white\\ px\\-1\\.5\\ py\\-0\\.5\\ rounded\\ border\\ border\\-stone\\-300\\ font\\-mono\\ text\\-\\[10px\\]\">docketstamp_rework_v3_v1=1</code>\\ in\\ DevTools\\ console\\ to\\ persistently\\ preview\\ V3\\ across\\ browser\\ tabs\\.\\ The\\ retired\\ <code>smn_rework_v3</code>\\ cookie\\ is\\ read\\ only\\ for\\ existing\\ sessions\\.$",
-      "maxMatches": 1,
-      "owner": "browser/auth migration",
-      "reason": "Exact read/remove/deny reference for a retired browser namespace; all writes use canonical DocketStamp keys.",
-      "retirement": "Remove a migration reader only after old browser/session usage is reconciled; deny references remain permanent security evidence."
-    },
-    {
       "id": "reviewed-compatibility-016",
       "file": "components/admin/OrderJourneyDrawer.tsx",
       "category": "provider",
@@ -320,28 +309,6 @@
       "owner": "secret boundary",
       "reason": "Historical provider secret names remain rejected if mistakenly exposed as public variables.",
       "retirement": "Permanent secret-leak guard while historical deployment variables may exist."
-    },
-    {
-      "id": "reviewed-compatibility-030",
-      "file": "lib/feature-flags.ts",
-      "category": "namespace",
-      "match": "^(?:smn_rework_v3)$",
-      "context": "^\\*\\ 2\\.\\ Cookie\\ override:\\ smn_rework_v3=1\\ \\->\\ true,\\ smn_rework_v3=0\\ \\->\\ false$",
-      "maxMatches": 2,
-      "owner": "browser/auth migration",
-      "reason": "Exact read/remove/deny reference for a retired browser namespace; all writes use canonical DocketStamp keys.",
-      "retirement": "Remove a migration reader only after old browser/session usage is reconciled; deny references remain permanent security evidence."
-    },
-    {
-      "id": "reviewed-compatibility-031",
-      "file": "lib/feature-flags.ts",
-      "category": "namespace",
-      "match": "^(?:smn_rework_v3)$",
-      "context": "^export\\ const\\ LEGACY_COOKIE_REWORK_V3\\ =\\ \"smn_rework_v3\";$",
-      "maxMatches": 1,
-      "owner": "browser/auth migration",
-      "reason": "Exact read/remove/deny reference for a retired browser namespace; all writes use canonical DocketStamp keys.",
-      "retirement": "Remove a migration reader only after old browser/session usage is reconciled; deny references remain permanent security evidence."
     },
     {
       "id": "reviewed-compatibility-032",

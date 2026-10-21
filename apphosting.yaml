@@ -17,6 +17,11 @@ env:
     availability:
       - RUNTIME
 
+  - variable: ADMIN_SESSION_SIGNING_KEY
+    secret: admin-session-signing-key
+    availability:
+      - RUNTIME
+
   # Optional secrets to enable once created in Google Cloud Secret Manager:
   # - variable: STRIPE_WEBHOOK_SECRET
   #   secret: stripe-webhook-secret

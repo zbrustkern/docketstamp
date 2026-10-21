@@ -40,7 +40,7 @@ describe('Task 1: Staged Draft API (/api/docket/stage)', () => {
     assert.equal(res.status, 201);
 
     const data = await res.json();
-    assert.match(data.stageId, /^DS-STAGE-[A-F0-9]{6}$/);
+    assert.match(data.stageId, /^DS-STAGE-[A-F0-9]{32}$/);
     assert.equal(data.noticeSlug, 'product-complaint-refund-request');
     assert.equal(
       data.reviewUrl,
@@ -293,7 +293,7 @@ describe('Task 2: Remote MCP Endpoint (/api/mcp)', () => {
     assert.ok(!data.result.isError);
 
     const staged = JSON.parse(data.result.content[0].text);
-    assert.match(staged.stageId, /^DS-STAGE-[A-F0-9]{6}$/);
+    assert.match(staged.stageId, /^DS-STAGE-[A-F0-9]{32}$/);
     assert.ok(staged.reviewUrl.includes('stage=' + staged.stageId));
     assert.ok(Array.isArray(staged.missingRequiredFields));
   });

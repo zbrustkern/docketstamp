@@ -65,7 +65,7 @@ import {
 
 describe('S2 Chooser and Routing Acceptance Gate', () => {
   describe('1. Canonical Slugs, Titles, and Plain Display Metadata', () => {
-    it('maps all 9 cartridges in ALL_NOTICE_CARTRIDGES with exact §7.4 display titles and subtitles', () => {
+    it('maps all 9 cartridges with the current customer-facing titles and subtitles', () => {
       assert.equal(
         CHOOSER_LETTERS.length,
         9,
@@ -81,44 +81,44 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
         {
           slug: 'security-deposit-accounting-request',
           promptSlug: 'security-deposit-return-demand-letter',
-          displayTitle: 'Request deposit accounting and any balance due',
-          subtitle: 'Ask for an itemized security-deposit accounting and any balance you believe remains due.',
+          displayTitle: 'Demand a deposit accounting and any balance due',
+          subtitle: 'Demand an itemized accounting and request any balance you believe remains due.',
         },
         {
           slug: 'credit-report-dispute-request',
           promptSlug: 'credit-bureau-dispute-letter-fcra-611',
-          displayTitle: 'Dispute a credit-report item',
-          subtitle: 'Request review of an item you identify as inaccurate.',
+          displayTitle: 'Dispute an error on your credit report',
+          subtitle: 'Ask the credit bureau to investigate information you identify as inaccurate.',
         },
         {
           slug: 'debt-dispute-information-request',
           promptSlug: 'debt-validation-demand-letter-fdcpa-809',
-          displayTitle: 'Request information about a disputed debt',
-          subtitle: 'General request for balance review and account information.',
+          displayTitle: 'Dispute a debt and demand verification',
+          subtitle: 'Dispute a collection claim and demand written verification; legal protections depend on coverage and timing.',
         },
         {
           slug: 'service-cancellation-request',
           promptSlug: 'contract-membership-cancellation-notice',
-          displayTitle: 'Request service or policy cancellation',
-          subtitle: 'Written request to cancel a named service or policy; account terms may require separate steps.',
+          displayTitle: 'Cancel a service or policy in writing',
+          subtitle: 'Give written notice requesting cancellation and ask for confirmation of the effective date.',
         },
         {
           slug: 'tenant-repair-and-maintenance-notice',
           promptSlug: 'notice-of-intent-to-withhold-or-repair-and-deduct',
-          displayTitle: 'Request repairs',
-          subtitle: 'Request inspection or maintenance from a landlord or property manager.',
+          displayTitle: 'Demand repairs from your landlord',
+          subtitle: 'Describe the condition you report, demand repairs, and request a written schedule.',
         },
         {
           slug: 'tenant-notice-of-intent-to-vacate',
           promptSlug: 'lease-termination-non-renewal-notice',
-          displayTitle: 'Give move-out notice',
-          subtitle: 'Written notice describing your current plan to move out.',
+          displayTitle: 'Give formal move-out notice',
+          subtitle: 'Tell your landlord when you plan to move out; check your lease and applicable rules for requirements.',
         },
         {
           slug: 'product-complaint-refund-request',
           promptSlug: 'smart-device-degraded-functionality-refund-demand',
-          displayTitle: 'Request a product or service review and refund',
-          subtitle: 'General complaint and refund request; it does not invoke an agreement-specific dispute process.',
+          displayTitle: 'Demand a refund for a product or service issue',
+          subtitle: 'Describe what happened and demand a refund; this does not satisfy an agreement-specific dispute process.',
         },
         {
           slug: 'arbitration-opt-out-procedure-request',
@@ -129,8 +129,8 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
         {
           slug: 'personal-data-deletion-request',
           promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
-          displayTitle: 'Ask a company to review a data-deletion request',
-          subtitle: 'General account-related request; privacy-law eligibility and process are not determined.',
+          displayTitle: 'Demand deletion of your personal data',
+          subtitle: 'Demand deletion and ask the company to identify any verification or designated submission process.',
         },
       ];
 
@@ -264,7 +264,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       assert.equal(HARDWARE_OEM_PURPOSE_OPTIONS.length, 3);
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[0].label,
-        'Request a product or service review and refund'
+        'Demand a refund for a product or service issue'
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[1].label,
@@ -272,7 +272,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[2].label,
-        'Ask a company to review a data-deletion request'
+        'Demand deletion of your personal data'
       );
     });
   });

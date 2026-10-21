@@ -14,6 +14,7 @@ import {
   getVerifiedRecipientById,
 } from '@/lib/docket/chooser-routing';
 import { trackFunnelEvent } from '@/lib/telemetry';
+import { useTemplateAvailability } from '@/src/hooks/useTemplateAvailability';
 
 export interface InteractiveHomeWorkbenchProps {
   initialSlug?: string;
@@ -41,9 +42,22 @@ const SAMPLE_PREVIEW_VALUES: Record<string, string> = {
   propertyState: 'CA',
 };
 
-export function InteractiveHomeWorkbench({
-  initialSlug,
-}: InteractiveHomeWorkbenchProps) {
+export function InteractiveHomeWorkbench(props: InteractiveHomeWorkbenchProps) {
+  const availability = useTemplateAvailability();
+  const availableSlugs = useMemo(() => availability.data?.templates.filter(entry => entry.available).map(entry => entry.slug) || [], [availability.data]);
+  if (availability.loading || availability.error || availableSlugs.length === 0) {
+    return <section id="workbench" className="mx-auto max-w-7xl px-4 py-6 text-white">
+      <h1 className="text-2xl font-serif font-bold sm:text-3xl">Make it formal. We’ll print and mail it.</h1>
+      <p role={availability.error ? 'alert' : 'status'} className="mt-4 text-slate-300">{availability.loading ? 'Loading available letters…' : availability.error || 'Letters are temporarily unavailable. Please check back later.'}</p>
+      {!availability.loading && <button type="button" onClick={availability.refresh} className="mt-4 rounded-lg bg-sky-700 px-4 py-2">Check again</button>}
+    </section>;
+  }
+  return <AvailableHomeWorkbench initialSlug={availableSlugs.includes(props.initialSlug || '') ? props.initialSlug : undefined} availableSlugs={availableSlugs} />;
+}
+
+function AvailableHomeWorkbench({
+  initialSlug, availableSlugs,
+}: InteractiveHomeWorkbenchProps & { availableSlugs: string[] }) {
   const router = useRouter();
 
   // Selection state received from HomeLetterChooser
@@ -85,8 +99,9 @@ export function InteractiveHomeWorkbench({
     () =>
       ALL_NOTICE_CARTRIDGES.find(
         (n) => n.slug === 'security-deposit-return-demand-letter'
-      ) || ALL_NOTICE_CARTRIDGES[0],
-    []
+        && availableSlugs.includes(n.slug)
+      ) || ALL_NOTICE_CARTRIDGES.find(n => availableSlugs.includes(n.slug))!,
+    [availableSlugs]
   );
 
   // Active notice cartridge for preview rendering
@@ -112,7 +127,7 @@ export function InteractiveHomeWorkbench({
    */
   const effectivePreviewValues = useMemo(() => {
     if (!selectedSlug) {
-      return SAMPLE_PREVIEW_VALUES;
+      return activeNotice.slug === 'security-deposit-return-demand-letter' ? SAMPLE_PREVIEW_VALUES : {};
     }
 
     const values: Record<string, string> = {};
@@ -129,7 +144,7 @@ export function InteractiveHomeWorkbench({
       values.bureauEntityId = selectedRecipient.id;
     }
     return values;
-  }, [selectedSlug, selectedRecipient]);
+  }, [selectedSlug, selectedRecipient, activeNotice.slug]);
 
   // Interpolated AST document for LivePaperSheet
   const interpolatedDoc = useMemo(() => {
@@ -146,7 +161,7 @@ export function InteractiveHomeWorkbench({
    */
   const buildHydrationUrl = useCallback(
     (focusKey?: string) => {
-      const targetSlug = selectedSlug || 'security-deposit-return-demand-letter';
+      const targetSlug = selectedSlug || defaultNotice.slug;
       const baseUrl = buildChooserWorkspaceUrl(targetSlug, selectedRecipientId);
       const url = new URL(baseUrl, 'https://docketstamp.com');
 
@@ -163,7 +178,7 @@ export function InteractiveHomeWorkbench({
 
       return `${url.pathname}${url.search}`;
     },
-    [selectedSlug, selectedRecipientId, userValues]
+    [selectedSlug, selectedRecipientId, userValues, defaultNotice.slug]
   );
 
   // Clicking an interactive highlighted blank on the preview sheet
@@ -191,10 +206,10 @@ export function InteractiveHomeWorkbench({
       {/* Baseline Hero Copy per §6 */}
       <div className="mb-4 sm:mb-5">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white tracking-tight">
-          Prepare your letter. We’ll print and mail it.
+          Make it formal. We’ll print and mail it.
         </h1>
         <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-          Choose a letter, add your details, and review it before paying. Printing and postage included. Certified Mail available.
+          Demand your deposit back, dispute an error, or send a cancellation notice. Prepare and review your letter, then send it by USPS. Certified Mail available.
         </p>
       </div>
 
@@ -204,6 +219,7 @@ export function InteractiveHomeWorkbench({
         <div className="lg:col-span-6 xl:col-span-6 space-y-3">
           <HomeLetterChooser
             initialSlug={initialSlug}
+            availableSlugs={availableSlugs}
             onSelectionChange={handleSelectionChange}
           />
 

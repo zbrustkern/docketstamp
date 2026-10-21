@@ -8,6 +8,8 @@ import { getVerifiedRecipientById } from '@/src/lib/docket/data/verified-recipie
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/src/lib/docket/guardrails';
 import { firestoreDb, sanitizeFirestoreData } from '@/lib/firebase-admin';
 import { recordServerBusinessEvent } from '@/lib/admin-console/measurement/store';
+import { createStagedDraftUnderPolicy, checkTemplateAvailability } from '@/lib/template-policy-store';
+import { PolicyNexus } from '@/src/lib/docket/template-policy';
 
 export interface PostalAddressInput {
   name?: string;
@@ -38,6 +40,10 @@ export interface StagedDraftRecord {
   customRecipient?: PostalAddressInput;
   sender?: PostalAddressInput;
   fieldValues: Record<string, any>;
+  policyNexus?: PolicyNexus;
+  policyRevision?: number;
+  templateContentDigest?: string;
+  policyDecisionAt?: string;
   recommendedTier: MailTierId;
   missingRequiredFields: string[];
   previewSummary: string;
@@ -139,6 +145,30 @@ export async function getStagedDraft(stageId: string): Promise<StagedDraftRecord
   return record;
 }
 
+export async function retrieveStagedDraft(stageId: string, suppliedNexus: PolicyNexus = {}) {
+  const draft = await getStagedDraft(stageId);
+  if (!draft) return { ok: false as const, status: 404, code: 'NOT_FOUND', error: 'Staged draft not found or expired.' };
+  const storedNexus = draft.policyNexus || {};
+  const storedResidence = typeof draft.fieldValues?.consumerResidenceState === 'string'
+    ? draft.fieldValues.consumerResidenceState : storedNexus.consumerResidenceState;
+  const storedProperty = typeof draft.fieldValues?.propertyState === 'string' ? draft.fieldValues.propertyState : storedNexus.propertyState;
+  const incomingProperty = suppliedNexus.propertyState;
+  if (storedProperty && incomingProperty && storedProperty.trim().toUpperCase() !== incomingProperty.trim().toUpperCase()) {
+    return { ok: false as const, status: 400, code: 'PROPERTY_STATE_CONFLICT', error: 'The property state conflicts with the staged notice. Start a new draft to change the property.' };
+  }
+  const nexus: PolicyNexus = {
+    consumerResidenceState: suppliedNexus.consumerResidenceState || storedResidence,
+    propertyState: storedProperty || incomingProperty || storedNexus.propertyState,
+  };
+  const canonicalSlug = getNoticeBySlug(draft.noticeSlug)?.slug || draft.noticeSlug;
+  const check = await checkTemplateAvailability(canonicalSlug, nexus);
+  if (!check.decision.allowed) return { ok: false as const, status: 403, code: check.decision.code, error: check.decision.message, details: { requiredFields: check.decision.requiredFields } };
+  const fieldValues = { ...draft.fieldValues };
+  if (nexus.consumerResidenceState) fieldValues.consumerResidenceState = nexus.consumerResidenceState;
+  if (nexus.propertyState) fieldValues.propertyState = nexus.propertyState;
+  return { ok: true as const, draft: { ...draft, noticeSlug: canonicalSlug, fieldValues, policyNexus: nexus } };
+}
+
 export async function createStagedDraft(body: StageDraftRequest): Promise<StageDraftResult> {
   // 1. Guardrail check: assertNonFitnessEntity
   try {
@@ -210,6 +240,19 @@ export async function createStagedDraft(body: StageDraftRequest): Promise<StageD
 
   // 4. Validate provided fieldValues against partial Zod schema
   const fieldValues = body.fieldValues || {};
+  const explicitResidence = (fieldValues as any).consumerResidenceState;
+  const declaredProperty = (fieldValues as any).propertyState;
+  const citationProperty = (fieldValues as any).propertyState;
+  if (typeof explicitResidence !== 'undefined' && (typeof explicitResidence !== 'string' || !/^[A-Za-z]{2}$/.test(explicitResidence.trim()))) {
+    return { success: false, status: 400, error: 'Choose a valid state where the consumer lives.', code: 'INVALID_LOCATION', details: { requiredFields: ['consumerResidenceState'] } };
+  }
+  if (typeof declaredProperty !== 'undefined' && (typeof declaredProperty !== 'string' || !/^[A-Za-z]{2}$/.test(declaredProperty.trim()))) {
+    return { success: false, status: 400, error: 'Choose a valid state where the property is located.', code: 'INVALID_LOCATION', details: { requiredFields: ['propertyState'] } };
+  }
+  const policyNexus: PolicyNexus = {
+    consumerResidenceState: typeof explicitResidence === 'string' ? explicitResidence.trim().toUpperCase() : undefined,
+    propertyState: typeof citationProperty === 'string' ? citationProperty.trim().toUpperCase() : undefined,
+  };
   if (notice.zodSchema) {
     let parseResult: any = { success: true };
     try {
@@ -278,6 +321,7 @@ export async function createStagedDraft(body: StageDraftRequest): Promise<StageD
     customRecipient: body.customRecipient,
     sender: body.sender,
     fieldValues,
+    policyNexus,
     recommendedTier,
     missingRequiredFields,
     previewSummary,
@@ -288,7 +332,12 @@ export async function createStagedDraft(body: StageDraftRequest): Promise<StageD
   };
 
   try {
-    await persistDraft(record);
+    const stored = await createStagedDraftUnderPolicy(record as any, notice.slug, policyNexus);
+    if (!stored.ok) return { success: false, status: 403, error: stored.decision.message, code: stored.decision.code, details: { requiredFields: stored.decision.requiredFields } };
+    record.policyRevision = stored.revision;
+    record.templateContentDigest = stored.contentDigest;
+    record.policyDecisionAt = new Date().toISOString();
+    inMemoryDrafts.set(record.stageId, record);
   } catch {
     console.error('[stage-store] Durable stage write failed; no resume link returned.');
     return {

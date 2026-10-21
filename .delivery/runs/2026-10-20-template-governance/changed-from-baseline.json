@@ -1,0 +1,106 @@
+[
+  {
+    "path": "app/.well-known/openapi.json/route.ts",
+    "status": "changed"
+  },
+  {
+    "path": "app/admin/page.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "app/api/docket/lock-and-intent/route.ts",
+    "status": "changed"
+  },
+  {
+    "path": "app/api/docket/stage/[stageId]/route.ts",
+    "status": "changed"
+  },
+  {
+    "path": "app/api/docket/stage/stage-store.ts",
+    "status": "changed"
+  },
+  {
+    "path": "app/api/mcp/route.ts",
+    "status": "changed"
+  },
+  {
+    "path": "app/llms.txt/route.ts",
+    "status": "changed"
+  },
+  {
+    "path": "app/notices/[slug]/page.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "app/sitemap.ts",
+    "status": "changed"
+  },
+  {
+    "path": "components/account/NoticePrefillChooser.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "docs/DOCKETSTAMP_AGENTIC_EXPANSION.md",
+    "status": "changed"
+  },
+  {
+    "path": "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md",
+    "status": "changed"
+  },
+  {
+    "path": "docs/sprints/ledger.json",
+    "status": "changed"
+  },
+  {
+    "path": "lib/account/notice-prefill.ts",
+    "status": "changed"
+  },
+  {
+    "path": "lib/types.ts",
+    "status": "changed"
+  },
+  {
+    "path": "src/components/docket/CheckoutModal.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "src/components/docket/DocumentWorkspace.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "src/components/docket/HomeLetterChooser.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "src/components/docket/InteractiveHomeWorkbench.tsx",
+    "status": "changed"
+  },
+  {
+    "path": "src/hooks/useAgentHydration.ts",
+    "status": "changed"
+  },
+  {
+    "path": "src/hooks/useWebMcpTools.ts",
+    "status": "changed"
+  },
+  {
+    "path": "src/lib/docket/checkout-errors.ts",
+    "status": "changed"
+  },
+  {
+    "path": "src/lib/docket/draft-recovery.ts",
+    "status": "changed"
+  },
+  {
+    "path": "tests/agent-stage-mcp.test.ts",
+    "status": "changed"
+  },
+  {
+    "path": "tests/agentic-api-mcp.test.ts",
+    "status": "changed"
+  },
+  {
+    "path": "tests/sprint-0003-integrity-evidence.test.ts",
+    "status": "changed"
+  }
+]

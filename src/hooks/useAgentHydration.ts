@@ -235,6 +235,7 @@ export function useAgentHydration({
       'recipientState',
       'recipientZip',
       'propertyState',
+      'consumerResidenceState',
       'statuteCitation',
       'statuteDeadline',
       'docketId',
@@ -281,18 +282,23 @@ export function useAgentHydration({
     }
 
     // Avoid duplicate fetching if already fetched and no error
-    if (fetchedStageIdRef.current === activeStageId && !stageError) {
+    const fetchKey = `${activeStageId}:${currentValues.consumerResidenceState || ''}:${currentValues.propertyState || ''}`;
+    if (fetchedStageIdRef.current === fetchKey && !stageError) {
       return;
     }
 
     let isMounted = true;
-    fetchedStageIdRef.current = activeStageId;
+    fetchedStageIdRef.current = fetchKey;
     setIsLoadingStage(true);
     setStageError(null);
 
     async function fetchStagedDraft() {
       try {
-        const res = await fetch(`/api/docket/stage/${encodeURIComponent(activeStageId!)}`);
+        const nexus = new URLSearchParams();
+        for (const key of ['consumerResidenceState', 'propertyState']) {
+          if (currentValues[key]) nexus.set(key, currentValues[key]);
+        }
+        const res = await fetch(`/api/docket/stage/${encodeURIComponent(activeStageId!)}${nexus.size ? `?${nexus}` : ''}`, { cache: 'no-store' });
         if (!res.ok) {
           throw new Error(`Draft staging returned status ${res.status}`);
         }
@@ -374,7 +380,7 @@ export function useAgentHydration({
     return () => {
       isMounted = false;
     };
-  }, [activeStageId, notice, fetchCount]);
+  }, [activeStageId, notice, fetchCount, currentValues.consumerResidenceState, currentValues.propertyState]);
 
   // Combine hydration layers:
   // Initial -> Server Stage -> Direct URL Query Params (Query params take top priority)

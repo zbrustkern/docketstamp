@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: NoticePageProps): Promise<Met
   }
 
   return {
-    title: `${notice.title} | USPS Mailing Options | DocketStamp`,
+    title: `${notice.title} | USPS Mail`,
     description: notice.seoMeta.description || notice.shortDescription,
     keywords: notice.seoMeta.targetKeywords,
     alternates: {

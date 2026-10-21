@@ -561,6 +561,7 @@ export function resolveInitialWorkspaceDraft({
       'senderState',
       'senderZip',
       'propertyState',
+      'consumerResidenceState',
       'docketId',
     ]);
 

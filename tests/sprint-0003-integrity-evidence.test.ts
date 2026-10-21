@@ -73,6 +73,10 @@ test('locks exact Lob HTML with server-generated SHA-256 and adoption evidence',
   const order = await getOrderById(result.orderId);
 
   assert.ok(order?.documentHtml);
+  assert.equal(Number.isInteger(order?.templatePolicyRevision), true);
+  assert.match(order?.templateContentDigest || '', /^[a-f0-9]{64}$/);
+  assert.deepEqual(order?.policyNexus, { propertyState: 'IN' });
+  assert.equal(Number.isFinite(Date.parse(order?.policyDecisionAt || '')), true);
   assert.ok(order.documentIntegrityEvidence);
   const evidence = order.documentIntegrityEvidence;
   assert.equal(evidence.schemaVersion, 1);

@@ -65,8 +65,8 @@ export const HARDWARE_OEM_PURPOSE_OPTIONS: CompanyPurposeOption[] = [
   {
     slug: 'product-complaint-refund-request',
     promptSlug: 'smart-device-degraded-functionality-refund-demand',
-    label: 'Request a product or service review and refund',
-    description: 'General complaint and refund request; it does not invoke an agreement-specific dispute process.',
+    label: 'Demand a refund for a product or service issue',
+    description: 'Describe what happened and demand a refund; this does not invoke an agreement-specific dispute process.',
   },
   {
     slug: 'arbitration-opt-out-procedure-request',
@@ -77,22 +77,22 @@ export const HARDWARE_OEM_PURPOSE_OPTIONS: CompanyPurposeOption[] = [
   {
     slug: 'personal-data-deletion-request',
     promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
-    label: 'Ask a company to review a data-deletion request',
-    description: 'General account-related request; privacy-law eligibility and process are not determined.',
+    label: 'Demand deletion of your personal data',
+    description: 'Make a deletion demand; eligibility, verification, exceptions, and submission methods may apply.',
   },
 ];
 
 /**
- * Curated display definitions for all 9 notice cartridges.
- * Exact titles and subtitles conform to §7.4 and S2 specifications.
+ * Curated display definitions for all 9 compiled cartridges.
+ * Titles describe the user-requested action without promising a legal effect.
  */
 export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
   {
     slug: 'security-deposit-accounting-request',
     promptSlug: 'security-deposit-return-demand-letter',
     aliases: ['security-deposit-return-demand-letter', 'security-deposit-return', 'security-deposit-demand'],
-    displayTitle: 'Request deposit accounting and any balance due',
-    subtitle: 'Ask for an itemized security-deposit accounting and any balance you believe remains due.',
+    displayTitle: 'Demand a deposit accounting and any balance due',
+    subtitle: 'Demand an itemized accounting and request any balance you believe remains due.',
     searchAliases: [
       'security deposit',
       'deposit return',
@@ -117,8 +117,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'fcra-credit-dispute',
       'credit-bureau-dispute-letter-fcra-611',
     ],
-    displayTitle: 'Dispute a credit-report item',
-    subtitle: 'Request review of an item you identify as inaccurate.',
+    displayTitle: 'Dispute an error on your credit report',
+    subtitle: 'Ask the credit bureau to investigate information you identify as inaccurate.',
     searchAliases: [
       'credit report',
       'credit bureau',
@@ -145,8 +145,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'fdcpa-debt-validation',
       'debt-validation-demand-letter-fdcpa-809',
     ],
-    displayTitle: 'Request information about a disputed debt',
-    subtitle: 'General request for balance review and account information.',
+    displayTitle: 'Dispute a debt and demand verification',
+    subtitle: 'Dispute a collection claim and demand written verification; legal protections depend on coverage and timing.',
     searchAliases: [
       'debt collector',
       'debt validation',
@@ -170,8 +170,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'service-cancellation',
       'contract-membership-cancellation-notice',
     ],
-    displayTitle: 'Request service or policy cancellation',
-    subtitle: 'Written request to cancel a named service or policy; account terms may require separate steps.',
+    displayTitle: 'Cancel a service or policy in writing',
+    subtitle: 'Give written notice requesting cancellation and ask for confirmation of the effective date.',
     searchAliases: [
       'cancel service',
       'cancel contract',
@@ -200,8 +200,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'repair-maintenance-demand',
       'notice-of-intent-to-withhold-or-repair-and-deduct',
     ],
-    displayTitle: 'Request repairs',
-    subtitle: 'Request inspection or maintenance from a landlord or property manager.',
+    displayTitle: 'Demand repairs from your landlord',
+    subtitle: 'Describe the condition you report, demand repairs, and request a written schedule.',
     searchAliases: [
       'repair',
       'repairs',
@@ -230,8 +230,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'tenant-vacate-notice',
       'lease-termination-non-renewal-notice',
     ],
-    displayTitle: 'Give move-out notice',
-    subtitle: 'Written notice describing your current plan to move out.',
+    displayTitle: 'Give formal move-out notice',
+    subtitle: 'Tell your landlord when you plan to move out; check your lease and applicable rules for requirements.',
     searchAliases: [
       'move out',
       'intent to vacate',
@@ -259,8 +259,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'feature-paywall-refund',
       'smart-device-degraded-functionality-refund-demand',
     ],
-    displayTitle: 'Request a product or service review and refund',
-    subtitle: 'General complaint and refund request; it does not invoke an agreement-specific dispute process.',
+    displayTitle: 'Demand a refund for a product or service issue',
+    subtitle: 'Describe what happened and demand a refund; this does not satisfy an agreement-specific dispute process.',
     searchAliases: [
       'hardware refund',
       'device refund',
@@ -321,8 +321,8 @@ export const CHOOSER_LETTERS: ChooserLetterMetadata[] = [
       'statutory-data-deletion',
       'ccpa-gdpr-data-deletion-opt-out-request',
     ],
-    displayTitle: 'Ask a company to review a data-deletion request',
-    subtitle: 'General account-related request; privacy-law eligibility and process are not determined.',
+    displayTitle: 'Demand deletion of your personal data',
+    subtitle: 'Demand deletion and ask the company to identify any verification or designated submission process.',
     searchAliases: [
       'data deletion',
       'delete my data',

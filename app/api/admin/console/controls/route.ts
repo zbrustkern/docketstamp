@@ -6,7 +6,7 @@ import { AdminAccessError, requireCapability, serverEnvironment } from '@/lib/ad
 import { ClassificationSchema } from '@/lib/admin-console/contracts';
 import { getFeatureFlagsState, updateFeatureFlag } from '@/lib/feature-flags';
 
-const registry = [{key:'ceoConsoleV1',consumer:null,effect:'Reserved for S7; no active console consumer yet',active:false},{key:'reworkV3Experience',consumer:null,effect:'Historical flag; no active notice-page consumer',active:false}];
+const registry = [{key:'ceoConsoleV1',consumer:null,effect:'Reserved for S7; no active console consumer yet',active:false}];
 const collections={decisions:'business_decisions_v1',costs:'cost_records_v1',classifications:'identity_classifications_v1'};
 export async function GET(req:NextRequest){
   try{

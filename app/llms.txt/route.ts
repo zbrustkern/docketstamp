@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAllNotices, DOCKET_PRICING_TIERS } from '@/src/lib/docket/notices';
 import { getAllVerifiedRecipients } from '@/src/lib/docket/data/verified-recipients';
+import { getPublicTemplateAvailability } from '@/lib/template-policy-store';
 
 export const dynamic = 'force-dynamic';
 
-function generateLlmsTxt(): string {
+function generateLlmsTxt(availabilityBySlug: Map<string, { requiresResidence: boolean; requiresProperty: boolean; available: boolean }>): string {
   const notices = getAllNotices();
   const recipients = getAllVerifiedRecipients();
 
@@ -24,6 +25,8 @@ function generateLlmsTxt(): string {
 - **Recommended USPS Tier**: \`${n.recommendedTier}\` (${DOCKET_PRICING_TIERS[n.recommendedTier]?.formattedPrice || '$19.95'})
 - **Recipient Selection**: ${n.recipientMode.startsWith('manual') ? 'Enter recipient details manually and confirm the correct recipient and submission channel.' : 'A directory suggestion may be selected; confirm the correct recipient and any required submission channel.'}
 - **Description**: ${n.shortDescription}
+- **Current availability**: ${availabilityBySlug.get(n.slug)?.available ? 'enabled under current policy' : 'currently unavailable or policy check required'}
+- **Location inputs**: ${availabilityBySlug.get(n.slug)?.requiresResidence ? 'consumerResidenceState required by current geography rules' : 'no residence state currently required'}; ${availabilityBySlug.get(n.slug)?.requiresProperty ? 'propertyState required by current geography rules' : 'no property state currently required'}
 - **Fields**:
 ${fieldsList || '    - (No specific dynamic fields)'}
 `;
@@ -42,13 +45,14 @@ ${fieldsList || '    - (No specific dynamic fields)'}
 > **Core Architectural Invariant**: "Agents stage, humans sign and pay."
 > AI agents (Claude, ChatGPT, cursor agents, local CLI tools) can stage partially or fully populated document requests using user-provided facts, without payment credentials.
 > The agent delivers a 1-Tap Review Link to the human user: \`https://docketstamp.com/notices/[slug]?stage=DS-STAGE-XXXXXX\`.
-> The human user reviews the draft, adopts an electronic signature, and completes payment before a USPS mailing order is submitted. Provider and USPS events are reported separately when available.
+> The human user reviews the rendered letter, adopts an electronic signature, and completes payment before a USPS mailing order is submitted. Provider and USPS events are reported separately when available.
 
 ---
 
 ## 1. Template Scope and Limitations
 - **UPL Compliance**: DocketStamp is an automated self-help document preparation and USPS mailing utility, NOT a law firm, and does not provide legal representation or legal advice. Templates are deterministic and use facts supplied by the user.
 - **Strict Conflict-of-Interest Exclusion (NAICS 713940)**: DocketStamp excludes gyms, health clubs, fitness centers, and fitness membership billing disputes (NAICS 713940). Staged requests referencing gyms or fitness clubs will be rejected with HTTP 400 (\`CONFLICT_OF_INTEREST\`). A listed company or address does not confirm that a particular legal or contract-required channel is supported.
+- **Current template availability**: Check \`GET https://docketstamp.com/api/docket/availability\` before staging. Availability can change; server staging and checkout enforce the current policy. When requested, provide \`consumerResidenceState\` as the consumer's explicitly declared residence; for tenant notices, \`propertyState\` identifies the rental property. Neither state is inferred from postal addresses or IP.
 
 ---
 
@@ -134,7 +138,7 @@ Example: \`https://docketstamp.com/notices/product-complaint-refund-request?reci
 
 ---
 
-## 6. Document Template Catalog (${notices.length} Active Templates)
+## 6. Compiled Letter Catalog (${notices.length} Templates; consult current availability before staging)
 
 ${noticesListMarkdown}
 
@@ -149,12 +153,22 @@ ${recipientsTableRows}
 }
 
 export async function GET() {
-  const body = generateLlmsTxt();
+  let availabilityBySlug: Map<string, { requiresResidence: boolean; requiresProperty: boolean; available: boolean }>;
+  try {
+    const availability = await getPublicTemplateAvailability();
+    availabilityBySlug = new Map(availability.templates.map((entry) => [entry.slug, entry]));
+  } catch {
+    return new NextResponse('DocketStamp availability is temporarily unavailable; retry discovery before preparing a letter.\n', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
+  const body = generateLlmsTxt(availabilityBySlug);
   return new NextResponse(body, {
     status: 200,
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'no-store, max-age=0',
     },
   });
 }

@@ -33,20 +33,20 @@ export const biometricPrivacyDeletionNotice: NoticeTemplateDefinition = {
   slug: 'personal-data-deletion-request',
   aliases: ['statutory-health-and-biometric-data-deletion-demand', 'biometric-privacy-deletion', 'health-data-erasure', 'statutory-data-deletion', 'ccpa-gdpr-data-deletion-opt-out-request'],
   category: 'consumer_rights',
-  title: 'Personal Data Deletion Request',
-  shortDescription: 'A general request asking a company to review deletion of data associated with an account. It does not establish eligibility under a particular privacy law or submission channel.',
-  documentHeaderTitle: 'REQUEST TO REVIEW PERSONAL DATA DELETION',
-  reLineTemplate: 'RE: Personal Data Request — Account: {{accountEmailOrId}}',
+  title: 'Personal Data Deletion Demand',
+  shortDescription: 'Put your data-deletion demand and consent revocation in writing.',
+  documentHeaderTitle: 'PERSONAL DATA DELETION DEMAND',
+  reLineTemplate: 'RE: Personal Data Deletion Demand — Account: {{accountEmailOrId}}',
   recommendedTier: 'certified',
   recipientMode: 'verified_or_manual_corp',
   usesStateStatuteLookup: false,
   seoMeta: {
-    title: 'Personal Data Deletion Request Letter | DocketStamp',
-    description: 'Prepare a general request for a company to review deletion of data associated with an account. Applicable rights, exceptions, and submission channels vary.',
+    title: 'Personal Data Deletion Demand | USPS Mail | DocketStamp',
+    description: 'Demand deletion of personal data associated with an account and revoke consent for processing where applicable.',
     targetKeywords: [
       'personal data deletion request letter',
       'privacy request letter',
-      'request to delete account data',
+      'demand deletion of personal data',
     ],
   },
   fields: [
@@ -111,8 +111,7 @@ export const biometricPrivacyDeletionNotice: NoticeTemplateDefinition = {
   ],
   zodSchema: biometricPrivacyDeletionSchema,
   bodyParagraphs: [
-    'I am writing about the {{deviceOrAppCategory}} associated with my account identifier {{accountEmailOrId}}.',
-    'Please review my request to delete personal data associated with this account to the extent deletion is available under applicable law. If you retain some information, please identify the categories retained, the basis for retention, and the applicable retention period, if available.',
-    'This is a general request. It does not establish eligibility under any particular privacy law, confirm that data is covered as health or biometric data, or replace a provider-required identity check or submission channel.',
+    'To the extent applicable privacy law covers this request, I demand deletion of personal data associated with my {{deviceOrAppCategory}} and account {{accountEmailOrId}}, and revoke consent for processing where applicable.',
+    'Please confirm what data you delete. If you retain any data, explain what is retained and why, including its retention basis and period if available. Tell me what verification or designated submission method you require.',
   ],
 };

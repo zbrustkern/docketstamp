@@ -118,6 +118,11 @@ export interface Order {
   docketNumber?: string;
   noticeId?: string;
   noticeType?: string;
+  /** Availability decision evidence captured atomically with the frozen checkout order. */
+  templatePolicyRevision?: number;
+  templateContentDigest?: string;
+  policyNexus?: { consumerResidenceState?: string; propertyState?: string };
+  policyDecisionAt?: string;
   serviceLevel?: "FIRST_CLASS" | "CERTIFIED" | "CERTIFIED_RETURN_RECEIPT";
   lobLetterId?: string;
   /** Explicit provider identity for a postal reference. Legacy aliases are never inferred as Lob. */
@@ -549,15 +554,4 @@ export interface AdminMetrics {
   valuationAssumptions?: ValuationHeuristicAssumptions;
   reportingQuality?: AdminReportingQuality;
   recentOrders: Order[];
-}
-
-export interface FeatureFlagsMap {
-  reworkV3Experience: boolean;
-  [key: string]: boolean;
-}
-
-export interface FeatureFlagsState {
-  flags: FeatureFlagsMap;
-  updatedAt?: number;
-  updatedBy?: string;
 }
