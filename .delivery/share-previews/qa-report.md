@@ -12,6 +12,12 @@ Account and admin returned 200 with noindex/nofollow/nocache, no canonical link,
 
 The image contact sheet was visually inspected. The nine notice variants remain consistent with the home artwork, with clear headline hierarchy and legible brand marks at the supplied review size. No implementation blocker was found.
 
+## Final thumbnail-size review
+
+Read-only boards were rendered from the final public assets at 600×315 and 300×158 for the home card and all nine notice cards, and at 160×160 for the square card. At 600×315 every card has clear headline hierarchy and recognizable DS/DOCKETSTAMP branding. At 300×158 the brand mark and primary headline remain recognizable across every wide card; the smallest disclosure and supporting copy are naturally secondary at this size. At 160×160 the square card keeps the “Make it formal” headline readable and the DS mark visible; supporting copy is too small to rely on, which is acceptable for the tiny preview. No clipping or compositional issue observed.
+
+Boards: `wide-600x315.png`, `wide-300x158.png`, and `square-160x160.png`.
+
 Run again with:
 
 ```sh
