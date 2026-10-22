@@ -17,12 +17,13 @@ import { DOCKET_PRICING_TIERS } from '@/src/lib/docket/notices';
 import { HeaderDocketLookup } from '@/src/components/docket/HeaderDocketLookup';
 import { HeaderUserNav } from '@/src/components/docket/HeaderUserNav';
 import { InteractiveHomeWorkbench } from '@/src/components/docket/InteractiveHomeWorkbench';
+import { publicShareMetadata, HOME_SHARE_TITLE, HOME_SHARE_DESCRIPTION } from '@/src/lib/docket/share-metadata';
 
-export const metadata = {
-  title: 'DocketStamp | Prepare and Mail Formal Letters via USPS',
-  description:
-    'Prepare and review a formal letter, then send it using an available USPS mailing service. DocketStamp is not a law firm and does not provide legal advice.',
-};
+export const metadata = publicShareMetadata({
+  title: HOME_SHARE_TITLE,
+  description: HOME_SHARE_DESCRIPTION,
+  path: '/',
+});
 
 export default function HomePage() {
   const pricingTiers = [

@@ -108,6 +108,16 @@
       "chapter_id": null,
       "run_id": "2026-10-20-template-governance",
       "updated_at": "2026-10-21T01:25:35.930739+00:00"
+    },
+    {
+      "id": "SPRINT-0014",
+      "title": "DocketStamp thumbnails and link previews",
+      "path": "docs/sprints/SPRINT-0014.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-22-share-previews",
+      "updated_at": "2026-10-22",
+      "approval_status": "approved_2026-10-22"
     }
   ]
 }

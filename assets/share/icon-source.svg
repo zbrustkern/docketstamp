@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <style>
+    @font-face { font-family: 'JetBrains Mono'; src: url(data:font/woff2;base64,{{JETBRAINS_MONO_WOFF2_BASE64}}) format('woff2'); font-weight: 700; }
+    text { font-family: 'JetBrains Mono', monospace; font-size: 190px; font-weight: 700; }
+  </style>
+  <rect width="512" height="512" rx="108" fill="#0284C7" />
+  <text x="256" y="256" text-anchor="middle" dominant-baseline="central" fill="#FFFFFF">DS</text>
+</svg>
