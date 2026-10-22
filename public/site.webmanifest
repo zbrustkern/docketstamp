@@ -1,7 +1,7 @@
 {
-  "name": "DocketStamp - Official Document & Certified Mail Dispatch Registry",
+  "name": "DocketStamp — Letter Preparation & USPS Mailing",
   "short_name": "DocketStamp",
-  "description": "Deterministic legal notice preparation and USPS Certified Mail dispatch registry.",
+  "description": "Self-help formal letter preparation and USPS mailing. Prepare and review your letter online.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F172A",

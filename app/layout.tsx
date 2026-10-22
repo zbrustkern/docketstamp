@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { MarketingTags } from "@/components/MarketingTags";
+import { getPublicOrigin, publicShareMetadata, SHARE_IMAGES, HOME_SHARE_TITLE, HOME_SHARE_DESCRIPTION } from "@/src/lib/docket/share-metadata";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://docketstamp.com";
+const appUrl = getPublicOrigin();
 const isStaging =
   process.env.ENVIRONMENT === "staging" ||
   appUrl.includes("staging") ||
@@ -32,14 +33,21 @@ const isStaging =
 
 const metaDomainVerification = process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION;
 
+const rootShareMetadata = publicShareMetadata({
+  title: HOME_SHARE_TITLE,
+  description: HOME_SHARE_DESCRIPTION,
+  path: "/",
+  image: SHARE_IMAGES.home,
+});
+
 export const metadata: Metadata = {
+  ...rootShareMetadata,
   metadataBase: new URL(appUrl),
   title: {
-    default: "Prepare and Mail Formal Letters | DocketStamp",
+    default: "Make it formal. We’ll print and mail it. | DocketStamp",
     template: "%s | DocketStamp",
   },
-  description:
-    "Prepare and review a formal letter, then choose an available USPS mailing service. DocketStamp is an automated self-help document preparation service, not a law firm.",
+  description: HOME_SHARE_DESCRIPTION,
   applicationName: "DocketStamp",
   authors: [{ name: "Western Amalgamated" }],
   creator: "Western Amalgamated",
@@ -55,9 +63,6 @@ export const metadata: Metadata = {
     "document preparation service",
     "written contract cancellation",
   ],
-  alternates: {
-    canonical: appUrl,
-  },
   robots: isStaging
     ? {
         index: false,
@@ -69,31 +74,6 @@ export const metadata: Metadata = {
         follow: true,
       },
   ...(metaDomainVerification ? { verification: { other: { "facebook-domain-verification": metaDomainVerification } } } : {}),
-  openGraph: {
-    title: "Prepare and Mail Formal Letters | DocketStamp",
-    description:
-      "Prepare and review a formal letter, then choose an available USPS mailing service. DocketStamp is an automated self-help document preparation service, not a law firm.",
-    url: appUrl,
-    siteName: "DocketStamp",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "DocketStamp document preparation and mailing service",
-        type: "image/png",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Prepare and Mail Formal Letters | DocketStamp",
-    description:
-      "Prepare and review a formal letter, then choose an available USPS mailing service. DocketStamp is an automated self-help document preparation service, not a law firm.",
-    images: ["/og-image.png"],
-  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },

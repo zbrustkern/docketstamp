@@ -1,14 +1,13 @@
 import type { Metadata } from 'next';
 import { CompanyDirectoryClient } from '@/src/components/docket/CompanyDirectoryClient';
+import { publicShareMetadata } from '@/src/lib/docket/share-metadata';
 
-export const metadata: Metadata = {
-  title: 'Pre-Addressed Corporate Recipient Directory | DocketStamp',
+export const metadata: Metadata = publicShareMetadata({
+  title: 'Pre-Addressed Corporate Recipient Directory',
   description:
-    'Browse 38 institutional recipient listings for credit-report disputes, debt-dispute information requests, corporate cancellations, hardware warranty requests, and letters asking about arbitration opt-out procedures.',
-  alternates: {
-    canonical: 'https://docketstamp.com/companies',
-  },
-};
+    'Browse recipient listings for consumer document-preparation requests. Verify the recipient and address for your situation before preparing a letter.',
+  path: '/companies',
+});
 
 export default function CompaniesPage() {
   return <CompanyDirectoryClient />;

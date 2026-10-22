@@ -1,14 +1,10 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { privatePageMetadata } from "@/src/lib/docket/share-metadata";
 
-export const metadata: Metadata = {
-  title: "Order Tracker | DocketStamp",
-  description: "Track your USPS First-Class or Certified Mail dispatch and postal delivery status.",
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-  },
-};
+export const metadata: Metadata = privatePageMetadata(
+  "Order Tracker",
+  "View your order and any postal status information available.",
+);
 
 export default function OrderLayout({
   children,

@@ -1,0 +1,66 @@
+{
+  "home": {
+    "alt": "DocketStamp share card: Make it formal. We’ll print and mail it.",
+    "source": "approved/home.png"
+  },
+  "square": {
+    "alt": "DocketStamp square share card: Make it formal. We’ll print and mail it.",
+    "source": "approved/square.png"
+  },
+  "routeCards": [
+    {
+      "slug": "tenant-notice-of-intent-to-vacate",
+      "eyebrow": "TENANT MOVE-OUT NOTICE",
+      "headline": ["Give formal", "move-out notice"],
+      "alt": "DocketStamp move-out notice preparation card"
+    },
+    {
+      "slug": "security-deposit-accounting-request",
+      "eyebrow": "SECURITY DEPOSIT",
+      "headline": ["Demand your security", "deposit back"],
+      "alt": "DocketStamp security deposit demand letter preparation card"
+    },
+    {
+      "slug": "tenant-repair-and-maintenance-notice",
+      "eyebrow": "TENANT REPAIR REQUEST",
+      "headline": ["Demand repairs", "from your landlord"],
+      "alt": "DocketStamp tenant repair request preparation card"
+    },
+    {
+      "slug": "credit-report-dispute-request",
+      "eyebrow": "CREDIT REPORT DISPUTE",
+      "headline": ["Dispute a", "credit-report error"],
+      "alt": "DocketStamp credit-report dispute letter preparation card"
+    },
+    {
+      "slug": "debt-dispute-information-request",
+      "eyebrow": "DEBT DISPUTE",
+      "headline": ["Dispute a debt.", "Request verification."],
+      "alt": "DocketStamp debt dispute and verification request preparation card"
+    },
+    {
+      "slug": "service-cancellation-request",
+      "eyebrow": "SERVICE & POLICY CANCELLATION",
+      "headline": ["Cancel a service.", "Put it in writing."],
+      "alt": "DocketStamp service or policy cancellation letter preparation card"
+    },
+    {
+      "slug": "product-complaint-refund-request",
+      "eyebrow": "PRODUCT FEATURE DISPUTE",
+      "headline": ["Request a refund for", "changed product features"],
+      "alt": "DocketStamp product complaint and refund request preparation card"
+    },
+    {
+      "slug": "arbitration-opt-out-procedure-request",
+      "eyebrow": "ARBITRATION PROCEDURE REQUEST",
+      "headline": ["Ask about arbitration", "opt-out procedures."],
+      "alt": "DocketStamp arbitration procedure information request preparation card"
+    },
+    {
+      "slug": "personal-data-deletion-request",
+      "eyebrow": "PERSONAL DATA REQUEST",
+      "headline": ["Request deletion of", "personal data"],
+      "alt": "DocketStamp personal data deletion request preparation card"
+    }
+  ]
+}

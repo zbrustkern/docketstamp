@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ALL_NOTICE_CARTRIDGES, getNoticeBySlug } from '@/lib/docket/notices';
 import { DocumentWorkspace } from '@/components/docket/DocumentWorkspace';
+import { privatePageMetadata, publicShareMetadata, noticeShareImage } from '@/src/lib/docket/share-metadata';
 
 interface NoticePageProps {
   params: Promise<{ slug: string }>;
@@ -18,26 +19,21 @@ export async function generateMetadata({ params }: NoticePageProps): Promise<Met
   const notice = getNoticeBySlug(slug);
 
   if (!notice) {
-    return {
-      title: 'Notice Not Found | DocketStamp',
-      description: 'The requested document-preparation template could not be located.',
-    };
+    return privatePageMetadata(
+      'Document Template Not Found',
+      'The requested document-preparation template could not be located.',
+    );
   }
 
+  const description = notice.seoMeta.description || notice.shortDescription;
   return {
-    title: `${notice.title} | USPS Mail`,
-    description: notice.seoMeta.description || notice.shortDescription,
+    ...publicShareMetadata({
+      title: notice.title,
+      description,
+      path: `/notices/${notice.slug}`,
+      image: noticeShareImage(notice.slug),
+    }),
     keywords: notice.seoMeta.targetKeywords,
-    alternates: {
-      canonical: `https://docketstamp.com/notices/${notice.slug}`,
-    },
-    openGraph: {
-      title: `${notice.title} | DocketStamp`,
-      description: notice.seoMeta.description || notice.shortDescription,
-      url: `https://docketstamp.com/notices/${notice.slug}`,
-      siteName: 'DocketStamp',
-      type: 'article',
-    },
   };
 }
 
