@@ -130,3 +130,9 @@ Luna asset and metadata lanes implemented the approved main/square/cancellation 
 The production build passed. Focused metadata/routing tests passed 27/27. Independent local development HTTP checks passed 1,227 assertions; final production-build HTTP checks passed 1,231 assertions, covering all 38 aliases and neutral private metadata. The repository suite has one pre-existing date-sensitive reminder failure (`expired` vs `scheduled` at tests/notice-deadline-reminders.test.ts:62), reproduced on untouched production baseline `4c6eeb8`; all remaining npm test groups passed. It is not a preview regression and is not changed in this release.
 
 The same scoped implementation will be committed on staging baseline `11ee79f` and cherry-picked onto production baseline `4c6eeb8`, preserving their differing apphosting.yaml settings. Release results are recorded after each hosted rollout.
+
+### Hosted packaging repair
+
+The first staging rollout (`4f93026`, build/rollout `2026-10-22-001`) served correct page metadata but returned 404 for public images and the web manifest. The same legacy public asset failures were reproduced on unchanged production. This matches Firebase App Hosting adapter [issue #630](https://github.com/firebase/apphosting-adapters/issues/630) / [fix #683](https://github.com/firebase/apphosting-adapters/pull/683): a partially traced public directory can cause remaining files to be omitted. The managed adapter version was not established.
+
+Added `outputFileTracingIncludes` for `./public/**/*` in `next.config.ts` to include the finite 1.5 MB public directory in server traces. No environment settings or runtime business logic changed. A fresh standalone production build passed; all 21 public files were present with matching hashes, and all 21 were fetched successfully from the standalone server with exact source bytes. Hosted checks are repeated on the repaired staging release before production promotion.

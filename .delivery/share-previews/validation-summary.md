@@ -10,3 +10,9 @@ User approved the design and staging/production deployment on 2026-10-22.
 - Original dirty checkout is excluded. Staging baseline: `11ee79f`; production baseline: `4c6eeb8`. Same scoped source change applied independently to retain existing environment configurations.
 
 Hosted staging and production results will be recorded after deployment. These local checks do not claim a social-network cache has refreshed.
+
+### Hosted packaging repair
+
+The first staging rollout (`4f93026`, build/rollout `2026-10-22-001`) served correct page metadata but returned 404 for public images and the web manifest. The same legacy public asset failures were reproduced on unchanged production. This matches Firebase App Hosting adapter [issue #630](https://github.com/firebase/apphosting-adapters/issues/630) / [fix #683](https://github.com/firebase/apphosting-adapters/pull/683): a partially traced public directory can cause remaining files to be omitted. The managed adapter version was not established.
+
+Added `outputFileTracingIncludes` for `./public/**/*` in `next.config.ts` to include the finite 1.5 MB public directory in server traces. No environment settings or runtime business logic changed. A fresh standalone production build passed; all 21 public files were present with matching hashes, and all 21 were fetched successfully from the standalone server with exact source bytes. Hosted checks are repeated on the repaired staging release before production promotion.
