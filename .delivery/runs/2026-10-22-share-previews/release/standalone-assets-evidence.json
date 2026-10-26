@@ -1,0 +1,111 @@
+{
+  "checks": [
+    {
+      "file": "apple-touch-icon.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "icon-192.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "og-image.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "og-image.jpg",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "site.webmanifest",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "apple-touch-icon-precomposed.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "icon-512.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "favicon-32x32.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": ".well-known/apple-developer-merchantid-domain-association",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/personal-data-deletion-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/debt-dispute-information-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/tenant-repair-and-maintenance-notice.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/service-cancellation-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/home.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/credit-report-dispute-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/product-complaint-refund-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/security-deposit-accounting-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/manifest.json",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/arbitration-opt-out-procedure-request.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/tenant-notice-of-intent-to-vacate.png",
+      "present": true,
+      "sha256_matches": true
+    },
+    {
+      "file": "share/v1/square.png",
+      "present": true,
+      "sha256_matches": true
+    }
+  ],
+  "count": 21,
+  "passed": true
+}

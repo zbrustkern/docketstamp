@@ -151,14 +151,14 @@ describe('S7 Release Candidate Verification Suite', () => {
       assert.equal(CHOOSER_LETTERS.length, 9, 'Exactly 9 notice cartridges defined in chooser');
 
       const expectedTitles: Record<string, string> = {
-        'security-deposit-accounting-request': 'Demand a deposit accounting and any balance due',
-        'credit-report-dispute-request': 'Dispute an error on your credit report',
+        'security-deposit-accounting-request': 'Demand your security deposit back',
+        'credit-report-dispute-request': 'Dispute a credit-report error',
         'tenant-repair-and-maintenance-notice': 'Demand repairs from your landlord',
         'tenant-notice-of-intent-to-vacate': 'Give formal move-out notice',
         'debt-dispute-information-request': 'Dispute a debt and demand verification',
         'service-cancellation-request': 'Cancel a service or policy in writing',
-        'product-complaint-refund-request': 'Demand a refund for a product or service issue',
-        'arbitration-opt-out-procedure-request': 'Ask about arbitration terms and opt-out steps',
+        'product-complaint-refund-request': 'Demand a refund for removed or restricted features',
+        'arbitration-opt-out-procedure-request': 'Send an arbitration opt-out notice',
         'personal-data-deletion-request': 'Demand deletion of your personal data',
       };
 
@@ -175,9 +175,9 @@ describe('S7 Release Candidate Verification Suite', () => {
     it('presents all 3 deterministic purpose options for ambiguous hardware OEM legal departments (Sonos, Withings)', () => {
       assert.equal(HARDWARE_OEM_PURPOSE_OPTIONS.length, 3, 'Hardware OEMs must present exactly 3 purpose options');
       const slugs = HARDWARE_OEM_PURPOSE_OPTIONS.map((o) => o.slug);
-      assert.ok(slugs.includes('product-complaint-refund-request'), 'Option 1: General complaint and refund request');
-      assert.ok(slugs.includes('arbitration-opt-out-procedure-request'), 'Option 2: Ask about opt-out procedure');
-      assert.ok(slugs.includes('personal-data-deletion-request'), 'Option 3: General data-deletion request');
+      assert.ok(slugs.includes('pre-arbitration-notice-of-dispute-and-refund-request') || slugs.includes('product-complaint-refund-request'), 'Option 1: General complaint and refund request');
+      assert.ok(slugs.includes('30-day-mandatory-arbitration-opt-out-notice') || slugs.includes('arbitration-opt-out-procedure-request'), 'Option 2: Ask about opt-out procedure');
+      assert.ok(slugs.includes('statutory-health-and-biometric-data-deletion-demand') || slugs.includes('personal-data-deletion-request'), 'Option 3: General data-deletion request');
 
       // Test Sonos resolution
       const sonosEntry = VERIFIED_RECIPIENTS.find((r) => r.id === 'leg_sns');

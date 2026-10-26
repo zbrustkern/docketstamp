@@ -33,10 +33,21 @@ const EMPTY_REVIEW: TemplateReview = {
   evidenceUrl: '', notes: '', contentDigest: null,
 };
 const MIGRATION_ENABLED_SLUGS = new Set([
-  'tenant-notice-of-intent-to-vacate', 'security-deposit-accounting-request',
-  'tenant-repair-and-maintenance-notice', 'credit-report-dispute-request',
-  'debt-dispute-information-request', 'service-cancellation-request',
-  'product-complaint-refund-request', 'arbitration-opt-out-procedure-request',
+  'tenant-notice-of-intent-to-vacate',
+  'security-deposit-return-demand-letter',
+  'security-deposit-accounting-request',
+  'tenant-repair-and-maintenance-notice',
+  'fcra-credit-bureau-written-dispute-letter',
+  'credit-report-dispute-request',
+  'fdcpa-30-day-debt-validation-letter',
+  'debt-dispute-information-request',
+  'written-contract-and-policy-cancellation-letter',
+  'service-cancellation-request',
+  'pre-arbitration-notice-of-dispute-and-refund-request',
+  'product-complaint-refund-request',
+  '30-day-mandatory-arbitration-opt-out-notice',
+  'arbitration-opt-out-procedure-request',
+  'statutory-health-and-biometric-data-deletion-demand',
   'personal-data-deletion-request',
 ]);
 
@@ -210,7 +221,7 @@ export function policyToPublicEntry(notice: (typeof ALL_NOTICE_CARTRIDGES)[numbe
 }
 
 export function evaluatePolicy(document: TemplatePolicyDocument, slug: string, nexus: PolicyNexus): AvailabilityDecision {
-  const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug);
+  const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug || candidate.aliases?.includes(slug));
   if (!notice) return { allowed: false, code: 'TEMPLATE_NOT_FOUND', message: 'This notice is not currently available.', requiredFields: [] };
   return evaluateTemplateAvailability(policyToPublicEntry(notice, document), nexus);
 }
@@ -262,7 +273,7 @@ export async function getAdminTemplatesResponse(canManage: boolean): Promise<Adm
 
 export async function checkTemplateAvailability(slug: string, nexus: PolicyNexus): Promise<{ decision: AvailabilityDecision; revision: number; contentDigest: string }> {
   const policy = await getPolicyDocument();
-  const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug);
+  const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug || candidate.aliases?.includes(slug));
   const decision = evaluatePolicy(policy, slug, nexus);
   return { decision, revision: policy.revision, contentDigest: notice ? getNoticeContentDigest(notice) : '' };
 }
@@ -271,7 +282,7 @@ export async function createStagedDraftUnderPolicy<T extends Record<string, any>
   const stageRef = firestoreDb.collection('staged_drafts_v1').doc(String(record.stageId));
   return firestoreDb.runTransaction(async (tx) => {
     const { ref, document } = await readPolicySnapshot(tx);
-    const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug);
+    const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug || candidate.aliases?.includes(slug));
     const decision = evaluatePolicy(document, slug, nexus);
     if (!decision.allowed) return { ok: false as const, decision };
     const contentDigest = notice ? getNoticeContentDigest(notice) : '';
@@ -288,7 +299,7 @@ export async function createOrderUnderPolicy<T extends Record<string, any>>(orde
   const orderRef = firestoreDb.collection('orders').doc(String(order.id));
   return firestoreDb.runTransaction(async (tx) => {
     const { document } = await readPolicySnapshot(tx);
-    const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug);
+    const notice = ALL_NOTICE_CARTRIDGES.find((candidate) => candidate.slug === slug || candidate.aliases?.includes(slug));
     const decision = evaluatePolicy(document, slug, nexus);
     if (!decision.allowed) return { ok: false as const, decision };
     const contentDigest = notice ? getNoticeContentDigest(notice) : '';

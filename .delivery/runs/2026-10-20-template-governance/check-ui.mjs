@@ -16,7 +16,7 @@ const cookie = email => {
 const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
 const results = [], errors = [];
 let forbiddenRequests = 0;
-const slug = 'security-deposit-accounting-request';
+const slug = 'security-deposit-return-demand-letter';
 const all = { mode: 'all', states: [] };
 const owner = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 await owner.addCookies([{ name: 'docketstamp_admin_session', value: cookie('owner@example.test'), url: base }]);
@@ -51,7 +51,7 @@ try {
  if (process.argv.includes('--extra')) {
   const page = await safePage(owner);
   await page.addInitScript(() => { Object.defineProperty(navigator, 'modelContext', { configurable: true, value: { registerTool(tool) { window.__fixtureTool = tool; return {}; }, unregisterTool() {} } }); });
-  await page.goto(`${base}/notices/${slug}?consumerResidenceState=IL&propertyState=CA`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.goto(`${base}/notices/${slug}?consumerResidenceState=IL&propertyState=CA`, { waitUntil: 'networkidle', timeout: 120000 });
   await page.waitForFunction(() => !!window.__fixtureTool);
   const filled = await page.evaluate(() => window.__fixtureTool.execute({ fields: { senderFullName: 'Browser Agent Fixture' } }));
   assert.equal(filled.success, true);
@@ -65,7 +65,7 @@ try {
   const stale = await page.evaluate(() => window.__fixtureTool.execute({ fields: { senderFullName: 'Must Not Apply' } }));
   assert.equal(stale.code, 'TEMPLATE_UNAVAILABLE');
   results.push({ case: 'WebMCP checks fresh policy before field mutation', passed: true });
-  await page.goto(`${base}/admin?tab=templates`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${base}/admin?tab=templates`, { waitUntil: 'networkidle' });
   await page.getByTestId('template-governance-panel').waitFor();
   const tab = page.getByRole('button', { name: 'Templates & coverage', exact: true });
   const bounds = await tab.boundingBox(); assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 1440);
@@ -94,7 +94,7 @@ try {
   assert.equal(stageResponse.status(), 201, await stageResponse.text());
   const oldStage = await stageResponse.json();
   const page = await safePage(owner);
-  await page.goto(`${base}/admin?tab=templates`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.goto(`${base}/admin?tab=templates`, { waitUntil: 'networkidle', timeout: 120000 });
   await page.getByTestId('template-governance-panel').waitFor();
   await page.getByText('Migration defaults · not a saved policy').count();
   const globalMode = page.locator('#global-residence-consumer-residence-mode');
@@ -131,10 +131,10 @@ try {
   const list = await api.post(`${base}/api/mcp`, { data: { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'list_docket_notices', arguments: {} } } });
   assert.doesNotMatch(await list.text(), new RegExp(slug));
   const customer = await safePage(owner);
-  await customer.goto(`${base}/notices/${slug}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
-  await customer.getByRole('heading', { name: 'This letter is currently unavailable' }).waitFor();
+  await customer.goto(`${base}/notices/${slug}`, { waitUntil: 'networkidle', timeout: 120000 });
+  await customer.getByRole('heading', { name: 'This notice is temporarily unavailable' }).waitFor();
   await screenshot(customer, 'paused-direct');
-  await customer.goto(base, { waitUntil: 'domcontentloaded' });
+  await customer.goto(base, { waitUntil: 'networkidle' });
   assert.equal(await customer.getByRole('option').filter({ hasText: 'Demand your security deposit back' }).count(), 0);
   results.push({ case: 'paused direct page, chooser, REST creation/resume and MCP', passed: true });
   await setTemplate({ enabled: true, residence: { mode: 'blocklist', states: ['NC'] }, property: { mode: 'allowlist', states: ['CA'] } });
@@ -146,7 +146,7 @@ try {
   assert.equal(allowed.status(), 201, await allowed.text());
   const resumed = await api.get(`${base}/api/docket/stage/${oldStage.stageId}?consumerResidenceState=IL&propertyState=CA`);
   assert.equal(resumed.status(), 200); assert.equal((await resumed.json()).fieldValues.consumerResidenceState, 'IL');
-  await customer.goto(`${base}/notices/${slug}?stage=${oldStage.stageId}`, { waitUntil: 'domcontentloaded' });
+  await customer.goto(`${base}/notices/${slug}?stage=${oldStage.stageId}`, { waitUntil: 'networkidle' });
   await customer.getByRole('heading', { name: 'Check availability for your location' }).waitFor();
   await customer.getByLabel('State where you live', { exact: true }).selectOption('NC');
   await customer.getByLabel('State where the rental property is located').selectOption('CA');
@@ -175,16 +175,16 @@ try {
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await mobile.addCookies([{ name: 'docketstamp_admin_session', value: cookie('viewer@example.test'), url: base }]);
   const viewer = await safePage(mobile);
-  await viewer.goto(`${base}/admin?tab=templates`, { waitUntil: 'domcontentloaded' });
+  await viewer.goto(`${base}/admin?tab=templates`, { waitUntil: 'networkidle' });
   await viewer.getByText('Read-only access.', { exact: false }).waitFor();
   assert.equal(await viewer.getByLabel('Service enabled').isDisabled(), true);
   await screenshot(viewer, 'admin-viewer-mobile'); await noOverflow(viewer, 'admin viewer');
   const mobileCustomer = await safePage(mobile);
-  await mobileCustomer.goto(`${base}/notices/${slug}`, { waitUntil: 'domcontentloaded' });
+  await mobileCustomer.goto(`${base}/notices/${slug}`, { waitUntil: 'networkidle' });
   await mobileCustomer.getByRole('heading', { name: 'Check availability for your location' }).waitFor();
   await screenshot(mobileCustomer, 'location-mobile'); await noOverflow(mobileCustomer, 'location gate');
   await mobileCustomer.route('**/api/docket/availability', route => route.fulfill({ status: 503, body: '{}' }));
-  await mobileCustomer.reload({ waitUntil: 'domcontentloaded' });
+  await mobileCustomer.reload({ waitUntil: 'networkidle' });
   await mobileCustomer.getByRole('button', { name: 'Try again', exact: true }).waitFor();
   results.push({ case: 'mobile customer policy fetch failure is closed', passed: true });
   assert.equal(forbiddenRequests, 0);

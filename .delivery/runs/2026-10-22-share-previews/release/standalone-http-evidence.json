@@ -1,0 +1,131 @@
+{
+  "checks": [
+    {
+      "path": "apple-touch-icon-precomposed.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "apple-touch-icon.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "favicon-32x32.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "icon-192.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "icon-512.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "og-image.jpg",
+      "status": 200,
+      "contentType": "image/jpeg",
+      "matches": true
+    },
+    {
+      "path": "og-image.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "site.webmanifest",
+      "status": 200,
+      "contentType": "application/manifest+json",
+      "matches": true
+    },
+    {
+      "path": ".well-known/apple-developer-merchantid-domain-association",
+      "status": 200,
+      "contentType": "application/octet-stream",
+      "matches": true
+    },
+    {
+      "path": "share/v1/arbitration-opt-out-procedure-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/credit-report-dispute-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/debt-dispute-information-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/home.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/manifest.json",
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "matches": true
+    },
+    {
+      "path": "share/v1/personal-data-deletion-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/product-complaint-refund-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/security-deposit-accounting-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/service-cancellation-request.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/square.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/tenant-notice-of-intent-to-vacate.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    },
+    {
+      "path": "share/v1/tenant-repair-and-maintenance-notice.png",
+      "status": 200,
+      "contentType": "image/png",
+      "matches": true
+    }
+  ],
+  "passed": true
+}

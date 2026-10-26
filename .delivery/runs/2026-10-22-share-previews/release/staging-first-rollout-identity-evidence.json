@@ -1,0 +1,95 @@
+{
+  "checkedAt": "2026-10-22T16:39:20.989Z",
+  "origin": "https://staging.docketstamp.com",
+  "checks": [
+    {
+      "route": "/icon.png",
+      "status": 200,
+      "contentType": "image/png",
+      "sha256": "7783ab5b5153c24a850abf43306ed43fb14d3ccbf4479b95282cfc8c7e5627c3",
+      "expectedSha256": "7783ab5b5153c24a850abf43306ed43fb14d3ccbf4479b95282cfc8c7e5627c3",
+      "pass": true
+    },
+    {
+      "route": "/apple-icon.png",
+      "status": 200,
+      "contentType": "image/png",
+      "sha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996",
+      "expectedSha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996",
+      "pass": true
+    },
+    {
+      "route": "/favicon.ico",
+      "status": 200,
+      "contentType": "image/x-icon",
+      "sha256": "adee6bbd1881d93536ffc7bc0edd0be03123ac9e6fcc06c090096e456e94eefd",
+      "expectedSha256": "adee6bbd1881d93536ffc7bc0edd0be03123ac9e6fcc06c090096e456e94eefd",
+      "pass": true
+    },
+    {
+      "route": "/icon-192.png",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "a48aa998202a1a45c0236c7c00ad0ea08a098b8de839edeca6642518ed6bf68d",
+      "pass": false
+    },
+    {
+      "route": "/icon-512.png",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "7783ab5b5153c24a850abf43306ed43fb14d3ccbf4479b95282cfc8c7e5627c3",
+      "pass": false
+    },
+    {
+      "route": "/apple-touch-icon.png",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996",
+      "pass": false
+    },
+    {
+      "route": "/apple-touch-icon-precomposed.png",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996",
+      "pass": false
+    },
+    {
+      "route": "/favicon-32x32.png",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "5a693ab78d77429b142c53826716e20dcf5168dd4ebcd64e1c39b60073a4a860",
+      "pass": false
+    },
+    {
+      "route": "/og-image.png",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "05b44b127ef40dfd6ac597f3e214ff134ebdd99f5b3dc7fe7c0daf4d4d484cab",
+      "pass": false
+    },
+    {
+      "route": "/og-image.jpg",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "1247dc4ba651a0f30a300b0d90f32c472349c957ccfc12d6b27c27d7c2baba32",
+      "pass": false
+    },
+    {
+      "route": "/site.webmanifest",
+      "status": 404,
+      "contentType": "text/html; charset=utf-8",
+      "sha256": "6f50169ff934ebead1ec7df068c80104723f68dc410e118552eed22bb2e2c6b4",
+      "expectedSha256": "a732c7fc1c90ade8b3cf8da9e5a24409820f22787d4df04edb263e385c79cb65",
+      "pass": false
+    }
+  ],
+  "failures": 8
+}

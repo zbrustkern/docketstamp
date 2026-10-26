@@ -1,0 +1,3242 @@
+[
+  {
+    "slug": "tenant-notice-of-intent-to-vacate",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 646.59375,
+      "bottom": 715.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 715.59375,
+    "overflow": false
+  },
+  {
+    "slug": "tenant-notice-of-intent-to-vacate",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 646.59375,
+      "bottom": 715.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 715.59375,
+    "overflow": false
+  },
+  {
+    "slug": "tenant-notice-of-intent-to-vacate",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 646.59375,
+      "bottom": 715.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 715.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "tenant-repair-and-maintenance-notice",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 722.59375,
+      "bottom": 791.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 791.59375,
+    "overflow": false
+  },
+  {
+    "slug": "tenant-repair-and-maintenance-notice",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 722.59375,
+      "bottom": 791.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 791.59375,
+    "overflow": false
+  },
+  {
+    "slug": "tenant-repair-and-maintenance-notice",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 722.59375,
+      "bottom": 791.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 791.59375,
+    "overflow": false
+  },
+  {
+    "slug": "tenant-repair-and-maintenance-notice",
+    "tier": "certified",
+    "variant": "linebreaks",
+    "state": null,
+    "parity": true,
+    "fits": false,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 2755.59375,
+      "bottom": 2824.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 2824.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fcra-credit-bureau-written-dispute-letter",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 691.59375,
+      "bottom": 760.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 760.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fcra-credit-bureau-written-dispute-letter",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 691.59375,
+      "bottom": 760.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 760.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fcra-credit-bureau-written-dispute-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 691.59375,
+      "bottom": 760.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 760.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fcra-credit-bureau-written-dispute-letter",
+    "tier": "certified_return_receipt",
+    "variant": "linebreaks",
+    "state": null,
+    "parity": true,
+    "fits": false,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 2534.59375,
+      "bottom": 2603.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 2603.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fdcpa-30-day-debt-validation-letter",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 710.59375,
+      "bottom": 779.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 779.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fdcpa-30-day-debt-validation-letter",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 710.59375,
+      "bottom": 779.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 779.59375,
+    "overflow": false
+  },
+  {
+    "slug": "fdcpa-30-day-debt-validation-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 710.59375,
+      "bottom": 779.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 779.59375,
+    "overflow": false
+  },
+  {
+    "slug": "written-contract-and-policy-cancellation-letter",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 674.59375,
+      "bottom": 743.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 743.59375,
+    "overflow": false
+  },
+  {
+    "slug": "written-contract-and-policy-cancellation-letter",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 674.59375,
+      "bottom": 743.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 743.59375,
+    "overflow": false
+  },
+  {
+    "slug": "written-contract-and-policy-cancellation-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 674.59375,
+      "bottom": 743.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 743.59375,
+    "overflow": false
+  },
+  {
+    "slug": "pre-arbitration-notice-of-dispute-and-refund-request",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 760.59375,
+      "bottom": 829.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 829.59375,
+    "overflow": false
+  },
+  {
+    "slug": "pre-arbitration-notice-of-dispute-and-refund-request",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 760.59375,
+      "bottom": 829.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 829.59375,
+    "overflow": false
+  },
+  {
+    "slug": "pre-arbitration-notice-of-dispute-and-refund-request",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 760.59375,
+      "bottom": 829.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 829.59375,
+    "overflow": false
+  },
+  {
+    "slug": "pre-arbitration-notice-of-dispute-and-refund-request",
+    "tier": "certified_return_receipt",
+    "variant": "linebreaks",
+    "state": null,
+    "parity": true,
+    "fits": false,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 2603.59375,
+      "bottom": 2672.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 2672.59375,
+    "overflow": false
+  },
+  {
+    "slug": "30-day-mandatory-arbitration-opt-out-notice",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 693.59375,
+      "bottom": 762.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 762.59375,
+    "overflow": false
+  },
+  {
+    "slug": "30-day-mandatory-arbitration-opt-out-notice",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 693.59375,
+      "bottom": 762.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 762.59375,
+    "overflow": false
+  },
+  {
+    "slug": "30-day-mandatory-arbitration-opt-out-notice",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 693.59375,
+      "bottom": 762.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 762.59375,
+    "overflow": false
+  },
+  {
+    "slug": "statutory-health-and-biometric-data-deletion-demand",
+    "tier": "first_class",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 674.59375,
+      "bottom": 743.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 743.59375,
+    "overflow": false
+  },
+  {
+    "slug": "statutory-health-and-biometric-data-deletion-demand",
+    "tier": "certified",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 674.59375,
+      "bottom": 743.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 743.59375,
+    "overflow": false
+  },
+  {
+    "slug": "statutory-health-and-biometric-data-deletion-demand",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": null,
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 674.59375,
+      "bottom": 743.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 743.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "AL",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "AK",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "AZ",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "AR",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "CA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "CO",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "CT",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "DE",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "DC",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "FL",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "GA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "HI",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "ID",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "IL",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "IN",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "IA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "KS",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "KY",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "LA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "ME",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MD",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MI",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MN",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MS",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MO",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "MT",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NE",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NV",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NH",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NJ",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NM",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NY",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "NC",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "ND",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "OH",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "OK",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "OR",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "PA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "RI",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "SC",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "SD",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "TN",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "TX",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "UT",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "VT",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "VA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "WA",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "WV",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "WI",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  },
+  {
+    "slug": "security-deposit-return-demand-letter",
+    "tier": "certified_return_receipt",
+    "variant": "max",
+    "state": "WY",
+    "parity": true,
+    "fits": true,
+    "body": {
+      "top": 321.59375,
+      "bottom": 979.203125,
+      "left": 72,
+      "right": 744,
+      "height": 657.609375
+    },
+    "footer": {
+      "top": 989.046875,
+      "bottom": 1017.609375,
+      "left": 72,
+      "right": 744,
+      "height": 28.5625
+    },
+    "signature": {
+      "top": 741.59375,
+      "bottom": 810.59375,
+      "left": 72,
+      "right": 744,
+      "height": 69
+    },
+    "stamp": {
+      "top": 177.59375,
+      "bottom": 269.09375,
+      "left": 456.015625,
+      "right": 758.40625,
+      "height": 91.5
+    },
+    "textRight": 744,
+    "textLeft": 72,
+    "textBottom": 810.59375,
+    "overflow": false
+  }
+]

@@ -15,21 +15,18 @@ import {
 } from 'lucide-react';
 import { getOrderByDocketId } from '@/lib/firebase-admin';
 import { UPL_COMPLIANCE_FOOTER_TEXT } from '@/lib/docket/guardrails';
+import { privatePageMetadata } from '@/src/lib/docket/share-metadata';
 
 interface DocketPageProps {
   params: Promise<{ docketId: string }>;
 }
 
 export async function generateMetadata({ params }: DocketPageProps): Promise<Metadata> {
-  const { docketId } = await params;
-  return {
-    title: `Order Record ${docketId} | DocketStamp`,
-    description: `DocketStamp order record and any postal status information available for reference ${docketId}.`,
-    robots: {
-      index: false,
-      follow: false,
-    },
-  };
+  await params;
+  return privatePageMetadata(
+    'Order Record',
+    'View order information and any postal status information available for reference.',
+  );
 }
 
 export default async function DocketStatusPage({ params }: DocketPageProps) {

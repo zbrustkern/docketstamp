@@ -1,0 +1,120 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-21T23:21:48.035Z",
+  "base": "http://127.0.0.1:3115",
+  "scenarios": [
+    {
+      "check": "library and home desktop",
+      "passed": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "letters": 9,
+      "cancellationStartingPoints": 6,
+      "keyboardFocus": {
+        "style": "solid",
+        "width": "2px"
+      }
+    },
+    {
+      "check": "library and home mobile",
+      "passed": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "letters": 9,
+      "cancellationStartingPoints": 6,
+      "keyboardFocus": {
+        "style": "solid",
+        "width": "2px"
+      }
+    },
+    {
+      "check": "library and home narrow",
+      "passed": true,
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "letters": 9,
+      "cancellationStartingPoints": 6,
+      "keyboardFocus": {
+        "style": "solid",
+        "width": "2px"
+      }
+    },
+    {
+      "check": "preset hydration and editability",
+      "passed": true,
+      "value": "Home Security & Monitoring Agreement",
+      "editedTo": "Residential Pest / Lawn Service Agreement"
+    },
+    {
+      "check": "preset hydration and editability",
+      "passed": true,
+      "value": "Residential Pest / Lawn Service Agreement",
+      "editedTo": "Home Warranty Service Contract"
+    },
+    {
+      "check": "preset hydration and editability",
+      "passed": true,
+      "value": "Home Warranty Service Contract",
+      "editedTo": "Telecommunications / Satellite Service Account"
+    },
+    {
+      "check": "preset hydration and editability",
+      "passed": true,
+      "value": "Telecommunications / Satellite Service Account",
+      "editedTo": "Automobile / Property Insurance Policy"
+    },
+    {
+      "check": "preset hydration and editability",
+      "passed": true,
+      "value": "Automobile / Property Insurance Policy",
+      "editedTo": "Commercial / Residential Service Subscription"
+    },
+    {
+      "check": "preset hydration and editability",
+      "passed": true,
+      "value": "Commercial / Residential Service Subscription",
+      "editedTo": "Home Security & Monitoring Agreement"
+    },
+    {
+      "check": "loading hides all start links then recovers",
+      "passed": true
+    },
+    {
+      "check": "error response hides all start links and retry recovers",
+      "passed": true
+    },
+    {
+      "check": "malformed response hides all start links and retry recovers",
+      "passed": true
+    },
+    {
+      "check": "paused excludes cancellation and its shortcuts",
+      "passed": true
+    },
+    {
+      "check": "held excludes cancellation and its shortcuts",
+      "passed": true
+    },
+    {
+      "check": "missing excludes cancellation and its shortcuts",
+      "passed": true
+    },
+    {
+      "check": "all-unavailable excludes cancellation and its shortcuts",
+      "passed": true
+    },
+    {
+      "check": "preset respects location gate, denies TX and permits CA with value retained",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "forbiddenRequests": [],
+  "blockedTelemetryRequests": 51
+}

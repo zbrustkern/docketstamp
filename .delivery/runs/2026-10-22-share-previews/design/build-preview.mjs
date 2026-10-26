@@ -1,0 +1,52 @@
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+const require = createRequire(import.meta.url);
+const { chromium } = require('/Users/zeke/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const root = new URL('./', import.meta.url);
+const css = `
+@import url('./fonts.css');
+*{box-sizing:border-box}body{margin:0;font-family:Inter,sans-serif} .card{width:1200px;height:630px;position:relative;overflow:hidden;background:#0F172A;color:#fff}
+.brand{position:absolute;left:60px;top:47px;display:flex;align-items:center;gap:15px}.monogram{width:46px;height:46px;border-radius:10px;background:#0284C7;display:grid;place-items:center;font:700 21px 'JetBrains Mono',monospace}.wordmark{font:600 25px 'JetBrains Mono',monospace;letter-spacing:1.1px}.trademark{font-size:14px;color:#38BDF8;vertical-align:top}
+.eyebrow{position:absolute;left:64px;top:138px;font:500 14px 'JetBrains Mono',monospace;letter-spacing:2.5px;color:#94A3B8}
+.headline{position:absolute;left:60px;top:176px;margin:0;font:700 69px/1.18 Merriweather,Georgia,serif;letter-spacing:-2.7px}.promise{position:absolute;left:62px;top:271px;margin:0;font:400 49px/1.24 Merriweather,Georgia,serif;letter-spacing:-1.7px;color:#7DD3FC}.support{position:absolute;left:64px;top:416px;margin:0;font:400 25px/1.5 Inter,sans-serif;color:#CBD5E1}
+.rule{position:absolute;left:64px;top:481px;width:553px;height:1px;background:#334155}.benefit{position:absolute;left:64px;top:507px;display:flex;align-items:center;gap:12px;font-size:21px;color:#F8FAFC}.benefit svg{color:#7DD3FC}.domain{position:absolute;right:58px;bottom:39px;font:500 16px 'JetBrains Mono',monospace;color:#CBD5E1}.disclosure{position:absolute;left:64px;bottom:36px;font:400 14px/1.45 Inter,sans-serif;color:#94A3B8}
+.art{position:absolute;left:728px;top:94px;width:405px;height:450px}.art:before{content:'';position:absolute;inset:14px -6px 12px 6px;border:1px solid #334155;border-radius:4px;transform:rotate(7deg)}.paper{position:absolute;top:0;left:46px;width:302px;height:391px;background:white;color:#0F172A;border:1px solid #CBD5E1;transform:rotate(4deg);box-shadow:0 22px 45px #02061770;padding:28px 28px}.paper-brand{font:600 11px 'JetBrains Mono';letter-spacing:.7px;padding-bottom:13px;border-bottom:1px solid #CBD5E1}.paper-label{font:600 10px 'JetBrains Mono';letter-spacing:1.7px;margin-top:24px;color:#64748B}.paper-title{font:700 25px/1.35 Merriweather,serif;margin:12px 0 20px;letter-spacing:-.5px}.field{display:inline-flex;align-items:center;font:500 9px 'JetBrains Mono';letter-spacing:.4px;background:#FEF3C7;color:#92400E;border-left:3px solid #D97706;padding:7px 9px;margin-bottom:12px}.line{height:4px;background:#CBD5E1;margin:9px 0;width:100%}.line.short{width:66%}.line.mid{width:84%}.paper-foot{position:absolute;bottom:18px;font:500 7px 'JetBrains Mono';letter-spacing:.25px;color:#64748B}
+.envelope{position:absolute;left:0;top:260px;width:396px;height:167px;background:#F1F5F9;border:1px solid #CBD5E1;transform:rotate(-5deg);box-shadow:0 20px 32px #02061766;overflow:hidden;border-radius:3px}.flap{position:absolute;inset:0;clip-path:polygon(0 0,50% 61%,100% 0);background:#fff}.fold{position:absolute;left:43px;top:-133px;width:304px;height:235px;border-right:1px solid #CBD5E1;border-bottom:1px solid #CBD5E1;transform:rotate(45deg)}.envelope-label{position:absolute;left:23px;bottom:21px;font:500 10px 'JetBrains Mono';letter-spacing:1px;color:#64748B}.seal{position:absolute;left:174px;top:82px;width:44px;height:44px;border-radius:8px;display:grid;place-items:center;background:#0284C7;color:white;font:600 16px 'JetBrains Mono'}
+.route .headline{font-size:56px;line-height:1.24;top:173px;letter-spacing:-2.1px}.route .promise{font-family:Inter,sans-serif;font-size:27px;line-height:1.5;top:339px;letter-spacing:0;color:#CBD5E1}.route .support{top:422px;font-size:21px;color:#7DD3FC}.route .paper-title{font-size:23px}
+.square{width:1080px;height:1080px}.square .brand{left:69px;top:62px}.square .monogram{width:54px;height:54px;font-size:25px}.square .wordmark{font-size:29px}.square .eyebrow{left:72px;top:163px;font-size:17px}.square .headline{left:68px;top:211px;font-size:81px;letter-spacing:-3px}.square .promise{left:72px;top:326px;font-size:51px;line-height:1.28}.square .promise br{display:none}.square .art{left:545px;top:489px;transform:scale(.92);transform-origin:top left}.square .support{left:72px;top:536px;font-size:34px;line-height:1.5;width:390px}.square .support span{display:block}.square .rule{left:72px;top:774px;width:349px}.square .benefit{left:72px;top:808px;font-size:22px;width:340px;line-height:1.5}.square .benefit span{max-width:270px}.square .disclosure{left:72px;bottom:59px;font-size:17px}.square .domain{right:72px;bottom:61px;font-size:18px}
+`;
+const mailIcon=`<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3 6 9 7 9-7"/></svg>`;
+const brand=`<div class="brand"><span class="monogram">DS</span><span class="wordmark">DOCKETSTAMP<span class="trademark">™</span></span></div>`;
+function illustration(title='Your formal<br>letter',field='YOUR DETAILS'){
+ return `<div class="art" aria-label="Illustration of a letter and an envelope"><div class="paper"><div class="paper-brand">DOCKETSTAMP</div><div class="paper-label">LETTER PREVIEW</div><div class="paper-title">${title}</div><div class="field">${field}</div><div class="line"></div><div class="line"></div><div class="line mid"></div><div style="height:6px"></div><div class="line"></div><div class="line short"></div><div class="paper-foot">ILLUSTRATION · NOT A MAILED LETTER</div></div><div class="envelope"><div class="flap"></div><div class="fold"></div><div class="envelope-label">PREPARED ONLINE. MAILED FOR YOU.</div><div class="seal">DS</div></div></div>`;
+}
+function card(kind='home'){
+ const square=kind==='square',route=kind==='cancellation';
+ return `<article class="card ${square?'square':''} ${route?'route':''}" aria-label="${route?'Cancellation letter':'DocketStamp'} share image">${brand}<div class="eyebrow">${route?'SERVICE & POLICY CANCELLATION':'FORMAL LETTERS. MAILED FOR YOU.'}</div><h1 class="headline">${route?'Cancel a service.<br>Put it in writing.':'Make it formal.'}</h1><p class="promise">${route?'Prepare your cancellation letter.<br>We’ll print and mail it.':`We’ll print${square?' ':'<br>'}and mail it.`}</p><p class="support">${route?'Review online. Send by USPS.':square?'<span>Prepare online.</span><span>Review your letter.</span><span>Send by USPS.</span>':'Prepare online. Review. Send by USPS.'}</p><div class="rule"></div><div class="benefit">${mailIcon}<span>Certified Mail available</span></div>${illustration(route?'Cancellation<br>letter':undefined,route?'SERVICE DETAILS':undefined)}<div class="disclosure">Self-help document preparation.<br>Not a law firm. No legal advice.</div><div class="domain">docketstamp.com</div></article>`;
+}
+const head=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head>`;
+for(const kind of ['home','square','cancellation']) await writeFile(new URL(`${kind}.html`,root),`${head}<body>${card(kind)}</body></html>`);
+const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+const checks=[];
+try{
+ for(const kind of ['home','square','cancellation']){
+  const width=kind==='square'?1080:1200,height=kind==='square'?1080:630;
+  const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
+  await page.goto(new URL(`${kind}.html`,root).href);
+  await page.evaluate(()=>document.fonts.ready);
+  await page.screenshot({path:fileURLToPath(new URL(`${kind}.png`,root))});
+  checks.push({kind,width,height,fonts:await page.evaluate(()=>({inter:document.fonts.check('25px Inter'),serif:document.fonts.check('700 69px Merriweather'),mono:document.fonts.check('600 25px "JetBrains Mono"')})),overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),textBounds:await page.evaluate(()=>Array.from(document.querySelectorAll('.brand,.eyebrow,.headline,.promise,.support,.benefit,.domain,.disclosure')).map(el=>{const r=el.getBoundingClientRect();return {text:el.textContent,bounded:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}}))});
+  await page.close();
+ }
+ for(const width of [1440,390]){
+  const page=await browser.newPage({viewport:{width,height:1000},deviceScaleFactor:1});
+  await page.goto(new URL('preview.html',root).href);
+  await page.evaluate(()=>document.fonts.ready);
+  await page.screenshot({path:fileURLToPath(new URL(`preview-${width}.png`,root)),fullPage:true});
+  checks.push({kind:'gallery',width,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)});
+  await page.close();
+ }
+}finally{await browser.close()}
+await writeFile(new URL('render-checks.json',root),JSON.stringify(checks,null,2)+'\n');
+console.log(checks);

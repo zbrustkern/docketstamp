@@ -1,6 +1,6 @@
 # SPRINT-0012 — Template review and availability controls
 
-**Status:** Complete (local implementation; not deployed)
+**Status:** Complete; deployed to staging and production (paid production checkout held pending live configuration)
 **Run:** `2026-10-20-template-governance`
 **Source:** Current working tree on `4225135eb5bc0d1b35407851a809a69480a571c6`, including SPRINT-0011 and existing admin changes; fingerprints in run.
 **Owner:** Codex coordinator; Luna backend and admin UI workers in isolated clones.
@@ -82,3 +82,7 @@ Implemented and independently reviewed. Two Luna workers delivered backend and a
 | AC8 | Baseline fingerprints, narrow integration, authority addenda and completed ledger/run |
 
 See [implementation result](../../.delivery/runs/2026-10-20-template-governance/implementation-result.md) and [run index](../../.delivery/runs/2026-10-20-template-governance/INDEX.md) for exact commands, repairs and limits. Local mock Firestore tests are not emulator/distributed concurrency proof. No production deployment, external policy changes or new legal templates occurred. Existing nine remain unreviewed migration defaults; state launch/reuse clearance remains separate.
+
+## Deployment
+
+User-authorized release `4e24aec` is verified on staging and production. See [.delivery deployment evidence](../../.delivery/runs/2026-10-20-template-governance/deployment.md). The release also preserves newer staging address/factual-input safeguards and keeps arbitration as a procedure-information request. Legal/provider launch reviews remain separate from technical deployment.

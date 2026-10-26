@@ -35,7 +35,7 @@ try {
     cases.push({notice,tier:notice.recommendedTier,variant:'unbroken'});
     if(notice.fields.some(f=>f.inputType==='textarea_short')) cases.push({notice,tier:notice.recommendedTier,variant:'linebreaks'});
   }
-  const deposit=ALL_NOTICE_CARTRIDGES.find(n=>n.slug==='security-deposit-accounting-request');
+  const deposit=ALL_NOTICE_CARTRIDGES.find(n=>n.slug==='security-deposit-return-demand-letter');
   for(const state of Object.keys(STATE_STATUTES)) cases.push({notice:deposit,tier:'certified_return_receipt',variant:'max',state});
   for(const {notice,tier,variant,state} of cases){
     const values=valuesFor(notice,variant);

@@ -1,0 +1,1173 @@
+{
+  "version": "v1",
+  "generatedAt": "reproducible-build",
+  "fonts": [
+    {
+      "family": "Inter",
+      "file": "/assets/share/fonts/e4af272ccee01ff0-s.p.woff2",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "family": "Merriweather",
+      "file": "/assets/share/fonts/1f3fe8c6df3d47c1-s.p.woff2",
+      "license": "SIL Open Font License 1.1"
+    },
+    {
+      "family": "JetBrains Mono",
+      "file": "/assets/share/fonts/bb3ef058b751a6ad-s.p.woff2",
+      "license": "SIL Open Font License 1.1"
+    }
+  ],
+  "images": [
+    {
+      "name": "home",
+      "path": "/share/v1/home.png",
+      "source": "assets/share/approved/home.png",
+      "alt": "DocketStamp share card: Make it formal. We’ll print and mail it.",
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 97669,
+      "sha256": "05b44b127ef40dfd6ac597f3e214ff134ebdd99f5b3dc7fe7c0daf4d4d484cab"
+    },
+    {
+      "name": "square",
+      "path": "/share/v1/square.png",
+      "source": "assets/share/approved/square.png",
+      "alt": "DocketStamp square share card: Make it formal. We’ll print and mail it.",
+      "width": 1080,
+      "height": 1080,
+      "mimeType": "image/png",
+      "bytes": 116191,
+      "sha256": "d97d269da3469ef405612d82d8a03e5c4fa3e72021fe1d91e2ecd2bf459f42e4"
+    },
+    {
+      "name": "tenant-notice-of-intent-to-vacate",
+      "path": "/share/v1/tenant-notice-of-intent-to-vacate.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp move-out notice preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "TENANT MOVE-OUT NOTICE",
+            "x": 64,
+            "y": 138,
+            "right": 297,
+            "bottom": 156,
+            "width": 233,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Give formalmove-out notice",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Give formal",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "move-out notice",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 100152,
+      "sha256": "4e1442b113a4b6c2403a409a0babe13215a7aeddeedfc7332c66423be73b170b"
+    },
+    {
+      "name": "security-deposit-accounting-request",
+      "path": "/share/v1/security-deposit-accounting-request.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp security deposit demand letter preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "SECURITY DEPOSIT",
+            "x": 64,
+            "y": 138,
+            "right": 234,
+            "bottom": 156,
+            "width": 170,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Demand your securitydeposit back",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Demand your security",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "deposit back",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 104002,
+      "sha256": "b7d2f8133b1172fac72a25ecf530a9241400477c4f1d9f3f6103a8b630bad44f"
+    },
+    {
+      "name": "tenant-repair-and-maintenance-notice",
+      "path": "/share/v1/tenant-repair-and-maintenance-notice.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp tenant repair request preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "TENANT REPAIR REQUEST",
+            "x": 64,
+            "y": 138,
+            "right": 287,
+            "bottom": 156,
+            "width": 223,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Demand repairsfrom your landlord",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Demand repairs",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "from your landlord",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 102460,
+      "sha256": "03560ba1fe3519cf9392d57470cd7bde8cfb9296a294d99595aae13cf53244ea"
+    },
+    {
+      "name": "credit-report-dispute-request",
+      "path": "/share/v1/credit-report-dispute-request.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp credit-report dispute letter preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "CREDIT REPORT DISPUTE",
+            "x": 64,
+            "y": 138,
+            "right": 287,
+            "bottom": 156,
+            "width": 223,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Dispute acredit-report error",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Dispute a",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "credit-report error",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 100140,
+      "sha256": "8eb8d0ae05291f3142b7a31caacd029c775affb021d8b1a4be3ea04475fd4a62"
+    },
+    {
+      "name": "debt-dispute-information-request",
+      "path": "/share/v1/debt-dispute-information-request.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp debt dispute and verification request preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "DEBT DISPUTE",
+            "x": 64,
+            "y": 138,
+            "right": 191,
+            "bottom": 156,
+            "width": 127,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Dispute a debt.Request verification.",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Dispute a debt.",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "Request verification.",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 102552,
+      "sha256": "e0b74dc5cef9163a42550dfb2ffba5a3090abbe57ffdbc0ec84efc63bfc0106e"
+    },
+    {
+      "name": "service-cancellation-request",
+      "path": "/share/v1/service-cancellation-request.png",
+      "source": "assets/share/approved/cancellation.png",
+      "alt": "DocketStamp service or policy cancellation letter preparation card",
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 105909,
+      "sha256": "b2decfde5fa1a44be6347f94b8f4ccf026df11998f8d450678b52f155dd015b8"
+    },
+    {
+      "name": "product-complaint-refund-request",
+      "path": "/share/v1/product-complaint-refund-request.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp product complaint and refund request preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "PRODUCT FEATURE DISPUTE",
+            "x": 64,
+            "y": 138,
+            "right": 308,
+            "bottom": 156,
+            "width": 244,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Request a refund forchanged product features",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Request a refund for",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "changed product features",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 108696,
+      "sha256": "d28e5fe319d81c79735c8d1f5c393f6f0db8d9260df26b0f5b229de2bfca20bb"
+    },
+    {
+      "name": "arbitration-opt-out-procedure-request",
+      "path": "/share/v1/arbitration-opt-out-procedure-request.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp arbitration procedure information request preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "ARBITRATION PROCEDURE REQUEST",
+            "x": 64,
+            "y": 138,
+            "right": 371,
+            "bottom": 156,
+            "width": 307,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Ask about arbitrationopt-out procedures.",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Ask about arbitration",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "opt-out procedures.",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 105709,
+      "sha256": "966874ab3bf994401972b00386f6a73bc313fe951ad31df2fb37e5848d0fef0e"
+    },
+    {
+      "name": "personal-data-deletion-request",
+      "path": "/share/v1/personal-data-deletion-request.png",
+      "source": "assets/share/card-copy.json + assets/share/card.css",
+      "alt": "DocketStamp personal data deletion request preparation card",
+      "diagnostics": {
+        "viewport": {
+          "width": 1200,
+          "height": 630,
+          "scrollWidth": 1200,
+          "scrollHeight": 630
+        },
+        "fonts": {
+          "inter": true,
+          "merriweather": true,
+          "jetBrainsMono": true
+        },
+        "bounds": [
+          {
+            "selector": ".brand",
+            "text": "DSDOCKETSTAMP™",
+            "x": 60,
+            "y": 47,
+            "right": 308,
+            "bottom": 93,
+            "width": 248,
+            "height": 46
+          },
+          {
+            "selector": ".eyebrow",
+            "text": "PERSONAL DATA REQUEST",
+            "x": 64,
+            "y": 138,
+            "right": 287,
+            "bottom": 156,
+            "width": 223,
+            "height": 18
+          },
+          {
+            "selector": ".headline",
+            "text": "Request deletion ofpersonal data",
+            "x": 60,
+            "y": 171,
+            "right": 675,
+            "bottom": 321,
+            "width": 615,
+            "height": 150
+          },
+          {
+            "selector": ".promise",
+            "text": "Prepare and review your letter online.We’ll print and mail it.",
+            "x": 62,
+            "y": 338,
+            "right": 662,
+            "bottom": 419,
+            "width": 600,
+            "height": 81
+          },
+          {
+            "selector": ".support",
+            "text": "Send by USPS.",
+            "x": 64,
+            "y": 420,
+            "right": 213,
+            "bottom": 452,
+            "width": 149,
+            "height": 32
+          },
+          {
+            "selector": ".benefit",
+            "text": "Certified Mail available",
+            "x": 64,
+            "y": 507,
+            "right": 328,
+            "bottom": 533,
+            "width": 264,
+            "height": 26
+          },
+          {
+            "selector": ".disclosure",
+            "text": "Self-help document preparation.Not a law firm. No legal advice.",
+            "x": 64,
+            "y": 553,
+            "right": 279,
+            "bottom": 594,
+            "width": 215,
+            "height": 41
+          },
+          {
+            "selector": ".domain",
+            "text": "docketstamp.com",
+            "x": 998,
+            "y": 570,
+            "right": 1142,
+            "bottom": 591,
+            "width": 144,
+            "height": 21
+          }
+        ],
+        "headlineLines": [
+          {
+            "text": "Request deletion of",
+            "right": 675,
+            "bottom": 236,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          },
+          {
+            "text": "personal data",
+            "right": 675,
+            "bottom": 301,
+            "scrollWidth": 615,
+            "clientWidth": 615
+          }
+        ]
+      },
+      "width": 1200,
+      "height": 630,
+      "mimeType": "image/png",
+      "bytes": 103761,
+      "sha256": "5c411b6c0fea9711581ce06947942656bcbd72ee8e8822f9ce6caa7b0e9db534"
+    }
+  ],
+  "icons": [
+    {
+      "filePath": "app/icon.png",
+      "path": "/icon.png",
+      "width": 512,
+      "height": 512,
+      "mimeType": "image/png",
+      "bytes": 12807,
+      "sha256": "7783ab5b5153c24a850abf43306ed43fb14d3ccbf4479b95282cfc8c7e5627c3"
+    },
+    {
+      "filePath": "app/apple-icon.png",
+      "path": "/apple-icon.png",
+      "width": 180,
+      "height": 180,
+      "mimeType": "image/png",
+      "bytes": 6224,
+      "sha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996"
+    },
+    {
+      "filePath": "public/icon-192.png",
+      "path": "/icon-192.png",
+      "width": 192,
+      "height": 192,
+      "mimeType": "image/png",
+      "bytes": 6762,
+      "sha256": "a48aa998202a1a45c0236c7c00ad0ea08a098b8de839edeca6642518ed6bf68d"
+    },
+    {
+      "filePath": "public/icon-512.png",
+      "path": "/icon-512.png",
+      "width": 512,
+      "height": 512,
+      "mimeType": "image/png",
+      "bytes": 12807,
+      "sha256": "7783ab5b5153c24a850abf43306ed43fb14d3ccbf4479b95282cfc8c7e5627c3"
+    },
+    {
+      "filePath": "public/apple-touch-icon.png",
+      "path": "/apple-touch-icon.png",
+      "width": 180,
+      "height": 180,
+      "mimeType": "image/png",
+      "bytes": 6224,
+      "sha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996"
+    },
+    {
+      "filePath": "public/apple-touch-icon-precomposed.png",
+      "path": "/apple-touch-icon-precomposed.png",
+      "width": 180,
+      "height": 180,
+      "mimeType": "image/png",
+      "bytes": 6224,
+      "sha256": "a49afba0e7bdb4aa2776a1cc56625d90a0adf969bb2fb4d84f351fdf317a6996"
+    },
+    {
+      "filePath": "public/favicon-32x32.png",
+      "path": "/favicon-32x32.png",
+      "width": 32,
+      "height": 32,
+      "mimeType": "image/png",
+      "bytes": 876,
+      "sha256": "5a693ab78d77429b142c53826716e20dcf5168dd4ebcd64e1c39b60073a4a860"
+    },
+    {
+      "filePath": "app/favicon.ico",
+      "path": "/favicon.ico",
+      "width": 32,
+      "height": 32,
+      "mimeType": "image/x-icon",
+      "bytes": 898,
+      "sha256": "adee6bbd1881d93536ffc7bc0edd0be03123ac9e6fcc06c090096e456e94eefd"
+    }
+  ],
+  "routeMap": [
+    {
+      "slug": "tenant-notice-of-intent-to-vacate",
+      "path": "/share/v1/tenant-notice-of-intent-to-vacate.png",
+      "alt": "DocketStamp move-out notice preparation card"
+    },
+    {
+      "slug": "security-deposit-accounting-request",
+      "path": "/share/v1/security-deposit-accounting-request.png",
+      "alt": "DocketStamp security deposit demand letter preparation card"
+    },
+    {
+      "slug": "tenant-repair-and-maintenance-notice",
+      "path": "/share/v1/tenant-repair-and-maintenance-notice.png",
+      "alt": "DocketStamp tenant repair request preparation card"
+    },
+    {
+      "slug": "credit-report-dispute-request",
+      "path": "/share/v1/credit-report-dispute-request.png",
+      "alt": "DocketStamp credit-report dispute letter preparation card"
+    },
+    {
+      "slug": "debt-dispute-information-request",
+      "path": "/share/v1/debt-dispute-information-request.png",
+      "alt": "DocketStamp debt dispute and verification request preparation card"
+    },
+    {
+      "slug": "service-cancellation-request",
+      "path": "/share/v1/service-cancellation-request.png",
+      "alt": "DocketStamp service or policy cancellation letter preparation card"
+    },
+    {
+      "slug": "product-complaint-refund-request",
+      "path": "/share/v1/product-complaint-refund-request.png",
+      "alt": "DocketStamp product complaint and refund request preparation card"
+    },
+    {
+      "slug": "arbitration-opt-out-procedure-request",
+      "path": "/share/v1/arbitration-opt-out-procedure-request.png",
+      "alt": "DocketStamp arbitration procedure information request preparation card"
+    },
+    {
+      "slug": "personal-data-deletion-request",
+      "path": "/share/v1/personal-data-deletion-request.png",
+      "alt": "DocketStamp personal data deletion request preparation card"
+    }
+  ],
+  "legacyFallbacks": [
+    {
+      "path": "/public/og-image.png",
+      "mimeType": "image/png",
+      "width": 1200,
+      "height": 630,
+      "bytes": 97669,
+      "sha256": "05b44b127ef40dfd6ac597f3e214ff134ebdd99f5b3dc7fe7c0daf4d4d484cab"
+    },
+    {
+      "path": "/public/og-image.jpg",
+      "mimeType": "image/jpeg",
+      "width": 1200,
+      "height": 630,
+      "bytes": 61108,
+      "sha256": "1247dc4ba651a0f30a300b0d90f32c472349c957ccfc12d6b27c27d7c2baba32"
+    }
+  ],
+  "contactSheet": "/private/tmp/docketstamp-share-release-20261022/.delivery/share-previews/contact-sheet.png",
+  "iconContactSheet": "/private/tmp/docketstamp-share-release-20261022/.delivery/share-previews/icon-contact-sheet.png"
+}

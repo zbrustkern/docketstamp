@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "case": "WebMCP checks fresh policy before field mutation",
+      "passed": true
+    },
+    {
+      "case": "definitive rejection allows correction; uncertain retry uses identical request",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "forbiddenRequests": 0
+}

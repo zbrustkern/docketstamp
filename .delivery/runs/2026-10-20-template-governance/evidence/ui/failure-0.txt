@@ -1,0 +1,217 @@
+DocketStamp Admin
+INTERIM REPORTING • PROBE UNVERIFIED
+
+Observed order & session rollup (unverified legacy economics; direct provider mutations held).
+
+Comp Dispatch (Held)
+Storefront
+Log Out
+Command Center
+0
+System Health
+Unverified
+Unit Economics
+N/A
+Discounts
+SEO
+9
+Outgoing Email
+Templates & coverage
+Lob USPS Dispatch Gateway
+unverified_no_recent_probe · mock
+Deterministic Mock CASS (Staging / Non-Production)
+CONFIGURATION
+Sandbox / Mock Dispatch Mode (No Live USPS Mail)
+Webhook: unconfigured; connectivity not probed
+MARKETING DESTINATIONS
+local · config only, no live probe
+Google: Disabled (verification_required)
+Meta: Disabled (verification_required)
+
+Vendor tags still require explicit visitor marketing consent. No destination ID is shown here.
+
+TEMPLATE GOVERNANCE · LOCAL
+
+Templates & coverage
+
+Availability policy controls new preparation and checkout. Review records are operator evidence, not a legal opinion or clearance.
+
+Reload policy
+Cutoff: changes apply to new preparation/staging and checkout locks committed after the update. A lock committed first is grandfathered, including its later Stripe intent/payment and dispatch. This control does not cancel intents, refund charges, stop paid dispatch, or rewrite frozen letters.
+Policy revision 9
+Updated 10/20/2026
+Global availability
+
+A global restriction cannot be overridden by a template rule.
+
+Effective for all templates
+Service enabled
+Turn off to hold all new template preparation and locks.
+Require current review
+Blocks templates without an approved, current review record.
+Consumer residence
+
+Explicit state where the sender resides; never inferred from IP or recipient address.
+
+Rule
+All jurisdictions
+Only listed jurisdictions
+All except listed jurisdictions
+State codes
+
+Enter USPS state codes and DC. An empty allowlist blocks every jurisdiction; “All jurisdictions” ignores this list.
+
+Property / matter state
+
+Applies only to templates whose policy uses a property or matter location.
+
+Rule
+All jurisdictions
+Only listed jurisdictions
+All except listed jurisdictions
+State codes
+
+Enter USPS state codes and DC. An empty allowlist blocks every jurisdiction; “All jurisdictions” ignores this list.
+
+Reason for this policy change
+Discard edits
+Save global policy
+Compiled templates
+9
+Search by title, slug, or category
+Formal Move-Out Notice
+tenant-notice-of-intent-to-vacate
+Unreviewed · policy active
+Security Deposit Demand Letter
+security-deposit-return-demand-letter
+Unreviewed · policy active
+Tenant Repair Demand Letter
+tenant-repair-and-maintenance-notice
+Unreviewed · policy active
+Credit Report Dispute Letter
+fcra-credit-bureau-written-dispute-letter
+Unreviewed · policy active
+Debt Dispute and Verification Demand
+fdcpa-30-day-debt-validation-letter
+Unreviewed · policy active
+Service or Policy Cancellation Notice
+written-contract-and-policy-cancellation-letter
+Unreviewed · policy active
+Feature Refund Demand Letter
+pre-arbitration-notice-of-dispute-and-refund-request
+Unreviewed · policy active
+Arbitration Opt-Out Notice
+30-day-mandatory-arbitration-opt-out-notice
+Unreviewed · policy active
+Personal Data Deletion Demand
+statutory-health-and-biometric-data-deletion-demand
+Unreviewed · policy active
+
+TENANT
+
+Security Deposit Demand Letter
+
+security-deposit-return-demand-letter
+
+Unreviewed · policy active
+Content digest
+9f18f7e0135901831abaaf27676a20b8f9176a2bf65c86a5de14c4c6d03ddaab
+Review status
+unreviewed · not current
+Reviewed by / date
+Not recorded · Not recorded
+Review by
+Not recorded
+Review evidence
+No evidence reference
+Read-only compiled letter and fields
+Template availability and review
+
+Approval is a recorded review status; it never enables a paused template or certifies legal suitability.
+
+Template enabled
+Allow new work when all other policy checks pass.
+Require current review
+Blocks unreviewed, stale, or expired records for this template.
+Consumer residence
+
+Required only when this rule restricts jurisdictions.
+
+Rule
+All jurisdictions
+Only listed jurisdictions
+All except listed jurisdictions
+State codes
+
+Enter USPS state codes and DC. An empty allowlist blocks every jurisdiction; “All jurisdictions” ignores this list.
+
+Property / matter state
+
+Applies to the tenant property state, never the recipient's mailing state.
+
+Rule
+All jurisdictions
+Only listed jurisdictions
+All except listed jurisdictions
+State codes
+
+Enter USPS state codes and DC. An empty allowlist blocks every jurisdiction; “All jurisdictions” ignores this list.
+
+Source records
+
+Source type describes provenance; it does not make this letter an official government form.
+
+Add source
+Source 1
+Source kind
+Original content
+Official guidance
+Official sample
+Title
+Source URL
+Jurisdiction
+Retrieved date
+Reproduction status
+Unverified
+Permitted
+Restricted
+Notes
+Remove source record
+Record a review update
+Explicitly update review record
+If unchecked, existing review metadata is preserved. Recording “approved” is not a legal opinion.
+Reason for this template change
+Discard edits
+Save template policy
+Recent policy changes
+
+Bounded audit history from the current environment.
+
+9 recent records
+set_global · global
+owner@example.test · 10/20/2026
+Local browser verification fixture only.
+set_template · security-deposit-return-demand-letter
+owner@example.test · 10/20/2026
+Local browser verification fixture only.
+set_template · security-deposit-return-demand-letter
+owner@example.test · 10/20/2026
+Pause local fixture for verification
+set_global · global
+owner@example.test · 10/20/2026
+Return local fixture to all states
+set_global · global
+owner@example.test · 10/20/2026
+Local test of typed state list
+set_template · security-deposit-return-demand-letter
+owner@example.test · 10/20/2026
+Local browser verification fixture only.
+set_global · global
+owner@example.test · 10/20/2026
+Local browser verification fixture only.
+set_template · security-deposit-return-demand-letter
+owner@example.test · 10/20/2026
+Local browser verification fixture only.
+set_global · global
+owner@example.test · 10/20/2026
+Local browser verification fixture only.

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "sprints": [
+    {
+      "id": "SPRINT-0001",
+      "title": "Preview, Staging Checkout, and Failure Resilience",
+      "path": "docs/sprints/SPRINT-0001.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-19-staging-preview-reliability",
+      "updated_at": "2026-10-19T00:00:00-05:00"
+    },
+    {
+      "id": "SPRINT-0002",
+      "title": "Admin Outgoing Email Composer",
+      "path": "docs/sprints/SPRINT-0002.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-19-admin-outgoing-email",
+      "updated_at": "2026-10-19T23:00:00-05:00"
+    },
+    {
+      "id": "SPRINT-0003",
+      "title": "Frozen Document Integrity Evidence",
+      "path": "docs/sprints/SPRINT-0003.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-19-integrity-evidence",
+      "updated_at": "2026-10-19T21:45:00-05:00"
+    },
+    {
+      "id": "SPRINT-0004",
+      "title": "Firebase trust and admin session boundaries",
+      "path": "docs/sprints/SPRINT-0004.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0005",
+      "title": "Canonical notice orders and payment entry points",
+      "path": "docs/sprints/SPRINT-0005.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0006",
+      "title": "Legacy order inventory and migration tooling",
+      "path": "docs/sprints/SPRINT-0006.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0007",
+      "title": "Recipient-first account and order history",
+      "path": "docs/sprints/SPRINT-0007.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0008",
+      "title": "One-time notice deadline reminders",
+      "path": "docs/sprints/SPRINT-0008.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0009",
+      "title": "Notice analytics and provider/admin namespace migration",
+      "path": "docs/sprints/SPRINT-0009.md",
+      "status": "active",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0010",
+      "title": "DocketStamp documentation and verification authority",
+      "path": "docs/sprints/SPRINT-0010.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-legacy-replacement",
+      "updated_at": "2026-10-20T21:18:24.223577+00:00"
+    },
+    {
+      "id": "SPRINT-0011",
+      "title": "Forceful demand language and state launch review",
+      "path": "docs/sprints/SPRINT-0011.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-demand-copy",
+      "updated_at": "2026-10-21T03:32:12.375825+00:00"
+    },
+    {
+      "id": "SPRINT-0012",
+      "title": "Template review and availability controls",
+      "path": "docs/sprints/SPRINT-0012.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-20-template-governance",
+      "updated_at": "2026-10-21T03:32:12.375825+00:00"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "status": "design_and_planning_complete_awaiting_preview_decision",
+  "preexisting_files_unchanged": 205,
+  "earlier_ledger_entries_preserved": 13,
+  "render_checks_pass": true,
+  "application_code_changed": false,
+  "public_assets_changed": false,
+  "deployed": false
+}

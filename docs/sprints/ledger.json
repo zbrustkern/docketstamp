@@ -98,7 +98,7 @@
       "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-demand-copy",
-      "updated_at": "2026-10-21T00:49:31.179450+00:00"
+      "updated_at": "2026-10-21T03:32:12.375825+00:00"
     },
     {
       "id": "SPRINT-0012",
@@ -107,7 +107,35 @@
       "status": "complete",
       "chapter_id": null,
       "run_id": "2026-10-20-template-governance",
-      "updated_at": "2026-10-21T01:25:35.930739+00:00"
+      "updated_at": "2026-10-21T03:32:12.375825+00:00"
+    },
+    {
+      "id": "SPRINT-0013",
+      "title": "Letter library and cancellation starting points",
+      "path": "docs/sprints/SPRINT-0013.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-21-letter-library",
+      "updated_at": "2026-10-21T23:26:44.977307+00:00"
+    },
+    {
+      "id": "SPRINT-0014",
+      "title": "DocketStamp thumbnails and link previews",
+      "path": "docs/sprints/SPRINT-0014.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-22-share-previews",
+      "updated_at": "2026-10-22T16:55:07.953844+00:00",
+      "approval_status": "approved_2026-10-22"
+    },
+    {
+      "id": "SPRINT-0015",
+      "title": "High-converting document templates, terminology modernization, and forceful demand language",
+      "path": "docs/sprints/SPRINT-0015.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-26-high-converting-templates",
+      "updated_at": "2026-10-26T15:40:00-05:00"
     }
   ]
 }

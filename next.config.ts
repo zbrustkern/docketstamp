@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // App Hosting's standalone bundle can otherwise omit untraced public assets.
+  // Keep the finite public directory complete for share cards and app icons.
+  outputFileTracingIncludes: {
+    "/*": ["./public/**/*"],
+  },
   images: {
     remotePatterns: [
       {

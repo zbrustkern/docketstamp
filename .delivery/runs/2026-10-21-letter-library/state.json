@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-21-letter-library",
+  "workflow": "df-sprint-plan + df-sprint-execute",
+  "project_root": "/Users/zeke/code/DocketStamp",
+  "stage": "complete",
+  "status": "complete",
+  "owner": "Codex coordinator",
+  "participants": [
+    "Codex coordinator",
+    "Codex gpt-6-luna planning critic and executor"
+  ],
+  "source_revision": "4c6eeb8eafcfa1757e9a3175199695e6cb893eb3",
+  "inputs": [
+    "AGENTS.md",
+    "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md",
+    "docs/DOCKETSTAMP_AGENTIC_EXPANSION.md",
+    "docs/DOCKETSTAMP_PRODUCT_OPPORTUNITIES_2026-10-21.md"
+  ],
+  "artifacts": [
+    "intent.md",
+    "local-draft.md",
+    "handoff-antigravity.md",
+    "baseline-files.json",
+    "protected-files.json",
+    "baseline-ledger.json",
+    "luna-plan-review.md",
+    "merge-notes.md",
+    "INDEX.md",
+    "events.md",
+    "../../../docs/sprints/SPRINT-0013.md",
+    "luna-implementation-report.md",
+    "verification.md",
+    "check-library-ui.mjs",
+    "verify-integrity.py",
+    "evidence/ui/results.json",
+    "evidence/ui/layout-results.json",
+    "evidence/integrity.json"
+  ],
+  "acceptance_criteria": [
+    "AC1",
+    "AC2",
+    "AC3",
+    "AC4",
+    "AC5",
+    "AC6",
+    "AC7",
+    "AC8"
+  ],
+  "checks": [
+    {
+      "name": "focused tests",
+      "result": "passed",
+      "count": 54,
+      "evidence": "focused-tests.log"
+    },
+    {
+      "name": "template governance",
+      "result": "passed",
+      "count": 26,
+      "evidence": "template-governance.log"
+    },
+    {
+      "name": "TypeScript",
+      "result": "passed",
+      "evidence": "typescript.log"
+    },
+    {
+      "name": "browser behavior",
+      "result": "passed",
+      "count": 17,
+      "evidence": "evidence/ui/results.json"
+    },
+    {
+      "name": "final layout and home navigation",
+      "result": "passed",
+      "count": 3,
+      "evidence": "evidence/ui/layout-results.json"
+    },
+    {
+      "name": "integrity and documentation links",
+      "result": "passed",
+      "evidence": "evidence/integrity.json"
+    }
+  ],
+  "open_issues": [],
+  "iteration": 2,
+  "iteration_limit": 3,
+  "next_action": "No remaining sprint work. Changes are local and not deployed; researched procedures remain backlog items.",
+  "updated_at": "2026-10-21T23:26:44.977307+00:00"
+}

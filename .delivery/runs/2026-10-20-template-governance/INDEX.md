@@ -10,3 +10,5 @@
 - [Desktop admin](evidence/ui/admin-desktop.png), [mobile admin](evidence/ui/admin-viewer-mobile.png), [mobile location gate](evidence/ui/location-mobile.png)
 - [State](state.json), [events](events.md), [baseline](baseline-hashes.json), [changed existing files](changed-from-baseline.json)
 - [Intent](intent.md), [draft](local-draft.md), [optional unexecuted Antigravity handoff](handoff-antigravity.md)
+
+- [Verified staging and production deployment](deployment.md) — release `4e24aec`; production checkout remains held pending live configuration.

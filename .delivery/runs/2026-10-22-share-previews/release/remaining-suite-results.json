@@ -1,0 +1,46 @@
+[
+  {
+    "check": "npm run test:meta",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:unit-economics",
+    "exit": 0
+  },
+  {
+    "check": "npm run audit:legacy",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:security",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:payment-mode",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:docket",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:address-intake",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:stripe-bootstrap",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:admin-auth",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:go-live",
+    "exit": 0
+  },
+  {
+    "check": "npm run test:template-governance",
+    "exit": 0
+  }
+]

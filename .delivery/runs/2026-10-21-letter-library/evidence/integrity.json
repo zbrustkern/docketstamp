@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-21T23:26:45.091790+00:00",
+  "protectedFileCount": 18,
+  "protectedChanges": [],
+  "baselineFileCount": 163,
+  "intentionalBaselineChanges": [
+    "docs/DOCKETSTAMP_PRODUCT_OPPORTUNITIES_2026-10-21.md",
+    "docs/sprints/ledger.json"
+  ],
+  "unexpectedBaselineChanges": [],
+  "priorLedgerEntriesUnchanged": true,
+  "priorLedgerEntryCount": 12,
+  "missingDocumentationLinks": [],
+  "gitDiffCheckExitCode": 0,
+  "sourceHashes": {
+    "src/lib/docket/letter-library.ts": "1fe41c66c32712b773e9c8024d851946c0a306b20f09705f35ad8fc893b76525",
+    "src/components/docket/LetterLibraryClient.tsx": "40090d5ac890edf77231d5107decfc0946544c568630cf871f1d27fffce77da2",
+    "app/letters/page.tsx": "1e83f3d7f2a7631cdaa5fd4e0d0ea428b7d854140cd7bcdaab5aee9e4382a558",
+    "app/page.tsx": "1a70cdd330aa0365c200f804cf3c55573030f3cbb2384a53ddc790ab6359937e",
+    "app/sitemap.ts": "b38cca903e1ec5511a7bd832ab98f53858ef477806b4eee3e8265864c4977acf",
+    "tests/letter-library.test.ts": "de0fa54e15b75c7459fe97d82024bcef027ff2fbdb8f7c321ad91ad50980f1cd"
+  }
+}

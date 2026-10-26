@@ -11,3 +11,7 @@ Added a checkout readiness gate: live Stripe requires live Lob address-verificat
 Validation: the production `npm run build` passed (font download required network access). Full `npm test` passed, including new governance and checkout-readiness tests. Focused API/MCP/governance suite passed 50 tests. Typecheck passed. Headless Chrome verified 91 print-layout cases, including max lengths, line breaks and unbroken text. Browser checks passed for admin edits, pause controls across public pages/API/MCP/resumed drafts, state restrictions, stale revision conflicts, failed refresh behavior and desktop/mobile sizing. No provider payment, postal dispatch or customer email was executed.
 
 Cloud build and final rollout results are recorded separately after deployment. Previous production source: `b97551226aec144d469ca18b01ebc139df66f95c`; previous staging source: `dbe7bcd66f7af2ea9ddd8d8bccfd615b2726a347`.
+
+## Production retry
+
+The initial production build stopped before changing serving traffic because the App Hosting service needed access to the existing admin-session-signing-key. The official `firebase apphosting:secrets:grantaccess` command repaired the required build/runtime IAM bindings, and an explicit rollout retried source `4e24aece1233e1a520474ef1746fd3f83f916971`. The failed attempt did not replace the ready production revision.

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-20-template-governance",
+  "workflow": "df-sprint-plan + df-sprint-execute",
+  "project_root": "/Users/zeke/code/DocketStamp",
+  "stage": "complete",
+  "status": "complete",
+  "owner": "Codex coordinator",
+  "participants": [
+    "Luna high backend",
+    "Luna medium admin/review"
+  ],
+  "source_revision": "4225135eb5bc0d1b35407851a809a69480a571c6 plus baseline-hashes.json",
+  "inputs": [
+    "intent.md",
+    "local-draft.md",
+    "docs/sprints/SPRINT-0012.md"
+  ],
+  "artifacts": [
+    "docs/sprints/SPRINT-0012.md",
+    "docs/legal/OFFICIAL_TEMPLATE_PRODUCT_REVIEW_2026-10-20.md",
+    "implementation-result.md",
+    "review.md"
+  ],
+  "acceptance_criteria": [
+    "AC1",
+    "AC2",
+    "AC3",
+    "AC4",
+    "AC5",
+    "AC6",
+    "AC7",
+    "AC8"
+  ],
+  "checks": [
+    {
+      "name": "integrated regression",
+      "status": "passed",
+      "evidence": "tests-final.log",
+      "tests": 195
+    },
+    {
+      "name": "TypeScript",
+      "status": "passed",
+      "evidence": "typecheck-final.log"
+    },
+    {
+      "name": "Chrome desktop/mobile",
+      "status": "passed",
+      "evidence": [
+        "evidence/ui/results.json",
+        "evidence/ui/extra-results.json"
+      ]
+    },
+    {
+      "name": "Luna independent review",
+      "status": "passed",
+      "evidence": "review.md"
+    },
+    {
+      "name": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "open_issues": [
+    "Legal launch eligibility and template reuse rights remain separate"
+  ],
+  "iteration": 3,
+  "iteration_limit": 3,
+  "next_action": "Review legal launch/reuse evidence before separate production rollout; no live policy changes made",
+  "updated_at": "2026-10-21T01:25:35.930739+00:00",
+  "deployment": {
+    "source_revision": "4e24aece1233e1a520474ef1746fd3f83f916971",
+    "staging": "verified",
+    "production": "verified",
+    "production_checkout": "held_missing_live_mailing_configuration",
+    "evidence": "deployment.md"
+  }
+}
