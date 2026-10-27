@@ -21,6 +21,7 @@ import {
   DocketAddress,
 } from '@/lib/docket/types';
 import { getVerifiedRecipientById } from '@/lib/docket/data/verified-recipients';
+import { resolveHydratedStageId, sanitizeWorkflowLocation } from '@/lib/docket/workflow-history';
 import { getStateStatute } from '@/lib/docket/data/state-statutes';
 import { getGuidedFieldsInVisualOrder } from '@/components/docket/address-intake';
 
@@ -113,6 +114,7 @@ export function useAgentHydration({
     fieldValues: Record<string, string>;
     tier: MailTierId | null;
   } | null>(null);
+  const [retainedStageId, setRetainedStageId] = useState<string | null>(null);
 
   const fetchedStageIdRef = useRef<string | null>(null);
 
@@ -145,9 +147,8 @@ export function useAgentHydration({
 
   // Stage ID detection (nullified if user chose to start fresh)
   const activeStageId = useMemo<string | null>(() => {
-    if (isStageDismissed) return null;
-    return queryMap.get('stage') || queryMap.get('stageId') || null;
-  }, [isStageDismissed, queryMap]);
+    return resolveHydratedStageId(queryMap.get('stage') || queryMap.get('stageId') || null, retainedStageId, isStageDismissed);
+  }, [isStageDismissed, queryMap, retainedStageId]);
 
   const retryStageLoad = useCallback(() => {
     fetchedStageIdRef.current = null;
@@ -157,18 +158,10 @@ export function useAgentHydration({
 
   const startFresh = useCallback(() => {
     setIsStageDismissed(true);
+    setRetainedStageId(null);
     setStageError(null);
     setServerStageData(null);
-    if (typeof window !== 'undefined' && window.location) {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('stage');
-        url.searchParams.delete('stageId');
-        window.history.replaceState({}, '', url.toString());
-      } catch {
-        // Safe fallback
-      }
-    }
+    sanitizeWorkflowLocation();
   }, []);
 
   // Direct URL query param values extraction
@@ -289,6 +282,7 @@ export function useAgentHydration({
 
     let isMounted = true;
     fetchedStageIdRef.current = fetchKey;
+    setRetainedStageId(activeStageId);
     setIsLoadingStage(true);
     setStageError(null);
 

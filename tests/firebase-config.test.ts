@@ -84,6 +84,17 @@ test("deployment manifests specify each registered identity at build and runtime
   }
 });
 
+test("staging overrides the inherited production Lob verification binding and uses dedicated address signing", () => {
+  const yaml = readFileSync('apphosting.staging.yaml', 'utf8');
+  const entry = (name: string) => yaml.split(`- variable: ${name}\n`)[1]?.split('- variable:')[0] || '';
+  assert.match(entry('LOB_ADDRESS_VERIFICATION_KEY'), /value: ""/);
+  assert.doesNotMatch(entry('LOB_ADDRESS_VERIFICATION_KEY'), /secret:/);
+  assert.match(entry('LOB_ENV'), /value: staging_mock_cass/);
+  assert.match(entry('ADDRESS_VERIFICATION_EVIDENCE_SECRET'), /secret: address-verification-evidence-secret/);
+  assert.match(entry('ADDRESS_VERIFICATION_EVIDENCE_SECRET'), /- RUNTIME/);
+  assert.doesNotMatch(entry('ADDRESS_VERIFICATION_EVIDENCE_SECRET'), /- BUILD/);
+});
+
 test("admin errors identify actual hostname, project, and referrer while customers get recovery instructions", () => {
   const options = { admin: true, hostname: "staging.docketstamp.com", origin: "https://staging.docketstamp.com", projectId: "docketstamp-staging" };
   const error = { code: "auth/unauthorized-domain" };

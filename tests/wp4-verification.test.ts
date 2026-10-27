@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 /**
  * Work Package 4 (WP-4) Verification Gate
  *
@@ -50,7 +51,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'written-contract-and-policy-cancellation-letter',
           userValues: {
             senderFullName: 'David Miller',
@@ -68,7 +69,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             effectiveCancellationDate: '2026-11-01',
             servicePropertyAddress: '456 Oak St, Chicago, IL',
           },
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -82,7 +83,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'first_class',
           customerEmail: 'tenant@example.com',
@@ -103,7 +104,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             moveOutDate: '2026-11-30',
             forwardingAddress: 'PO Box 99, Chicago, IL 60601',
           },
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -120,7 +121,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           tier: 'certified',
           customerEmail: 'tenant@example.com',
@@ -145,7 +146,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             basisForRequest: 'My records show I paid this deposit and have received no refund.',
             responseDays: '10 business days',
           },
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -159,7 +160,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'fcra-credit-bureau-written-dispute-letter',
           tier: 'certified_return_receipt',
           customerEmail: 'consumer@example.com',
@@ -183,7 +184,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             disputeReason: 'Account status (late payment / charge-off) is inaccurate',
             factualExplanation: 'This account was paid on time as agreed.',
           },
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -199,7 +200,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'certified',
           customerEmail: 'snapshot-audit@example.com',
@@ -220,7 +221,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             moveOutDate: '2026-11-30',
             forwardingAddress: 'PO Box 42, Boston, MA 02101',
           },
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -248,7 +249,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const lockReq = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'certified_return_receipt',
           customerEmail: 'fulfillment-test@example.com',
@@ -269,7 +270,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             moveOutDate: '2026-11-30',
             forwardingAddress: 'PO Box 99, Chicago, IL 60601',
           },
-        }),
+        })),
       });
 
       const lockRes = await lockAndIntentPost(lockReq);
@@ -314,7 +315,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'tenant-notice-of-intent-to-vacate',
           tier: 'certified',
           customerEmail: 'registry-lookup@example.com',
@@ -335,7 +336,7 @@ describe('WP-4 Verification Gate: Checkout Wiring, Snapshot Integrity & Status P
             moveOutDate: '2026-11-30',
             forwardingAddress: 'PO Box 99, Chicago, IL 60601',
           },
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);

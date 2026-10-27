@@ -1,6 +1,7 @@
 import { TelemetryEventName, EntrySource, TelemetryEvent } from "./types";
 import { getStoredAttribution } from "@/components/AttributionTracker";
 import { isAuthorityEvent, sanitizeUrlOrPath } from "./telemetry-schema";
+import { genericGoogleProgress, isCurrentMarketingSurfacePublic } from './marketing-privacy';
 
 export const TELEMETRY_COLLECTION = "telemetry_events";
 export const TELEMETRY_SESSION_STORAGE_KEY = "docketstamp_telemetry_session_v1";
@@ -291,16 +292,8 @@ export async function trackFunnelEvent(params: TrackFunnelEventParams): Promise<
 
     // Forward to GA4 / gtag if active
     const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-    if (hasMarketingConsent() && typeof win.gtag === "function") {
-      win.gtag("event", params.eventName, {
-        event_category: "docket_funnel",
-        step_number: params.step,
-        order_id: params.orderId,
-        notice_slug: params.noticeSlug,
-        entry_source: params.entrySource,
-        experience_version: params.experienceVersion || "home_v2",
-        tier: params.tier,
-      });
+    if (hasMarketingConsent() && isCurrentMarketingSurfacePublic() && typeof win.gtag === "function") {
+      win.gtag("event", 'mailing_progress', genericGoogleProgress(params.step));
     }
 
     return true;
@@ -385,13 +378,8 @@ export async function trackEvent(
 
     // Forward to GA4 / gtag if active
     const win = window as unknown as { gtag?: (...args: unknown[]) => void };
-    if (typeof win.gtag === "function") {
-      win.gtag("event", eventName, {
-        event_category: "visitor_telemetry",
-        step_number: step,
-        order_id: orderId,
-        ...(metadata || {}),
-      });
+    if (hasMarketingConsent() && isCurrentMarketingSurfacePublic() && typeof win.gtag === "function") {
+      win.gtag("event", 'mailing_progress', genericGoogleProgress(step));
     }
   } catch (err) {
     // Non-blocking

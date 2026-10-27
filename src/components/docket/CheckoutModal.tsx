@@ -39,6 +39,8 @@ import {
   UPL_COMPLIANCE_FOOTER_TEXT,
 } from '@/lib/docket/guardrails';
 import { generateDocketId } from '@/lib/docket/renderer/interpolate';
+import { assessPhysicalFit, physicalFitCustomerMessage } from '@/lib/docket/renderer/physical-fit';
+import { PHYSICAL_LAYOUT } from '@/lib/docket/renderer/physical-layout';
 import { useAuth } from '@/context/AuthContext';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
@@ -47,6 +49,20 @@ import { EntrySource } from '@/lib/types';
 import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
 import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
 import { checkoutErrorMessage, isTemplateAvailabilityError } from '@/lib/docket/checkout-errors';
+import type { AddressVerificationEvidence } from '@/lib/docket/address-verification-client';
+import type { WorkspaceWorkflowStep } from '@/lib/docket/workflow-history';
+import {
+  checkoutFingerprintDigest,
+  clearCheckoutRequest,
+  clearActiveCheckoutAttempt,
+  getCheckoutSessionStorage,
+  getOrCreateCheckoutCapability,
+  getOrCreateCheckoutRequest,
+  loadActiveCheckoutAttempt,
+  isActiveCheckoutAttemptUnresolved,
+  saveActiveCheckoutAttempt,
+  type ActiveCheckoutAttemptRecovery,
+} from '@/lib/docket/checkout-recovery';
 
 export interface CheckoutModalProps {
   isOpen: boolean;
@@ -60,6 +76,12 @@ export interface CheckoutModalProps {
   isAffirmed?: boolean;
   entrySource?: EntrySource | string;
   draftRevision?: number;
+  draftId: string;
+  addressVerificationEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>>;
+  onAddressEvidenceInvalid?: () => void;
+  onWorkflowStepChange?: (step: WorkspaceWorkflowStep) => void;
+  onCheckoutComplete?: () => void;
+  workflowStep?: WorkspaceWorkflowStep;
 }
 
 export interface LockedAttempt {
@@ -70,6 +92,13 @@ export interface LockedAttempt {
   amountCents: number;
   tier: MailTierId;
   fingerprint: string;
+  attemptId?: string;
+  draftId?: string;
+  draftRevision?: number;
+  reviewPayload?: string;
+  quoteVersion?: string;
+  pricingVersion?: string;
+  snapshotHash?: string;
 }
 
 // Initialize Stripe publishable key lazily if available
@@ -95,6 +124,68 @@ function computeFingerprint(
   });
 }
 
+function getCheckoutCapability(draftId: string): string {
+  return getOrCreateCheckoutCapability(getCheckoutSessionStorage(), draftId);
+}
+
+function FrozenDocumentReview({ html, docketId }: { html: string; docketId: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const pageWidth = PHYSICAL_LAYOUT.page.cssWidth;
+  const pageHeight = PHYSICAL_LAYOUT.page.cssHeight;
+  const scale = Math.min(1, availableWidth > 0 ? availableWidth / pageWidth : 1);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const measure = () => setAvailableWidth(viewport.clientWidth);
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure);
+      return () => window.removeEventListener('resize', measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const updateExpandedState = () => setIsExpanded(document.fullscreenElement === containerRef.current);
+    document.addEventListener('fullscreenchange', updateExpandedState);
+    return () => document.removeEventListener('fullscreenchange', updateExpandedState);
+  }, []);
+
+  const toggleExpandedReview = async () => {
+    const container = containerRef.current;
+    if (!container) return;
+    try {
+      if (document.fullscreenElement === container) await document.exitFullscreen();
+      else await container.requestFullscreen();
+    } catch {
+      // The scaled inline preview remains readable if fullscreen is unavailable.
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="space-y-2 rounded bg-slate-950 p-2 fullscreen:bg-slate-950 fullscreen:p-5">
+      <div className="flex justify-end">
+        <button type="button" onClick={() => void toggleExpandedReview()} aria-pressed={isExpanded}
+          className="rounded border border-slate-600 px-2.5 py-1.5 text-xs text-slate-100 hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400">
+          {isExpanded ? 'Close full-size review' : 'Open larger review'}
+        </button>
+      </div>
+      <div ref={viewportRef} className="relative mx-auto w-full overflow-hidden rounded border border-slate-600 bg-white"
+        style={{ maxWidth: `${pageWidth}px`, height: `${pageHeight * scale}px` }}>
+        <iframe title={`Exact frozen letter snapshot for docket ${docketId}`} sandbox="" srcDoc={html}
+          referrerPolicy="no-referrer" className="absolute left-0 top-0 border-0 bg-white"
+          style={{ width: `${pageWidth}px`, height: `${pageHeight}px`, transform: `scale(${scale})`, transformOrigin: 'top left' }} />
+      </div>
+    </div>
+  );
+}
+
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose: closeModal,
@@ -107,10 +198,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isAffirmed = false,
   entrySource = 'home_chooser',
   draftRevision = 0,
+  draftId,
+  addressVerificationEvidence,
+  onAddressEvidenceInvalid,
+  onCheckoutComplete,
+  onWorkflowStepChange,
+  workflowStep,
 }) => {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
-  const [step, setStep] = useState<'delivery' | 'payment' | 'confirmation'>('delivery');
+  const [step, setStep] = useState<'delivery' | 'review' | 'payment' | 'confirmation'>('delivery');
+  const [isSuperseding, setIsSuperseding] = useState(false);
+  const [supersededAttemptIds] = useState(() => new Set<string>());
+  const [activeAttemptRecovery, setActiveAttemptRecovery] = useState<ActiveCheckoutAttemptRecovery | null>(() =>
+    loadActiveCheckoutAttempt(getCheckoutSessionStorage(), draftId));
+  const [snapshotConfirmed, setSnapshotConfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -128,6 +230,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   // Track docket IDs that have already been locked to ensure fresh attempts generate a fresh ID
   const lockedDocketIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setActiveAttemptRecovery(loadActiveCheckoutAttempt(getCheckoutSessionStorage(), draftId));
+  }, [draftId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (workflowStep === 'delivery') setStep('delivery');
+    if (workflowStep === 'payment' && lockedAttempt && snapshotConfirmed) setStep('payment');
+    if (workflowStep === 'review' && lockedAttempt?.reviewPayload) setStep('review');
+  }, [workflowStep, isOpen, lockedAttempt, snapshotConfirmed]);
 
   // Funnel Event: checkout_view when CheckoutModal opens
   useEffect(() => {
@@ -163,14 +276,81 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const currentFingerprint = useMemo(() => {
     return computeFingerprint(selectedTier, email, userValues, isSignatureAdopted, isAffirmed);
   }, [selectedTier, email, userValues, isSignatureAdopted, isAffirmed]);
+  const [currentRequestIdentityDigest, setCurrentRequestIdentityDigest] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setCurrentRequestIdentityDigest(null);
+    void checkoutFingerprintDigest(`${draftId}:${draftRevision}:${currentFingerprint}`).then((digest) => {
+      if (active) setCurrentRequestIdentityDigest(digest);
+    });
+    return () => { active = false; };
+  }, [draftId, draftRevision, currentFingerprint]);
+  const currentFingerprintRef = useRef(currentFingerprint);
+  currentFingerprintRef.current = currentFingerprint;
+  const draftRevisionRef = useRef(draftRevision);
+  draftRevisionRef.current = draftRevision;
+
+  const supersedingIdsRef = useRef<Set<string>>(new Set());
+  const supersedeAttempt = async (attempt: LockedAttempt | ActiveCheckoutAttemptRecovery) => {
+    if (!attempt.attemptId) return false;
+    const attemptIdentityDigest = 'identityDigest' in attempt ? attempt.identityDigest : undefined;
+    if (supersededAttemptIds.has(attempt.attemptId)) {
+      const storage = getCheckoutSessionStorage();
+      clearActiveCheckoutAttempt(storage, attempt.draftId || draftId, attempt.attemptId);
+      if (attemptIdentityDigest) clearCheckoutRequest(storage, attempt.draftId || draftId, attemptIdentityDigest);
+      setActiveAttemptRecovery(null);
+      return true;
+    }
+    if (supersedingIdsRef.current.has(attempt.attemptId)) return false;
+    supersedingIdsRef.current.add(attempt.attemptId);
+    setIsSuperseding(true);
+    setStep('delivery');
+    onWorkflowStepChange?.('delivery');
+      const attemptDraftId = attempt.draftId || draftId;
+      const capability = getCheckoutCapability(attemptDraftId);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (user) { try { headers.Authorization = `Bearer ${await user.getIdToken()}`; } catch { /* Guest capability remains scoped. */ } }
+      const response = await fetch(`/api/docket/attempts/${encodeURIComponent(attempt.attemptId)}/supersede`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ checkoutCapability: capability, draftId: attemptDraftId, draftRevision: Math.max(draftRevisionRef.current, attempt.draftRevision || 0) }),
+      });
+      const resolution = await response.json();
+      if (!response.ok || resolution.replacementAllowed !== true) throw new Error('Supersession is unresolved.');
+      supersededAttemptIds.add(attempt.attemptId);
+      const storage = getCheckoutSessionStorage();
+      clearActiveCheckoutAttempt(storage, attemptDraftId, attempt.attemptId);
+      if (attemptIdentityDigest) clearCheckoutRequest(storage, attemptDraftId, attemptIdentityDigest);
+      setActiveAttemptRecovery(null);
+      setLockedAttempt(null);
+      setSnapshotConfirmed(false);
+      setStep('delivery');
+      onWorkflowStepChange?.('delivery');
+      return true;
+    } catch {
+      const recovery: ActiveCheckoutAttemptRecovery = {
+        attemptId: attempt.attemptId,
+        draftId: attempt.draftId || draftId,
+        draftRevision: attempt.draftRevision ?? draftRevisionRef.current,
+        ...(attempt.docketId ? { docketId: attempt.docketId } : {}),
+        ...(attemptIdentityDigest ? { identityDigest: attemptIdentityDigest } : {}),
+      };
+      saveActiveCheckoutAttempt(getCheckoutSessionStorage(), recovery);
+      setActiveAttemptRecovery(recovery);
+      if ('orderId' in attempt && attempt.orderId && attempt.clientSecret) setLockedAttempt(attempt);
+      setStep('delivery');
+      setErrorMessage('The previous payment attempt is still being resolved. Retry the status check before starting another payment.');
+      return false;
+    } finally {
+      supersedingIdsRef.current.delete(attempt.attemptId);
+      setIsSuperseding(false);
+    }
+  };
 
   // Safe lock invalidation: If lockedAttempt exists but fingerprint changed, invalidate it
   useEffect(() => {
     if (lockedAttempt && lockedAttempt.fingerprint !== currentFingerprint) {
-      setLockedAttempt(null);
-      if (step === 'payment') {
-        setStep('delivery');
-      }
+      void supersedeAttempt(lockedAttempt);
     }
   }, [currentFingerprint, lockedAttempt, step]);
 
@@ -181,7 +361,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setErrorMessage(null);
       // If we previously locked an attempt that is now stale, reset to delivery step
       if (lockedAttempt && lockedAttempt.fingerprint !== currentFingerprint) {
-        setLockedAttempt(null);
         setStep('delivery');
       }
     } else {
@@ -210,6 +389,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   if (!isOpen) return null;
 
   const currentTierMeta = DOCKET_PRICING_TIERS[selectedTier];
+  const physicalFit = assessPhysicalFit(doc);
+  const unresolvedStaleLockedAttempt = Boolean(lockedAttempt?.attemptId && lockedAttempt.fingerprint !== currentFingerprint);
+  const unresolvedRecoveredAttempt = isActiveCheckoutAttemptUnresolved({
+    recovery: activeAttemptRecovery,
+    currentDraftId: draftId,
+    currentIdentityDigest: currentRequestIdentityDigest,
+    lockedAttemptId: lockedAttempt?.attemptId,
+    lockedAttemptMatchesCurrent: lockedAttempt?.fingerprint === currentFingerprint,
+  });
   const displayTitle =
     CHOOSER_METADATA_BY_SLUG[doc.noticeDefinition.slug]?.displayTitle ||
     doc.noticeDefinition.title;
@@ -226,9 +414,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Step 1: Initialize lock & intent
   const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || isSuperseding) return;
+    if (lockedAttempt && lockedAttempt.fingerprint !== currentFingerprint) {
+      await supersedeAttempt(lockedAttempt);
+      return;
+    }
     const cleanEmail = email.trim();
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
       setErrorMessage('Please enter a valid email address for order information.');
+      return;
+    }
+
+    const senderEvidence = addressVerificationEvidence.sender;
+    const recipientEvidence = addressVerificationEvidence.recipient;
+    if (!senderEvidence || !recipientEvidence || senderEvidence.payload.draftRevision !== draftRevision || recipientEvidence.payload.draftRevision !== draftRevision) {
+      setErrorMessage('Check and confirm both mailing addresses after your last edit before locking this letter.');
       return;
     }
 
@@ -243,20 +443,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         draftRevision,
         logicalKey: `intent-initialized:${lockedAttempt.orderId}`,
       });
-      setStep('payment');
+      setStep(lockedAttempt.reviewPayload ? 'review' : 'payment');
+      onWorkflowStepChange?.(lockedAttempt.reviewPayload ? 'review' : 'payment');
       return;
     }
 
     setIsLoading(true);
     setErrorMessage(null);
+    const originatingFingerprint = currentFingerprint;
+    const originatingRevision = draftRevision;
+    let identityDigest = '';
 
     let publicErrorCode: unknown = 'CHECKOUT_UNAVAILABLE';
     try {
-      // If doc.docketId was already locked in a prior attempt that changed, generate a fresh docket ID
-      let attemptDocketId = doc.docketId;
-      if (lockedDocketIdsRef.current.has(attemptDocketId)) {
-        attemptDocketId = generateDocketId();
+      identityDigest = await checkoutFingerprintDigest(`${draftId}:${originatingRevision}:${originatingFingerprint}`);
+        const storage = getCheckoutSessionStorage();
+      let defaultDocketId = doc.docketId;
+      if (lockedDocketIdsRef.current.has(defaultDocketId)) defaultDocketId = generateDocketId();
+      const requestIdentity = getOrCreateCheckoutRequest(storage, {
+        draftId,
+        draftRevision: originatingRevision,
+        identityDigest,
+        docketId: defaultDocketId,
+      });
+      if (activeAttemptRecovery && activeAttemptRecovery.draftId === draftId &&
+          activeAttemptRecovery.identityDigest !== identityDigest) {
+        const resolved = await supersedeAttempt(activeAttemptRecovery);
+        if (resolved) {
+          clearCheckoutRequest(storage, draftId, identityDigest);
+          setErrorMessage('The previous checkout was safely resolved. Review the delivery details and continue again.');
+        }
+        return;
       }
+      if (!physicalFit.fits) {
+        setErrorMessage(physicalFitCustomerMessage(physicalFit.failure));
+        setIsLoading(false);
+        return;
+      }
+      // If doc.docketId was already locked in a prior attempt that changed, generate a fresh docket ID
+      const attemptDocketId = requestIdentity.docketId;
 
       // Fetch Firebase ID token if user is signed in
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -277,6 +502,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         body: JSON.stringify({
           slug: doc.noticeDefinition.slug,
           userValues,
+          draftId,
+          draftRevision: originatingRevision,
+          checkoutCapability: getCheckoutCapability(draftId),
+          idempotencyKey: requestIdentity.idempotencyKey,
+          verificationEvidence: { sender: addressVerificationEvidence.sender, recipient: addressVerificationEvidence.recipient },
           tier: selectedTier,
           customerEmail: cleanEmail,
           docketId: attemptDocketId,
@@ -295,13 +525,60 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       const data = await res.json();
       if (!res.ok) {
+        if (['ADDRESS_VERIFICATION_REQUIRED', 'ADDRESS_VERIFICATION_STALE', 'ADDRESS_NORMALIZATION_REVIEW_REQUIRED'].includes(data?.code)) {
+          onAddressEvidenceInvalid?.();
+          setStep('delivery');
+          onWorkflowStepChange?.('delivery');
+          setErrorMessage(data.code === 'ADDRESS_NORMALIZATION_REVIEW_REQUIRED'
+            ? 'USPS suggests a different address. Close checkout, review and accept the suggested address, then verify it again.'
+            : 'Address verification expired or no longer matches this draft. Close checkout, check both mailing addresses again, and retry.');
+          return;
+        }
+        if (data?.code === 'CHECKOUT_ATTEMPT_BUSY' && data.attemptId) {
+          const recovery = {
+            attemptId: String(data.attemptId), draftId, draftRevision: originatingRevision,
+            docketId: requestIdentity.docketId, identityDigest,
+          };
+          saveActiveCheckoutAttempt(storage, recovery);
+          setActiveAttemptRecovery(recovery);
+          setErrorMessage('Checkout is still initializing. Retry this same checkout to recover the original attempt.');
+          return;
+        }
+        if (data?.code === 'CHECKOUT_ATTEMPT_ACTIVE' && data.attemptId) {
+          const recovery = {
+            attemptId: String(data.attemptId), draftId, draftRevision: Number(data.draftRevision ?? originatingRevision),
+            ...(typeof data.docketId === 'string' ? { docketId: data.docketId } : {}),
+          };
+          saveActiveCheckoutAttempt(storage, recovery);
+          setActiveAttemptRecovery(recovery);
+          await supersedeAttempt(recovery);
+          clearCheckoutRequest(storage, draftId, identityDigest);
+          return;
+        }
         availabilityDeniedRef.current = isTemplateAvailabilityError(data?.code);
         publicErrorCode = res.status === 400 && !availabilityDeniedRef.current ? 'CHECKOUT_VALIDATION' : data?.code;
         throw new Error('Checkout initialization failed.');
       }
 
+      if (originatingRevision !== draftRevisionRef.current || originatingFingerprint !== currentFingerprintRef.current) {
+        if (data.attemptId) {
+          const staleAttempt = { ...data, fingerprint: originatingFingerprint } as LockedAttempt;
+          setLockedAttempt(staleAttempt);
+          await supersedeAttempt(staleAttempt);
+        }
+        setErrorMessage('Your draft changed while checkout was being prepared. Review the latest version before continuing.');
+        return;
+      }
+
       // Record this docket ID as locked
       lockedDocketIdsRef.current.add(data.docketId || attemptDocketId);
+      const activeRecovery = {
+        attemptId: String(data.attemptId), draftId: data.draftId || draftId,
+        draftRevision: Number(data.draftRevision ?? originatingRevision),
+        docketId: data.docketId || attemptDocketId, identityDigest,
+      };
+      saveActiveCheckoutAttempt(storage, activeRecovery);
+      setActiveAttemptRecovery(activeRecovery);
 
       // Persist access token in sessionStorage (for guest receipt) & localStorage
       if (typeof window !== 'undefined' && data.orderId && data.viewToken) {
@@ -329,7 +606,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         docketId: data.docketId,
         amountCents: data.amountCents,
         tier: data.tier,
-        fingerprint: computeFingerprint(selectedTier, cleanEmail, userValues, isSignatureAdopted, isAffirmed),
+        fingerprint: originatingFingerprint,
+        attemptId: data.attemptId, draftId: data.draftId || draftId, draftRevision: data.draftRevision ?? originatingRevision,
+        reviewPayload: data.reviewPayload, quoteVersion: data.quoteVersion, pricingVersion: data.pricingVersion, snapshotHash: data.snapshotHash,
       };
 
       emitBusinessEvent({
@@ -343,7 +622,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       });
 
       setLockedAttempt(freshAttempt);
-      setStep('payment');
+      setSnapshotConfirmed(false);
+      setStep(freshAttempt.reviewPayload ? 'review' : 'payment');
+      onWorkflowStepChange?.(freshAttempt.reviewPayload ? 'review' : 'payment');
     } catch (err: any) {
       console.error('[Checkout Error]', err);
       // Error preservation: preserve email, tier, and draft values
@@ -353,8 +634,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
+  const handleConfirmSnapshot = () => {
+    if (!lockedAttempt?.reviewPayload || lockedAttempt.fingerprint !== currentFingerprint || isSuperseding) return;
+    setSnapshotConfirmed(true);
+    setStep('payment');
+    onWorkflowStepChange?.('payment');
+  };
+
   // Step 2 payment success callback
   const handlePaymentSuccess = () => {
+    onCheckoutComplete?.();
     setIsProcessingPayment(false);
     setStep('confirmation');
   };
@@ -486,6 +775,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             {/* Error Message with role="alert" */}
+            {!physicalFit.fits && (
+              <div role="alert" className="p-2.5 bg-amber-950/70 border border-amber-700 rounded-lg text-xs text-amber-100">
+                {physicalFitCustomerMessage(physicalFit.failure)}
+              </div>
+            )}
             {errorMessage && (
               <div
                 id="checkout-delivery-error"
@@ -495,6 +789,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
               </div>
+            )}
+            {lockedAttempt?.attemptId && lockedAttempt.fingerprint !== currentFingerprint && (
+              <button type="button" onClick={() => { supersedingIdsRef.current.delete(lockedAttempt.attemptId!); void supersedeAttempt(lockedAttempt); }} disabled={isSuperseding} className="rounded border border-amber-700 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
+                {isSuperseding ? 'Resolving prior payment…' : 'Retry prior payment status check'}
+              </button>
+            )}
+            {activeAttemptRecovery && (!lockedAttempt || lockedAttempt.attemptId !== activeAttemptRecovery.attemptId) && (
+              <button type="button" onClick={() => { supersedingIdsRef.current.delete(activeAttemptRecovery.attemptId); void supersedeAttempt(activeAttemptRecovery); }} disabled={isSuperseding} className="rounded border border-amber-700 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
+                {isSuperseding ? 'Resolving prior payment…' : 'Retry prior payment status check'}
+              </button>
             )}
 
             {/* Order Summary Box */}
@@ -541,7 +845,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isSuperseding || unresolvedStaleLockedAttempt || unresolvedRecoveredAttempt || !physicalFit.fits}
                 className="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider font-mono transition shadow-lg flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 {isLoading ? (
@@ -557,8 +861,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </form>
         )}
 
+        {step === 'review' && lockedAttempt && (
+          <section className="space-y-3" aria-labelledby="frozen-review-title">
+            <div><p className="text-[10px] font-mono text-sky-400">FROZEN ORDER REVIEW · {lockedAttempt.docketId}</p>
+              <h2 id="frozen-review-title" className="text-lg font-bold">Review the exact letter that will be mailed</h2>
+              <p className="text-xs text-slate-300">This is the immutable document saved before payment. Payment stays unavailable until you confirm this snapshot.</p></div>
+            {lockedAttempt.reviewPayload ? <FrozenDocumentReview html={lockedAttempt.reviewPayload} docketId={lockedAttempt.docketId} /> : <p role="alert" className="text-sm text-amber-200">The server did not return the frozen document for review. Return to delivery and retry.</p>}
+            <div className="rounded border border-slate-700 bg-slate-800 p-3 text-xs text-slate-200">{UPL_COMPLIANCE_DISCLOSURE}<p className="mt-2">{UPL_COMPLIANCE_FOOTER_TEXT(lockedAttempt.docketId)}</p></div>
+            <div className="flex justify-between gap-3"><button type="button" onClick={() => { setStep('delivery'); onWorkflowStepChange?.('delivery'); }} className="rounded border border-slate-600 px-3 py-2 text-sm">Back to delivery</button>
+              <button type="button" onClick={handleConfirmSnapshot} disabled={!lockedAttempt.reviewPayload || isSuperseding} className="rounded bg-sky-700 px-4 py-2 text-sm font-bold disabled:opacity-50">I reviewed this exact letter · Continue to payment</button></div>
+          </section>
+        )}
+
         {/* STEP 2: Payment Confirmation & Submission */}
-        {step === 'payment' && lockedAttempt && (
+        {step === 'payment' && lockedAttempt && snapshotConfirmed && (
           <PaymentStepForm
             lockedAttempt={lockedAttempt}
             currentTierMeta={currentTierMeta}

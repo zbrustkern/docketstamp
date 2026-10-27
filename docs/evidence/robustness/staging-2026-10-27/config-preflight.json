@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-10-27T14:31:55.474Z",
+  "project": "docketstamp-staging",
+  "keyTypes": [
+    {
+      "secretName": "stripe-secret-key",
+      "expectedMode": "test",
+      "matchesExpectedMode": true
+    },
+    {
+      "secretName": "stripe-publishable-key",
+      "expectedMode": "test",
+      "matchesExpectedMode": true
+    },
+    {
+      "secretName": "lob-key",
+      "expectedMode": "test",
+      "matchesExpectedMode": true
+    }
+  ],
+  "backendAccess": [
+    {
+      "secretName": "stripe-secret-key",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "stripe-webhook-secret",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "stripe-publishable-key",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "lob-key",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "lob-webhook-secret",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "admin-session-signing-key",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "resend-key",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "firebase-web-api-key",
+      "backendSecretAccessor": true
+    },
+    {
+      "secretName": "address-verification-evidence-secret",
+      "backendSecretAccessor": true
+    }
+  ]
+}

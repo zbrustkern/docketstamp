@@ -31,6 +31,7 @@ export interface CreateIntentParams {
   customerEmail?: string;
   amountInCents?: number;
   metadata?: Record<string, string>;
+  idempotencyKey?: string;
 }
 
 export interface PaymentIntentResult {
@@ -65,7 +66,7 @@ export async function createCardPaymentIntent(params: CreateIntentParams): Promi
     automatic_payment_methods: {
       enabled: true,
     },
-  });
+  }, params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined);
 
   return {
     clientSecret: paymentIntent.client_secret,

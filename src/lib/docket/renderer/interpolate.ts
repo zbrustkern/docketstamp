@@ -21,6 +21,7 @@ import {
 import { getStateStatute } from '../data/state-statutes';
 import { CLERK_DOCKET_REGISTRY_TITLE } from '../guardrails';
 import { omitServerDerivedNoticeValues } from '../derived-fields';
+import { composePropertyAddressValues } from '../input-validation';
 
 export interface InterpolateOptions {
   notice: NoticeTemplateDefinition;
@@ -331,7 +332,7 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
 
   // Form callers may include legacy or staged values. Drop renderer-owned
   // values before resolving legal metadata or constructing the document.
-  const factualValues = omitServerDerivedNoticeValues(userValues);
+  const factualValues = composePropertyAddressValues(omitServerDerivedNoticeValues(userValues));
 
   // 1. Normalize only bounded display inputs, then merge renderer-owned values.
   const presentationValues = normalizeTextareaWhitespace(notice, factualValues);

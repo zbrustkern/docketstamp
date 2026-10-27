@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import { NextRequest } from "next/server";
 import { POST as createIntentPost } from "../app/api/checkout/create-intent/route";
 import { POST as lockAndIntentPost } from "../app/api/docket/lock-and-intent/route";
@@ -42,7 +43,7 @@ async function runPaymentModeSafetyTests() {
   const makeFrozenNotice = async (email: string, discountCode?: string) => {
     const response = await lockAndIntentPost(new NextRequest("http://localhost:3000/api/docket/lock-and-intent", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(withVerifiedLockFixture({
         slug: "security-deposit-return-demand-letter", tier: "certified", customerEmail: email,
         ...(discountCode ? { discountCode } : {}),
         userValues: {
@@ -53,7 +54,7 @@ async function runPaymentModeSafetyTests() {
           basisForRequest: "My records show the deposit was paid and no refund has been received.",
         },
         signatureAdoption: { adopted: true, affirmed: true, signerName: "Taylor Morgan" },
-      }),
+      })),
     }));
     if (response.status !== 200) throw new Error(`Canonical notice fixture failed: ${response.status} ${await response.text()}`);
     return await response.json() as { orderId: string; isFree: boolean; amountCents: number; clientSecret: string | null };

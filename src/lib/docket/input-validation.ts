@@ -49,6 +49,40 @@ export type ValidatedNoticeInput = {
   issues: NoticeInputIssue[];
 };
 
+/**
+ * Build the property-address token from the same separate components collected
+ * by the workspace. This function is intentionally idempotent because client
+ * preview interpolation and server lock validation both call it.
+ */
+export function composePropertyAddressValues(userValues: Record<string, string>): Record<string, string> {
+  const normalized = { ...userValues };
+  const propertyAddressKey = ['leasedPremisesAddress', 'vacatedPremisesAddress']
+    .find((key) => Object.prototype.hasOwnProperty.call(normalized, key));
+  if (!propertyAddressKey) return normalized;
+
+  const line1 = (normalized[propertyAddressKey] || '').trim();
+  const line2 = (normalized.rentalPropertyAddressLine2 || '').trim();
+  const city = (normalized.rentalPropertyCity || '').trim();
+  const state = (normalized.propertyState || '').trim().toUpperCase();
+  const zip = (normalized.rentalPropertyZip || '').trim();
+  const locality = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  const suffix = [line2, locality].filter(Boolean).join(', ');
+  if (!line1 || !suffix) return normalized;
+
+  // Avoid repeating components when server validation receives the already
+  // composed client preview value.
+  const canonical = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleUpperCase('en-US');
+  const lineSegments = line1.split(',').map((part) => part.trim());
+  const suffixSegments = suffix.split(',').map((part) => part.trim());
+  const alreadyComposed = suffixSegments.length <= lineSegments.length &&
+    suffixSegments.every((part, index) => canonical(lineSegments[lineSegments.length - suffixSegments.length + index]) === canonical(part));
+  if (alreadyComposed) return normalized;
+
+  const fullAddress = [line1, line2, locality].filter(Boolean).join(', ');
+  normalized[propertyAddressKey] = fullAddress;
+  return normalized;
+}
+
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -246,26 +280,13 @@ export function validateNoticeInput(
     userValues[key] = config.kind === 'state' ? value.toUpperCase() : value;
   }
 
-  // The tenant address UI collects property components separately, while the
-  // current notice schemas expose one property-address token. Preserve the
-  // street, unit, locality, jurisdiction, and ZIP in that rendered value.
+  // Keep browser preview and frozen rendering on one canonical composition.
   const propertyAddressKey = ['leasedPremisesAddress', 'vacatedPremisesAddress']
     .find((key) => Object.prototype.hasOwnProperty.call(userValues, key));
-  if (propertyAddressKey) {
-    const line1 = userValues[propertyAddressKey];
-    const line2 = userValues.rentalPropertyAddressLine2 || '';
-    const city = userValues.rentalPropertyCity || '';
-    const state = userValues.propertyState || '';
-    const zip = userValues.rentalPropertyZip || '';
-    if (line2 || city || state || zip) {
-      const locality = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-      const fullAddress = [line1, line2, locality].filter(Boolean).join(', ');
-      if (fullAddress.length > 250) {
-        issues.push({ path: propertyAddressKey, message: 'The complete property address must be 250 characters or fewer.' });
-      } else {
-        userValues[propertyAddressKey] = fullAddress;
-      }
-    }
+  const composedUserValues = composePropertyAddressValues(userValues);
+  Object.assign(userValues, composedUserValues);
+  if (propertyAddressKey && userValues[propertyAddressKey].length > 250) {
+    issues.push({ path: propertyAddressKey, message: 'The complete property address must be 250 characters or fewer.' });
   }
 
   // State jurisdiction is a legal selector; it must resolve to an actual

@@ -53,6 +53,8 @@ export interface StoredNoticeDraft {
   selectedTier?: MailTierId;
   docketId?: string;
   savedAt: number;
+  draftId?: string;
+  draftRevision?: number;
 }
 
 const VALID_TIERS: Set<MailTierId> = new Set([
@@ -372,8 +374,35 @@ function validateSingleNoticeField(
 /**
  * Returns the scoped sessionStorage key for a notice slug
  */
-export function getDraftStorageKey(slug: string): string {
-  return `docketstamp_draft_v2_${slug.trim().toLowerCase()}`;
+export function getDraftStorageKey(slug: string, accountContext?: string | null): string {
+  const base = `docketstamp_draft_v2_${slug.trim().toLowerCase()}`;
+  return accountContext ? `${base}_account_${encodeURIComponent(accountContext)}` : base;
+}
+
+export function isDraftStorageScopeCurrent(
+  draftAccountContext: string | null,
+  activeAccountContext: string | null
+): boolean {
+  return draftAccountContext === activeAccountContext;
+}
+
+export function createDraftId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `draft_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+}
+
+export function getOrCreateDraftIdentity(slug: string, accountContext?: string | null): { draftId: string; draftRevision: number } {
+  if (typeof window === 'undefined') return { draftId: createDraftId(), draftRevision: 0 };
+  const key = `${getDraftStorageKey(slug, accountContext)}_identity`;
+  try {
+    const current = JSON.parse(window.sessionStorage.getItem(key) || 'null');
+    if (current && typeof current.draftId === 'string' && Number.isSafeInteger(current.draftRevision) && current.draftRevision >= 0) return current;
+    const identity = { draftId: createDraftId(), draftRevision: 0 };
+    window.sessionStorage.setItem(key, JSON.stringify(identity));
+    return identity;
+  } catch {
+    return { draftId: createDraftId(), draftRevision: 0 };
+  }
 }
 
 function getDraftSlugCandidates(slug: string): { canonicalSlug: string; slugs: string[] } {
@@ -396,7 +425,10 @@ export function saveNoticeDraft(
     selectedRecipientId?: string | null;
     selectedTier?: MailTierId;
     docketId?: string;
-  }
+    draftId?: string;
+    draftRevision?: number;
+  },
+  accountContext?: string | null
 ): void {
   if (typeof window === 'undefined') return;
   try {
@@ -408,8 +440,13 @@ export function saveNoticeDraft(
       selectedTier: draft.selectedTier,
       docketId: draft.docketId,
       savedAt: Date.now(),
+      draftId: draft.draftId,
+      draftRevision: draft.draftRevision,
     };
-    window.sessionStorage.setItem(getDraftStorageKey(canonicalSlug), JSON.stringify(payload));
+    window.sessionStorage.setItem(getDraftStorageKey(canonicalSlug, accountContext), JSON.stringify(payload));
+    if (draft.draftId && Number.isSafeInteger(draft.draftRevision)) {
+      window.sessionStorage.setItem(`${getDraftStorageKey(canonicalSlug, accountContext)}_identity`, JSON.stringify({ draftId: draft.draftId, draftRevision: draft.draftRevision }));
+    }
   } catch {
     // Graceful fallback for storage quota or privacy mode restrictions
   }
@@ -418,15 +455,15 @@ export function saveNoticeDraft(
 /**
  * Loads draft from sessionStorage for the active notice
  */
-export function loadNoticeDraft(slug: string): StoredNoticeDraft | null {
+export function loadNoticeDraft(slug: string, accountContext?: string | null): StoredNoticeDraft | null {
   if (typeof window === 'undefined') return null;
   try {
     const { canonicalSlug, slugs } = getDraftSlugCandidates(slug);
-    const canonicalKey = getDraftStorageKey(canonicalSlug);
+    const canonicalKey = getDraftStorageKey(canonicalSlug, accountContext);
     const canonicalRaw = window.sessionStorage.getItem(canonicalKey);
 
     for (const candidateSlug of slugs) {
-      const key = getDraftStorageKey(candidateSlug);
+      const key = getDraftStorageKey(candidateSlug, accountContext);
       const raw = candidateSlug === canonicalSlug
         ? canonicalRaw
         : window.sessionStorage.getItem(key);
@@ -459,12 +496,13 @@ export function loadNoticeDraft(slug: string): StoredNoticeDraft | null {
 /**
  * Clears saved draft from sessionStorage
  */
-export function clearNoticeDraft(slug: string): void {
+export function clearNoticeDraft(slug: string, accountContext?: string | null): void {
   if (typeof window === 'undefined') return;
   try {
     const { slugs } = getDraftSlugCandidates(slug);
     for (const candidate of slugs) {
-      window.sessionStorage.removeItem(getDraftStorageKey(candidate));
+      window.sessionStorage.removeItem(getDraftStorageKey(candidate, accountContext));
+      window.sessionStorage.removeItem(`${getDraftStorageKey(candidate, accountContext)}_identity`);
     }
   } catch {
     // Ignore
@@ -475,6 +513,7 @@ export interface ResolveInitialDraftOptions {
   notice: NoticeTemplateDefinition;
   initialValues?: Record<string, string>;
   searchParams?: URLSearchParams | null;
+  accountContext?: string | null;
 }
 
 export interface ResolvedWorkspaceDraft {
@@ -504,6 +543,7 @@ export function resolveInitialWorkspaceDraft({
   notice,
   initialValues = {},
   searchParams,
+  accountContext,
 }: ResolveInitialDraftOptions): ResolvedWorkspaceDraft {
   const explicitKeys = new Set<string>();
   const explicitValues: Record<string, string> = {};
@@ -581,7 +621,7 @@ export function resolveInitialWorkspaceDraft({
   }
 
   // 2. Load session draft
-  const sessionDraft = loadNoticeDraft(notice.slug);
+  const sessionDraft = loadNoticeDraft(notice.slug, accountContext);
 
   // 3. Assemble final user values:
   // Base: initialValues

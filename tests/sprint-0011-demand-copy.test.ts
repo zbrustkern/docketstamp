@@ -124,12 +124,13 @@ describe('SPRINT-0011 customer-facing copy integration', () => {
 
   it('wraps long preview text without changing print clear-zone geometry', () => {
     const component = readFileSync('src/components/docket/LivePaperSheet.tsx', 'utf8');
-    assert.match(component, /\[overflow-wrap:anywhere\]/);
-    assert.match(component, /max-w-full/);
+    assert.match(component, /physicalLayoutCss/);
     const shell = readFileSync('src/lib/docket/renderer/lob-html-shell.ts', 'utf8');
-    assert.match(shell, /\.letter-body-container[\s\S]*?overflow-wrap: anywhere/);
-    assert.match(shell, /\.signature-line[\s\S]*?max-width: 100%[\s\S]*?overflow-wrap: anywhere/);
-    assert.match(shell, /top: 3\.35in/);
-    assert.match(shell, /top: 1\.85in/);
+    assert.match(shell, /physicalLayoutCss/);
+    const shared = readFileSync('src/lib/docket/renderer/physical-layout.ts', 'utf8');
+    assert.match(shared, /\.letter-body-container[\s\S]*?overflow-wrap: anywhere/);
+    assert.match(shared, /\.signature-line[\s\S]*?max-width: 100%[\s\S]*?overflow-wrap: anywhere/);
+    assert.match(shared, /top: '3\.35in'/);
+    assert.match(shared, /top: '1\.85in'/);
   });
 });

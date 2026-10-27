@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import { NextRequest } from "next/server";
 import { POST as stripeWebhookPost } from "../app/api/webhooks/stripe/route";
 import { POST as confirmOrderPost } from "../app/api/checkout/confirm-order/route";
@@ -112,7 +113,7 @@ async function runSecurityTests() {
   const makeFrozenNotice = async (email: string) => {
     const response = await lockAndIntentPost(new NextRequest("http://localhost:3000/api/docket/lock-and-intent", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(withVerifiedLockFixture({
         slug: "security-deposit-return-demand-letter", tier: "certified", customerEmail: email,
         userValues: {
           senderFullName: "Taylor Morgan", senderAddressLine1: "77 Lake Street, Unit 5", senderCity: "Chicago", senderState: "IL", senderZip: "60601",
@@ -122,7 +123,7 @@ async function runSecurityTests() {
           basisForRequest: "My records show the deposit was paid and no refund has been received.",
         },
         signatureAdoption: { adopted: true, affirmed: true, signerName: "Taylor Morgan" },
-      }),
+      })),
     }));
     if (response.status !== 200) throw new Error(`Canonical notice fixture failed: ${response.status} ${await response.text()}`);
     const body = await response.json();

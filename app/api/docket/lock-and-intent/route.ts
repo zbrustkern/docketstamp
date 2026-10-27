@@ -3,9 +3,10 @@ import crypto from 'crypto';
 import { getNoticeBySlug, DOCKET_PRICING_TIERS } from '@/lib/docket/notices';
 import { interpolateNotice, generateDocketId } from '@/lib/docket/renderer/interpolate';
 import { renderLobHtmlPayload } from '@/lib/docket/renderer/lob-html-shell';
+import { assessPhysicalFit } from '@/lib/docket/renderer/physical-fit';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/lib/docket/guardrails';
 import { MailTierId } from '@/lib/docket/types';
-import { updateOrderStatus, getDiscountCode, verifyFirebaseIdToken } from '@/lib/firebase-admin';
+import { updateOrderStatus, getDiscountCode, verifyFirebaseIdToken, getOrderById } from '@/lib/firebase-admin';
 import { createCardPaymentIntent } from '@/lib/stripe';
 import { validateDiscount } from '@/lib/discount';
 import { Order } from '@/lib/types';
@@ -14,6 +15,23 @@ import { createOrderUnderPolicy } from '@/lib/template-policy-store';
 import { PolicyNexus } from '@/src/lib/docket/template-policy';
 import { isMailingReadyForCheckout } from '@/lib/checkout-readiness';
 import { validateNoticeInput } from '@/lib/docket/input-validation';
+import { getAddressDigest, verifyAddressVerificationEvidence, type AddressEvidenceAddress } from '@/lib/docket/address-verification-evidence';
+import { createCapability, createAttemptId, reserveAttempt, setAttemptState, sha256, updateOrderAttemptState } from '@/src/lib/checkout-attempts/store';
+import { verifyUsAddress } from '@/lib/fulfillment/lob';
+import { addressVerificationStatusLabel } from '@/lib/docket/address-verification-status';
+import { resolvePaymentMode } from '@/lib/payment-mode';
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
+function comparableAddressPart(value: unknown): string {
+  return typeof value === 'string' ? value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleUpperCase('en-US') : '';
+}
 
 export async function POST(req: NextRequest) {
   let failureCode:
@@ -37,7 +55,11 @@ export async function POST(req: NextRequest) {
       senderAddress,
       recipientAddress,
       discountCode: rawDiscountCode,
-      userId,
+      draftId: rawDraftId,
+      draftRevision: rawDraftRevision,
+      checkoutCapability: rawCheckoutCapability,
+      idempotencyKey: rawIdempotencyKey,
+      verificationEvidence,
       telemetrySessionId,
       sessionId: altSessionId,
       experienceVersion,
@@ -98,8 +120,120 @@ export async function POST(req: NextRequest) {
       propertyState: rawUserValues.propertyState,
     };
     const userValues = validatedInput.userValues;
-    const safeSenderAddress = validatedInput.senderAddress;
-    const safeRecipientAddress = validatedInput.recipientAddress;
+    // Structured addresses are optional: the ordinary workspace submits postal
+    // fields in userValues. Bind proofs to the same effective addresses that
+    // interpolation and physical fulfillment actually use.
+    const safeSenderAddress = {
+      name: userValues.senderFullName,
+      addressLine1: userValues.senderAddressLine1,
+      addressLine2: userValues.senderAddressLine2,
+      city: userValues.senderCity, state: userValues.senderState, zip: userValues.senderZip,
+      ...validatedInput.senderAddress,
+    };
+    const safeRecipientAddress = {
+      name: userValues.recipientFormalName,
+      addressLine1: userValues.recipientAddressLine1,
+      addressLine2: userValues.recipientAddressLine2,
+      city: userValues.recipientCity, state: userValues.recipientState, zip: userValues.recipientZip,
+      ...validatedInput.recipientAddress,
+    };
+
+    const draftId = typeof rawDraftId === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(rawDraftId)
+      ? rawDraftId
+      : `draft_${crypto.randomBytes(16).toString('hex')}`;
+    const draftRevision = Number.isSafeInteger(rawDraftRevision) && rawDraftRevision >= 0 ? rawDraftRevision : 0;
+    const checkoutCapability = typeof rawCheckoutCapability === 'string' && rawCheckoutCapability.length >= 32 && rawCheckoutCapability.length <= 256
+      ? rawCheckoutCapability
+      : createCapability();
+    const idempotencyKey = typeof rawIdempotencyKey === 'string' && rawIdempotencyKey.length >= 8 && rawIdempotencyKey.length <= 128
+      ? rawIdempotencyKey
+      : crypto.randomUUID();
+
+    const addressEvidenceValues = verificationEvidence && typeof verificationEvidence === 'object' ? verificationEvidence : {};
+    if (!isMailingReadyForCheckout()) {
+      return NextResponse.json({ error: 'Mailing checkout is temporarily unavailable. Nothing was charged.', code: 'MAILING_UNAVAILABLE' }, { status: 503 });
+    }
+    const allowedAddressProviderModes = process.env.NODE_ENV === 'test'
+      ? ['live_cass', 'staging_mock_cass', 'local_mock'] as const
+      : process.env.LOB_ENV === 'staging_mock_cass'
+        ? ['live_cass', 'staging_mock_cass'] as const
+        : ['live_cass'] as const;
+    const senderAddressFields = safeSenderAddress as Record<string, string | undefined>;
+    const recipientAddressFields = safeRecipientAddress as Record<string, string | undefined>;
+    const senderEvidenceAddress: AddressEvidenceAddress = {
+      name: senderAddressFields.name,
+      addressLine1: senderAddressFields.addressLine1,
+      addressLine2: senderAddressFields.addressLine2,
+      city: senderAddressFields.city,
+      state: senderAddressFields.state,
+      zip: senderAddressFields.zip,
+    };
+    const recipientEvidenceAddress: AddressEvidenceAddress = {
+      name: recipientAddressFields.name,
+      company: recipientAddressFields.company,
+      addressLine1: recipientAddressFields.addressLine1,
+      addressLine2: recipientAddressFields.addressLine2,
+      city: recipientAddressFields.city,
+      state: recipientAddressFields.state,
+      zip: recipientAddressFields.zip,
+    };
+    let senderEvidencePayload = addressEvidenceValues.sender
+      ? verifyAddressVerificationEvidence({ evidence: addressEvidenceValues.sender, role: 'sender', draftId, draftRevision, address: senderEvidenceAddress, allowedProviderModes: [...allowedAddressProviderModes] })
+      : null;
+    let recipientEvidencePayload = addressEvidenceValues.recipient
+      ? verifyAddressVerificationEvidence({ evidence: addressEvidenceValues.recipient, role: 'recipient', draftId, draftRevision, address: recipientEvidenceAddress, allowedProviderModes: [...allowedAddressProviderModes] })
+      : null;
+    let senderAddressEvidenceDigest = senderEvidencePayload?.addressDigest;
+    let recipientAddressEvidenceDigest = recipientEvidencePayload?.addressDigest;
+    const verifiedAddressProviderModes: Array<'live_cass' | 'staging_mock_cass' | 'local_mock' | undefined> = [
+      senderEvidencePayload?.providerMode,
+      recipientEvidencePayload?.providerMode,
+    ];
+    if ((addressEvidenceValues.sender && !senderEvidencePayload) || (addressEvidenceValues.recipient && !recipientEvidencePayload)) {
+      return NextResponse.json({ error: 'Address verification is stale or does not match this draft revision. Verify the current addresses again.', code: 'ADDRESS_VERIFICATION_STALE' }, { status: 409 });
+    }
+    // Older clients may not send signed review evidence. In that case verify
+    // the exact submitted addresses server-side; if CASS changes one, require
+    // explicit review before creating a frozen document or payment.
+    for (const [role, address, existing] of [
+      ['sender', senderEvidenceAddress, senderEvidencePayload],
+      ['recipient', recipientEvidenceAddress, recipientEvidencePayload],
+    ] as const) {
+      if (existing) continue;
+      const verification = await verifyUsAddress({
+        name: address.name || '', company: address.company,
+        addressLine1: address.addressLine1 || '', addressLine2: address.addressLine2,
+        city: address.city || '', state: address.state || '', zip: address.zip || '',
+      });
+      if (!verification.valid || !verification.standardizedAddress) {
+        return NextResponse.json({ error: 'A mailing address could not be verified. Review it and try again.', code: 'ADDRESS_VERIFICATION_FAILED', role, detail: verification.error || verification.deliverability }, { status: 422 });
+      }
+      const normalized = verification.standardizedAddress;
+      const normalizedZip = `${normalized.zip_code || ''}${normalized.zip_code_plus_4 ? `-${normalized.zip_code_plus_4}` : ''}`;
+      const changed = comparableAddressPart(address.addressLine1) !== comparableAddressPart(normalized.primary_line)
+        || comparableAddressPart(address.addressLine2) !== comparableAddressPart(normalized.secondary_line)
+        || comparableAddressPart(address.city) !== comparableAddressPart(normalized.city)
+        || comparableAddressPart(address.state) !== comparableAddressPart(normalized.state)
+        || comparableAddressPart(String(address.zip || '').replace(/-/g, '')) !== comparableAddressPart(normalizedZip.replace(/-/g, ''));
+      if (changed) {
+        return NextResponse.json({
+          error: 'The postal service suggested a change. Review and accept the standardized address before checkout.',
+          code: 'ADDRESS_NORMALIZATION_REVIEW_REQUIRED', role,
+          suggestedAddress: { name: normalized.recipient, addressLine1: normalized.primary_line, addressLine2: normalized.secondary_line || '', city: normalized.city, state: normalized.state, zip: normalizedZip },
+          providerMode: process.env.LOB_ENV === 'staging_mock_cass' ? 'staging_mock_cass' : 'live_cass',
+        }, { status: 409 });
+      }
+      const payload = {
+        addressDigest: getAddressDigest(address),
+      };
+      if (role === 'sender') {
+        senderAddressEvidenceDigest = payload.addressDigest;
+        verifiedAddressProviderModes[0] = verification.providerMode;
+      } else {
+        recipientAddressEvidenceDigest = payload.addressDigest;
+        verifiedAddressProviderModes[1] = verification.providerMode;
+      }
+    }
 
     try {
       for (const key of [
@@ -156,11 +290,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Do not accept payment for a mailing that this environment cannot dispatch.
-    if (!isMailingReadyForCheckout()) {
-      return NextResponse.json({ error: 'Mailing checkout is temporarily unavailable. Nothing was charged.', code: 'MAILING_UNAVAILABLE' }, { status: 503 });
-    }
-
     let finalAmountInCents = tierMeta.priceCents;
     let discountAmountInCents = 0;
     let appliedDiscountCode: string | undefined = undefined;
@@ -190,9 +319,21 @@ export async function POST(req: NextRequest) {
       userValues,
       docketId,
       serviceLevel: activeTier,
+      cassStatus: addressVerificationStatusLabel(verifiedAddressProviderModes),
       senderAddress: safeSenderAddress,
       recipientAddress: safeRecipientAddress,
     });
+
+    const physicalFit = assessPhysicalFit(interpolatedDoc);
+    if (!physicalFit.fits) {
+      return NextResponse.json({
+        error: physicalFit.failure === 'address_length'
+          ? 'Shorten the mailing names, company, or address lines to fit standard postal address limits.'
+          : 'This letter is too long for one printed page. Shorten the longest filled details, then review it again before continuing.',
+        code: 'PHYSICAL_FIT_REQUIRED',
+        reason: physicalFit.failure,
+      }, { status: 422 });
+    }
 
     const frozenHtmlPayload = renderLobHtmlPayload(interpolatedDoc);
     const adoptedSignerName = signatureAdoption.signerName.trim();
@@ -212,7 +353,7 @@ export async function POST(req: NextRequest) {
     );
 
     // 7. Invariant 5: Freeze-Before-Pay Snapshot Persistence
-    let authenticatedUserId = typeof userId === 'string' && userId.trim() ? userId.trim() : undefined;
+    let authenticatedUserId: string | undefined;
     const authHeader = req.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7).trim();
@@ -228,8 +369,118 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Verified identity is the sole account-ownership authority. An invalid or
+    // missing token creates an isolated guest capability scope; body userId is ignored.
+    const capabilityDigest = sha256(checkoutCapability);
+    const scopeId = authenticatedUserId ? sha256(`user:${authenticatedUserId}`) : sha256(`guest:${capabilityDigest}`);
+
     const orderId = `order_${crypto.randomBytes(16).toString('hex')}`;
     const viewToken = `tok_${crypto.randomBytes(16).toString('hex')}`;
+    const attemptId = createAttemptId();
+    const quoteVersion = `q_${sha256(stableJson({ tier: activeTier, amount: finalAmountInCents, original: tierMeta.priceCents, discountCode: appliedDiscountCode || null, discountAmountInCents })).slice(0, 20)}`;
+    const pricingVersion = 'docketstamp-usps-2026-v1';
+    const requestPayloadDigest = sha256(stableJson({
+      noticeSlug: notice.slug, userValues, senderAddress: safeSenderAddress, recipientAddress: safeRecipientAddress,
+      tier: activeTier, amount: finalAmountInCents, discountCode: appliedDiscountCode || null,
+      discountAmountInCents, signatureAdoption: { signerName: adoptedSignerName, affirmed: true },
+      requestedDocketId: typeof clientDocketId === 'string' ? clientDocketId : null,
+      customerEmail: typeof customerEmail === 'string' ? customerEmail.trim() : '',
+      draftId, draftRevision,
+      policyNexus, senderAddressEvidence: senderAddressEvidenceDigest, recipientAddressEvidence: recipientAddressEvidenceDigest,
+    }));
+    // Resolve payment authority server-side before reserving an attempt so
+    // supersession can later choose a mode-safe resolver without trusting IDs.
+    const checkoutPaymentMode = finalAmountInCents > 0 ? resolvePaymentMode() : undefined;
+
+    const attemptReservation = await reserveAttempt({
+      attemptId,
+      orderId,
+      ownerUid: authenticatedUserId,
+      capabilityDigest,
+      draftId,
+      draftRevision,
+      requestKeyDigest: sha256(idempotencyKey),
+      payloadDigest: requestPayloadDigest,
+      snapshotHash: sha256(frozenHtmlPayload),
+      quoteVersion,
+      pricingVersion,
+      amountInCents: finalAmountInCents,
+      currency: 'usd',
+      paymentMode: checkoutPaymentMode,
+      tier: activeTier,
+      scopeId,
+    });
+    if (attemptReservation.kind === 'conflict') {
+      return NextResponse.json({ error: 'This idempotency key was already used for different checkout details.', code: 'IDEMPOTENCY_KEY_REUSED' }, { status: 409 });
+    }
+    if (attemptReservation.kind === 'active_attempt') {
+      return NextResponse.json({ error: 'Resolve the previous checkout attempt before creating another payment.', code: 'CHECKOUT_ATTEMPT_ACTIVE', attemptId: attemptReservation.attempt.attemptId, state: attemptReservation.attempt.state }, { status: 409 });
+    }
+    if (attemptReservation.kind === 'replay') {
+      let prior = attemptReservation.attempt;
+      const priorOrder = await getOrderById(prior.orderId);
+      if (!priorOrder) {
+        if (prior.state === 'creating') {
+          // The original request can still be committing its policy-bound
+          // snapshot. Absence is not proof that the creator has stopped.
+          return NextResponse.json({ error: 'Checkout initialization is still in progress. Retry this same request.', code: 'CHECKOUT_ATTEMPT_BUSY', attemptId: prior.attemptId }, { status: 409 });
+        }
+        return NextResponse.json({ error: 'The prior checkout snapshot could not be loaded.', code: 'CHECKOUT_ATTEMPT_UNAVAILABLE' }, { status: 503 });
+      }
+      if (prior.amountInCents > 0) {
+        let currentMode;
+        try { currentMode = resolvePaymentMode(); } catch { currentMode = undefined; }
+        const persistedMode = prior.paymentMode || priorOrder.paymentMode;
+        if (!persistedMode || !currentMode || persistedMode !== currentMode || priorOrder.paymentMode !== persistedMode ||
+            (prior.paymentMode && prior.paymentMode !== persistedMode)) {
+          return NextResponse.json({ error: 'The saved checkout payment mode cannot be safely resumed in this runtime.', code: 'CHECKOUT_PAYMENT_MODE_MISMATCH' }, { status: 409 });
+        }
+      }
+      if (prior.state === 'creating' && prior.amountInCents > 0 && !prior.paymentIntentId && priorOrder.status === 'PENDING_PAYMENT') {
+        // Recover the original Stripe request with its stable provider idempotency key.
+        // Stripe returns the same PaymentIntent if the first response was lost.
+        const recoveredPayment = await createCardPaymentIntent({
+          orderId: prior.orderId,
+          customerEmail: priorOrder.customerEmail || undefined,
+          amountInCents: prior.amountInCents,
+          metadata: {
+            orderId: prior.orderId,
+            docketId: String(priorOrder.docketId || ''),
+            tier: prior.tier,
+            noticeSlug: String(priorOrder.noticeType || ''),
+            product: 'docketstamp',
+            checkoutAttemptId: prior.attemptId,
+            draftRevision: String(prior.draftRevision),
+            snapshotHash: prior.snapshotHash,
+          },
+          idempotencyKey: `docketstamp_${prior.attemptId}`,
+        });
+        await updateOrderStatus(prior.orderId, { stripePaymentId: recoveredPayment.paymentIntentId, checkoutPaymentIntentId: recoveredPayment.paymentIntentId });
+        prior = await setAttemptState(prior.attemptId, 'locked', {
+          paymentIntentId: recoveredPayment.paymentIntentId,
+          clientSecret: recoveredPayment.clientSecret || undefined,
+        });
+        await updateOrderAttemptState(prior.orderId, prior);
+      }
+      return NextResponse.json({
+        orderId: prior.orderId,
+        viewToken: priorOrder.viewToken,
+        clientSecret: prior.clientSecret || null,
+        paymentIntentId: prior.paymentIntentId || null,
+        docketId: priorOrder.docketId,
+        amountCents: prior.amountInCents,
+        tier: prior.tier,
+        isFree: prior.amountInCents === 0,
+        attemptId: prior.attemptId,
+        draftId: prior.draftId,
+        draftRevision: prior.draftRevision,
+        quoteVersion: prior.quoteVersion,
+        pricingVersion: prior.pricingVersion,
+        snapshotHash: prior.snapshotHash,
+        reviewPayload: priorOrder.documentHtml,
+        checkoutCapability,
+      });
+    }
 
     const cleanSessionId = typeof telemetrySessionId === 'string' && telemetrySessionId.trim()
       ? telemetrySessionId.trim().slice(0, 100)
@@ -272,8 +523,13 @@ export async function POST(req: NextRequest) {
           ? 'CERTIFIED_RETURN_RECEIPT'
           : 'CERTIFIED',
       status: 'PENDING_PAYMENT',
+      checkoutAttemptId: attemptId,
+      checkoutAttemptState: 'creating',
+      checkoutAttemptSupersededBy: null,
+      checkoutPaymentIntentId: null,
       amountInCents: finalAmountInCents,
       finalAmountInCents,
+      ...(checkoutPaymentMode ? { paymentMode: checkoutPaymentMode } : {}),
       originalAmountInCents: tierMeta.priceCents,
       discountCode: appliedDiscountCode,
       discountAmountInCents,
@@ -319,17 +575,25 @@ export async function POST(req: NextRequest) {
     failureCode = 'ORDER_PERSISTENCE';
     const policyCommit = await createOrderUnderPolicy(orderRecord as any, notice.slug, policyNexus);
     if (!policyCommit.ok) {
+      await setAttemptState(attemptId, 'cancelled');
       return NextResponse.json({
         error: policyCommit.decision.message,
         code: policyCommit.decision.code,
         details: { requiredFields: policyCommit.decision.requiredFields },
       }, { status: 403 });
     }
+    await setAttemptState(attemptId, 'creating', {
+      policyRevision: policyCommit.revision,
+      templateContentDigest: policyCommit.contentDigest,
+      policyNexus,
+    });
 
     // A 100% discount is still a fully frozen notice order, but it does not
     // require a zero-dollar Stripe PaymentIntent. The free-order endpoint binds
     // it to durable free authorization before postal dispatch.
     if (finalAmountInCents === 0) {
+      let attempt = await setAttemptState(attemptId, 'locked');
+      await updateOrderAttemptState(orderId, attempt);
       return NextResponse.json({
         orderId,
         viewToken,
@@ -341,6 +605,14 @@ export async function POST(req: NextRequest) {
         isFree: true,
         discountCode: appliedDiscountCode,
         discountAmountInCents,
+        attemptId,
+        draftId,
+        draftRevision,
+        quoteVersion,
+        pricingVersion,
+        snapshotHash: attempt.snapshotHash,
+        reviewPayload: frozenHtmlPayload,
+        checkoutCapability,
       });
     }
 
@@ -356,13 +628,23 @@ export async function POST(req: NextRequest) {
         tier: activeTier,
         noticeSlug: notice.slug,
         product: 'docketstamp',
+        checkoutAttemptId: attemptId,
+        draftRevision: String(draftRevision),
+        snapshotHash: sha256(frozenHtmlPayload),
       },
+      idempotencyKey: `docketstamp_${attemptId}`,
     });
 
     // Update order with the Stripe PaymentIntent identifier
     await updateOrderStatus(orderId, {
       stripePaymentId: paymentIntent.paymentIntentId,
+      checkoutPaymentIntentId: paymentIntent.paymentIntentId,
     });
+    const attempt = await setAttemptState(attemptId, 'locked', {
+      paymentIntentId: paymentIntent.paymentIntentId,
+      clientSecret: paymentIntent.clientSecret || undefined,
+    });
+    await updateOrderAttemptState(orderId, attempt);
 
     return NextResponse.json({
       orderId,
@@ -371,6 +653,14 @@ export async function POST(req: NextRequest) {
       docketId,
       amountCents: finalAmountInCents,
       tier: activeTier,
+      attemptId,
+      draftId,
+      draftRevision,
+      quoteVersion,
+      pricingVersion,
+      snapshotHash: attempt.snapshotHash,
+      reviewPayload: frozenHtmlPayload,
+      checkoutCapability,
     });
   } catch (error: any) {
     console.error('[/api/docket/lock-and-intent Error]', error);

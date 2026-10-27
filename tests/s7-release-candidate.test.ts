@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import "./helpers/firebase-auth-test-verifier";
 import test, { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -366,13 +367,13 @@ describe('S7 Release Candidate Verification Suite', () => {
         const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: JSON.stringify(withVerifiedLockFixture({
             slug: 'security-deposit-return-demand-letter',
             tier,
             userValues: validTenantValues,
             signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
             customerEmail: 'jane.tester@gmail.com',
-          }),
+          })),
         });
 
         const res = await lockAndIntentPost(req);
@@ -402,11 +403,11 @@ describe('S7 Release Candidate Verification Suite', () => {
     it('enforces fulfillment idempotency on /api/checkout/confirm-order', async () => {
       const lockResponse = await lockAndIntentPost(new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter', tier: 'certified',
           userValues: validTenantValues, customerEmail: 'idempotent@example.test',
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
-        }),
+        })),
       }));
       assert.equal(lockResponse.status, 200);
       const { orderId } = await lockResponse.json();
@@ -436,13 +437,13 @@ describe('S7 Release Candidate Verification Suite', () => {
       const guestReq = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           tier: 'first_class',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           customerEmail: 'guest_buyer@gmail.com',
-        }),
+        })),
       });
 
       const guestRes = await lockAndIntentPost(guestReq);
@@ -458,13 +459,13 @@ describe('S7 Release Candidate Verification Suite', () => {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer mock_token_alice@gmail.com',
         },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           tier: 'first_class',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           customerEmail: 'alice@gmail.com',
-        }),
+        })),
       });
 
       const authRes = await lockAndIntentPost(authReq);
@@ -893,13 +894,13 @@ describe('S7 Release Candidate Verification Suite', () => {
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           tier: 'certified',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: 'Snapshot Tester' },
           customerEmail: 'snapshot.tester@gmail.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);

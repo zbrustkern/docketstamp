@@ -50,6 +50,12 @@ export async function authorizeFreeOrder(
     if (input.kind === "promo" && order.paymentMethod !== "PROMO_CODE") throw new Error("PROMO_ORDER_REQUIRED");
     const snapshotHash = computeOrderSnapshotHash(order);
     const current = await tx.get(factRef);
+    const checkoutAttemptId = (order as Order & { checkoutAttemptId?: string }).checkoutAttemptId;
+    const checkoutAttemptRef = checkoutAttemptId ? firestoreDb.collection("checkout_attempts_v1").doc(checkoutAttemptId) : null;
+    const checkoutAttemptSnap = checkoutAttemptRef ? await tx.get(checkoutAttemptRef) : null;
+    if (checkoutAttemptId && (!checkoutAttemptSnap?.exists || !["locked", "free_authorized"].includes(String(checkoutAttemptSnap.data()?.state || "")))) {
+      throw new Error("CHECKOUT_ATTEMPT_NOT_FREE_AUTHORIZABLE");
+    }
     if (current.exists) {
       const existing = current.data() as FreeAuthorizationFact;
       if (existing.snapshotHash !== snapshotHash || existing.kind !== input.kind) throw new Error("FREE_AUTHORITY_CONFLICT");
@@ -64,7 +70,11 @@ export async function authorizeFreeOrder(
     tx.create(factRef, sanitizeFirestoreData(fact));
     tx.update(orderRef, sanitizeFirestoreData({
       freeAuthorizationFactId: factId, paymentSnapshotHash: snapshotHash,
+      ...(checkoutAttemptId ? { checkoutAttemptState: "free_authorized" } : {}),
     }));
+    if (checkoutAttemptRef && checkoutAttemptSnap?.exists) {
+      tx.update(checkoutAttemptRef, { state: "free_authorized", updatedAt: Date.now() });
+    }
     return fact;
   });
 }

@@ -1,0 +1,10 @@
+chapters:
+  - id: CHAPTER-0001
+    title: Reliable commerce and customer continuity
+    status: active
+    doc: docs/chapters/CHAPTER-0001-reliable-commerce-and-customer-continuity.md
+    created: "2026-10-27T00:34:04Z"
+    updated: "2026-10-27T00:34:04Z"
+    summary: >-
+      Preserve customer drafts and exact reviewed snapshots through server-authorized payment, accountable mailing, useful operating evidence and measured growth; share proven patterns with SendMyNotes.
+    sprint_ids: []

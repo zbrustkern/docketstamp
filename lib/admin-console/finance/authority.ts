@@ -3,7 +3,8 @@ import type Stripe from "stripe";
 import { firestoreDb } from "@/lib/firebase-admin";
 import type { Order } from "@/lib/types";
 import { resolvePaymentMode } from "@/lib/payment-mode";
-import { processPaidOrder, type ProcessOrderOptions, type ProcessPaidOrderResult } from "@/lib/order-processor";
+import { recordAuthorizedPaymentObserved, type ProcessOrderOptions, type ProcessPaidOrderResult } from "@/lib/order-processor";
+import { getDispatchLock, reconcileAcceptedDispatchOutboxes } from "@/lib/admin-console/postal/attempt-store";
 import {
   MoneyFactSchema,
   ProviderEventReceiptSchema,
@@ -192,10 +193,12 @@ export async function recordPaymentAuthority(
     const orderRef = orderId ? firestoreDb.collection("orders").doc(orderId) : null;
     const factRef = firestoreDb.collection(PAYMENT_FACTS).doc(factId);
     const outboxRef = firestoreDb.collection(OUTBOX).doc(outboxId);
-
     const receiptSnap = await transaction.get(receiptRef);
     const conflictReceiptSnap = await transaction.get(conflictReceiptRef);
     const orderSnap = orderRef ? await transaction.get(orderRef) : null;
+    const checkoutAttemptId = (orderSnap?.exists ? (orderSnap.data() as Order & { checkoutAttemptId?: string }).checkoutAttemptId : undefined);
+    const checkoutAttemptRef = checkoutAttemptId ? firestoreDb.collection("checkout_attempts_v1").doc(checkoutAttemptId) : null;
+    const checkoutAttemptSnap = checkoutAttemptRef ? await transaction.get(checkoutAttemptRef) : null;
     const factSnap = await transaction.get(factRef);
     const outboxSnap = orderId ? await transaction.get(outboxRef) : null;
 
@@ -364,6 +367,14 @@ export async function recordPaymentAuthority(
       });
     }
     if (orderRef && order) {
+      const currentAttemptState = checkoutAttemptSnap?.exists
+        ? String((checkoutAttemptSnap.data() as Record<string, unknown>).state || "")
+        : "";
+      const capturedDuringResolution = new Set([
+        "cancellation_pending", "superseding", "outcome_unknown", "superseded", "cancelled",
+        "captured_exception", "paid_exception",
+      ]).has(currentAttemptState) || Boolean((order as any).checkoutAttemptSupersededBy);
+      const nextAttemptState = checkoutAttemptId ? (capturedDuringResolution || !checkoutAttemptSnap?.exists ? "captured_exception" : "paid") : undefined;
       const update: Record<string, unknown> = {
         stripePaymentId: paymentIntent.id,
         paymentMode: mode === "live" ? "live" : "stripe_test",
@@ -373,10 +384,21 @@ export async function recordPaymentAuthority(
         paymentSnapshotHash: hash,
         updatedAt: receivedAt,
       };
+      if (checkoutAttemptId) {
+        update.checkoutAttemptState = nextAttemptState;
+        update.checkoutPaymentIntentId = paymentIntent.id;
+      }
       if (order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_VERIFICATION_FAILED") {
         update.status = "PAYMENT_RECEIVED";
       }
       transaction.update(orderRef, update);
+      if (checkoutAttemptRef && checkoutAttemptSnap?.exists) {
+        transaction.update(checkoutAttemptRef, {
+          state: nextAttemptState,
+          paymentIntentId: paymentIntent.id,
+          updatedAt: receivedAt,
+        });
+      }
     }
 
     return {
@@ -399,34 +421,136 @@ export async function recordPaymentObligationResult(
 ): Promise<void> {
   const outboxId = safeDocId(`payment-obligation:${orderId}`);
   const ref = firestoreDb.collection(OUTBOX).doc(outboxId);
-  const snap = await ref.get();
-  if (!snap.exists) throw new Error("Payment obligation outbox record is missing.");
-  const item = snap.data() as Record<string, unknown>;
-  if (item.orderId !== orderId || item.paymentFactId !== paymentFactId) {
-    throw new Error("Payment obligation outbox binding does not match verified payment.");
-  }
-  await ref.update({
-    status: result.success ? "consumed" : "attention_required",
-    lastResult: result.success ? result.status : "failed",
-    ...(result.error ? { lastErrorCode: "FULFILLMENT_REQUIRES_ATTENTION" } : {}),
-    completedAt: nowIso(),
-    attempts: Number(item.attempts || 0) + 1,
+  await firestoreDb.runTransaction(async (transaction: any) => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists) throw new Error("Payment obligation outbox record is missing.");
+    const item = snap.data() as Record<string, unknown>;
+    if (item.orderId !== orderId || item.paymentFactId !== paymentFactId) {
+      throw new Error("Payment obligation outbox binding does not match verified payment.");
+    }
+    // Acceptance is committed by the postal attempt transaction. A later
+    // caller cannot demote that verified fact back into retryable work.
+    if (item.status === "consumed") return;
+    transaction.update(ref, {
+      status: result.success ? "consumed" : "attention_required",
+      lastResult: result.success ? result.status : "failed",
+      ...(result.error ? { lastErrorCode: "FULFILLMENT_REQUIRES_ATTENTION" } : {}),
+      completedAt: nowIso(),
+      attempts: Number(item.attempts || 0) + 1,
+    });
   });
 }
 
+type AcceptedEffectsClaim = { claimed: true; token: string; item: Record<string, unknown> } | { claimed: false; status: string };
+
+export type AcceptedDispatchAuthority = { paymentFactId: string; freeAuthorizationFactId?: never } | { freeAuthorizationFactId: string; paymentFactId?: never };
+
+async function claimAcceptedDispatchEffects(orderId: string, authority: AcceptedDispatchAuthority, nowMs = Date.now()): Promise<AcceptedEffectsClaim> {
+  const id = safeDocId(`dispatch-accepted-effects:${orderId}:1`);
+  const ref = firestoreDb.collection(OUTBOX).doc(id);
+  const token = crypto.randomUUID();
+  return firestoreDb.runTransaction(async (transaction: any) => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists) return { claimed: false as const, status: "ACCEPTED_EFFECTS_MISSING" };
+    const item = snap.data() as Record<string, unknown>;
+    const authorityMatches = "paymentFactId" in authority
+      ? item.paymentFactId === authority.paymentFactId
+      : item.freeAuthorizationFactId === authority.freeAuthorizationFactId;
+    if (item.kind !== "dispatch_accepted_effects" || item.orderId !== orderId || !authorityMatches) {
+      return { claimed: false as const, status: "ACCEPTED_EFFECTS_BINDING_MISMATCH" };
+    }
+    if (item.status === "consumed") return { claimed: false as const, status: "ALREADY_CONSUMED" };
+    if (item.status === "attention_required") return { claimed: false as const, status: "ATTENTION_REQUIRED" };
+    if (item.status === "processing") {
+      if (Number(item.leaseUntil || 0) > nowMs) return { claimed: false as const, status: "EFFECTS_IN_PROGRESS" };
+      transaction.update(ref, { status: "attention_required", leaseUntil: null, attentionCode: "ACCEPTED_EFFECTS_LEASE_EXPIRED", updatedAt: nowIso(nowMs) });
+      return { claimed: false as const, status: "ATTENTION_REQUIRED" };
+    }
+    transaction.update(ref, {
+      status: "processing", processingToken: token, leaseUntil: nowMs + 5 * 60 * 1000,
+      attempts: Number(item.attempts || 0) + 1, updatedAt: nowIso(nowMs),
+    });
+    return { claimed: true as const, token, item };
+  });
+}
+
+async function finishAcceptedDispatchEffects(orderId: string, token: string, success: boolean): Promise<void> {
+  const ref = firestoreDb.collection(OUTBOX).doc(safeDocId(`dispatch-accepted-effects:${orderId}:1`));
+  await firestoreDb.runTransaction(async (transaction: any) => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists) throw new Error("ACCEPTED_EFFECTS_OUTBOX_MISSING");
+    const item = snap.data() as Record<string, unknown>;
+    if (item.processingToken !== token || item.status !== "processing") throw new Error("ACCEPTED_EFFECTS_CLAIM_LOST");
+    transaction.update(ref, {
+      status: success ? "consumed" : "attention_required", leaseUntil: null,
+      ...(success ? { completedAt: nowIso(), lastResult: "FOLLOWUPS_RECORDED" } : { attentionCode: "FOLLOWUP_EFFECT_OUTCOME_UNKNOWN" }),
+      updatedAt: nowIso(),
+    });
+  });
+}
+
+export async function drainAcceptedDispatchEffects(input: {
+  orderId: string;
+  authority: AcceptedDispatchAuthority;
+  options?: Pick<ProcessOrderOptions, "clientIp" | "userAgent">;
+  process?: (order: Order, item: Record<string, unknown>) => Promise<void>;
+}): Promise<string> {
+  const claim = await claimAcceptedDispatchEffects(input.orderId, input.authority);
+  if (!claim.claimed) return claim.status;
+  const item = claim.item;
+  try {
+    const orderSnap = await firestoreDb.collection("orders").doc(input.orderId).get();
+    if (!orderSnap.exists) throw new Error("ACCEPTED_ORDER_MISSING");
+    const order = orderSnap.data() as Order;
+    if (input.process) await input.process(order, item);
+    else {
+      const { recordAuthorizedDispatchAccepted } = await import("@/lib/order-processor");
+      await recordAuthorizedDispatchAccepted({
+        orderId: input.orderId, paymentIntentId: String(item.paymentIntentId || ""), order,
+        lobLetterId: String(item.providerLetterId || ""),
+        ...(typeof item.trackingNumber === "string" ? { trackingNumber: item.trackingNumber } : {}),
+        ...(typeof item.trackingUrl === "string" ? { trackingUrl: item.trackingUrl } : {}),
+        ...(typeof item.expectedDeliveryDate === "string" ? { expectedDeliveryDate: item.expectedDeliveryDate } : {}),
+        clientIp: input.options?.clientIp, userAgent: input.options?.userAgent,
+        isTest: typeof item.isTest === "boolean" ? item.isTest : true,
+      });
+    }
+    await finishAcceptedDispatchEffects(input.orderId, claim.token, true);
+    return "FOLLOWUPS_RECORDED";
+  } catch (error) {
+    await finishAcceptedDispatchEffects(input.orderId, claim.token, false).catch(() => undefined);
+    console.error("[FinanceAuthority] Accepted dispatch follow-ons need reconciliation:", error);
+    return "FOLLOWUP_EFFECT_OUTCOME_UNKNOWN";
+  }
+}
+
+async function reconcileKnownAcceptedPaymentDispatch(orderId: string, paymentFactId: string, snapshotHash: string, environment: string): Promise<boolean> {
+  for (const lobMode of ["live", "test_api", "mock"] as const) {
+    const lock = await getDispatchLock({ environment: environment as "local" | "staging" | "production", lobMode, orderId, snapshotVersion: 1 });
+    if (!lock || lock.state !== "accepted" || lock.snapshotHash !== snapshotHash || typeof lock.activeAttemptId !== "string") continue;
+    if (await reconcileAcceptedDispatchOutboxes(lock.activeAttemptId, { paymentFactId })) return true;
+  }
+  return false;
+}
+
 /**
- * The sole S2 payment-to-fulfillment bridge. Claims the durable obligation
- * before invoking the existing idempotent processor; reconcile never calls it.
+ * The sole payment-to-fulfillment bridge. Claims the durable obligation and
+ * routes the frozen order through the shared postal dispatcher.
  */
 export async function consumePaymentObligation(
   orderId: string,
   paymentFactId: string,
-  options: Pick<ProcessOrderOptions, "clientIp" | "userAgent"> = {},
+  options: Pick<ProcessOrderOptions, "clientIp" | "userAgent"> & { processAcceptedEffects?: (order: Order, item: Record<string, unknown>) => Promise<void> } = {},
 ): Promise<ProcessPaidOrderResult> {
   const proof = await getVerifiedPaymentObligation(orderId);
   if (!proof || proof.paymentFact.factId !== paymentFactId) {
     return { success: false, status: "PAYMENT_AUTHORITY_INVALID", error: "Verified payment obligation is unavailable." };
   }
+
+  // A prior process may have persisted Lob acceptance but died before the
+  // payment obligation result write. Repair only from an accepted lock whose
+  // attempt, snapshot and payment fact all still bind to this verified proof.
+  await reconcileKnownAcceptedPaymentDispatch(orderId, paymentFactId, proof.snapshotHash, proof.paymentFact.environment);
 
   const now = Date.now();
   const outboxId = safeDocId(`payment-obligation:${orderId}`);
@@ -467,22 +591,38 @@ export async function consumePaymentObligation(
 
   if (!claim.claimed) {
     if (claim.status === "ALREADY_CONSUMED") {
-      return { success: true, status: claim.currentStatus || "PAYMENT_RECEIVED", alreadyProcessed: true };
+      await reconcileKnownAcceptedPaymentDispatch(orderId, paymentFactId, proof.snapshotHash, proof.paymentFact.environment);
+      const followupStatus = await drainAcceptedDispatchEffects({ orderId, authority: { paymentFactId }, options, process: options.processAcceptedEffects });
+      return { success: true, status: claim.currentStatus || "PAYMENT_RECEIVED", alreadyProcessed: true, followupStatus };
     }
     return { success: false, status: claim.status, error: "Payment obligation is not safe to submit automatically." };
   }
 
-  const result = await processPaidOrder(
+  await recordAuthorizedPaymentObserved({
+    orderId, order: proof.order,
+    isTest: proof.paymentFact.providerMode !== "live",
+    paymentMode: proof.paymentFact.providerMode === "live" ? "live" : "stripe_test",
+  });
+
+  const { dispatchAuthorizedObligation, resolvePostalObligation } = await import("@/lib/admin-console/postal/dispatch");
+  const dispatch = await dispatchAuthorizedObligation({
     orderId,
-    proof.paymentFact.providerObjectId,
-    proof.order.customerEmail,
-    {
-      ...options,
-      isTest: proof.paymentFact.providerMode !== "live",
-      paymentMode: proof.paymentFact.providerMode === "live" ? "live" : "stripe_test",
-      authorityFactId: paymentFactId,
-    },
-  );
+    requestId: `payment-obligation:${orderId}`,
+    actorId: `stripe:${proof.paymentFact.providerObjectId}`,
+    evidenceRef: proof.paymentFact.evidenceRef,
+    resolveObligation: resolvePostalObligation,
+  });
+  let result: ProcessPaidOrderResult;
+  if (dispatch.status === "accepted") {
+    const followupStatus = await drainAcceptedDispatchEffects({ orderId, authority: { paymentFactId }, options, process: options.processAcceptedEffects });
+    result = { success: true, status: "PROCESSING_DISPATCH", lobLetterId: dispatch.providerLetterId, followupStatus };
+  } else if (dispatch.status === "simulated") {
+    result = { success: false, status: "QUEUED_FOR_FULFILLMENT", error: "Postal dispatch was simulated; no USPS mailing was created." };
+  } else if (dispatch.status === "uncertain") {
+    result = { success: false, status: "POSTAL_RESULT_AMBIGUOUS", error: "Postal result is uncertain and requires reconciliation." };
+  } else {
+    result = { success: false, status: dispatch.reason, error: "Payment is recorded; postal dispatch is held for reconciliation." };
+  }
   await recordPaymentObligationResult(orderId, paymentFactId, result);
   return result;
 }

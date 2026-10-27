@@ -1,5 +1,6 @@
 import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
 import { getMetaPixelDestination } from '@/lib/marketing-destinations';
+import { genericMetaEvent, isCurrentMarketingSurfacePublic } from './marketing-privacy';
 
 export const META_PIXEL_ID = getMetaPixelDestination();
 
@@ -25,10 +26,12 @@ export interface MetaContentItem {
  * Safe invocation of window.fbq for client-side execution.
  */
 function callFbq(...args: unknown[]): void {
-  if (typeof window === "undefined" || !hasExplicitMarketingConsent() || !getMetaPixelDestination()) return;
+  if (typeof window === "undefined" || !hasExplicitMarketingConsent() || !isCurrentMarketingSurfacePublic() || !getMetaPixelDestination()) return;
+  const generic = genericMetaEvent(args);
+  if (!generic) return;
   const win = window as unknown as { fbq?: (...params: unknown[]) => void };
   if (typeof win.fbq === "function") {
-    win.fbq(...args);
+    win.fbq(...generic);
   }
 }
 

@@ -70,6 +70,7 @@ import { CampaignPerformanceWidget } from "@/components/admin/CampaignPerformanc
 import { HighIntentCartsWidget } from "@/components/admin/HighIntentCartsWidget";
 import { OutgoingEmailPanel } from "@/components/admin/OutgoingEmailPanel";
 import { TemplateGovernancePanel } from "@/components/admin/TemplateGovernancePanel";
+import { ExecutiveReportingPanel } from "@/components/admin/ExecutiveReportingPanel";
 import { resolvePostalProvenance, postalProviderLabel } from "@/lib/admin/postal-reference";
 
 export default function AdminDashboardPage() {
@@ -1789,6 +1790,7 @@ export default function AdminDashboardPage() {
         {/* ===================== TAB: UNIT ECONOMICS & MARGINS ===================== */}
         {activeTab === "margins" && (
           <div className="space-y-8">
+            <ExecutiveReportingPanel />
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="space-y-1">
