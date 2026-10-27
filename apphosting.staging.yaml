@@ -45,7 +45,7 @@ env:
   # Override the production secret binding inherited from apphosting.yaml.
   # Deterministic staging CASS does not require a live verification key.
   - variable: LOB_ADDRESS_VERIFICATION_KEY
-    value: ""
+    value: staging_mock_cass_unused
     availability:
       - RUNTIME
 

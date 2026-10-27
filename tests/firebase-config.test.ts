@@ -87,7 +87,7 @@ test("deployment manifests specify each registered identity at build and runtime
 test("staging overrides the inherited production Lob verification binding and uses dedicated address signing", () => {
   const yaml = readFileSync('apphosting.staging.yaml', 'utf8');
   const entry = (name: string) => yaml.split(`- variable: ${name}\n`)[1]?.split('- variable:')[0] || '';
-  assert.match(entry('LOB_ADDRESS_VERIFICATION_KEY'), /value: ""/);
+  assert.match(entry('LOB_ADDRESS_VERIFICATION_KEY'), /value: staging_mock_cass_unused/);
   assert.doesNotMatch(entry('LOB_ADDRESS_VERIFICATION_KEY'), /secret:/);
   assert.match(entry('LOB_ENV'), /value: staging_mock_cass/);
   assert.match(entry('ADDRESS_VERIFICATION_EVIDENCE_SECRET'), /secret: address-verification-evidence-secret/);
