@@ -119,10 +119,13 @@ function computeFingerprint(
   sigAdopted: boolean,
   affirmed: boolean
 ): string {
+  const sortedValues = Object.fromEntries(
+    Object.entries(values).sort(([a], [b]) => a.localeCompare(b))
+  );
   return JSON.stringify({
     tier,
     email: customerEmail.trim().toLowerCase(),
-    values,
+    values: sortedValues,
     sigAdopted,
     affirmed,
   });
@@ -230,6 +233,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     original: { name: string; addressLine1: string; addressLine2?: string; city: string; state: string; zip: string };
     suggested: Record<string, string>;
     evidence?: AddressVerificationEvidence;
+    standardizedEvidence?: AddressVerificationEvidence;
   } | null>(null);
   const [addressVerificationIssue, setAddressVerificationIssue] = useState<{
     role: 'sender' | 'recipient';
@@ -311,6 +315,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   currentFingerprintRef.current = currentFingerprint;
   const draftRevisionRef = useRef(draftRevision);
   draftRevisionRef.current = draftRevision;
+  const latestValuesRef = useRef<Record<string, string>>(userValues);
+  useEffect(() => {
+    latestValuesRef.current = { ...latestValuesRef.current, ...userValues };
+  }, [userValues]);
 
   const supersedingIdsRef = useRef<Set<string>>(new Set());
   const supersedeAttempt = async (attempt: LockedAttempt | ActiveCheckoutAttemptRecovery) => {
@@ -848,6 +856,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             original: address,
             suggested,
             evidence: result.evidence,
+            standardizedEvidence: result.standardizedEvidence,
           });
           return;
         }
@@ -863,6 +872,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     original: { name: string; addressLine1: string; addressLine2?: string; city: string; state: string; zip: string };
     suggested: Record<string, string>;
     evidence?: AddressVerificationEvidence;
+    standardizedEvidence?: AddressVerificationEvidence;
   }) => {
     resolvedAddressRolesRef.current.add(suggestion.role);
     setAddressReviewSuggestion(null);
@@ -871,8 +881,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     draftRevisionRef.current = nextRev;
     const mergedValues = {
       ...userValues,
+      ...latestValuesRef.current,
       ...suggestion.suggested,
     };
+    latestValuesRef.current = mergedValues;
     const cleanEmail = email.trim();
     currentFingerprintRef.current = computeFingerprint(
       selectedTier,
@@ -881,7 +893,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       isSignatureAdopted,
       isAffirmed
     );
-    await verifyAndProceedWithAddresses(mergedValues, nextRev, {}, cleanEmail);
+    const initialNextEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>> =
+      suggestion.standardizedEvidence && suggestion.standardizedEvidence.payload?.draftRevision === nextRev
+        ? { [suggestion.role]: suggestion.standardizedEvidence }
+        : {};
+    await verifyAndProceedWithAddresses(mergedValues, nextRev, initialNextEvidence, cleanEmail);
   };
 
   const handleKeepOriginalAddress = async (suggestion: {
@@ -893,8 +909,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     resolvedAddressRolesRef.current.add(suggestion.role);
     setAddressReviewSuggestion(null);
     const cleanEmail = email.trim();
+    const activeVals = { ...userValues, ...latestValuesRef.current };
     await verifyAndProceedWithAddresses(
-      userValues,
+      activeVals,
       draftRevisionRef.current,
       { ...(addressVerificationEvidence || {}), ...(suggestion.evidence ? { [suggestion.role]: suggestion.evidence } : {}) },
       cleanEmail

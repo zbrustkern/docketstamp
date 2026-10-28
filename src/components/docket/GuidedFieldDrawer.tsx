@@ -1008,7 +1008,7 @@ const FieldInputRow: React.FC<FieldInputRowProps> = ({
           }}
           ref={inputRef}
           className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
-            field.inputType === 'date' ? 'block w-full min-w-0 max-w-full appearance-none box-border ' : ''
+            field.inputType === 'date' ? 'block w-full min-w-0 max-w-full min-h-[42px] appearance-none box-border ' : ''
           }${
             error ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-slate-700'
           }`}

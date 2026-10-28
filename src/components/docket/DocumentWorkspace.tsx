@@ -118,7 +118,7 @@ const DocumentWorkspaceInner: React.FC<{
   const [draftIdentity, setDraftIdentity] = useState(() => getOrCreateDraftIdentity(notice.slug, accountContext));
   const [draftAccountContext, setDraftAccountContext] = useState<string | null>(accountContext);
   const [addressEvidence, setAddressEvidence] = useState<Partial<Record<VerifiedAddressRole, AddressVerificationEvidence>>>({});
-  const [addressReview, setAddressReview] = useState<Partial<Record<VerifiedAddressRole, { status: 'idle' | 'checking' | 'verified' | 'suggestion' | 'error'; message?: string; suggested?: Record<string, string>; evidence?: AddressVerificationEvidence }>>>({});
+  const [addressReview, setAddressReview] = useState<Partial<Record<VerifiedAddressRole, { status: 'idle' | 'checking' | 'verified' | 'suggestion' | 'error'; message?: string; suggested?: Record<string, string>; evidence?: AddressVerificationEvidence; standardizedEvidence?: AddressVerificationEvidence }>>>({});
   const verificationRequestIdsRef = useRef<Record<string, number>>({});
   const historyReadinessRef = useRef({ checkoutReady: false, paymentReady: false });
   const [mobileView, setMobileView] = useState<'document' | 'drawer'>('drawer');
@@ -194,15 +194,20 @@ const DocumentWorkspaceInner: React.FC<{
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const mailingAddress = (role: VerifiedAddressRole) => role === 'sender'
-    ? { name: userValues.senderFullName || '', addressLine1: userValues.senderAddressLine1 || '', addressLine2: userValues.senderAddressLine2 || '', city: userValues.senderCity || '', state: userValues.senderState || '', zip: userValues.senderZip || '' }
-    : { name: userValues.recipientFormalName || '', addressLine1: userValues.recipientAddressLine1 || '', addressLine2: userValues.recipientAddressLine2 || '', city: userValues.recipientCity || '', state: userValues.recipientState || '', zip: userValues.recipientZip || '' };
+  const mailingAddress = (role: VerifiedAddressRole, values: Record<string, string> = userValues) => role === 'sender'
+    ? { name: values.senderFullName || '', addressLine1: values.senderAddressLine1 || '', addressLine2: values.senderAddressLine2 || '', city: values.senderCity || '', state: values.senderState || '', zip: values.senderZip || '' }
+    : { name: values.recipientFormalName || '', addressLine1: values.recipientAddressLine1 || '', addressLine2: values.recipientAddressLine2 || '', city: values.recipientCity || '', state: values.recipientState || '', zip: values.recipientZip || '' };
 
-  const verifyMailingAddress = async (role: VerifiedAddressRole) => {
+  const verifyMailingAddress = async (
+    role: VerifiedAddressRole,
+    overrideValues?: Record<string, string>,
+    overrideRevision?: number
+  ) => {
     const requestId = (verificationRequestIdsRef.current[role] || 0) + 1;
     verificationRequestIdsRef.current[role] = requestId;
-    const revision = draftRevisionRef.current;
-    const address = mailingAddress(role);
+    const activeValues = overrideValues || userValues;
+    const revision = overrideRevision ?? draftRevisionRef.current;
+    const address = mailingAddress(role, activeValues);
     setAddressReview((current) => ({ ...current, [role]: { status: 'checking' } }));
     try {
       const response = await fetch('/api/docket/verify-address', {
@@ -227,12 +232,33 @@ const DocumentWorkspaceInner: React.FC<{
         [role === 'sender' ? 'senderState' : 'recipientState']: normalized.state || address.state,
         [role === 'sender' ? 'senderZip' : 'recipientZip']: normalized.zip_code_plus_4 ? `${normalized.zip_code}-${normalized.zip_code_plus_4}` : normalized.zip_code || address.zip,
       };
-      const changed = Object.entries(suggested).some(([key, value]) => (userValues[key] || '').trim().toUpperCase() !== value.trim().toUpperCase());
-      setAddressReview((current) => ({ ...current, [role]: {
-        status: changed ? 'suggestion' : 'verified',
-        message: result.providerMode === 'staging_mock_cass' ? 'Staging CASS simulation result. Confirm this address to continue.' : 'USPS CASS result. Confirm this address to continue.',
-        suggested, evidence: result.evidence,
-      } }));
+      const changed = Object.entries(suggested).some(([key, value]) => (activeValues[key] || '').trim().toUpperCase() !== value.trim().toUpperCase());
+      if (!changed) {
+        setAddressEvidence((current) => ({ ...current, [role]: result.evidence }));
+        setVerificationStatus(result.evidence.payload?.providerMode === 'live_cass' ? 'confirmed' : 'simulated');
+        setAddressReview((current) => ({
+          ...current,
+          [role]: {
+            status: 'verified',
+            message: 'USPS CASS verified ✓',
+            suggested,
+            evidence: result.evidence,
+          },
+        }));
+      } else {
+        setAddressReview((current) => ({
+          ...current,
+          [role]: {
+            status: 'suggestion',
+            message: result.providerMode === 'staging_mock_cass'
+              ? 'Staging CASS standardization available. Tap Accept to apply.'
+              : 'USPS standardized formatting available. Tap Accept to apply.',
+            suggested,
+            evidence: result.evidence,
+            standardizedEvidence: result.standardizedEvidence,
+          },
+        }));
+      }
     } catch {
       if (isCurrentAddressVerificationResponse({ requestId, currentRequestId: verificationRequestIdsRef.current[role], responseRevision: revision, currentRevision: draftRevisionRef.current })) {
         setAddressReview((current) => ({ ...current, [role]: { status: 'error', message: 'Address checking is temporarily unavailable. Your entry is saved; retry before checkout.' } }));
@@ -244,16 +270,41 @@ const DocumentWorkspaceInner: React.FC<{
     const review = addressReview[role];
     if (!review?.evidence || !review.suggested) return;
     if (review.status === 'suggestion') {
-      for (const [key, value] of Object.entries(review.suggested)) handleFieldValueChange(key, value);
-      setAddressReview((current) => ({ ...current, [role]: { status: 'checking', message: 'Address updated. Binding verification evidence…' } }));
-      setTimeout(() => {
-        void verifyMailingAddress(role);
-      }, 60);
+      const mergedValues = { ...userValues, ...review.suggested };
+      for (const key of Object.keys(review.suggested)) {
+        userEditedKeysRef.current.add(key);
+      }
+      draftRevisionRef.current += 1;
+      const nextRev = draftRevisionRef.current;
+      historyReadinessRef.current.paymentReady = false;
+      setDraftRevision(nextRev);
+      setUserValues(mergedValues);
+      const nextEvidence = review.standardizedEvidence;
+      if (nextEvidence && nextEvidence.payload?.draftRevision === nextRev) {
+        setAddressEvidence((current) => ({ ...current, [role]: nextEvidence }));
+        setVerificationStatus(nextEvidence.payload?.providerMode === 'live_cass' ? 'confirmed' : 'simulated');
+        setAddressReview((current) => ({
+          ...current,
+          [role]: {
+            status: 'verified',
+            message: 'USPS CASS verified ✓',
+            suggested: review.suggested,
+            evidence: nextEvidence,
+          },
+        }));
+      } else {
+        setAddressEvidence({});
+        setAddressReview((current) => ({
+          ...current,
+          [role]: { status: 'checking', message: 'Applying USPS formatting…' },
+        }));
+        void verifyMailingAddress(role, mergedValues, nextRev);
+      }
       return;
     }
     setAddressEvidence((current) => ({ ...current, [role]: review.evidence }));
     setVerificationStatus(review.evidence.payload.providerMode === 'live_cass' ? 'confirmed' : 'simulated');
-    setAddressReview((current) => ({ ...current, [role]: { ...review, status: 'verified', message: 'Address confirmed by you. Verification evidence is current.' } }));
+    setAddressReview((current) => ({ ...current, [role]: { ...review, status: 'verified', message: 'USPS CASS verified ✓' } }));
   };
 
   // URL ?focus= parameter detection
@@ -339,7 +390,7 @@ const DocumentWorkspaceInner: React.FC<{
         };
       });
     },
-    onSelectTier: (tier) => { userEditedKeysRef.current.add('tier'); historyReadinessRef.current.paymentReady = false; if (tier !== selectedTier) { draftRevisionRef.current += 1; historyReadinessRef.current.paymentReady = false; setDraftRevision(draftRevisionRef.current); setIsSignatureAdopted(false); setIsAffirmed(false); setAddressEvidence({}); setAddressReview({}); } setSelectedTier(tier); },
+    onSelectTier: (tier) => { userEditedKeysRef.current.add('tier'); historyReadinessRef.current.paymentReady = false; setSelectedTier(tier); },
   });
 
   // Synchronize hydrated values when ready without overwriting subsequent user edits
@@ -504,12 +555,6 @@ const DocumentWorkspaceInner: React.FC<{
 
   const handleTierChange = (tier: MailTierId) => {
     if (tier === selectedTier) return;
-    draftRevisionRef.current += 1;
-    setDraftRevision(draftRevisionRef.current);
-    setIsSignatureAdopted(false);
-    setIsAffirmed(false);
-    setAddressEvidence({});
-    setAddressReview({});
     userEditedKeysRef.current.add('tier');
     historyReadinessRef.current.paymentReady = false;
     setSelectedTier(tier);

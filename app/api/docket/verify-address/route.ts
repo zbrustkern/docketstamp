@@ -75,6 +75,26 @@ export async function POST(req: NextRequest) {
           role: role as VerifiedAddressRole, draftId, draftRevision, address, providerMode,
         })
       : undefined;
+    const norm = verificationResult.standardizedAddress;
+    const standardizedEvidence = verificationResult.valid && role && norm
+      ? createAddressVerificationEvidence({
+          role: role as VerifiedAddressRole,
+          draftId,
+          draftRevision: draftRevision + 1,
+          address: {
+            name: address.name || '',
+            company: address.company,
+            addressLine1: norm.primary_line || address.addressLine1 || '',
+            addressLine2: norm.secondary_line || '',
+            city: norm.city || address.city || '',
+            state: norm.state || address.state || '',
+            zip: norm.zip_code_plus_4
+              ? `${norm.zip_code}-${norm.zip_code_plus_4}`
+              : (norm.zip_code || address.zip || ''),
+          },
+          providerMode,
+        })
+      : undefined;
 
     return NextResponse.json({
       valid: verificationResult.valid,
@@ -82,6 +102,7 @@ export async function POST(req: NextRequest) {
       standardizedAddress: verificationResult.standardizedAddress,
       providerMode,
       evidence,
+      standardizedEvidence,
       error: verificationResult.error,
       code: verificationResult.valid ? undefined : 'ADDRESS_UNDELIVERABLE',
     });
