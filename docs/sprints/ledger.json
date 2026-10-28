@@ -136,6 +136,15 @@
       "chapter_id": null,
       "run_id": "2026-10-26-high-converting-templates",
       "updated_at": "2026-10-26T15:40:00-05:00"
+    },
+    {
+      "id": "SPRINT-0016",
+      "title": "Mobile conversion polish, contextual CASS verification, and zero-lag form ergonomics",
+      "path": "docs/sprints/SPRINT-0016.md",
+      "status": "complete",
+      "chapter_id": null,
+      "run_id": "2026-10-28-mobile-ux-polish",
+      "updated_at": "2026-10-28T10:50:00-05:00"
     }
   ]
 }

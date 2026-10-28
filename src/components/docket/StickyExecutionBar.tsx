@@ -136,7 +136,7 @@ export const StickyExecutionBar: React.FC<StickyExecutionBarProps> = ({
               <button
                 type="button"
                 onClick={onProceedToCheckout}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition shadow-lg font-mono flex items-center gap-1.5"
+                className={`${mobileView === 'drawer' ? 'hidden md:flex' : 'flex'} px-4 py-2 rounded font-mono text-xs font-bold uppercase tracking-wider transition-all items-center gap-2 whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer`}
               >
                 <span>Choose delivery and pay</span>
                 <span>→</span>

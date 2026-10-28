@@ -5,7 +5,7 @@ import { DOCKET_PRICING_TIERS, ALL_NOTICE_CARTRIDGES, securityDepositNotice, pre
 import { STATE_STATUTES } from '../src/lib/docket/data/state-statutes';
 import { interpolateNotice } from '../src/lib/docket/renderer/interpolate';
 import { renderLobHtmlPayload } from '../src/lib/docket/renderer/lob-html-shell';
-import { validateNoticeInput, isValidIsoDate, parseCurrencyToCents } from '../src/lib/docket/input-validation';
+import { validateNoticeInput, isValidIsoDate, parseCurrencyToCents, formatCentsAsCurrency, formatCurrencyInput } from '../src/lib/docket/input-validation';
 
 const MAIL_TIERS = Object.keys(DOCKET_PRICING_TIERS) as Array<keyof typeof DOCKET_PRICING_TIERS>;
 const STATE_CODES = Object.keys(STATE_STATUTES);
@@ -84,6 +84,31 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
     assert.equal(parseCurrencyToCents('0'), 0);
     assert.equal(parseCurrencyToCents('-1.00'), null);
     assert.equal(parseCurrencyToCents('1,50.00'), null);
+    assert.equal(formatCentsAsCurrency(150000), '$1,500.00');
+    assert.equal(formatCentsAsCurrency(0), '$0.00');
+    assert.equal(formatCurrencyInput('1500'), '$1,500.00');
+    assert.equal(formatCurrencyInput('1500.5'), '$1,500.50');
+    assert.equal(formatCurrencyInput('$2,450.75'), '$2,450.75');
+    assert.equal(formatCurrencyInput('not-a-number'), 'not-a-number');
+  });
+
+  it('normalizes bare currency inputs to $X,XXX.XX in interpolateNotice for WYSIWYG dual-render parity', () => {
+    const rawValues = {
+      ...baseValues(securityDepositNotice),
+      depositAmount: '1500',
+      amountReceivedToDate: '250.5',
+      balanceRequested: '1249.5',
+    };
+    const document = interpolateNotice({
+      notice: securityDepositNotice,
+      userValues: rawValues,
+      docketId: 'DS-2026-CURR01',
+      executionDate: 'October 28, 2026',
+    });
+    const printedText = document.rawParagraphs.join('\n');
+    assert.match(printedText, /\$1,500\.00/);
+    assert.match(printedText, /\$250\.50/);
+    assert.match(printedText, /\$1,249\.50/);
   });
 
   it('validates supported jurisdictions, configured lengths, dates, and currency relationships', () => {

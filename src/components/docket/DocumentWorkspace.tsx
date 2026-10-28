@@ -564,10 +564,22 @@ const DocumentWorkspaceInner: React.FC<{
       setAddressEvidence({});
       setAddressReview({});
     }
+    const nextValues = (userValues.senderFullName || '') === signerName
+      ? userValues
+      : { ...userValues, senderFullName: signerName };
+    const nextValidation = validateNoticeDraft(notice, nextValues);
     setIsSignatureAdopted(true);
     setIsAffirmed(true);
     setSignatureInvalidatedByEdit(false);
     setUserValues((prev) => ({ ...prev, senderFullName: signerName }));
+
+    if (nextValidation.isValid) {
+      transitionWorkflowStep('delivery');
+      setIsCheckoutOpen(true);
+    } else if (nextValidation.firstInvalidFieldKey) {
+      setMobileView('drawer');
+      setActiveFieldKey(nextValidation.firstInvalidFieldKey);
+    }
   };
 
   const handleAffirmationChange = (affirmed: boolean) => {
@@ -677,26 +689,6 @@ const DocumentWorkspaceInner: React.FC<{
         docketId={docketId}
       />
 
-      <section aria-label="Mailing address verification" className="mx-auto w-full max-w-5xl px-4 pt-3">
-        <div className="grid gap-3 rounded-lg border border-slate-700 bg-slate-900/80 p-3 md:grid-cols-2">
-          {(['sender', 'recipient'] as const).map((role) => {
-            const review = addressReview[role];
-            const address = mailingAddress(role);
-            return <div key={role} className="space-y-2 rounded border border-slate-800 p-3">
-              <div><h2 className="text-sm font-semibold">{role === 'sender' ? 'Sender mailing address' : 'Recipient destination'}</h2>
-                <p className="text-xs text-slate-400">{[address.addressLine1, address.addressLine2, `${address.city}${address.city ? ', ' : ''}${address.state} ${address.zip}`].filter(Boolean).join(' · ') || 'Complete this address in the details drawer.'}</p></div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => void verifyMailingAddress(role)} disabled={!validation.isValid || review?.status === 'checking'} className="rounded bg-sky-800 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">{review?.status === 'checking' ? 'Checking…' : 'Check address with USPS CASS'}</button>
-                {review?.evidence && <button type="button" onClick={() => acceptAddressReview(role)} className="rounded bg-emerald-800 px-3 py-1.5 text-xs font-semibold">{review.status === 'suggestion' ? 'Use suggested address' : 'Confirm this address'}</button>}
-              </div>
-              {review?.status === 'suggestion' && <p role="status" className="text-xs text-amber-200">USPS suggests: {review.suggested?.[role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1']}, {review.suggested?.[role === 'sender' ? 'senderCity' : 'recipientCity']}, {review.suggested?.[role === 'sender' ? 'senderState' : 'recipientState']} {review.suggested?.[role === 'sender' ? 'senderZip' : 'recipientZip']}. Review and accept it before using.</p>}
-              {review?.message && <p role={review.status === 'error' ? 'alert' : 'status'} className="text-xs text-slate-300">{review.message}</p>}
-              {addressEvidence[role] && <p className="text-[11px] text-emerald-300">Address evidence current · {addressEvidence[role]?.payload.providerMode === 'staging_mock_cass' ? 'staging CASS simulation' : addressEvidence[role]?.payload.providerMode === 'local_mock' ? 'local verification simulation' : 'USPS CASS'} · {addressEvidence[role]?.payload.verifiedAt}</p>}
-            </div>;
-          })}
-        </div>
-      </section>
-
       {/* Main Workspace Area */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         {/* Left/Center Canvas: Elevated 8.5x11 Live Paper Sheet */}
@@ -772,6 +764,10 @@ const DocumentWorkspaceInner: React.FC<{
             onCompleteDrawer={() => { transitionWorkflowStep('delivery'); setIsCheckoutOpen(true); }}
             onResetDraft={handleResetDraft}
             postalCodeLookup={lookupPostalCodeLocally}
+            addressReview={addressReview}
+            addressEvidence={addressEvidence}
+            onVerifyAddress={verifyMailingAddress}
+            onAcceptAddressReview={acceptAddressReview}
           />
         </aside>
       </div>
@@ -796,7 +792,11 @@ const DocumentWorkspaceInner: React.FC<{
         onUpdateAddressEvidence={(updated) => setAddressEvidence((prev) => ({ ...prev, ...updated }))}
         onApplyFieldValues={(updates) => {
           for (const key of Object.keys(updates)) userEditedKeysRef.current.add(key);
+          const nextRev = draftRevisionRef.current + 1;
+          draftRevisionRef.current = nextRev;
+          setDraftRevision(nextRev);
           setUserValues((prev) => ({ ...prev, ...updates }));
+          return nextRev;
         }}
         onFocusField={(fieldKey) => {
           setIsCheckoutOpen(false);

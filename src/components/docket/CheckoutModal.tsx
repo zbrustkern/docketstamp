@@ -84,7 +84,7 @@ export interface CheckoutModalProps {
   onCheckoutComplete?: () => void;
   workflowStep?: WorkspaceWorkflowStep;
   onUpdateAddressEvidence?: (evidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>>) => void;
-  onApplyFieldValues?: (updates: Record<string, string>) => void;
+  onApplyFieldValues?: (updates: Record<string, string>) => number | void;
   onFocusField?: (fieldKey: string) => void;
 }
 
@@ -233,6 +233,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   } | null>(null);
   const [addressVerificationIssue, setAddressVerificationIssue] = useState<{
     role: 'sender' | 'recipient';
+    code?: string;
     message: string;
     addressText: string;
     fieldToFocus: string;
@@ -250,6 +251,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   // Track docket IDs that have already been locked to ensure fresh attempts generate a fresh ID
   const lockedDocketIdsRef = useRef<Set<string>>(new Set());
+  const resolvedAddressRolesRef = useRef<Set<'sender' | 'recipient'>>(new Set());
 
   useEffect(() => {
     setActiveAttemptRecovery(loadActiveCheckoutAttempt(getCheckoutSessionStorage(), draftId));
@@ -384,6 +386,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setStep('delivery');
       }
     } else {
+      resolvedAddressRolesRef.current.clear();
       if (previousActiveElementRef.current) {
         try {
           previousActiveElementRef.current.focus();
@@ -459,6 +462,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       zip: values.recipientZip || '',
     };
   };
+
+  const extractRoleAddressFromValues = (role: 'sender' | 'recipient', values: Record<string, string> = userValues) =>
+    getMailingAddress(role, values);
 
   const verifyAddressInline = async (
     role: 'sender' | 'recipient',
@@ -746,59 +752,97 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setAddressVerificationIssue(null);
     setAddressReviewSuggestion(null);
 
-    // Auto-verify addresses if missing or stale for current draftRevision
-    const effectiveEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>> = {
-      ...addressVerificationEvidence,
+    await verifyAndProceedWithAddresses(userValues, draftRevisionRef.current, addressVerificationEvidence || {}, cleanEmail);
+  };
+
+  const verifyAndProceedWithAddresses = async (
+    activeValues: Record<string, string>,
+    activeRevision: number,
+    seedEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>>,
+    cleanEmail: string
+  ) => {
+    const rolesToVerify: Array<'sender' | 'recipient'> = ['sender', 'recipient'];
+    const updatedEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>> = {
+      ...seedEvidence,
     };
-    const isSenderStaleOrMissing =
-      !effectiveEvidence.sender || effectiveEvidence.sender.payload.draftRevision !== draftRevision;
-    const isRecipientStaleOrMissing =
-      !effectiveEvidence.recipient || effectiveEvidence.recipient.payload.draftRevision !== draftRevision;
 
-    if (isSenderStaleOrMissing || isRecipientStaleOrMissing) {
-      setIsVerifyingAddresses(true);
-      const rolesToVerify: Array<'sender' | 'recipient'> = [];
-      if (isSenderStaleOrMissing) rolesToVerify.push('sender');
-      if (isRecipientStaleOrMissing) rolesToVerify.push('recipient');
+    for (const role of rolesToVerify) {
+      const existingEv = updatedEvidence[role];
+      const address = extractRoleAddressFromValues(role, activeValues);
 
-      const updatedEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>> = {};
+      const isEvValid =
+        existingEv &&
+        (!('noticeSlug' in (existingEv as any)) || (existingEv as any).noticeSlug === doc.noticeDefinition.slug) &&
+        existingEv.payload?.draftRevision === activeRevision &&
+        existingEv.payload?.draftId === draftId &&
+        existingEv.payload?.role === role;
 
-      for (const role of rolesToVerify) {
-        const { ok, status, result, address } = await verifyAddressInline(role, draftRevision);
-        if (!ok || !result?.valid || !result?.evidence) {
-          setIsVerifyingAddresses(false);
-          const message =
-            status === 429
-              ? 'Address checking is temporarily rate limited. Please try again in a few moments.'
-              : status >= 500
-              ? 'Address checking is temporarily unavailable. Please retry before checkout.'
-              : result?.code === 'ADDRESS_UNDELIVERABLE'
-              ? `USPS could not confirm delivery to this ${role === 'sender' ? 'sender' : 'recipient'} address. Check the street, unit, city, state, and ZIP.`
-              : result?.error || `This ${role === 'sender' ? 'sender' : 'recipient'} address could not be verified by USPS.`;
+      if (!isEvValid) {
+        setIsVerifyingAddresses(true);
+        const { ok, status, result } = await verifyAddressInline(role, activeRevision, activeValues);
+        setIsVerifyingAddresses(false);
+
+        if (!ok || !result || !result.valid || !result.evidence) {
+          const firstReason = result?.reasons?.[0];
+          const reasonMessage = typeof firstReason === 'string' ? firstReason : firstReason?.message;
           const addressText = [address.addressLine1, address.addressLine2, `${address.city}, ${address.state} ${address.zip}`].filter(Boolean).join(' · ');
           setAddressVerificationIssue({
             role,
-            message,
+            code: result?.code || 'ADDRESS_VERIFICATION_FAILED',
+            message:
+              reasonMessage ||
+              result?.error ||
+              result?.message ||
+              (status === 429
+                ? 'Address checking is temporarily rate limited. Please try again in a few moments.'
+                : status >= 500
+                ? 'Address checking is temporarily unavailable. Please retry before checkout.'
+                : `We could not verify the ${role} mailing address with USPS CASS. Please review and correct the street, city, state, and ZIP code.`),
             addressText,
             fieldToFocus: role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1',
           });
           return;
         }
 
-        const normalized = result.standardizedAddress;
-        const suggested = {
-          [role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1']: normalized.primary_line || address.addressLine1,
-          [role === 'sender' ? 'senderAddressLine2' : 'recipientAddressLine2']: normalized.secondary_line || '',
-          [role === 'sender' ? 'senderCity' : 'recipientCity']: normalized.city || address.city,
-          [role === 'sender' ? 'senderState' : 'recipientState']: normalized.state || address.state,
-          [role === 'sender' ? 'senderZip' : 'recipientZip']: normalized.zip_code_plus_4 ? `${normalized.zip_code}-${normalized.zip_code_plus_4}` : normalized.zip_code || address.zip,
-        };
-        const isChanged = Object.entries(suggested).some(
-          ([key, value]) => (userValues[key] || '').trim().toUpperCase() !== value.trim().toUpperCase()
-        );
+        const d = result.deliverability;
+        if (d === 'undeliverable') {
+          const addressText = [address.addressLine1, address.addressLine2, `${address.city}, ${address.state} ${address.zip}`].filter(Boolean).join(' · ');
+          setAddressVerificationIssue({
+            role,
+            code: 'ADDRESS_UNDELIVERABLE',
+            message: `USPS indicates the ${role} address is undeliverable as entered. Please check the street number, apartment/suite, and ZIP code before paying.`,
+            addressText,
+            fieldToFocus: role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1',
+          });
+          return;
+        }
 
-        if (isChanged) {
-          setIsVerifyingAddresses(false);
+        const norm = result.standardizedAddress || result.normalizedAddress;
+        const suggested: Record<string, string> = {};
+        if (norm) {
+          suggested[`${role}AddressLine1`] = norm.primary_line || norm.addressLine1 || address.addressLine1;
+          suggested[`${role}AddressLine2`] = norm.secondary_line || norm.addressLine2 || '';
+          suggested[`${role}City`] = norm.city || address.city;
+          suggested[`${role}State`] = norm.state || address.state;
+          suggested[`${role}Zip`] = norm.zip_code_plus_4
+            ? `${norm.zip_code}-${norm.zip_code_plus_4}`
+            : (norm.zip_code || norm.zip || address.zip);
+        }
+
+        const isChanged =
+          norm &&
+          (
+            (norm.primary_line || norm.addressLine1 || address.addressLine1).trim().toUpperCase() !== address.addressLine1.trim().toUpperCase() ||
+            (norm.secondary_line || norm.addressLine2 || '').trim().toUpperCase() !== (address.addressLine2 || '').trim().toUpperCase() ||
+            (norm.city || address.city).trim().toUpperCase() !== address.city.trim().toUpperCase() ||
+            (norm.state || address.state).trim().toUpperCase() !== address.state.trim().toUpperCase() ||
+            (suggested[`${role}Zip`] || address.zip).trim().toUpperCase() !== address.zip.trim().toUpperCase()
+          );
+
+        updatedEvidence[role] = result.evidence;
+
+        if (isChanged && !resolvedAddressRolesRef.current.has(role)) {
+          onUpdateAddressEvidence?.(updatedEvidence);
           setAddressReviewSuggestion({
             role,
             original: address,
@@ -807,16 +851,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           });
           return;
         }
-
-        updatedEvidence[role] = result.evidence;
-        effectiveEvidence[role] = result.evidence;
       }
-
-      setIsVerifyingAddresses(false);
-      onUpdateAddressEvidence?.(updatedEvidence);
     }
 
-    await executeLockAndIntent(effectiveEvidence, cleanEmail);
+    onUpdateAddressEvidence?.(updatedEvidence);
+    await executeLockAndIntent(updatedEvidence, cleanEmail, activeRevision, activeValues);
   };
 
   const handleApplyAddressSuggestion = async (suggestion: {
@@ -825,40 +864,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     suggested: Record<string, string>;
     evidence?: AddressVerificationEvidence;
   }) => {
-    setIsVerifyingAddresses(true);
+    resolvedAddressRolesRef.current.add(suggestion.role);
     setAddressReviewSuggestion(null);
-    onApplyFieldValues?.(suggestion.suggested);
-
+    const returnedRev = onApplyFieldValues?.(suggestion.suggested);
+    const nextRev = typeof returnedRev === 'number' ? returnedRev : draftRevisionRef.current + 1;
+    draftRevisionRef.current = nextRev;
     const mergedValues = {
       ...userValues,
       ...suggestion.suggested,
     };
-    const nextRev = draftRevisionRef.current + 1;
     const cleanEmail = email.trim();
-
-    const { ok, status, result, address } = await verifyAddressInline(suggestion.role, nextRev, mergedValues);
-    setIsVerifyingAddresses(false);
-
-    if (!ok || !result?.valid || !result?.evidence) {
-      const message =
-        status === 429
-          ? 'Address checking is temporarily rate limited. Please try again later.'
-          : result?.error || 'Could not verify standardized address with USPS. Please check the address details.';
-      setAddressVerificationIssue({
-        role: suggestion.role,
-        message,
-        addressText: [address.addressLine1, address.addressLine2, `${address.city}, ${address.state} ${address.zip}`].filter(Boolean).join(' · '),
-        fieldToFocus: suggestion.role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1',
-      });
-      return;
-    }
-
-    const updatedMap = {
-      ...addressVerificationEvidence,
-      [suggestion.role]: result.evidence,
-    };
-    onUpdateAddressEvidence?.({ [suggestion.role]: result.evidence });
-    await executeLockAndIntent(updatedMap, cleanEmail, nextRev, mergedValues);
+    currentFingerprintRef.current = computeFingerprint(
+      selectedTier,
+      cleanEmail,
+      mergedValues,
+      isSignatureAdopted,
+      isAffirmed
+    );
+    await verifyAndProceedWithAddresses(mergedValues, nextRev, {}, cleanEmail);
   };
 
   const handleKeepOriginalAddress = async (suggestion: {
@@ -867,16 +890,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     suggested: Record<string, string>;
     evidence?: AddressVerificationEvidence;
   }) => {
+    resolvedAddressRolesRef.current.add(suggestion.role);
     setAddressReviewSuggestion(null);
     const cleanEmail = email.trim();
-    if (suggestion.evidence) {
-      const updatedMap = {
-        ...addressVerificationEvidence,
-        [suggestion.role]: suggestion.evidence,
-      };
-      onUpdateAddressEvidence?.({ [suggestion.role]: suggestion.evidence });
-      await executeLockAndIntent(updatedMap, cleanEmail, draftRevisionRef.current);
-    }
+    await verifyAndProceedWithAddresses(
+      userValues,
+      draftRevisionRef.current,
+      { ...(addressVerificationEvidence || {}), ...(suggestion.evidence ? { [suggestion.role]: suggestion.evidence } : {}) },
+      cleanEmail
+    );
   };
 
   const handleConfirmSnapshot = () => {

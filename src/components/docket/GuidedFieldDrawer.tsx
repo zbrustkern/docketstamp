@@ -19,6 +19,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   NoticeTemplateDefinition,
   NoticeFieldConfig,
@@ -31,8 +32,19 @@ import {
 import { assertNonFitnessEntity, isFitnessEntity } from '@/lib/docket/guardrails';
 import { getChooserLetterBySlug } from '@/lib/docket/chooser-routing';
 import { DraftValidationResult } from '@/lib/docket/draft-recovery';
+import { parseCurrencyToCents } from '@/lib/docket/input-validation';
 import { PostalAddressFields } from './PostalAddressFields';
 import type { AddressPart, PostalCodeLookup } from './address-intake';
+
+function formatCurrencyOnBlur(value: string): string {
+  const cents = parseCurrencyToCents(value);
+  if (cents === null) return value;
+  const safeCents = Math.max(0, Math.round(cents));
+  const dollars = Math.floor(safeCents / 100);
+  const remainder = safeCents % 100;
+  const formattedDollars = dollars.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `$${formattedDollars}.${remainder.toString().padStart(2, '0')}`;
+}
 
 export interface GuidedFieldDrawerProps {
   notice: NoticeTemplateDefinition;
@@ -51,6 +63,15 @@ export interface GuidedFieldDrawerProps {
   onCompleteDrawer: () => void;
   onResetDraft: () => void;
   postalCodeLookup?: PostalCodeLookup;
+  addressReview?: Partial<Record<'sender' | 'recipient', {
+    status: 'idle' | 'checking' | 'verified' | 'suggestion' | 'error';
+    message?: string;
+    suggested?: Record<string, string>;
+    evidence?: unknown;
+  }>>;
+  addressEvidence?: Partial<Record<'sender' | 'recipient', unknown>>;
+  onVerifyAddress?: (role: 'sender' | 'recipient') => void;
+  onAcceptAddressReview?: (role: 'sender' | 'recipient') => void;
 }
 
 export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
@@ -70,6 +91,10 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
   onCompleteDrawer,
   onResetDraft,
   postalCodeLookup,
+  addressReview,
+  addressEvidence,
+  onVerifyAddress,
+  onAcceptAddressReview,
 }) => {
   const [recipientSearchQuery, setRecipientSearchQuery] = useState('');
   const [recipientManualMode, setRecipientManualMode] = useState(false);
@@ -126,6 +151,85 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
       }
     }
   }, [activeFieldKey]);
+
+  const isRoleAddressReady = (role: 'sender' | 'recipient') => {
+    const keys = [`${role}AddressLine1`, `${role}City`, `${role}State`, `${role}Zip`];
+    return keys.every((k) => (userValues[k] ?? '').trim().length > 0 && !validation.fieldErrors[k]);
+  };
+
+  const renderInlineAddressCheck = (role: 'sender' | 'recipient') => {
+    if (!onVerifyAddress) return null;
+    const isReady = isRoleAddressReady(role);
+    const review = addressReview?.[role];
+    const evidence = addressEvidence?.[role];
+    const isStatusActive = Boolean(review?.status && review.status !== 'idle');
+    const hasEvidence = Boolean(evidence);
+
+    if (!isReady && !isStatusActive && !hasEvidence) return null;
+
+    const isChecking = review?.status === 'checking';
+    const isVerified = hasEvidence && review?.status !== 'suggestion';
+    const buttonLabel = isChecking
+      ? 'Checking USPS…'
+      : isVerified
+      ? 'USPS Verified ✓'
+      : 'Verify address';
+
+    return (
+      <div className="mt-3 p-3 rounded-lg bg-slate-950/80 border border-slate-800 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+            USPS CASS Address Check
+          </span>
+          <button
+            type="button"
+            onClick={() => onVerifyAddress(role)}
+            disabled={isChecking || !isReady}
+            className={`px-2.5 py-1 rounded text-[11px] font-mono font-semibold transition flex items-center gap-1 ${
+              isVerified
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/80'
+                : isChecking
+                ? 'bg-sky-950 text-sky-400 border border-sky-800 opacity-80 cursor-wait'
+                : isReady
+                ? 'bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-700/60 cursor-pointer'
+                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+            }`}
+          >
+            {buttonLabel}
+          </button>
+        </div>
+
+        {review?.message && (
+          <p
+            className={`text-[11px] font-mono leading-tight ${
+              review.status === 'error'
+                ? 'text-rose-400'
+                : review.status === 'suggestion'
+                ? 'text-amber-300'
+                : 'text-slate-400'
+            }`}
+          >
+            {review.message}
+          </p>
+        )}
+
+        {review?.status === 'suggestion' && review?.suggested && onAcceptAddressReview && (
+          <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-slate-900">
+            <span className="text-[10px] text-amber-400/90 font-mono">
+              Standardized formatting available
+            </span>
+            <button
+              type="button"
+              onClick={() => onAcceptAddressReview(role)}
+              className="px-2 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer"
+            >
+              Accept USPS formatting
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const markTouched = (key: string) => {
     setTouchedFields((prev) => {
@@ -413,6 +517,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
             postalCodeLookup={postalCodeLookup}
             onChange={onChange}
           />
+          {renderInlineAddressCheck('sender')}
         </div>
 
         {/* SECTION 2: RECIPIENT (Recipient details) */}
@@ -541,6 +646,7 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
               />
             </div>
           )}
+          {renderInlineAddressCheck('recipient')}
         </div>
 
         {/* SECTION 3: LETTER DETAILS */}
@@ -677,20 +783,45 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
               className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono placeholder-slate-600"
             />
 
-            {/* Self-Representation & Irreversibility Affirmation Checkbox (Preserved verbatim) */}
-            <label className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800 text-xs text-slate-300 cursor-pointer hover:bg-slate-850 transition">
-              <input
-                type="checkbox"
-                checked={isAffirmed}
-                onChange={(e) => onAffirmationChange(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-800 text-sky-600 focus:ring-sky-500 focus:ring-offset-slate-900 cursor-pointer shrink-0"
-              />
-              <span className="leading-relaxed select-none">
-                I affirm that I am the self-represented individual executing this notice on my own behalf, I understand DocketStamp is an automated self-help document preparation and USPS dispatch utility (not a law firm and does not provide legal advice), and I acknowledge that physical USPS mail dispatches are irreversible once submitted to the postal stream.
-              </span>
-            </label>
+            {/* Self-Representation & Irreversibility Affirmation Checkbox with Clickwrap */}
+            <div className="p-3 rounded-lg bg-slate-950/90 border border-amber-500/25 mb-3">
+              <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-800/80">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
+                  Self-Representation &amp; Irreversible Dispatch Affirmation
+                </span>
+                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">
+                  Required
+                </span>
+              </div>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isAffirmed}
+                  onChange={(e) => onAffirmationChange(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-800 text-sky-600 focus:ring-sky-500 focus:ring-offset-slate-900 cursor-pointer shrink-0"
+                />
+                <span className="text-[11px] text-slate-300 leading-relaxed">
+                  I affirm that I am the self-represented individual executing this notice on my own behalf, I understand DocketStamp is an automated self-help document preparation and USPS dispatch utility (not a law firm and does not provide legal advice), and I acknowledge that physical USPS mail dispatches are irreversible once submitted to the postal stream.
+                </span>
+              </label>
+              <p className="mt-2 pt-2 border-t border-slate-900 text-[10px] text-slate-400 leading-relaxed">
+                By checking this box and adopting your signature, you agree to our{' '}
+                <Link href="/terms" target="_blank" className="text-sky-400 hover:text-sky-300 underline underline-offset-2">
+                  Terms of Service
+                </Link>
+                ,{' '}
+                <Link href="/privacy" target="_blank" className="text-sky-400 hover:text-sky-300 underline underline-offset-2">
+                  Privacy Policy
+                </Link>
+                , and{' '}
+                <Link href="/return-policy" target="_blank" className="text-sky-400 hover:text-sky-300 underline underline-offset-2">
+                  Dispatch &amp; Return Policy
+                </Link>
+                .
+              </p>
+            </div>
 
-            <div className="p-3 bg-slate-900 rounded border border-slate-800 flex items-center justify-between">
+            <div className="p-3 bg-slate-900 rounded border border-slate-800 flex items-center justify-between gap-2">
               <div>
                 <div className="text-[10px] uppercase font-mono text-slate-500">
                   Electronic Signature Line
@@ -699,24 +830,28 @@ export const GuidedFieldDrawer: React.FC<GuidedFieldDrawerProps> = ({
                   {signatureInput.trim() ? `/s/ ${signatureInput.trim()}` : '/s/ [Type Name Above]'}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (signatureInput.trim() && isAffirmed) {
-                    onAdoptSignature(signatureInput.trim());
-                  }
-                }}
-                disabled={!signatureInput.trim() || !isAffirmed}
-                className={`px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition ${
-                  isSignatureAdopted
-                    ? 'bg-emerald-700 text-white'
-                    : signatureInput.trim() && isAffirmed
-                    ? 'bg-sky-600 hover:bg-sky-500 text-white'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                {isSignatureAdopted ? 'Signature Adopted ✓' : 'Adopt & Sign Letter'}
-              </button>
+              {isSignatureAdopted ? (
+                <span className="px-3 py-1.5 rounded text-xs font-mono font-bold uppercase tracking-wider bg-emerald-950/90 text-emerald-300 border border-emerald-700/70">
+                  Signature Adopted ✓
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (signatureInput.trim() && isAffirmed) {
+                      onAdoptSignature(signatureInput.trim());
+                    }
+                  }}
+                  disabled={!signatureInput.trim() || !isAffirmed}
+                  className={`px-3 py-2 rounded text-xs font-bold uppercase tracking-wider transition ${
+                    signatureInput.trim() && isAffirmed
+                      ? 'bg-sky-600 hover:bg-sky-500 text-white cursor-pointer'
+                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  Adopt & Sign Letter
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -785,7 +920,7 @@ const FieldInputRow: React.FC<FieldInputRowProps> = ({
   return (
     <div
       data-field-key={field.key}
-      className={`p-3 rounded-md transition-all duration-150 space-y-1.5 ${
+      className={`p-3 rounded-lg border transition-all overflow-hidden min-w-0 space-y-1.5 ${
         isActive
           ? 'bg-slate-800/90 ring-1 ring-sky-500 border border-sky-500/50'
           : error
@@ -856,14 +991,25 @@ const FieldInputRow: React.FC<FieldInputRowProps> = ({
         <input
           data-field-key={field.key}
           type={field.inputType === 'date' ? 'date' : 'text'}
+          inputMode={field.inputType === 'currency' ? 'decimal' : undefined}
           maxLength={field.maxLength}
           placeholder={field.placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={onFocus}
-          onBlur={onBlur}
+          onBlur={() => {
+            if (field.inputType === 'currency' && value.trim().length > 0) {
+              const formatted = formatCurrencyOnBlur(value);
+              if (formatted !== value) {
+                onChange(formatted);
+              }
+            }
+            onBlur();
+          }}
           ref={inputRef}
           className={`w-full bg-slate-800 border rounded px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500 ${
+            field.inputType === 'date' ? 'block w-full min-w-0 max-w-full appearance-none box-border ' : ''
+          }${
             error ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-slate-700'
           }`}
         />

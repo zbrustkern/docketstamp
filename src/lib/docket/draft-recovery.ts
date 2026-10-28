@@ -36,6 +36,17 @@ import { isFitnessEntity } from './guardrails';
 import { STATE_STATUTES } from './data/state-statutes';
 import { getVerifiedRecipientById } from './data/verified-recipients';
 import { getNoticeBySlug } from './notices';
+import {
+  parseCurrencyToCents,
+  formatCentsAsCurrency,
+  formatCurrencyInput,
+} from './input-validation';
+
+export {
+  parseCurrencyToCents,
+  formatCentsAsCurrency,
+  formatCurrencyInput,
+} from './input-validation';
 
 export interface DraftValidationResult {
   isValid: boolean;
@@ -267,6 +278,44 @@ export function validateNoticeDraft(
     validateSingleNoticeField(field, values[field.key], fieldErrors);
   }
 
+  // Cross-field currency math validation matching src/lib/docket/input-validation.ts (lines 304-318)
+  const noticeRequiredFields = (notice as any).requiredFields || notice.fields || [];
+  const fieldKeySet = new Set(noticeRequiredFields.map((f: { key: string }) => f.key));
+
+  const deposit =
+    fieldKeySet.has('depositAmount') &&
+    !fieldErrors['depositAmount'] &&
+    typeof values['depositAmount'] === 'string' &&
+    values['depositAmount'].trim().length > 0
+      ? parseCurrencyToCents(values['depositAmount'])
+      : null;
+  const received =
+    fieldKeySet.has('amountReceivedToDate') &&
+    !fieldErrors['amountReceivedToDate'] &&
+    typeof values['amountReceivedToDate'] === 'string' &&
+    values['amountReceivedToDate'].trim().length > 0
+      ? parseCurrencyToCents(values['amountReceivedToDate'])
+      : null;
+  const requested =
+    fieldKeySet.has('balanceRequested') &&
+    !fieldErrors['balanceRequested'] &&
+    typeof values['balanceRequested'] === 'string' &&
+    values['balanceRequested'].trim().length > 0
+      ? parseCurrencyToCents(values['balanceRequested'])
+      : null;
+
+  if (deposit !== null && received !== null && received > deposit) {
+    fieldErrors['amountReceivedToDate'] = 'The amount returned cannot exceed the original deposit entered.';
+  }
+  if (
+    deposit !== null &&
+    received !== null &&
+    requested !== null &&
+    requested > Math.max(0, deposit - received)
+  ) {
+    fieldErrors['balanceRequested'] = 'The requested balance cannot exceed the amount not yet returned.';
+  }
+
   // Tenant flows display the rental location before sender and recipient details.
   // Keep validation focus aligned with that visual order so the first error lands
   // in the first section the user sees.
@@ -290,8 +339,20 @@ export function validateNoticeDraft(
     }
   }
 
+  for (const field of noticeRequiredFields) {
+    if (fieldErrors[field.key] && !missingOrInvalidFields.includes(field.key)) {
+      missingOrInvalidFields.push(field.key);
+    }
+  }
+
+  for (const key of Object.keys(fieldErrors)) {
+    if (!missingOrInvalidFields.includes(key)) {
+      missingOrInvalidFields.push(key);
+    }
+  }
+
   const totalCount = visualFieldKeys.length;
-  const completedCount = totalCount - missingOrInvalidFields.length;
+  const completedCount = Math.max(0, totalCount - missingOrInvalidFields.length);
   const isValid = missingOrInvalidFields.length === 0;
   const firstInvalidFieldKey = missingOrInvalidFields[0] || null;
 
@@ -305,31 +366,37 @@ export function validateNoticeDraft(
   };
 }
 
-function validateSingleNoticeField(
+export function validateSingleNoticeField(
   field: NoticeFieldConfig,
   rawVal: unknown,
   errors: Record<string, string>
-): void {
+): Record<string, string> {
   const val = typeof rawVal === 'string' ? rawVal.trim() : '';
 
   if (!val || val.length === 0 || val.startsWith('[')) {
     errors[field.key] = `${field.label} is required.`;
-    return;
+    return errors;
   }
 
   // Date check
   if (field.inputType === 'date') {
     if (!isValidCalendarDate(val)) {
       errors[field.key] = `Please enter a valid calendar date for ${field.label} (YYYY-MM-DD).`;
-      return;
+      return errors;
     }
+  }
+
+  // Currency check
+  if (field.inputType === 'currency' && parseCurrencyToCents(val) === null) {
+    errors[field.key] = 'Enter a non-negative amount with no more than two decimal places (e.g., $1,500.00).';
+    return errors;
   }
 
   // Select check
   if (field.inputType === 'select') {
     if (!isValidSelectOption(field, val)) {
       errors[field.key] = `Please select an option for ${field.label}.`;
-      return;
+      return errors;
     }
   }
 
@@ -337,7 +404,7 @@ function validateSingleNoticeField(
   if (field.inputType === 'state_select' || field.key === 'propertyState') {
     if (!isValidStateCode(val)) {
       errors[field.key] = 'Please select a valid 2-letter state.';
-      return;
+      return errors;
     }
   }
 
@@ -345,14 +412,14 @@ function validateSingleNoticeField(
   if (field.key === 'ssnLast4') {
     if (!/^\d{4}$/.test(val)) {
       errors[field.key] = 'Must be exactly 4 numeric digits.';
-      return;
+      return errors;
     }
   }
 
   // Max length check
   if (field.maxLength && val.length > field.maxLength) {
     errors[field.key] = `${field.label} exceeds maximum allowed length (${field.maxLength} chars).`;
-    return;
+    return errors;
   }
 
   // Specialized address fields in template
@@ -366,9 +433,11 @@ function validateSingleNoticeField(
   if (streetAddressFieldKeys.includes(field.key)) {
     if (!isValidStreetAddress(val)) {
       errors[field.key] = `Please enter a complete street address with number and street name for ${field.label}.`;
-      return;
+      return errors;
     }
   }
+
+  return errors;
 }
 
 /**

@@ -202,9 +202,9 @@ function AvailableHomeWorkbench({
   );
 
   return (
-    <section id="workbench" className="py-5 sm:py-6 lg:py-7 px-4 sm:px-6 max-w-7xl mx-auto scroll-mt-16">
+    <section id="workbench" className="py-3.5 sm:py-6 lg:py-7 px-4 sm:px-6 max-w-7xl mx-auto scroll-mt-16">
       {/* Baseline Hero Copy per §6 */}
-      <div className="mb-4 sm:mb-5">
+      <div className="mb-3 sm:mb-5">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-white tracking-tight">
           Make it formal. We’ll print and mail it.
         </h1>

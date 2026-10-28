@@ -21,7 +21,10 @@ import {
 import { getStateStatute } from '../data/state-statutes';
 import { CLERK_DOCKET_REGISTRY_TITLE } from '../guardrails';
 import { omitServerDerivedNoticeValues } from '../derived-fields';
-import { composePropertyAddressValues } from '../input-validation';
+import { composePropertyAddressValues, formatCurrencyInput } from '../input-validation';
+
+export type NoticeDefinition = NoticeTemplateDefinition;
+export type InterpolatedNotice = InterpolatedDocument;
 
 export interface InterpolateOptions {
   notice: NoticeTemplateDefinition;
@@ -114,10 +117,31 @@ function normalizeTextareaWhitespace(
   userValues: Record<string, string>
 ): Record<string, string> {
   const normalized = { ...userValues };
-  for (const field of notice.fields) {
+  const fields = notice.fields || (notice as any).requiredFields || [];
+  for (const field of fields) {
     if (field.inputType !== 'textarea_short') continue;
     const value = normalized[field.key];
     if (typeof value === 'string') normalized[field.key] = value.replace(/\s+/g, ' ').trim();
+  }
+  return normalized;
+}
+
+/**
+ * Format currency inputs for consistent preview canvas and physical letter print rendering.
+ * Ensures bare numbers like '1500' render as '$1,500.00' identically across preview and print.
+ */
+function normalizeCurrencyInputs(
+  notice: NoticeTemplateDefinition,
+  userValues: Record<string, string>
+): Record<string, string> {
+  const normalized = { ...userValues };
+  const fields = notice.fields || (notice as any).requiredFields || [];
+  for (const field of fields) {
+    if (field.inputType !== 'currency') continue;
+    const rawVal = normalized[field.key];
+    if (typeof rawVal === 'string' && rawVal.trim().length > 0) {
+      normalized[field.key] = formatCurrencyInput(rawVal);
+    }
   }
   return normalized;
 }
@@ -335,7 +359,10 @@ export function interpolateNotice(options: InterpolateOptions): InterpolatedDocu
   const factualValues = composePropertyAddressValues(omitServerDerivedNoticeValues(userValues));
 
   // 1. Normalize only bounded display inputs, then merge renderer-owned values.
-  const presentationValues = normalizeTextareaWhitespace(notice, factualValues);
+  const presentationValues = normalizeCurrencyInputs(
+    notice,
+    normalizeTextareaWhitespace(notice, factualValues)
+  );
   const statutoryValues = resolveStatutoryValues(notice, presentationValues);
   const normalized = resolveBoundedCopyValues(
     notice,

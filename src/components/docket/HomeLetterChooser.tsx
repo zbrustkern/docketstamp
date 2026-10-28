@@ -96,6 +96,15 @@ export function HomeLetterChooser({
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const listboxRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const primaryActionRef = useRef<HTMLDivElement>(null);
+
+  const scrollPrimaryActionIntoView = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        primaryActionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+  }, []);
 
   // Perform search
   const searchResult = useMemo(() => {
@@ -136,8 +145,14 @@ export function HomeLetterChooser({
 
   // Handle letter click
   const handleSelectLetter = useCallback(
-    (letter: ChooserLetterMetadata) => {
-      if (!availableSlugSet.has(letter.slug)) return;
+    (letterOrSlug: ChooserLetterMetadata | string) => {
+      const letter =
+        typeof letterOrSlug === 'string'
+          ? CHOOSER_LETTERS.find(
+              (l) => l.slug === letterOrSlug || l.aliases?.includes(letterOrSlug)
+            ) || { slug: letterOrSlug, displayTitle: letterOrSlug, subtitle: '', formalDocumentTitle: letterOrSlug }
+          : letterOrSlug;
+      if (!letter || !availableSlugSet.has(letter.slug)) return;
       setClearedNotice(null);
 
       // If a recipient was previously selected, check compatibility
@@ -173,8 +188,10 @@ export function HomeLetterChooser({
         experienceVersion: 'home_v2',
         entrySource: 'home_chooser',
       });
+
+      scrollPrimaryActionIntoView();
     },
-    [selectedRecipientId, pendingHardwareRecipient, availableSlugSet]
+    [selectedRecipientId, pendingHardwareRecipient, availableSlugSet, scrollPrimaryActionIntoView]
   );
 
   // Handle company click
@@ -201,8 +218,10 @@ export function HomeLetterChooser({
         setSelectedRecipientId(company.id);
         setPendingHardwareRecipient(null);
       }
+
+      scrollPrimaryActionIntoView();
     },
-    [selectedSlug, availableSlugSet]
+    [selectedSlug, availableSlugSet, scrollPrimaryActionIntoView]
   );
 
   // Handle hardware purpose selection
@@ -215,8 +234,9 @@ export function HomeLetterChooser({
         setPendingHardwareRecipient(null);
       }
       setClearedNotice(null);
+      scrollPrimaryActionIntoView();
     },
-    [pendingHardwareRecipient, availableSlugSet]
+    [pendingHardwareRecipient, availableSlugSet, scrollPrimaryActionIntoView]
   );
 
   // Continue to workspace
@@ -316,11 +336,11 @@ export function HomeLetterChooser({
 
   return (
     <div
-      className={`bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 text-slate-100 shadow-xl ${className}`}
+      className={`bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 text-slate-100 shadow-xl ${className}`}
       data-testid="home-letter-chooser"
     >
       {/* Header section with exact §7.3 copy */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 pb-3 sm:pb-3.5 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 pb-2.5 sm:pb-3.5 border-b border-slate-800/80 mb-3 sm:mb-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight">
             What do you need to send?
@@ -335,7 +355,7 @@ export function HomeLetterChooser({
       </div>
 
       {/* Search Bar with exact §7.3 label and placeholder */}
-      <div className="mt-3 sm:mt-3.5">
+      <div className="mb-3 sm:mb-4">
         <label
           htmlFor="docket-chooser-search"
           className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5"
@@ -497,8 +517,8 @@ export function HomeLetterChooser({
           aria-label="Letters and pre-addressed companies"
           aria-activedescendant={focusedIndex >= 0 ? `chooser-option-${focusedIndex}` : undefined}
           onKeyDown={handleKeyDown}
-          style={{ maxHeight: '220px' }}
-          className="mt-3 max-h-[220px] sm:max-h-[240px] overflow-y-auto space-y-2 pr-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500 rounded-lg"
+          /* Compact listbox max-height: max-h-[196px] sm:max-h-[232px] (desktop max-h-[240px]) */
+          className="max-h-[196px] sm:max-h-[232px] overflow-y-auto space-y-2 pr-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-500 rounded-lg mb-3 sm:mb-4"
         >
           {/* Matching Companies Section (when user searches a company) */}
           {searchResult.companies.length > 0 && (
@@ -574,7 +594,7 @@ export function HomeLetterChooser({
                   id={`chooser-option-${adjustedIndex}`}
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => handleSelectLetter(letter)}
+                  onClick={() => (isSelected && isComplete ? handleContinue() : handleSelectLetter(letter.slug))}
                   className={`p-3 rounded-lg border text-left transition cursor-pointer flex items-start justify-between gap-3 ${
                     isSelected
                       ? 'bg-sky-950/70 border-sky-500 text-white ring-1 ring-sky-500'
@@ -597,7 +617,14 @@ export function HomeLetterChooser({
                     </div>
                   </div>
                   {isSelected && (
-                    <Check className="w-4 h-4 text-sky-400 shrink-0 mt-1" />
+                    <div className="shrink-0 flex items-center gap-1.5 mt-0.5">
+                      <Check className="w-4 h-4 text-sky-400 shrink-0" />
+                      {isComplete && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-white bg-sky-600 hover:bg-sky-500 px-2.5 py-1 rounded shadow-sm transition-colors">
+                          Continue →
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               );
@@ -607,7 +634,10 @@ export function HomeLetterChooser({
       )}
 
       {/* Selected Summary and Primary Action Bar */}
-      <div className="mt-4 pt-3.5 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div
+        ref={primaryActionRef}
+        className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
+      >
         <div className="text-xs">
           {selectedLetter ? (
             <div>

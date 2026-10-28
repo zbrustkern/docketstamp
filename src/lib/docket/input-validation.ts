@@ -104,6 +104,20 @@ export function parseCurrencyToCents(value: string): number | null {
   return Number.isSafeInteger(cents) ? cents : null;
 }
 
+export function formatCentsAsCurrency(cents: number): string {
+  const safeCents = Math.max(0, Math.round(cents));
+  const dollars = Math.floor(safeCents / 100);
+  const remainder = safeCents % 100;
+  const formattedDollars = dollars.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `$${formattedDollars}.${remainder.toString().padStart(2, '0')}`;
+}
+
+export function formatCurrencyInput(value: string): string {
+  const cents = parseCurrencyToCents(value);
+  if (cents === null) return value;
+  return formatCentsAsCurrency(cents);
+}
+
 function validateState(value: string, path: string, issues: NoticeInputIssue[]) {
   if (value && !STATE_CODES.has(value.toUpperCase())) {
     issues.push({ path, message: 'Choose a supported U.S. state or District of Columbia.' });

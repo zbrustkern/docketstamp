@@ -344,6 +344,49 @@ describe('S4 Details and Review Acceptance Gate', () => {
       assert.equal(res.firstInvalidFieldKey, null);
       assert.equal(res.completedCount, res.totalCount);
     });
+
+    it('validates currency format and cross-field deposit arithmetic in validateNoticeDraft (Sprint 0016 parity)', () => {
+      const baseDepositDraft = {
+        senderFullName: 'Marcus Vance',
+        senderAddressLine1: '100 Austin Blvd',
+        senderCity: 'Austin',
+        senderState: 'TX',
+        senderZip: '78701',
+        recipientFormalName: 'Oakridge Properties Inc.',
+        recipientAddressLine1: '200 Congress Ave',
+        recipientCity: 'Austin',
+        recipientState: 'TX',
+        recipientZip: '78701',
+        propertyState: 'TX',
+        vacatedPremisesAddress: '402 Pine Street, Apt 3',
+        moveOutDate: '2026-09-30',
+        depositAmount: '1500',
+        amountReceivedToDate: '500',
+        balanceRequested: '1000',
+        basisForRequest: 'My records show I paid the deposit and received only a partial refund.',
+        responseDays: '14 calendar days',
+      };
+
+      const validRes = validateNoticeDraft(securityDepositNotice, baseDepositDraft);
+      assert.equal(validRes.isValid, true, 'Unformatted valid numeric strings must pass draft validation');
+
+      const invalidCurrencyRes = validateNoticeDraft(securityDepositNotice, {
+        ...baseDepositDraft,
+        depositAmount: 'fifteen hundred',
+      });
+      assert.equal(invalidCurrencyRes.isValid, false);
+      assert.ok(invalidCurrencyRes.fieldErrors['depositAmount']?.includes('non-negative amount'));
+
+      const excessiveBalanceRes = validateNoticeDraft(securityDepositNotice, {
+        ...baseDepositDraft,
+        balanceRequested: '1200', // exceeds 1500 - 500 = 1000
+      });
+      assert.equal(excessiveBalanceRes.isValid, false);
+      assert.ok(
+        excessiveBalanceRes.fieldErrors['balanceRequested']?.includes('cannot exceed the amount not yet returned'),
+        'Must flag balanceRequested exceeding remaining unreturned deposit'
+      );
+    });
   });
 
   describe('3. Multi-Journey Journeys & Duplicate Entry Prevention', () => {
@@ -703,6 +746,49 @@ describe('S4 Details and Review Acceptance Gate', () => {
       assert.ok(
         drawerSource.includes('data-testid="signature-input"'),
         'GuidedFieldDrawer must annotate signature input with data-testid="signature-input"'
+      );
+    });
+
+    it('enforces Sprint 0016 mobile UX, inline CASS, auto-advance signature, and clickwrap invariants', () => {
+      const docWorkspaceSource = fs.readFileSync(
+        path.join(process.cwd(), 'src/components/docket/DocumentWorkspace.tsx'),
+        'utf8'
+      );
+      const drawerSource = fs.readFileSync(
+        path.join(process.cwd(), 'src/components/docket/GuidedFieldDrawer.tsx'),
+        'utf8'
+      );
+      const checkoutSource = fs.readFileSync(
+        path.join(process.cwd(), 'src/components/docket/CheckoutModal.tsx'),
+        'utf8'
+      );
+
+      // 1. Top-of-page nonfunctional CASS section removed from DocumentWorkspace
+      assert.ok(
+        !docWorkspaceSource.includes('aria-label="Mailing address verification"'),
+        'DocumentWorkspace must not render top-of-page disabled CASS widgets'
+      );
+
+      // 2. Inline contextual CASS check and clickwrap links in GuidedFieldDrawer
+      assert.ok(
+        drawerSource.includes('USPS CASS Address Check'),
+        'GuidedFieldDrawer must provide contextual USPS CASS address checks inside sender/recipient sections'
+      );
+      assert.ok(
+        drawerSource.includes('/terms') && drawerSource.includes('/privacy') && drawerSource.includes('/return-policy'),
+        'GuidedFieldDrawer affirmation card must include zero-click clickwrap links to Terms, Privacy, and Return Policy'
+      );
+
+      // 3. Auto-advance on Adopt & Sign Letter when draft is valid
+      assert.ok(
+        docWorkspaceSource.includes("transitionWorkflowStep('delivery')") && docWorkspaceSource.includes('setIsCheckoutOpen(true)'),
+        'DocumentWorkspace must auto-advance to delivery & checkout when signature is adopted on a valid draft'
+      );
+
+      // 4. Multi-address CASS verification & synchronous draftRevision update in CheckoutModal
+      assert.ok(
+        checkoutSource.includes('verifyAndProceedWithAddresses') && checkoutSource.includes('resolvedAddressRolesRef'),
+        'CheckoutModal must verify both sender and recipient addresses without revision desync'
       );
     });
   });
