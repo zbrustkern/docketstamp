@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { NextRequest } from 'next/server';
@@ -29,7 +30,7 @@ test('checkout requires complete live mailing configuration and keeps staging in
     const customerEmail = `mailing-unavailable-${Date.now()}@example.test`;
     const response = await POST(new NextRequest('http://localhost/api/docket/lock-and-intent', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ slug: 'security-deposit-return-demand-letter', customerEmail, tier: 'certified',
+      body: JSON.stringify(withVerifiedLockFixture({ slug: 'security-deposit-return-demand-letter', customerEmail, tier: 'certified',
         signatureAdoption: { adopted: true, affirmed: true, signerName: 'Taylor Morgan' },
         userValues: { senderFullName: 'Taylor Morgan', recipientFormalName: 'Example Properties', propertyState: 'CA',
           vacatedPremisesAddress: '12 Rental Street', rentalPropertyCity: 'San Diego', rentalPropertyZip: '92101',
@@ -37,7 +38,7 @@ test('checkout requires complete live mailing configuration and keeps staging in
           basisForRequest: 'My records show no deposit refund received.', responseDays: '14 calendar days',
           senderAddressLine1: '77 Lake Street', senderCity: 'San Diego', senderState: 'CA', senderZip: '92101',
           recipientAddressLine1: '18 Main Street', recipientCity: 'San Diego', recipientState: 'CA', recipientZip: '92101' },
-      }),
+      })),
     }));
     assert.equal(response.status, 503, await response.clone().text());
     assert.equal((await response.json()).code, 'MAILING_UNAVAILABLE');

@@ -1,0 +1,93 @@
+{
+  "checkedAt": "2026-10-21T03:12:57.781Z",
+  "environment": "staging",
+  "base": "https://staging.docketstamp.com",
+  "pages": {
+    "/": {
+      "status": 200,
+      "noindex": "noindex, nofollow, noarchive",
+      "title": "DocketStamp | Prepare and Mail Formal Letters via USPS"
+    },
+    "/admin?tab=templates": {
+      "status": 200,
+      "noindex": "noindex, nofollow, noarchive",
+      "title": "Prepare and Mail Formal Letters | DocketStamp"
+    },
+    "/notices/security-deposit-accounting-request": {
+      "status": 200,
+      "noindex": "noindex, nofollow, noarchive",
+      "title": "Security Deposit Demand Letter | USPS Mail | DocketStamp"
+    },
+    "/notices/security-deposit-return-demand-letter": {
+      "status": 200,
+      "noindex": "noindex, nofollow, noarchive",
+      "title": "Security Deposit Demand Letter | USPS Mail | DocketStamp"
+    },
+    "/account": {
+      "status": 200,
+      "noindex": "noindex, nofollow, noarchive",
+      "title": "Prepare and Mail Formal Letters | DocketStamp"
+    },
+    "/llms.txt": {
+      "status": 200
+    },
+    "/.well-known/openapi.json": {
+      "status": 200
+    },
+    "/sitemap.xml": {
+      "status": 200
+    }
+  },
+  "client": {
+    "correctFirebaseApp": true,
+    "templateGovernancePresent": true
+  },
+  "availability": {
+    "status": 200,
+    "revision": 0,
+    "count": 9,
+    "enabled": 9,
+    "cacheControl": "no-store, max-age=0",
+    "titles": [
+      {
+        "slug": "tenant-notice-of-intent-to-vacate",
+        "title": "Tenant Move-Out Notice"
+      },
+      {
+        "slug": "security-deposit-accounting-request",
+        "title": "Security Deposit Demand Letter"
+      },
+      {
+        "slug": "tenant-repair-and-maintenance-notice",
+        "title": "Tenant Repair Demand Letter"
+      },
+      {
+        "slug": "credit-report-dispute-request",
+        "title": "Credit Report Dispute Letter"
+      },
+      {
+        "slug": "debt-dispute-information-request",
+        "title": "Debt Dispute and Verification Request"
+      },
+      {
+        "slug": "service-cancellation-request",
+        "title": "Service or Policy Cancellation Letter"
+      },
+      {
+        "slug": "product-complaint-refund-request",
+        "title": "Product Complaint and Refund Demand"
+      },
+      {
+        "slug": "arbitration-opt-out-procedure-request",
+        "title": "Arbitration Terms and Opt-Out Procedure Request"
+      },
+      {
+        "slug": "personal-data-deletion-request",
+        "title": "Personal Data Deletion Demand"
+      }
+    ]
+  },
+  "adminAuth": {
+    "unauthenticatedStatus": 401
+  }
+}

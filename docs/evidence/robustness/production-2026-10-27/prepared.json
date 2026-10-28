@@ -1,0 +1,58 @@
+{
+  "checkedAt": "2026-10-28T00:33:19.597Z",
+  "project": "docketstamp",
+  "keys": {
+    "stripe": "live",
+    "stripePublishable": "live",
+    "lobVerification": "live",
+    "lobDispatch": "live"
+  },
+  "signingSecret": {
+    "name": "address-verification-evidence-secret",
+    "created": true,
+    "validLength": true
+  },
+  "secretAccessGranted": [
+    "address-verification-evidence-secret",
+    "resend-key"
+  ],
+  "indexOperations": [
+    {
+      "collectionGroup": "payment_facts_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S0U0aFhqT2dBQ0lDDCoDIDljYmZlN2FhZTE1MC05ZmJhLWI4NjQtMTI5NC1lMDJlZmE4YSQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "business_events_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S01vcFVpSmdBQ0lDDCoDIDU0NGI4Y2VkY2JiNC03NDZiLWFiNzQtNmUyZS0yYjNlMWUyZiQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "business_events_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S0E0MW1pSmdBQ0lDDCoDIDE1ODkxMGUxYTM3Zi1mODdhLTVhNjQtNGE3OS0yODM3ZmIxNSQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "postal_facts_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S0lvOUZqSmdBQ0lDDCoDIDYzYjgxNzAzMmU5My1lOTNhLTQ2ZDQtMTc1NC02NDNhOGY4NiQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "postal_facts_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S0U0ejdqSmdBQ0lDDCoDIDQ3MWQ1N2Y1N2QxYS05NzdiLWJlNDQtY2FjZS01YWNjMjdlYyQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "cost_records_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S01vNzRpTmdBQ0lDDCoDIGUyZjcwMWVmNTYxYS01YmFhLWUwNzQtZDFmMC0yNzg5ZGQ3YiQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "cost_records_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/SkU0aFhqT2dBQ0lDDCoDIDhiNGYzNmI0NGU3NS03ZWI4LWIzYjQtMzEyYS1jMmE4MzgzYiQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "identity_classifications_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S0E0dmFpTmdBQ0lDDCoDIDhhNDdlZTU2ZWNmNy05YjE4LTcyMjQtMTRlMC03Mzk0YTg3ZSQac2VuaWxlcGlwCQpBEg"
+    },
+    {
+      "collectionGroup": "business_outbox_v1",
+      "operation": "projects/docketstamp/databases/(default)/operations/S0lZZ3BqTmdBQ0lDDCoDIGI1MTIwY2JmNDJlZS1hYjc5LTEyZDQtY2RmZC0zYWZlYjExMiQac2VuaWxlcGlwCQpBEg"
+    }
+  ],
+  "deletedIndexes": 0
+}

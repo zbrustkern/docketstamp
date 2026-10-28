@@ -208,7 +208,7 @@ export const UPL_COMPLIANCE_FOOTER_TEXT = (docketId: string): string =>
  * Mandatory UPL statutory disclosure text.
  */
 export const UPL_COMPLIANCE_DISCLOSURE =
-  'DocketStamp is an automated self-help document preparation and USPS mailing utility, not a law firm, and does not provide legal representation or legal advice. All templates are deterministic form instruments based on user-provided factual parameters. Use of DocketStamp is subject to our Terms of Service and Privacy Policy.';
+  'DocketStamp is an automated self-help document preparation and USPS mailing utility, not a law firm, and does not provide legal representation or legal advice. All templates are standardized administrative form instruments based on user-provided factual parameters. Use of DocketStamp is subject to our Terms of Service and Privacy Policy.';
 
 export const STATUTORY_COMPLIANCE_DISCLOSURE = UPL_COMPLIANCE_DISCLOSURE;
 

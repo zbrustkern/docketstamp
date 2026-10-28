@@ -16,7 +16,7 @@
     "test:stripe-bootstrap": "node --import tsx --test tests/bootstrap-stripe.test.ts",
     "test:admin-auth": "node --import tsx tests/admin-account-binding.test.ts",
     "test:go-live": "node --import tsx tests/go-live-readiness.test.ts",
-    "test": "npm run test:firebase && npm run test:replacement && npm run test:meta && npm run test:unit-economics && npm run audit:legacy && npm run test:security && npm run test:payment-mode && npm run test:docket && npm run test:address-intake && npm run test:stripe-bootstrap && npm run test:admin-auth && npm run test:go-live && npm run test:template-governance",
+    "test": "npm run test:firebase && npm run test:replacement && npm run test:meta && npm run test:unit-economics && npm run audit:legacy && npm run test:security && npm run test:payment-mode && npm run test:docket && npm run test:address-intake && npm run test:stripe-bootstrap && npm run test:admin-auth && npm run test:go-live && npm run test:template-governance && npm run test:robustness",
     "stripe:bootstrap": "tsx scripts/bootstrap-stripe.ts",
     "test:firebase": "node --import tsx --test tests/firebase-config.test.ts",
     "verify:firebase-auth": "node --import tsx scripts/verify-firebase-auth.ts",
@@ -24,7 +24,8 @@
     "test:unit-economics": "node --import tsx tests/unit-economics.test.ts",
     "audit:legacy": "node scripts/audit-legacy-artifacts.mjs --check",
     "test:template-governance": "node --import tsx --test --test-concurrency=1 tests/template-policy*.test.ts tests/template-availability-client.test.ts tests/admin-template-governance-ui.test.ts tests/checkout-mailing-readiness.test.ts tests/sprint-0011-demand-copy.test.ts",
-    "audit:credentials": "node scripts/check-credential-hygiene.mjs"
+    "audit:credentials": "node scripts/check-credential-hygiene.mjs",
+    "test:robustness": "NODE_ENV=test USE_MOCK_FIRESTORE=true MOCK_FIRESTORE_MEMORY_ONLY=true ALLOW_LOCAL_MOCK_PAYMENTS=true LOB_ENV=staging_mock_cass node --require ./tests/admin-console/offline-preload.cjs --import tsx --test --test-concurrency=1 tests/checkout-attempt-integrity.test.ts tests/robustness-server-review.test.ts tests/fulfillment-convergence.test.ts tests/accepted-dispatch-recovery.test.ts tests/address-verification-evidence.test.ts tests/verify-address-evidence-route.test.ts tests/checkout-recovery.test.ts tests/draft-recovery-scope.test.ts tests/workflow-history.test.ts tests/physical-layout-parity.test.ts tests/physical-fit-preflight.test.ts tests/property-address-parity.test.ts tests/marketing-privacy-boundary.test.ts tests/admin-console/reporting.test.ts"
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0",

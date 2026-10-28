@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyUsAddress } from '@/lib/fulfillment/lob';
 import { assertNonFitnessEntity, ConflictOfInterestError } from '@/lib/docket/guardrails';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { createAddressVerificationEvidence, type VerifiedAddressRole } from '@/lib/docket/address-verification-evidence';
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { address, recipientName, company } = body || {};
+    const { address, recipientName, company, role, draftId, draftRevision } = body || {};
 
     if (!address) {
       return NextResponse.json(
@@ -56,13 +57,33 @@ export async function POST(req: NextRequest) {
       assertNonFitnessEntity(address.company);
     }
 
+    if (role !== undefined && role !== 'sender' && role !== 'recipient') {
+      return NextResponse.json({ error: 'Address role must be sender or recipient.', code: 'INVALID_ADDRESS_ROLE' }, { status: 400 });
+    }
+    if (role && (typeof draftId !== 'string' || !draftId || !Number.isSafeInteger(draftRevision) || draftRevision < 0)) {
+      return NextResponse.json({ error: 'Draft identity and revision are required for address evidence.', code: 'INVALID_DRAFT_REVISION' }, { status: 400 });
+    }
+
     const verificationResult = await verifyUsAddress(address);
+    const providerMode = process.env.LOB_ENV === 'staging_mock_cass'
+      ? 'staging_mock_cass'
+      : (process.env.LOB_ADDRESS_VERIFICATION_KEY || process.env['lob-address-verification-key'])?.startsWith('live_')
+        ? 'live_cass'
+        : 'local_mock';
+    const evidence = verificationResult.valid && role
+      ? createAddressVerificationEvidence({
+          role: role as VerifiedAddressRole, draftId, draftRevision, address, providerMode,
+        })
+      : undefined;
 
     return NextResponse.json({
       valid: verificationResult.valid,
       deliverability: verificationResult.deliverability,
       standardizedAddress: verificationResult.standardizedAddress,
+      providerMode,
+      evidence,
       error: verificationResult.error,
+      code: verificationResult.valid ? undefined : 'ADDRESS_UNDELIVERABLE',
     });
   } catch (err: any) {
     if (

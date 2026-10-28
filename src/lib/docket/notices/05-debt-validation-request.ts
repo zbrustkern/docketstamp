@@ -12,10 +12,7 @@ export const debtValidationSchema = z.object({
   allegedOriginalCreditor: z.string().min(2, 'Original creditor name is required').max(60),
   allegedBalance: z.string().min(1, 'Alleged balance amount is required'),
   initialContactDate: z.string().min(4, 'Date shown on the communication is required'),
-  communicationPreference: z.enum([
-    'Please send future responses about this request in writing by U.S. Mail',
-    'Please send a written response to the mailing address on this notice',
-  ]),
+  communicationPreference: z.string().optional(),
 });
 
 export const debtValidationNotice: NoticeTemplateDefinition = {
@@ -23,10 +20,10 @@ export const debtValidationNotice: NoticeTemplateDefinition = {
   slug: 'debt-dispute-information-request',
   aliases: ['fdcpa-30-day-debt-validation-letter', 'debt-validation', 'debt-validation-request', 'fdcpa-debt-validation', 'debt-validation-demand-letter-fdcpa-809'],
   category: 'credit_debt',
-  title: 'Debt Dispute and Verification Request',
+  title: 'FDCPA Debt Validation & Dispute Demand',
   shortDescription: 'Challenge a collection claim and demand written verification.',
-  documentHeaderTitle: 'WRITTEN DEBT DISPUTE AND REQUEST FOR VERIFICATION',
-  reLineTemplate: 'RE: Written Debt Dispute — Reference No. {{collectorReferenceNumber}}',
+  documentHeaderTitle: 'FORMAL NOTICE OF DEBT DISPUTE AND DEMAND FOR VALIDATION (15 U.S.C. § 1692g)',
+  reLineTemplate: 'RE: Timely Dispute & Debt Validation Demand — Ref: {{collectorReferenceNumber}}',
   recommendedTier: 'certified_return_receipt',
   recipientMode: 'verified_or_manual_debt',
   usesStateStatuteLookup: false,
@@ -123,8 +120,8 @@ export const debtValidationNotice: NoticeTemplateDefinition = {
   ],
   zodSchema: debtValidationSchema,
   bodyParagraphs: [
-    'I dispute the alleged debt identified in your communication dated {{initialContactDate}}, reference number {{collectorReferenceNumber}}. It lists {{allegedOriginalCreditor}} as the original creditor and {{allegedBalance}} as the amount claimed. I demand written verification of the debt and an explanation of the current balance, including payments, credits, interest, and fees.',
-    'If the FDCPA applies and I submit this written dispute within the validation period, cease collection of the disputed debt until you mail verification as required by 15 U.S.C. § 1692g(b). Send your response to {{senderFullAddress}}.',
-    'My requested communication preference is: {{communicationPreference}}.',
+    'PLEASE TAKE NOTICE that I, {{senderFullName}}, hereby formally dispute the alleged debt referenced in your communication dated {{initialContactDate}} (Collector Reference: {{collectorReferenceNumber}}, Alleged Original Creditor: {{allegedOriginalCreditor}}, Alleged Balance: {{allegedBalance}}).',
+    'Pursuant to the Fair Debt Collection Practices Act (15 U.S.C. § 1692g(b)), I demand written verification of this alleged debt, including the original contract, an itemized calculation of all principal, interest, and fees, and documentation establishing your legal authority to collect.',
+    'In accordance with federal law, you must cease all collection activities until competent verification is provided. All future communications regarding this matter must be conducted in writing via U.S. Mail to {{senderFullAddress}}.',
   ],
 };

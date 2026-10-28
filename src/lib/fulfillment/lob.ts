@@ -42,6 +42,7 @@ export interface LobAddressInput {
 
 export interface LobAddressVerificationResult {
   valid: boolean;
+  providerMode?: 'staging_mock_cass' | 'live_cass' | 'local_mock';
   deliverability:
     | 'deliverable'
     | 'deliverable_unnecessary_unit'
@@ -241,6 +242,7 @@ export async function verifyUsAddress(
     const plus4 = norm.zip.length > 5 ? norm.zip.slice(-4) : '1001';
     return {
       valid: true,
+      providerMode: isStagingMock ? 'staging_mock_cass' : 'local_mock',
       deliverability: 'deliverable',
       standardizedAddress: {
         recipient: norm.name || norm.company || 'RECEIVING PARTY',
@@ -289,6 +291,7 @@ export async function verifyUsAddress(
 
     return {
       valid: isValid,
+      providerMode: 'live_cass',
       deliverability,
       standardizedAddress: {
         recipient: data.recipient || norm.name,

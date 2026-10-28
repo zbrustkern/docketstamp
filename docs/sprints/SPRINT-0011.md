@@ -1,6 +1,6 @@
 # SPRINT-0011 — Forceful demand language and state launch review
 
-**Status:** Complete (local implementation and targeted review; launch gates remain)
+**Status:** Complete; deployed to staging and production (paid production checkout held pending live configuration)
 **Run:** `2026-10-20-demand-copy`
 **Source:** `4225135eb5bc0d1b35407851a809a69480a571c6`
 **Owner:** Codex coordinator; Luna implementation, Sol legal research
@@ -96,3 +96,7 @@ Completed locally. [Verification report](../../.delivery/runs/2026-10-20-demand-
 [State launch review](../legal/STATE_LAUNCH_REVIEW_2026-10-20.md) recommends NC hold, provisional AZ/CA holds, conditional NV/TX/WA review paths, unresolved FL, and a separate nationwide paid credit-cartridge classification review. These are recommendations with explicit applicability/source limits. No state or template was disabled. Full jurisdictional eligibility and deposit-law verification remain launch gates.
 
 Delegation: Luna high implementation; Luna medium critique/review; Sol high legal research; coordinator integration and browser validation. No Antigravity run, production deployment, live payment or postal dispatch occurred.
+
+## Deployment
+
+User-authorized release `4e24aec` is verified on staging and production. See [.delivery deployment evidence](../../.delivery/runs/2026-10-20-template-governance/deployment.md). The release also preserves newer staging address/factual-input safeguards and keeps arbitration as a procedure-information request. Legal/provider launch reviews remain separate from technical deployment.

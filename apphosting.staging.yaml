@@ -24,6 +24,11 @@ env:
     availability:
       - RUNTIME
 
+  - variable: ADDRESS_VERIFICATION_EVIDENCE_SECRET
+    secret: address-verification-evidence-secret
+    availability:
+      - RUNTIME
+
   # This is a public key, but storing it centrally avoids per-backend drift.
   # Next.js needs NEXT_PUBLIC values at BUILD as well as RUNTIME.
   - variable: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -34,6 +39,13 @@ env:
 
   - variable: LOB_DISPATCH_API_KEY
     secret: lob-key
+    availability:
+      - RUNTIME
+
+  # Override the production secret binding inherited from apphosting.yaml.
+  # Deterministic staging CASS does not require a live verification key.
+  - variable: LOB_ADDRESS_VERIFICATION_KEY
+    value: staging_mock_cass_unused
     availability:
       - RUNTIME
 

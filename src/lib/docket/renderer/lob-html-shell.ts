@@ -2,7 +2,7 @@
  * Lob 8.5" x 11" notice HTML/CSS print shell
  *
  * Implements the print geometry currently used by the notice renderer:
- * - 0in to 1.80in top clear zone for the selected mailing-service banner and window envelopes
+ * - 0in to 1.80in clear zone reserved for Lob's top_first_page address placement
  * - Top-Right DocketStamp preparation record at top: 1.85in; right: 0.60in; width: 3.15in
  * - Letter body container starting strictly at top: 3.35in; left: 0.75in; right: 0.75in
  * - Signature block with a typed signature line
@@ -11,6 +11,7 @@
 
 import { InterpolatedDocument, MailTierId } from '../types';
 import { UPL_COMPLIANCE_FOOTER_TEXT } from '../guardrails';
+import { physicalLayoutCss } from './physical-layout';
 
 const TIER_DISPATCH_LABELS: Record<MailTierId, string> = {
   first_class: 'USPS FIRST-CLASS MAIL®',
@@ -57,109 +58,11 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
 <meta charset="utf-8" />
 <title>${safeDocketId} - ${safeHeaderTitle}</title>
 <style>
-  @page { size: 8.5in 11in; margin: 0; }
-  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body {
-    width: 8.5in;
-    height: 11in;
-    margin: 0;
-    padding: 0;
-    position: relative;
-    font-family: Georgia, 'Times New Roman', serif;
-    color: #0F172A;
-    background: #FFFFFF;
-    overflow: hidden;
-  }
-  /* Top-Right preparation record box (Clears left window & top service banner) */
-  .docket-stamp-box {
-    position: absolute;
-    top: 1.85in;
-    right: 0.60in;
-    width: 3.15in;
-    border: 1.5px solid #0F172A;
-    background-color: #F8FAFC;
-    padding: 7px 9px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 7.5pt;
-    line-height: 1.35;
-  }
-  .docket-stamp-header {
-    font-weight: bold;
-    border-bottom: 1px solid #0F172A;
-    padding-bottom: 3px;
-    margin-bottom: 4px;
-    letter-spacing: 0.03em;
-  }
-  /* Formal Letter Content Zone */
-  .letter-body-container {
-    position: absolute;
-    top: 3.35in;
-    left: 0.75in;
-    right: 0.75in;
-    bottom: 0.80in;
-    overflow-wrap: anywhere;
-  }
-  .doc-header-title {
-    font-size: 10.5pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 2px solid #0F172A;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-  }
-  .re-docket-block {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 8.5pt;
-    font-weight: bold;
-    background-color: #F1F5F9;
-    border-left: 3px solid #0284C7;
-    padding: 6px 10px;
-    margin-bottom: 14px;
-  }
-  .salutation {
-    font-size: 9.5pt;
-    font-weight: bold;
-    margin-bottom: 10px;
-  }
-  .paragraph {
-    font-size: 9.5pt;
-    line-height: 1.50;
-    text-align: justify;
-    margin: 0 0 10px 0;
-  }
-  .signature-block {
-    margin-top: 16px;
-  }
-  .signature-line {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11pt;
-    font-weight: bold;
-    border-bottom: 1px solid #334155;
-    display: inline-block;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-    min-width: 2.8in;
-    padding-bottom: 2px;
-    margin-top: 8px;
-    margin-bottom: 4px;
-  }
-  .compliance-footer {
-    position: absolute;
-    bottom: 0.40in;
-    left: 0.75in;
-    right: 0.75in;
-    border-top: 1px solid #CBD5E1;
-    padding-top: 4px;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 6.8pt;
-    color: #64748B;
-    text-align: center;
-    line-height: 1.3;
-  }
+  ${physicalLayoutCss()}
 </style>
 </head>
-<body>
+<body><main class="paper-page">
+  <!-- Reserved 0in–1.80in for Lob address_placement: top_first_page. Keep customer address content out of submitted HTML. -->
   <!-- Top-Right DocketStamp Preparation Record -->
   <div class="docket-stamp-box">
     <div class="docket-stamp-header">DOCKETSTAMP™ PREPARATION RECORD</div>
@@ -193,9 +96,9 @@ export function renderLobHtmlPayload(doc: InterpolatedDocument): string {
 
   <!-- UPL Compliance Footer (0.40in from bottom) -->
   <div class="compliance-footer">
-    ${UPL_COMPLIANCE_FOOTER_TEXT(doc.docketId)}
+    ${escapeHtml(UPL_COMPLIANCE_FOOTER_TEXT(doc.docketId))}
   </div>
-</body>
+</main></body>
 </html>`;
 }
 

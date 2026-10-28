@@ -1,0 +1,62 @@
+{
+  "completedAt": "2026-10-22T16:55:07.953844+00:00",
+  "status": "complete",
+  "targets": {
+    "staging": {
+      "sha": "614899b3364b13bdd6f3b27185e1d230a690bd35",
+      "rollbackSource": "11ee79fcfef9ad966dfda02148a4543f5dc77506",
+      "traffic": [
+        {
+          "build": "projects/267056924276/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-003",
+          "percent": 100
+        }
+      ],
+      "readyRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-22-003",
+      "httpChecks": 1241,
+      "identityChecks": 13,
+      "publicEnvironment": [
+        {
+          "name": "LOB_ENV",
+          "value": "staging_mock_cass"
+        },
+        {
+          "name": "ENVIRONMENT",
+          "value": "staging"
+        },
+        {
+          "name": "NEXT_PUBLIC_APP_URL",
+          "value": "https://staging.docketstamp.com"
+        }
+      ]
+    },
+    "production": {
+      "sha": "b66b69956eae54f59e3ef608be29207d7b143f45",
+      "rollbackSource": "4c6eeb8eafcfa1757e9a3175199695e6cb893eb3",
+      "traffic": [
+        {
+          "build": "projects/937129689950/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-001",
+          "percent": 100
+        }
+      ],
+      "readyRevision": "projects/docketstamp/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-22-001",
+      "httpChecks": 1230,
+      "identityChecks": 13,
+      "publicEnvironment": [
+        {
+          "name": "ENVIRONMENT",
+          "value": "production"
+        },
+        {
+          "name": "LOB_ENV",
+          "value": "live"
+        },
+        {
+          "name": "NEXT_PUBLIC_APP_URL",
+          "value": "https://docketstamp.com"
+        }
+      ]
+    }
+  },
+  "knownBaselineFailure": "tests/notice-deadline-reminders.test.ts:62 fixed-date scheduled vs expired; reproduced on unchanged production baseline",
+  "unrelatedWorkspacePreserved": true
+}

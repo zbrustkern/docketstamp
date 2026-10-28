@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -49,13 +50,13 @@ function request(
   return new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+    body: JSON.stringify(withVerifiedLockFixture({
       slug: 'security-deposit-return-demand-letter',
       tier: 'certified_return_receipt',
       customerEmail: 'integrity-evidence@example.com',
       userValues: values,
       signatureAdoption,
-    }),
+    })),
   });
 }
 

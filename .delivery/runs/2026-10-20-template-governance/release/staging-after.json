@@ -1,0 +1,191 @@
+{
+  "checkedAt": "2026-10-21T03:13:10.744Z",
+  "project": "docketstamp-staging",
+  "backend": {
+    "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp",
+    "environment": "staging",
+    "serviceAccount": "firebase-app-hosting-compute@docketstamp-staging.iam.gserviceaccount.com",
+    "uri": "docketstamp--docketstamp-staging.us-central1.hosted.app"
+  },
+  "rolloutPolicy": {
+    "codebaseBranch": "staging"
+  },
+  "builds": [
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-001",
+      "state": "READY",
+      "createTime": "2026-10-21T03:05:09.643624820Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "4e24aece1233e1a520474ef1746fd3f83f916971",
+          "hash": "4e24aece1233e1a520474ef1746fd3f83f916971",
+          "commitMessage": "Integrate template governance and demand copy with validated letter flows\n\nPreserve staged address and factual input safeguards, keep legacy URL aliases, and hold live checkout until both Lob keys are configured. Bind production admin signing and record full regression, browser, layout, and build validation.",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/4e24aece1233e1a520474ef1746fd3f83f916971",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-21T03:03:20Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-20-014",
+      "state": "READY",
+      "createTime": "2026-10-20T22:42:59.589506399Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "dbe7bcd66f7af2ea9ddd8d8bccfd615b2726a347",
+          "hash": "dbe7bcd66f7af2ea9ddd8d8bccfd615b2726a347",
+          "commitMessage": "Align homepage acceptance with factual copy",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/dbe7bcd66f7af2ea9ddd8d8bccfd615b2726a347",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-20T22:42:45Z"
+        }
+      }
+    }
+  ],
+  "rollouts": [
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-21-001",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-001",
+      "createTime": "2026-10-21T03:05:09.702078135Z",
+      "updateTime": "2026-10-21T03:09:38.351323Z"
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-20-009",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-20-014",
+      "createTime": "2026-10-20T22:42:59.643565756Z",
+      "updateTime": "2026-10-20T22:46:17.903945Z"
+    }
+  ],
+  "runtime": {
+    "readyRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-21-001",
+    "createdRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-21-001",
+    "condition": {
+      "type": "Ready",
+      "state": "CONDITION_SUCCEEDED",
+      "lastTransitionTime": "2026-10-21T03:09:35.949374Z"
+    },
+    "publicEnvironment": [
+      {
+        "name": "LOB_ENV",
+        "value": "staging_mock_cass"
+      },
+      {
+        "name": "ENVIRONMENT",
+        "value": "staging"
+      },
+      {
+        "name": "FIREBASE_PROJECT_ID",
+        "value": "docketstamp-staging"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "value": "docketstamp-staging"
+      },
+      {
+        "name": "NEXT_PUBLIC_APP_URL",
+        "value": "https://staging.docketstamp.com"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_APP_ID",
+        "value": "1:267056924276:web:e8c64af5d4be3d57477321"
+      }
+    ],
+    "credentialModes": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "mode": "test",
+        "secretReference": {
+          "secret": "projects/267056924276/secrets/stripe-secret-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "mode": "test",
+        "secretReference": {
+          "secret": "projects/267056924276/secrets/stripe-publishable-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "LOB_DISPATCH_API_KEY",
+        "mode": "test",
+        "secretReference": {
+          "secret": "projects/267056924276/secrets/lob-key",
+          "version": "1"
+        }
+      },
+      {
+        "name": "LOB_ADDRESS_VERIFICATION_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_API_KEY",
+        "mode": "missing"
+      }
+    ],
+    "secretNames": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "reference": {
+          "secret": "projects/267056924276/secrets/stripe-secret-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "STRIPE_WEBHOOK_SECRET",
+        "reference": {
+          "secret": "projects/267056924276/secrets/stripe-webhook-secret",
+          "version": "1"
+        }
+      },
+      {
+        "name": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "reference": {
+          "secret": "projects/267056924276/secrets/stripe-publishable-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "LOB_DISPATCH_API_KEY",
+        "reference": {
+          "secret": "projects/267056924276/secrets/lob-key",
+          "version": "1"
+        }
+      },
+      {
+        "name": "LOB_WEBHOOK_SECRET",
+        "reference": {
+          "secret": "projects/267056924276/secrets/lob-webhook-secret",
+          "version": "1"
+        }
+      },
+      {
+        "name": "ADMIN_SESSION_SIGNING_KEY",
+        "reference": {
+          "secret": "projects/267056924276/secrets/admin-session-signing-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "RESEND_API_KEY",
+        "reference": {
+          "secret": "projects/267056924276/secrets/resend-key",
+          "version": "1"
+        }
+      }
+    ]
+  }
+}

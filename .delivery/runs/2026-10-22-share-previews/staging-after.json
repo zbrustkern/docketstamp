@@ -1,0 +1,127 @@
+{
+  "checkedAt": "2026-10-22T16:53:59.748Z",
+  "project": "docketstamp-staging",
+  "traffic": {
+    "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/traffic",
+    "rolloutPolicy": {
+      "codebaseBranch": "staging"
+    },
+    "reconciling": false,
+    "createTime": "2026-10-14T15:56:47.817068195Z",
+    "updateTime": "2026-10-14T15:56:45.930109Z",
+    "etag": "XoN3StiVm16LfOQHnZdggl0v0UxT8bJH3WVWpiHxcsc",
+    "uid": "c8c080eb-790e-4ae2-8e66-061fd04a2b60",
+    "current": {
+      "splits": [
+        {
+          "build": "projects/267056924276/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-003",
+          "percent": 100
+        }
+      ]
+    }
+  },
+  "builds": [
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-003",
+      "state": "READY",
+      "createTime": "2026-10-22T16:44:27.152512465Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "hash": "614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "commitMessage": "fix: include public assets in App Hosting bundle",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-22T16:42:48Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-002",
+      "state": "READY",
+      "createTime": "2026-10-22T16:44:16.712965732Z",
+      "source": {
+        "codebase": {
+          "commit": "614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "displayName": "614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "hash": "614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "commitMessage": "fix: include public assets in App Hosting bundle",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/614899b3364b13bdd6f3b27185e1d230a690bd35",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com"
+          },
+          "commitTime": "2026-10-22T16:42:48Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-001",
+      "state": "READY",
+      "createTime": "2026-10-22T16:34:16.661401996Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "4f930264a6b6760c4553c87bf31bf667c30bf3dc",
+          "hash": "4f930264a6b6760c4553c87bf31bf667c30bf3dc",
+          "commitMessage": "feat: add branded DocketStamp share previews",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/4f930264a6b6760c4553c87bf31bf667c30bf3dc",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-22T16:34:07Z"
+        }
+      }
+    }
+  ],
+  "rollouts": [
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-22-002",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-003",
+      "createTime": "2026-10-22T16:44:27.194705978Z",
+      "updateTime": "2026-10-22T16:53:31.367820Z"
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/build-2026-10-22-002",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-002",
+      "createTime": "2026-10-22T16:44:17.392040853Z",
+      "updateTime": "2026-10-22T16:48:25.764086Z"
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-22-001",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-001",
+      "createTime": "2026-10-22T16:34:16.723627659Z",
+      "updateTime": "2026-10-22T16:38:25.250146Z"
+    }
+  ],
+  "readyRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-22-003",
+  "condition": {
+    "type": "Ready",
+    "state": "CONDITION_SUCCEEDED",
+    "lastTransitionTime": "2026-10-22T16:53:28.045303Z"
+  },
+  "publicEnvironment": [
+    {
+      "name": "LOB_ENV",
+      "value": "staging_mock_cass"
+    },
+    {
+      "name": "ENVIRONMENT",
+      "value": "staging"
+    },
+    {
+      "name": "NEXT_PUBLIC_APP_URL",
+      "value": "https://staging.docketstamp.com"
+    }
+  ]
+}

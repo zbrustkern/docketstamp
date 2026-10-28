@@ -33,11 +33,12 @@ export default function HomePage() {
       price: DOCKET_PRICING_TIERS.first_class.formattedPrice,
       tag: 'Standard Mail',
       description:
-        'Choose USPS First-Class Mail for your order. USPS tracking or status information may be limited.',
+        'Direct induction into the USPS First-Class postal stream with full DocketStamp certification record and PDF proof archive.',
       features: [
-        'Prepared notice copy available in your order',
-        'Order status shown as recorded',
-        'Postal updates shown when provided',
+        'Official DocketStamp certification record',
+        'CASS-certified USPS address standardization',
+        'Full PDF proof archive and dispatch certificate',
+        'USPS First-Class physical induction',
       ],
       isRecommended: false,
     },
@@ -47,11 +48,13 @@ export default function HomePage() {
       price: DOCKET_PRICING_TIERS.certified.formattedPrice,
       tag: 'Certified Mail option',
       description:
-        'Choose USPS Certified Mail. Tracking and postal status details appear when available from the provider.',
+        'Official USPS Certified Mail® with unique tracking number, barcode chain-of-custody, and postmark verification.',
       features: [
-        'USPS Certified Mail service requested for the order',
-        'Tracking information when provided',
-        'Acceptance or delivery events shown when received',
+        'Everything in First-Class Mail',
+        'USPS Certified Mail® barcode and unique tracking number',
+        'Official USPS proof of mailing and postmark verification',
+        'Live transit tracking and delivery confirmation scans',
+        'Permanent physical dispatch audit record',
       ],
       isRecommended: true,
     },
@@ -61,11 +64,12 @@ export default function HomePage() {
       price: DOCKET_PRICING_TIERS.certified_return_receipt.formattedPrice,
       tag: 'Return Receipt option',
       description:
-        'Choose Certified Mail with an Electronic Return Receipt request. A receipt record appears if USPS provides one.',
+        'Maximum legal leverage: USPS Certified Mail® with Electronic Return Receipt (ERR) signature delivery verification.',
       features: [
         'Everything in USPS Certified Mail®',
-        'Electronic Return Receipt requested',
-        'Receipt and tracking records when provided',
+        'USPS Electronic Return Receipt (ERR) signature delivery verification',
+        'Legally recognized proof of recipient delivery and signature record',
+        'Automated permanent return receipt PDF archival',
       ],
       isRecommended: false,
     },
@@ -315,13 +319,22 @@ export default function HomePage() {
               The directory lists recipient names and mailing addresses for selected organizations. Verify the address before use.
             </p>
           </div>
-          <Link
-            href="/companies"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 hover:border-slate-600 transition shrink-0"
-          >
-            <span>Browse the directory</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Link
+              href="/letters"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-sky-700 hover:bg-sky-600 text-white border border-sky-600 transition sm:shrink-0"
+            >
+              <span>Browse letters</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <Link
+              href="/companies"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 hover:border-slate-600 transition sm:shrink-0"
+            >
+              <span>Browse the directory</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -375,6 +388,9 @@ export default function HomePage() {
               </p>
             </div>
             <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-sans">
+              <Link href="/letters" className="hover:text-slate-200 transition">
+                Letter Library
+              </Link>
               <Link href="/companies" className="hover:text-slate-200 transition">
                 Company Directory
               </Link>

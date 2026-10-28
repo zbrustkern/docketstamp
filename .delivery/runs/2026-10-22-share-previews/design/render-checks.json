@@ -1,0 +1,147 @@
+[
+  {
+    "kind": "home",
+    "width": 1200,
+    "height": 630,
+    "fonts": {
+      "inter": true,
+      "serif": true,
+      "mono": true
+    },
+    "overflow": false,
+    "textBounds": [
+      {
+        "text": "DSDOCKETSTAMP™",
+        "bounded": true
+      },
+      {
+        "text": "FORMAL LETTERS. MAILED FOR YOU.",
+        "bounded": true
+      },
+      {
+        "text": "Make it formal.",
+        "bounded": true
+      },
+      {
+        "text": "We’ll printand mail it.",
+        "bounded": true
+      },
+      {
+        "text": "Prepare online. Review. Send by USPS.",
+        "bounded": true
+      },
+      {
+        "text": "Certified Mail available",
+        "bounded": true
+      },
+      {
+        "text": "Self-help document preparation.Not a law firm. No legal advice.",
+        "bounded": true
+      },
+      {
+        "text": "docketstamp.com",
+        "bounded": true
+      }
+    ]
+  },
+  {
+    "kind": "square",
+    "width": 1080,
+    "height": 1080,
+    "fonts": {
+      "inter": true,
+      "serif": true,
+      "mono": true
+    },
+    "overflow": false,
+    "textBounds": [
+      {
+        "text": "DSDOCKETSTAMP™",
+        "bounded": true
+      },
+      {
+        "text": "FORMAL LETTERS. MAILED FOR YOU.",
+        "bounded": true
+      },
+      {
+        "text": "Make it formal.",
+        "bounded": true
+      },
+      {
+        "text": "We’ll print and mail it.",
+        "bounded": true
+      },
+      {
+        "text": "Prepare online.Review your letter.Send by USPS.",
+        "bounded": true
+      },
+      {
+        "text": "Certified Mail available",
+        "bounded": true
+      },
+      {
+        "text": "Self-help document preparation.Not a law firm. No legal advice.",
+        "bounded": true
+      },
+      {
+        "text": "docketstamp.com",
+        "bounded": true
+      }
+    ]
+  },
+  {
+    "kind": "cancellation",
+    "width": 1200,
+    "height": 630,
+    "fonts": {
+      "inter": true,
+      "serif": true,
+      "mono": true
+    },
+    "overflow": false,
+    "textBounds": [
+      {
+        "text": "DSDOCKETSTAMP™",
+        "bounded": true
+      },
+      {
+        "text": "SERVICE & POLICY CANCELLATION",
+        "bounded": true
+      },
+      {
+        "text": "Cancel a service.Put it in writing.",
+        "bounded": true
+      },
+      {
+        "text": "Prepare your cancellation letter.We’ll print and mail it.",
+        "bounded": true
+      },
+      {
+        "text": "Review online. Send by USPS.",
+        "bounded": true
+      },
+      {
+        "text": "Certified Mail available",
+        "bounded": true
+      },
+      {
+        "text": "Self-help document preparation.Not a law firm. No legal advice.",
+        "bounded": true
+      },
+      {
+        "text": "docketstamp.com",
+        "bounded": true
+      }
+    ]
+  },
+  {
+    "kind": "gallery",
+    "width": 1440,
+    "overflow": false
+  },
+  {
+    "kind": "gallery",
+    "width": 390,
+    "overflow": false
+  }
+]

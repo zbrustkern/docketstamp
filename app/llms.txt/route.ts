@@ -18,7 +18,7 @@ function generateLlmsTxt(availabilityBySlug: Map<string, { requiresResidence: bo
         )
         .join('\n');
 
-      return `### Cartridge ${idx + 1}: ${n.title}
+      return `### Document Template ${idx + 1}: ${n.title}
 - **Slug**: \`${n.slug}\`
 - **Category**: \`${n.category}\`
 - **Document Header**: "${n.documentHeaderTitle}"
@@ -50,7 +50,7 @@ ${fieldsList || '    - (No specific dynamic fields)'}
 ---
 
 ## 1. Template Scope and Limitations
-- **UPL Compliance**: DocketStamp is an automated self-help document preparation and USPS mailing utility, NOT a law firm, and does not provide legal representation or legal advice. Templates are deterministic and use facts supplied by the user.
+- **UPL Compliance**: DocketStamp is an automated self-help document preparation and USPS mailing utility, NOT a law firm, and does not provide legal representation or legal advice. Templates are standardized administrative instruments using facts supplied by the user.
 - **Strict Conflict-of-Interest Exclusion (NAICS 713940)**: DocketStamp excludes gyms, health clubs, fitness centers, and fitness membership billing disputes (NAICS 713940). Staged requests referencing gyms or fitness clubs will be rejected with HTTP 400 (\`CONFLICT_OF_INTEREST\`). A listed company or address does not confirm that a particular legal or contract-required channel is supported.
 - **Current template availability**: Check \`GET https://docketstamp.com/api/docket/availability\` before staging. Availability can change; server staging and checkout enforce the current policy. When requested, provide \`consumerResidenceState\` as the consumer's explicitly declared residence; for tenant notices, \`propertyState\` identifies the rental property. Neither state is inferred from postal addresses or IP.
 
@@ -132,7 +132,7 @@ Example: \`https://docketstamp.com/notices/product-complaint-refund-request?reci
 - **Endpoint**: \`POST https://docketstamp.com/api/mcp\`
 - **Protocol**: JSON-RPC 2.0 Streamable HTTP MCP
 - **Tools**:
-  1. \`list_docket_notices\`: Lists all Notice Cartridges, descriptions, and field schemas.
+  1. \`list_docket_notices\`: Lists all document templates, descriptions, and field schemas.
   2. \`search_verified_recipients\`: Searches recipient address suggestions by brand name or category. A result does not establish the required legal or contractual submission channel.
   3. \`stage_certified_notice\`: Validates inputs, creates staged draft, and returns review link.
 

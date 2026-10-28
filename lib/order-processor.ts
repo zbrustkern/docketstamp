@@ -25,6 +25,7 @@ export interface ProcessPaidOrderResult {
   lobLetterId?: string;
   error?: string;
   alreadyProcessed?: boolean;
+  followupStatus?: string;
 }
 
 export interface ProcessOrderOptions {
@@ -576,4 +577,131 @@ export async function processPaidOrder(
     status: "PROCESSING_DISPATCH",
     lobLetterId: fulfillment.order_id,
   };
+}
+
+/**
+ * Record the existing paid-order follow-on effects after the shared postal
+ * dispatcher has durably recorded Lob acceptance. This function never submits
+ * postal work itself.
+ */
+export async function recordAuthorizedDispatchAccepted(input: {
+  orderId: string;
+  paymentIntentId: string;
+  order: Order;
+  lobLetterId: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  expectedDeliveryDate?: string;
+  clientIp?: string;
+  userAgent?: string;
+  isTest: boolean;
+}): Promise<void> {
+  const { orderId, order, lobLetterId } = input;
+  await updateOrderStatus(orderId, {
+    status: "PROCESSING_DISPATCH",
+    lobLetterId,
+    postalProvider: "lob",
+    postalProviderReference: lobLetterId,
+    ...(input.trackingNumber ? { lobTrackingNumber: input.trackingNumber } : {}),
+    ...(input.trackingUrl ? { lobTrackingUrl: input.trackingUrl } : {}),
+    ...(input.expectedDeliveryDate ? { expectedDeliveryDate: input.expectedDeliveryDate } : {}),
+    fulfillmentError: undefined,
+    isTest: input.isTest,
+    paymentMode: input.isTest ? "stripe_test" : "live",
+  } as any);
+
+  const toName = `${order.recipientAddress?.firstName || ""} ${order.recipientAddress?.lastName || ""}`.trim() || "Receiving Party";
+  const docketId = order.docketId || `DS-2026-${orderId.slice(-6).toUpperCase()}`;
+  const recipientEmail = order.customerEmail;
+  if (recipientEmail) {
+    const serviceLevelLabel = order.serviceLevel === "CERTIFIED_RETURN_RECEIPT"
+      ? "USPS Certified Mail® + Return Receipt"
+      : order.serviceLevel === "FIRST_CLASS" ? "USPS First-Class Mail" : "USPS Certified Mail®";
+    const recipientStreet = [order.recipientAddress?.street1, order.recipientAddress?.street2].filter(Boolean).join(", ");
+    const recipientCityStateZip = `${order.recipientAddress?.city || ""}, ${order.recipientAddress?.state || ""} ${order.recipientAddress?.zip || ""}`.trim();
+    try {
+      await sendDocketDispatchReceiptEmail({
+        toEmail: recipientEmail, docketId, serviceLevelLabel, recipientName: toName,
+        recipientAddressSummary: `${toName} — ${recipientStreet}, ${recipientCityStateZip}`,
+        orderId,
+      });
+    } catch (error) {
+      console.warn("[OrderProcessor] Notice sending dispatch receipt after authorized dispatch:", error);
+    }
+  }
+
+  if (!order.metaCapiTrackedAt) {
+    try {
+      const capiResult = await sendMetaCapiPurchaseEvent({
+        order, clientIp: input.clientIp, userAgent: input.userAgent,
+      });
+      await markMetaCapiTrackedAtOnSuccess(capiResult, (timestamp) => updateOrderStatus(orderId, { metaCapiTrackedAt: timestamp }));
+    } catch (error) {
+      console.warn("[OrderProcessor] Notice sending Meta CAPI purchase event:", error);
+    }
+  }
+
+  if (input.paymentIntentId.startsWith("pi_") && !input.paymentIntentId.startsWith("pi_mock_")) {
+    try {
+      const mode = resolvePaymentMode();
+      if (mode === "live" || mode === "stripe_test") {
+        await getStripeClient().paymentIntents.update(input.paymentIntentId, {
+          metadata: { docket_id: docketId, lob_letter_id: lobLetterId, order_id: orderId },
+        });
+      }
+    } catch (error) {
+      console.warn("[OrderProcessor] Best-effort Stripe PaymentIntent metadata patch skipped:", error);
+    }
+  }
+
+  try {
+    await resolveIncidentsForOrder(orderId, `Self-resolved via successful Lob USPS postal dispatch (Letter ID: ${lobLetterId})`);
+  } catch (error) {
+    console.warn("[OrderProcessor] Notice auto-resolving prior incidents:", error);
+  }
+
+  try {
+    const cache = await getImageCachePoolCollection().where("imageUrl", "==", order.frontImageUrl).limit(1).get();
+    if (!cache.empty) await getImageCachePoolCollection().doc(cache.docs[0].id).update({ status: "CLAIMED" });
+  } catch (error) {
+    console.warn("[OrderProcessor] Notice updating cache pool status:", error);
+  }
+
+  try {
+    const sessionId = order.sessionId || (order.attribution as any)?.sessionId || order.telemetrySessionId || `sess_${orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+    await recordServerTelemetry({
+      eventName: "fulfillment_submitted", sessionId, orderId,
+      metadata: { lobLetterId, isTest: input.isTest }, experienceVersion: order.experienceVersion,
+    });
+  } catch (error) {
+    console.warn("[OrderProcessor] Notice recording fulfillment_submitted telemetry:", error);
+  }
+}
+
+/** Emit existing verified-payment telemetry/discount usage after the durable outbox is claimed. */
+export async function recordAuthorizedPaymentObserved(input: {
+  orderId: string;
+  order: Order;
+  isTest: boolean;
+  paymentMode: string;
+}): Promise<void> {
+  const { orderId, order } = input;
+  const sessionId = order.sessionId || (order.attribution as any)?.sessionId || order.telemetrySessionId || `sess_${orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+  const metadata = {
+    amountInCents: order.finalAmountInCents || order.amountInCents || 1995,
+    isTest: input.isTest, paymentMode: input.paymentMode,
+    noticeSlug: order.noticeType, tier: order.serviceLevel,
+    entrySource: (order as any).entrySource || "unknown",
+  };
+  for (const eventName of ["order_paid_confirmed", "purchase_verified"] as const) {
+    try {
+      await recordServerTelemetry({ eventName, sessionId, orderId, metadata, experienceVersion: order.experienceVersion || "home_v2" });
+    } catch (error) {
+      console.warn(`[OrderProcessor] Notice recording ${eventName} telemetry:`, error);
+    }
+  }
+  if (order.discountCode) {
+    try { await recordDiscountUsage(order.discountCode, order.discountAmountInCents || 0); }
+    catch (error) { console.warn("[OrderProcessor] Notice recording discount code usage:", error); }
+  }
 }

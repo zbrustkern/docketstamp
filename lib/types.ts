@@ -112,6 +112,11 @@ export interface Order {
   noticeVersion?: number;
   id: string;
   stripePaymentId?: string;
+  /** Lifecycle pointer for the server-owned checkout attempt; absent on legacy orders. */
+  checkoutAttemptId?: string;
+  checkoutAttemptState?: string;
+  checkoutAttemptSupersededBy?: string | null;
+  checkoutPaymentIntentId?: string | null;
   customerEmail: string;
   userId?: string;
   docketId?: string;

@@ -3,7 +3,7 @@ import { requireCapability, AdminAccessError, serverEnvironment } from '@/lib/ad
 import { beginCommand, finishCommand } from '@/lib/admin-console/commands/audit';
 import { ScopeSchema } from '@/lib/admin-console/contracts';
 import { prepareGeneration, publishGeneration, readGeneration, rollbackGeneration } from '@/lib/admin-console/reporting/store';
-import { calendarScope } from '@/lib/admin-console/reporting/scope';
+import { calendarScope, type CalendarRange } from '@/lib/admin-console/reporting/scope';
 function errorResponse(error: unknown) {
   return NextResponse.json({ error: error instanceof AdminAccessError ? error.code : 'CONSOLE_REQUEST_FAILED' }, { status: error instanceof AdminAccessError ? error.status : 400 });
 }
@@ -11,7 +11,13 @@ export async function GET(req: NextRequest) {
   try {
     requireCapability(req,'reports.read');
     const raw=req.nextUrl.searchParams.get('scope');
-    const scope=ScopeSchema.parse(raw?JSON.parse(raw):calendarScope(serverEnvironment()));
+    const range = req.nextUrl.searchParams.get('range') || '7d';
+    const validRange = ['today','yesterday','7d','30d','custom'].includes(range) ? range as CalendarRange : '7d';
+    const scope=ScopeSchema.parse(raw ? JSON.parse(raw) : {
+      ...calendarScope(serverEnvironment(), new Date(), req.nextUrl.searchParams.get('timezone') || 'America/Chicago', validRange,
+        req.nextUrl.searchParams.get('start') || undefined, req.nextUrl.searchParams.get('end') || undefined),
+      ...(req.nextUrl.searchParams.get('channel') ? { channel: req.nextUrl.searchParams.get('channel')! } : {}),
+    });
     if(scope.environment!==serverEnvironment()) throw new AdminAccessError(403,'ENVIRONMENT_SCOPE_DENIED');
     const report=await readGeneration(scope);
     return NextResponse.json({report,scope,state:report?'available':'not_measured',message:report?null:'No published report for this scope. An authorized projection-only rebuild is required.'},{headers:{'Cache-Control':'private, no-store'}});

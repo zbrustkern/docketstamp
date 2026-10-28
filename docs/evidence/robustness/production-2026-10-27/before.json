@@ -1,0 +1,444 @@
+{
+  "checkedAt": "2026-10-28T00:32:17.480Z",
+  "project": "docketstamp",
+  "backend": {
+    "name": "projects/docketstamp/locations/us-central1/backends/docketstamp",
+    "serviceAccount": "firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com",
+    "codebase": {
+      "repository": "projects/docketstamp/locations/us-central1/connections/apphosting-github-conn-dgccp1/gitRepositoryLinks/zbrustkern-docketstamp",
+      "rootDirectory": "/"
+    },
+    "uri": "docketstamp--docketstamp.us-central1.hosted.app"
+  },
+  "traffic": {
+    "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/traffic",
+    "rolloutPolicy": {
+      "codebaseBranch": "main"
+    },
+    "reconciling": false,
+    "createTime": "2026-10-14T15:57:12.290500617Z",
+    "updateTime": "2026-10-14T15:57:11.481987Z",
+    "etag": "VE35-FC_JEm1Opzeazdx0Ui2-oAxN2cLK6eym9NPpVk",
+    "uid": "60f3f935-e40b-4285-9587-458b4b467dc0",
+    "current": {
+      "splits": [
+        {
+          "build": "projects/937129689950/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-001",
+          "percent": 100
+        }
+      ]
+    }
+  },
+  "builds": [
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-001",
+      "state": "READY",
+      "createTime": "2026-10-22T16:50:02.017494338Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "b66b69956eae54f59e3ef608be29207d7b143f45",
+          "hash": "b66b69956eae54f59e3ef608be29207d7b143f45",
+          "commitMessage": "fix: include public assets in App Hosting bundle",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/b66b69956eae54f59e3ef608be29207d7b143f45",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-22T16:42:56Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-007",
+      "state": "READY",
+      "createTime": "2026-10-21T19:53:41.040139094Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "4c6eeb8eafcfa1757e9a3175199695e6cb893eb3",
+          "hash": "4c6eeb8eafcfa1757e9a3175199695e6cb893eb3",
+          "commitMessage": "chore(production): bind live Lob configuration",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/4c6eeb8eafcfa1757e9a3175199695e6cb893eb3",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-21T19:53:38Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-006",
+      "state": "READY",
+      "createTime": "2026-10-21T15:39:58.907749141Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "26bee9d9ed775612d440aff25f0db0ad5eda2fc0",
+          "hash": "26bee9d9ed775612d440aff25f0db0ad5eda2fc0",
+          "commitMessage": "Bind production Stripe webhook and publishable keys",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/26bee9d9ed775612d440aff25f0db0ad5eda2fc0",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-21T15:04:24Z"
+        }
+      }
+    }
+  ],
+  "rollouts": [
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-22-001",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-22-001",
+      "createTime": "2026-10-22T16:50:02.076646265Z"
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-21-004",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-007",
+      "createTime": "2026-10-21T19:53:41.086771961Z"
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-21-003",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-006",
+      "createTime": "2026-10-21T15:39:58.966956936Z"
+    }
+  ],
+  "readyRevision": "projects/docketstamp/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-22-001",
+  "condition": {
+    "type": "Ready",
+    "state": "CONDITION_SUCCEEDED",
+    "lastTransitionTime": "2026-10-22T16:53:17.649688Z"
+  },
+  "runtimeServiceAccount": "firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com",
+  "environment": [
+    {
+      "name": "STRIPE_SECRET_KEY",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/stripe-secret-key",
+        "version": "2"
+      },
+      "configured": true
+    },
+    {
+      "name": "STRIPE_WEBHOOK_SECRET",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/stripe-webhook-secret",
+        "version": "2"
+      },
+      "configured": true
+    },
+    {
+      "name": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/stripe-publishable-key",
+        "version": "2"
+      },
+      "configured": true
+    },
+    {
+      "name": "ADMIN_SESSION_SIGNING_KEY",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/admin-session-signing-key",
+        "version": "1"
+      },
+      "configured": true
+    },
+    {
+      "name": "LOB_DISPATCH_API_KEY",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/lob-secret",
+        "version": "2"
+      },
+      "configured": true
+    },
+    {
+      "name": "LOB_ADDRESS_VERIFICATION_KEY",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/lob-secret",
+        "version": "2"
+      },
+      "configured": true
+    },
+    {
+      "name": "LOB_WEBHOOK_SECRET",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/lob-webhook-scret",
+        "version": "1"
+      },
+      "configured": true
+    },
+    {
+      "name": "ENVIRONMENT",
+      "value": "production"
+    },
+    {
+      "name": "LOB_ENV",
+      "value": "live"
+    },
+    {
+      "name": "FIREBASE_PROJECT_ID",
+      "value": "docketstamp"
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+      "value": "docketstamp"
+    },
+    {
+      "name": "NEXT_PUBLIC_APP_URL",
+      "value": "https://docketstamp.com"
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_API_KEY",
+      "secretReference": {
+        "secret": "projects/937129689950/secrets/firebase-web-api-key",
+        "version": "1"
+      },
+      "configured": true
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+      "configured": true
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+      "configured": true
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+      "configured": true
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_APP_ID",
+      "value": "1:937129689950:web:f916267a40b9133dfcc5cf"
+    },
+    {
+      "name": "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID",
+      "configured": true
+    },
+    {
+      "name": "FIREBASE_CONFIG",
+      "configured": true
+    },
+    {
+      "name": "NG_TRUST_PROXY_HEADERS",
+      "configured": true
+    },
+    {
+      "name": "NG_ALLOWED_HOSTS",
+      "configured": true
+    }
+  ],
+  "indexes": [],
+  "secretMetadata": [
+    {
+      "name": "stripe-secret-key",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "2",
+      "classification": "live",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ],
+      "classificationMethod": "Application-compatible normalization; standard and restricted live Stripe keys are accepted. Confirmed again during prerequisite provisioning."
+    },
+    {
+      "name": "stripe-publishable-key",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "2",
+      "classification": "live",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "stripe-webhook-secret",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "2",
+      "classification": "valid-signing-format",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "lob-secret",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "2",
+      "classification": "live",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "admin-session-signing-key",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "1",
+      "classification": "configured",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "firebase-web-api-key",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "1",
+      "classification": "configured",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com",
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "lob-webhook-scret",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "1",
+      "classification": "configured",
+      "iamBindings": [
+        {
+          "role": "roles/secretmanager.secretAccessor",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.secretVersionManager",
+          "members": [
+            "serviceAccount:service-937129689950@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"
+          ]
+        },
+        {
+          "role": "roles/secretmanager.viewer",
+          "members": [
+            "serviceAccount:firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resend-key",
+      "exists": true,
+      "state": "ENABLED",
+      "version": "1",
+      "classification": "configured"
+    },
+    {
+      "name": "address-verification-evidence-secret",
+      "exists": false
+    }
+  ]
+}

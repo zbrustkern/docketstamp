@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    { "collectionGroup": "payment_facts_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "effectiveAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "business_events_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "occurredAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "business_events_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "sessionId", "order": "ASCENDING" }, { "fieldPath": "eventName", "order": "ASCENDING" }] },
+    { "collectionGroup": "postal_facts_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "occurredAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "postal_facts_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "orderId", "order": "ASCENDING" }] },
+    { "collectionGroup": "cost_records_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "effectiveAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "cost_records_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "orderId", "order": "ASCENDING" }] },
+    { "collectionGroup": "identity_classifications_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "environment", "order": "ASCENDING" }, { "fieldPath": "orderId", "order": "ASCENDING" }] },
+    { "collectionGroup": "business_outbox_v1", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "kind", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" }] }
+  ],
+  "fieldOverrides": []
+}

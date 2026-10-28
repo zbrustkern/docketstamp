@@ -6,7 +6,7 @@ import { STATUTORY_COMPLIANCE_DISCLOSURE } from "@/src/lib/docket/guardrails";
 export const metadata = {
   title: "UPL & Legal Disclaimer — DocketStamp",
   description:
-    "Statutory self-help disclosure, unauthorized practice of law (UPL) safe harbor, postal irreversibility, and deterministic template disclaimers for DocketStamp.",
+    "Statutory self-help disclosure, unauthorized practice of law (UPL) safe harbor, postal irreversibility, and standardized template disclaimers for DocketStamp.",
 };
 
 export default function DisclaimerPage() {
@@ -91,7 +91,7 @@ export default function DisclaimerPage() {
           <section className="space-y-3">
             <h2 className="font-serif text-lg font-bold text-white flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-slate-700 text-sky-400 text-xs font-mono flex items-center justify-center font-bold">3</span>
-              Deterministic User-Supplied Factual Parameters
+              Standardized User-Supplied Factual Parameters
             </h2>
             <p>
               Prepared documents combine facts supplied by the user and, when selected, recipient directory details with fixed wording from the chosen template. A template may include legal references supplied by DocketStamp; DocketStamp does not determine whether those references apply to a user's facts or situation.

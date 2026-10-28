@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import "./helpers/firebase-auth-test-verifier";
 import test, { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,13 +59,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'first_class',
           customerEmail: 'firstclass_user@example.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -89,13 +90,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'certified_user@example.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -116,13 +117,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified_return_receipt',
           customerEmail: 'err_user@example.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -177,13 +178,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req1 = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'tier_change_user@example.com',
-        }),
+        })),
       });
       const res1 = await lockAndIntentPost(req1);
       const data1 = await res1.json();
@@ -193,13 +194,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req2 = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'first_class',
           customerEmail: 'tier_change_user@example.com',
-        }),
+        })),
       });
       const res2 = await lockAndIntentPost(req2);
       const data2 = await res2.json();
@@ -268,13 +269,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'non-existent-template-slug',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'fail@example.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -351,13 +352,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'guest_buyer@example.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);
@@ -378,13 +379,13 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
           'Content-Type': 'application/json',
           Authorization: 'Bearer mock_token_alice@example.com',
         },
-        body: JSON.stringify({
+        body: JSON.stringify(withVerifiedLockFixture({
           slug: 'security-deposit-return-demand-letter',
           userValues: validTenantValues,
           signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
           tier: 'certified',
           customerEmail: 'alice@example.com',
-        }),
+        })),
       });
 
       const res = await lockAndIntentPost(req);

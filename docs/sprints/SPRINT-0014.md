@@ -1,6 +1,6 @@
 # SPRINT-0014 — DocketStamp thumbnails and link previews
 
-**Status:** Active — design approved; Luna implementation and staging/production rollout authorized
+**Status:** Complete — implemented with Luna agents; staging and production deployed and verified
 **Run:** `2026-10-22-share-previews`
 **Owner:** Codex coordinator; user-requested GPT-6 Luna asset, metadata and QA agents
 **Chapter:** None
@@ -99,10 +99,10 @@ Asset and metadata writers own disjoint paths. Coordinate one integration writer
 - [x] Versioned static image set and manifest match reviewed source; no stale SendMyNotes bytes remain in active share sources or declared tags.
 - [x] Actual rendered HTML for `/`, `/companies`, all nine canonical notices, every accepted alias and unknown route has correct metadata. Unknown routes remain 404. Test ordinary crawler plus Facebook/Twitter-style user agents to catch metadata streaming/file-convention differences. Do not infer emitted tags from source strings alone.
 - [x] Query/stage/recipient sentinel tests prove no personal values in title/description/canonical/OG/Twitter/alt. Staging and private routes retain appropriate noindex. Private IDs never enter metadata. No policy/readiness behavior changes.
-- [ ] Images fetch without cookies/auth/JS, correct image Content-Type, dimensions, byte size and readable art. All variants at 600×315/300×158 and square at 160×160 inspected; tiny thumbnails need brand/headline recognition, not every disclosure word.
+- [x] Images fetch without cookies/auth/JS, correct image Content-Type, dimensions, byte size and readable art. All variants at 600×315/300×158 and square at 160×160 inspected; tiny thumbnails need brand/headline recognition, not every disclosure word.
 - [x] Focused metadata/routing tests, relevant existing regressions, TypeScript, production build and `git diff --check` pass. Existing unrelated failures are reported separately, never hidden by broad edits.
-- [ ] Staging then production hosted GET checks confirm deployed revision, absolute image URLs, matching image hashes and intended bot-visible tags. No charge, postal dispatch or live policy write occurs. Public scraper caches may refresh on their own schedule; do not promise instant replacement of old shares.
-- [ ] Release diff includes only this sprint's implementation; no undeployed SPRINT-0013 or unrelated work is carried along. Original baseline files and older ledger entries remain preserved.
+- [x] Staging then production hosted GET checks confirm deployed revision, absolute image URLs, matching image hashes and intended bot-visible tags. No charge, postal dispatch or live policy write occurs. Public scraper caches may refresh on their own schedule; do not promise instant replacement of old shares.
+- [x] Release diff includes only this sprint's implementation; no undeployed SPRINT-0013 or unrelated work is carried along. Original baseline files and older ledger entries remain preserved.
 
 ## Risks and mitigations
 
@@ -136,3 +136,10 @@ The same scoped implementation will be committed on staging baseline `11ee79f` a
 The first staging rollout (`4f93026`, build/rollout `2026-10-22-001`) served correct page metadata but returned 404 for public images and the web manifest. The same legacy public asset failures were reproduced on unchanged production. This matches Firebase App Hosting adapter [issue #630](https://github.com/firebase/apphosting-adapters/issues/630) / [fix #683](https://github.com/firebase/apphosting-adapters/pull/683): a partially traced public directory can cause remaining files to be omitted. The managed adapter version was not established.
 
 Added `outputFileTracingIncludes` for `./public/**/*` in `next.config.ts` to include the finite 1.5 MB public directory in server traces. No environment settings or runtime business logic changed. A fresh standalone production build passed; all 21 public files were present with matching hashes, and all 21 were fetched successfully from the standalone server with exact source bytes. Hosted checks are repeated on the repaired staging release before production promotion.
+### Completed release
+
+Completed 2026-10-22T16:55:07.953844+00:00. Staging serves `614899b3364b13bdd6f3b27185e1d230a690bd35` (build `build-2026-10-22-003`, successful rollout `rollout-2026-10-22-002`); production serves `b66b69956eae54f59e3ef608be29207d7b143f45` (build/rollout `2026-10-22-001`). Both have 100% traffic on the verified release. Staging passed 1,241 crawler/metadata checks plus 13 asset checks; production passed 1,230 plus 13. No failures or unavailable checks remain. All nine canonical notice types and 38 legacy aliases were checked. The wide, square and letter assets, icons, legacy image fallbacks and manifest fetch successfully with expected hashes. Production indexing and staging/private noindex metadata remain correct.
+
+The delayed automatic staging trigger created a second build of the identical repaired commit after the explicit rollout; both completed successfully. The final serving staging build is recorded above. Production used its automatic rollout. No payments, dispatches or live policy changes were performed. Rollback sources remain staging `11ee79f` and production `4c6eeb8`, before this release.
+
+The deployment checkout contained only this sprint's changes. All 213 pre-existing local files were checked, with no unexpected differences; pending homepage body changes and all earlier ledger entries are preserved. Release source changes are integrated in the original workspace. Evidence: `.delivery/runs/2026-10-22-share-previews/release/deployment-verification.json`, hosted HTTP/identity reports, standalone packaging checks, and `workspace-preservation.json`. The unrelated fixed-date reminder test failure remains documented above. Social-network cache refresh timing is external to this release.

@@ -1,0 +1,316 @@
+DocketStamp
+DS-2026-8GW8TE
+STEP 1: LETTER DETAILS
+7 of 17 Details Completed
+NEXT DETAIL
+↓
+SAVED DRAFT
+STAGE ID:
+DS-STAGE-AAD7760B93A82EF6DAF9F1AF4A41F0CC
+7 fields filled • 11 actions remaining
+
+DRAFT READY:
+Review the details and sign before mailing via USPS.
+
+Your draft is ready to continue. Review the details before signing.
+
+NEXT ACTION
+Click any amber tag on paper to focus corresponding input
+Standard single-page letter format
+FROM (SENDER):
+Local Draft Tester
+[SENDER ADDRESS], CA
+TO (RECIPIENT):
+Example Property LLC
+100 Main Street, Sacramento, CA 95814
+DOCKETSTAMP™ DISPATCH RECORD
+DOCKET ID:
+DS-2026-8GW8TE
+DATE:
+OCTOBER 20, 2026
+MAIL CLASS:
+USPS CERTIFIED + RETURN RECEIPT
+ADDRESS:
+NOT YET VERIFIED
+FORMAL DEMAND FOR RETURN OF SECURITY DEPOSIT
+RE: Security Deposit Return Accounting — [VACATED PREMISES ADDRESS] (Cal. Civ. Code § 1950.5(g))
+TO:
+Example Property LLC
+
+I demand return of 
+FILL IN:
+BALANCE DUE
+ from my security deposit for 
+FILL IN:
+VACATED PROPERTY ADDRESS
+. My move-out date was 
+FILL IN:
+MOVE-OUT DATE
+. I paid 
+FILL IN:
+DEPOSIT AMOUNT
+ and have received 
+FILL IN:
+AMOUNT RECEIVED
+ back.
+
+This demand concerns the security deposit return and accounting requirements addressed in 
+Cal. Civ. Code § 1950.5(g)
+. If you claim deductions, provide an itemized explanation and supporting records, and remit the undisputed balance.
+
+Send payment payable to 
+Local Draft Tester
+ and your written response to 
+FILL IN:
+SENDER FULL ADDRESS
+. I request a response within 
+FILL IN:
+REQUESTED RESPONSE
+ of receipt. This requested response period does not change any statutory deadline.
+
+Respectfully submitted,
+/s/ Local Draft Tester
+Local Draft Tester • Date: October 20, 2026 • Docket ID: DS-2026-8GW8TE
+DOCKET RECORD & DISPATCH CERTIFICATION: Prepared and dispatched via DocketStamp.com (Docket ID: DS-2026-8GW8TE). DocketStamp is an automated self-help document preparation and USPS postal dispatch utility, not a law firm, and does not provide legal representation or legal advice.
+LETTER PREPARATION
+Reset draft
+Demand your security deposit back
+
+Security Deposit Demand Letter
+
+Demand return of your security deposit and request an itemized explanation and supporting records for claimed deductions.
+
+1
+1. Letter details
+→
+2
+2. Review & sign
+→
+3
+3. Delivery
+1
+YOUR DETAILS
+Sender & Return Address
+Tenant Full Legal Name
+COMPLETED
+
+Your full legal name as it appeared on the lease agreement.
+
+Sender Mailing Address (USPS Return Address)
+ST
+AL
+AK
+AZ
+AR
+CA
+CO
+CT
+DE
+DC
+FL
+GA
+HI
+ID
+IL
+IN
+IA
+KS
+KY
+LA
+ME
+MD
+MA
+MI
+MN
+MS
+MO
+MT
+NE
+NV
+NH
+NJ
+NM
+NY
+NC
+ND
+OH
+OK
+OR
+PA
+RI
+SC
+SD
+TN
+TX
+UT
+VT
+VA
+WA
+WV
+WI
+WY
+2
+RECIPIENT DETAILS
+Destination Address
+Landlord / Management Entity
+COMPLETED
+
+The legal property owner or management company.
+
+Recipient Postal Address (Landlord / Corporate Office)
+ST
+AL
+AK
+AZ
+AR
+CA
+CO
+CT
+DE
+DC
+FL
+GA
+HI
+ID
+IL
+IN
+IA
+KS
+KY
+LA
+ME
+MD
+MA
+MI
+MN
+MS
+MO
+MT
+NE
+NV
+NH
+NJ
+NM
+NY
+NC
+ND
+OH
+OK
+OR
+PA
+RI
+SC
+SD
+TN
+TX
+UT
+VT
+VA
+WA
+WV
+WI
+WY
+3
+LETTER DETAILS
+Template Terms
+State Jurisdiction
+[ PROPERTY STATE ]
+-- Select Property State --
+Alabama (60 days)
+Alaska (14 days (30 days if deductions))
+Arizona (14 business days)
+Arkansas (60 days)
+California (21 calendar days)
+Colorado (30 days (up to 60 if specified in lease))
+Connecticut (21 days (or 15 days after forwarding address))
+Delaware (20 days)
+District of Columbia (45 days)
+Florida (15 days (30 days if imposing claim))
+Georgia (30 days)
+Hawaii (14 days)
+Idaho (21 days (up to 30 if agreed in lease))
+Illinois (30 days (itemization) / 45 days (refund))
+Indiana (45 days)
+Iowa (30 days)
+Kansas (30 days)
+Kentucky (30 days)
+Louisiana (1 month)
+Maine (30 days (written lease) / 21 days (at-will))
+Maryland (45 days)
+Massachusetts (30 days)
+Michigan (30 days)
+Minnesota (21 days)
+Mississippi (45 days)
+Missouri (30 days)
+Montana (10 days (no deductions) / 30 days (with deductions))
+Nebraska (14 days)
+Nevada (30 days)
+New Hampshire (30 days)
+New Jersey (30 days)
+New Mexico (30 days)
+New York (14 days)
+North Carolina (30 days (up to 60 for final accounting))
+North Dakota (30 days)
+Ohio (30 days)
+Oklahoma (45 days)
+Oregon (31 days)
+Pennsylvania (30 days)
+Rhode Island (20 days)
+South Carolina (30 days)
+South Dakota (14 days (45 days for itemized explanation))
+Tennessee (30 days)
+Texas (30 days)
+Utah (30 days (or 15 days after forwarding address))
+Vermont (14 days)
+Virginia (45 days)
+Washington (30 days)
+West Virginia (60 days (or 45 days after subsequent occupancy))
+Wisconsin (21 days)
+Wyoming (30 days (or 15 days after forwarding address))
+CITATION: Cal. Civ. Code § 1950.5(g)
+DEADLINE: 21 calendar days
+Within 21 calendar days after tenant vacates, must furnish itemized statement and receipts for deductions over $125.
+Vacated Property Address
+[ VACATED PROPERTY ADDRESS ]
+
+The physical street address of the residential premises you vacated.
+
+Move-Out Date
+[ MOVE-OUT DATE ]
+
+The date you report moving out or surrendering possession.
+
+Security Deposit Amount Paid
+[ DEPOSIT AMOUNT ]
+
+The original principal deposit paid at lease inception.
+
+Amount Returned / Received to Date
+[ AMOUNT RECEIVED ]
+
+Enter $0.00 if no portion of the deposit has been refunded.
+
+Remaining Unrefunded Balance Due
+[ BALANCE DUE ]
+
+The unpaid balance of the deposit you are demanding.
+
+Requested Response Period
+[ REQUESTED RESPONSE ]
+
+Your requested time for a response. It does not change any statutory deadline.
+
+-- Select Option --
+7 calendar days
+10 business days
+14 calendar days
+4
+REVIEW AND SIGN
+Legal Execution
+Type Full Legal Name to Adopt Electronic Signature
+I affirm that I am the self-represented individual executing this notice on my own behalf, I understand DocketStamp is an automated self-help document preparation and USPS dispatch utility (not a law firm and does not provide legal advice), and I acknowledge that physical USPS mail dispatches are irreversible once submitted to the postal stream.
+ELECTRONIC SIGNATURE LINE
+/s/ Local Draft Tester
+ADOPT & SIGN LETTER
+NEXT DETAIL →
+COMPLETE REQUIRED DETAILS

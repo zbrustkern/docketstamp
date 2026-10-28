@@ -29,6 +29,17 @@ env:
       - BUILD
       - RUNTIME
 
+  - variable: ADDRESS_VERIFICATION_EVIDENCE_SECRET
+    secret: address-verification-evidence-secret
+    availability:
+      - RUNTIME
+
+  # Outbound correspondence uses the production project's own server-only key.
+  - variable: RESEND_API_KEY
+    secret: resend-key
+    availability:
+      - RUNTIME
+
   - variable: ADMIN_SESSION_SIGNING_KEY
     secret: admin-session-signing-key
     availability:

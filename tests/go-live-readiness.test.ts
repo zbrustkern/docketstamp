@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 /**
  * DocketStamp Go-Live Readiness Verification Test Suite
  *
@@ -142,7 +143,7 @@ async function runGoLiveReadinessSuite() {
   const lockReq = new NextRequest("http://localhost:3000/api/docket/lock-and-intent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    body: JSON.stringify(withVerifiedLockFixture({
       slug: "service-cancellation-request",
       userValues: {
         senderFullName: "John Doe",
@@ -160,7 +161,7 @@ async function runGoLiveReadinessSuite() {
         recipientState: "CA",
         recipientZip: "90012",
       },
-    }),
+    })),
   });
   const lockRes = await lockAndIntentRoute(lockReq);
   assert(lockRes.status === 400, "POST /api/docket/lock-and-intent rejects Planet Fitness with HTTP 400");

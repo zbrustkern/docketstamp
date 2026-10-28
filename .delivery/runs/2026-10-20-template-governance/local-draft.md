@@ -1,0 +1,7 @@
+# Proposed design
+
+A dedicated versioned policy overlay controls preparation and checkout separately from immutable template source. An admin Templates & coverage panel lists compiled templates, source/review evidence, current content digest, availability, global and per-template residence/property rules. Global denial takes precedence; overlapping allowlists intersect. Reviews may be required by operator policy and become stale after content changes or expiration. No legal prose editor.
+
+Fresh policy reads and Firestore transactions gate staged-draft persistence and frozen-order creation. The successful transaction is the cutoff: already locked checkouts/payments continue the original snapshot even if an operator saves a later pause. Paid historical rendering/dispatch must not reinterpret mutable content or policy. Storage errors fail closed for new preparation/lock. Public browsing gets a redacted policy projection and conditional location prompt; stage/MCP/direct lock enforce independently.
+
+Audit mutations atomically with policy revision/CAS and idempotency; owner-level controls.manage plus same-origin for human requests. Customer residence is explicit, not mailing address; tenant property state is separately declared. Metadata is excluded from letter interpolation. Restriction-active missing state requires an answer before preparation, and stages remain partial for ordinary letter fields. No autoactivation of prior legal hold recommendations.

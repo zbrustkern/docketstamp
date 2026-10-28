@@ -7,6 +7,9 @@ import { getFreeObligation } from "./free-authority";
 import { resolvePostalProvenance } from "@/lib/order-record";
 import { validateFrozenNoticeOrder } from "@/lib/frozen-notice-order";
 import { validatePersonalSender } from "@/lib/order-processor";
+import { assertFulfillmentDispatchAllowed } from "@/src/lib/checkout-attempts/contract";
+import type { CheckoutAttemptDispatchView } from "@/src/lib/checkout-attempts/contract";
+import type { Order } from "@/lib/types";
 
 function lobAddress(address: any): LobLetterDispatchParams["to"] {
   const fullName = [address.firstName, address.lastName].filter(Boolean).join(" ");
@@ -36,6 +39,17 @@ export async function resolvePostalObligation(orderId: string): Promise<Authoriz
     verified: true, orderId, version: proof.snapshotVersion, environment: proof.environment || proof.paymentFact?.environment,
     ...(proof.paymentFact ? { paymentFactId: proof.paymentFact.factId || order.paymentFactId } : {}),
     ...(proof.freeAuthorizationFactId ? { freeAuthorizationFactId: proof.freeAuthorizationFactId } : {}),
+    ...((order as Order & {
+      checkoutAttemptId?: string; checkoutAttemptState?: string; checkoutAttemptSupersededBy?: string; checkoutPaymentIntentId?: string;
+    }).checkoutAttemptId || (order as any).checkoutAttemptState ? {
+      checkoutAttempt: {
+        orderId,
+        attemptId: (order as any).checkoutAttemptId,
+        state: (order as any).checkoutAttemptState,
+        supersededBy: (order as any).checkoutAttemptSupersededBy,
+        paymentIntentId: (order as any).checkoutPaymentIntentId,
+      } as CheckoutAttemptDispatchView,
+    } : {}),
     material: {
       documentHtml, snapshotHash: proof.snapshotHash, snapshotVersion: proof.snapshotVersion,
       docketId: order.docketId || order.docketNumber, noticeId: order.noticeId,
@@ -69,6 +83,7 @@ export type AuthorizedObligation = {
   environment: AttemptAuthority["environment"];
   paymentFactId?: string;
   freeAuthorizationFactId?: string;
+  checkoutAttempt?: CheckoutAttemptDispatchView;
   material: LockedDispatchMaterial;
 };
 
@@ -76,7 +91,7 @@ export type ObligationResolver = (orderId: string) => Promise<AuthorizedObligati
 export type LobSubmitter = (params: LobLetterDispatchParams) => ReturnType<typeof dispatchDocketLetter>;
 
 export type PostalDispatchResult =
-  | { status: "accepted"; attemptId: string; providerLetterId: string; mode: string }
+  | { status: "accepted"; attemptId: string; providerLetterId: string; mode: string; trackingNumber?: string; trackingUrl?: string; expectedDeliveryDate?: string }
   | { status: "simulated"; attemptId: string; mode: string }
   | { status: "uncertain"; attemptId: string; mode: string; diagnostic: "PROVIDER_RESULT_AMBIGUOUS" }
   | { status: "blocked"; reason: string };
@@ -97,6 +112,14 @@ export async function dispatchAuthorizedObligation(input: {
   if (obligation.orderId !== input.orderId) return { status: "blocked", reason: "ORDER_AUTHORITY_MISMATCH" };
   if (obligation.environment !== serverEnvironment()) return { status: "blocked", reason: "ENVIRONMENT_SCOPE_MISMATCH" };
   if (Boolean(obligation.paymentFactId) === Boolean(obligation.freeAuthorizationFactId)) return { status: "blocked", reason: "EXACTLY_ONE_AUTHORITY_REQUIRED" };
+  try {
+    assertFulfillmentDispatchAllowed(obligation.checkoutAttempt || { orderId: input.orderId });
+  } catch (error) {
+    return {
+      status: "blocked",
+      reason: error instanceof Error ? error.message : "CHECKOUT_ATTEMPT_DISPATCH_BLOCKED",
+    };
+  }
   const material = obligation.material;
   if (!material.documentHtml || !material.snapshotHash || !material.snapshotVersion || !material.docketId || !material.noticeId) {
     return { status: "blocked", reason: "FROZEN_CANONICAL_SNAPSHOT_REQUIRED" };
@@ -151,8 +174,17 @@ export async function dispatchAuthorizedObligation(input: {
     return { status: "simulated", attemptId: claim.attempt.attemptId, mode };
   }
   if (submitted.success && submitted.letterId && submitted.isSimulatedMock !== true && submitted.mode === mode) {
-    await finishDispatchAttempt({ attemptId: claim.attempt.attemptId, state: "accepted", providerLetterId: submitted.letterId, nowMs: input.nowMs });
-    return { status: "accepted", attemptId: claim.attempt.attemptId, providerLetterId: submitted.letterId, mode };
+    await finishDispatchAttempt({
+      attemptId: claim.attempt.attemptId, state: "accepted", providerLetterId: submitted.letterId,
+      trackingNumber: submitted.trackingNumber, trackingUrl: submitted.url,
+      expectedDeliveryDate: submitted.expectedDeliveryDate, nowMs: input.nowMs,
+    });
+    return {
+      status: "accepted", attemptId: claim.attempt.attemptId, providerLetterId: submitted.letterId, mode,
+      ...(submitted.trackingNumber ? { trackingNumber: submitted.trackingNumber } : {}),
+      ...(submitted.url ? { trackingUrl: submitted.url } : {}),
+      ...(submitted.expectedDeliveryDate ? { expectedDeliveryDate: submitted.expectedDeliveryDate } : {}),
+    };
   }
 
   // Lob errors do not currently distinguish a definitive pre-acceptance rejection

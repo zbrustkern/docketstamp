@@ -1,0 +1,29 @@
+{
+  "authorization": "User requested staging-to-production promotion on October 27, 2026.",
+  "stagingSource": "a6f36854c8403f78d645e8e4e71d1d1fbee3376e",
+  "productionBaseline": "b66b69956eae54f59e3ef608be29207d7b143f45",
+  "rollbackBuild": "build-2026-10-22-001",
+  "project": "docketstamp",
+  "backend": "docketstamp",
+  "region": "us-central1",
+  "origin": "https://docketstamp.com",
+  "promotion": "Non-force push of merge commit to main; automatic Firebase App Hosting rollout.",
+  "applicationParity": "Application source is identical to the tested staging commit; only production secret bindings and historical release-document conflict resolution differ.",
+  "configuration": [
+    "Dedicated production address evidence signing secret bound at runtime",
+    "Existing production Resend key bound at runtime; backend access granted",
+    "Production live Stripe/Lob keys retained; staging overrides remain staging-only"
+  ],
+  "database": "Nine additive composite indexes; no deletions, customer data migrations, report rebuilds, or historical snapshot changes.",
+  "validation": {
+    "tapTests": 269,
+    "tapFailures": 0,
+    "fullNpmTest": "passed",
+    "typecheck": "passed",
+    "credentialHygiene": "passed",
+    "productionBuild": "passed",
+    "buildIsolation": "Placeholder credentials only; Firestore SDK points at unused local emulator port."
+  },
+  "releaseVerification": "Wait for indexes READY, successful hosting rollout, 100 percent traffic and signed live-CASS smoke verification.",
+  "limitations": "No real payment, letter dispatch, email, authenticated account/admin action, scheduled worker, or provider-backed crash/recovery rehearsal is part of this promotion."
+}

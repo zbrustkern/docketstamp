@@ -109,7 +109,7 @@ export interface NoticeFieldConfig {
   inputType: 'text' | 'currency' | 'date' | 'state_select' | 'select' | 'textarea_short';
   placeholder?: string;
   helperText?: string;          // UPL-safe factual guidance
-  options?: { label: string; value: string }[]; // Used for deterministic dropdowns
+  options?: { label: string; value: string }[]; // Used for standardized dropdown options
   maxLength?: number;           // Enforces 1-page physical overflow limit
 }
 
@@ -132,9 +132,11 @@ export interface NoticeTemplateDefinition {
   };
   fields: NoticeFieldConfig[];
   zodSchema: z.ZodObject<any>;
-  bodyParagraphs: string[];     // Array of deterministic paragraphs with {{variable}} tokens
+  bodyParagraphs: string[];     // Array of standardized paragraphs with {{variable}} tokens
   enclosuresLine?: string;      // Optional formal footer notation
 }
+
+export type DocumentTemplateDefinition = NoticeTemplateDefinition;
 
 export interface PricingTierMetadata {
   id: MailTierId;

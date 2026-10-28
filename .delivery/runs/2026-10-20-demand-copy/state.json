@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-20-demand-copy",
+  "workflow": "df-sprint-plan + df-sprint-execute",
+  "project_root": "/Users/zeke/code/DocketStamp",
+  "stage": "complete",
+  "status": "complete",
+  "owner": "Codex coordinator",
+  "participants": [
+    "plan_critique: gpt-6-luna medium",
+    "state_launch_review: gpt-6.1-sol high",
+    "demand_copy_implementation: gpt-6-luna high, isolated /private/tmp/docketstamp-sprint-0011-worker"
+  ],
+  "source_revision": "4225135eb5bc0d1b35407851a809a69480a571c6",
+  "inputs": [
+    "AGENTS.md",
+    "docs/DOCKETSTAMP_MASTER_BUILD_SPEC.md",
+    "docs/DOCKETSTAMP_AGENTIC_EXPANSION.md",
+    "intent.md"
+  ],
+  "artifacts": [
+    "docs/sprints/SPRINT-0011.md",
+    "plan-critique.md",
+    "handoff-antigravity.md",
+    "verification.md",
+    "implementation-review.md",
+    "implementation-report.md",
+    "docs/legal/STATE_LAUNCH_REVIEW_2026-10-20.md"
+  ],
+  "acceptance_criteria": [
+    "AC1",
+    "AC2",
+    "AC3",
+    "AC4",
+    "AC5",
+    "AC6",
+    "AC7"
+  ],
+  "checks": [
+    "175 tests passed",
+    "TypeScript passed",
+    "90/90 Chromium print cases",
+    "Desktop/mobile UI passed",
+    "12 unrelated-file fingerprints unchanged",
+    "git diff --check passed"
+  ],
+  "open_issues": [
+    "State-specific applicability/compliance and unreviewed jurisdictions remain launch gates",
+    "Paid credit-dispute cartridge requires focused CROA/state-CSO classification review",
+    "51-jurisdiction deposit dataset not fully legally verified",
+    "No exclusions activated; launch decision and enforcement implementation remain separate"
+  ],
+  "iteration": 1,
+  "iteration_limit": 3,
+  "next_action": "User review of local changes and launch recommendations; separate legal eligibility and exclusion implementation follow-up",
+  "updated_at": "2026-10-21T00:49:31.179450+00:00"
+}

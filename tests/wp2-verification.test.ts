@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 /**
  * Work Package 2 (WP-2) Verification Gate
  *
@@ -219,14 +220,14 @@ describe('WP-2 Verification Gate', () => {
         const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: JSON.stringify(withVerifiedLockFixture({
             slug: securityDepositNotice.slug,
             userValues,
             signatureAdoption: { adopted: true, affirmed: true, signerName: userValues.senderFullName },
             tier,
             docketId,
             customerEmail: 'parity-fixture@example.com',
-          }),
+          })),
         });
         const response = await lockAndIntentPost(req);
         if (response.status !== 200) {

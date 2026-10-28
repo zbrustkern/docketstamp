@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-26 America/Chicago",
+  "method": "Read-only DOM bounds in Codex IAB of generated local renderer stress fixtures; identical measured bounds across all three mailing tiers.",
+  "pageCssPixels": [
+    816,
+    1056
+  ],
+  "bodyBottom": 979.2,
+  "footerTop": 989.05,
+  "rows": [
+    {
+      "notice": "tenant-notice-of-intent-to-vacate",
+      "tiersMeasured": 3,
+      "signatureBottom": 783.72,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "security-deposit-accounting-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 935.72,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "tenant-repair-and-maintenance-notice",
+      "tiersMeasured": 3,
+      "signatureBottom": 859.72,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "credit-report-dispute-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 1030.72,
+      "fitsMeasuredBody": false
+    },
+    {
+      "notice": "debt-dispute-information-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 776.5,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "service-cancellation-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 721,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "product-complaint-refund-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 878.72,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "arbitration-opt-out-procedure-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 814.5,
+      "fitsMeasuredBody": true
+    },
+    {
+      "notice": "personal-data-deletion-request",
+      "tiersMeasured": 3,
+      "signatureBottom": 757.5,
+      "fitsMeasuredBody": true
+    }
+  ],
+  "limitations": [
+    "Finite fixtures only; not a provider proof.",
+    "All long credit fixtures now blocked by preflight; close max deposit fixtures conservatively blocked too.",
+    "Ordinary browser checkout separately reviewed; actual mobile/iOS and Lob proofs pending."
+  ]
+}

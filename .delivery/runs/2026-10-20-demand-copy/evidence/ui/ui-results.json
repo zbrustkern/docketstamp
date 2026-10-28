@@ -1,0 +1,30 @@
+[
+  {
+    "surface": "home",
+    "width": 1280,
+    "overflow": false,
+    "headline": "Make it formal. We’ll print and mail it.",
+    "continueVisible": true
+  },
+  {
+    "surface": "workspace",
+    "width": 1280,
+    "overflow": false,
+    "title": "Security Deposit Demand Letter | USPS Mail | DocketStamp",
+    "hasDemandHeading": true
+  },
+  {
+    "surface": "home",
+    "width": 390,
+    "overflow": false,
+    "headline": "Make it formal. We’ll print and mail it.",
+    "continueVisible": true
+  },
+  {
+    "surface": "workspace",
+    "width": 390,
+    "overflow": false,
+    "title": "Security Deposit Demand Letter | USPS Mail | DocketStamp",
+    "hasDemandHeading": true
+  }
+]

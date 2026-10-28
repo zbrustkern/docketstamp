@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "checkedAt": "2026-10-21T23:25:15.981Z",
+  "base": "http://127.0.0.1:3115",
+  "scenarios": [
+    {
+      "check": "library and home desktop",
+      "passed": true,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "letters": 9,
+      "cancellationStartingPoints": 6,
+      "keyboardFocus": {
+        "style": "solid",
+        "width": "2px"
+      }
+    },
+    {
+      "check": "library and home mobile",
+      "passed": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "letters": 9,
+      "cancellationStartingPoints": 6,
+      "keyboardFocus": {
+        "style": "solid",
+        "width": "2px"
+      }
+    },
+    {
+      "check": "library and home narrow",
+      "passed": true,
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "letters": 9,
+      "cancellationStartingPoints": 6,
+      "keyboardFocus": {
+        "style": "solid",
+        "width": "2px"
+      }
+    }
+  ],
+  "pageErrors": [],
+  "forbiddenRequests": [],
+  "blockedTelemetryRequests": 15
+}

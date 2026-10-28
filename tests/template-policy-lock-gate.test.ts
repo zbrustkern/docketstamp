@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { NextRequest } from 'next/server';
@@ -20,10 +21,10 @@ test('a frozen order survives a later pause while a new lock is denied before pa
   };
   const makeRequest = (customerEmail: string) => new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
+    body: JSON.stringify(withVerifiedLockFixture({
       slug: 'security-deposit-accounting-request', tier: 'certified', customerEmail, userValues,
       signatureAdoption: { adopted: true, affirmed: true, signerName: 'Taylor Morgan' },
-    }),
+    })),
   });
   const originalLog = console.log;
   let mockPaymentStarts = 0;

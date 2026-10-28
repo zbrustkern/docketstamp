@@ -1,0 +1,35 @@
+{
+  "status": "preview_only_awaiting_review",
+  "images": [
+    {
+      "name": "home",
+      "source": "design/home.html",
+      "path": "design/home.png",
+      "width": 1200,
+      "height": 630,
+      "bytes": 97669,
+      "sha256": "05b44b127ef40dfd6ac597f3e214ff134ebdd99f5b3dc7fe7c0daf4d4d484cab",
+      "type": "image/png"
+    },
+    {
+      "name": "square",
+      "source": "design/square.html",
+      "path": "design/square.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 116191,
+      "sha256": "d97d269da3469ef405612d82d8a03e5c4fa3e72021fe1d91e2ecd2bf459f42e4",
+      "type": "image/png"
+    },
+    {
+      "name": "cancellation",
+      "source": "design/cancellation.html",
+      "path": "design/cancellation.png",
+      "width": 1200,
+      "height": 630,
+      "bytes": 105909,
+      "sha256": "b2decfde5fa1a44be6347f94b8f4ccf026df11998f8d450678b52f155dd015b8",
+      "type": "image/png"
+    }
+  ]
+}

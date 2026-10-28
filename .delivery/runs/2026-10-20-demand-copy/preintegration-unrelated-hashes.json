@@ -1,0 +1,14 @@
+{
+  "app/admin/feature-flags/page.tsx": "76d7b099ae114a6d408688cccdb86c885194f582cca49945dd61dc1e4fcce170",
+  "app/admin/page.tsx": "cbd5f887335878d7b822358ae5619a0398f26c34b534eacaf20dec764d65ba59",
+  "app/api/admin/console/controls/route.ts": "c278077ef77f37d59d49a61ae6b1b84cae34718b3ef791c6c9e95702d548c5a5",
+  "app/api/admin/feature-flags/route.ts": "deleted",
+  "app/api/feature-flags/route.ts": "deleted",
+  "components/admin/AdminFeatureFlagsTab.tsx": "deleted",
+  "docs/admin-console/REVIEW.md": "72d53672c781991258a2323f3376d14d3f90b0e5fc897f989dcd9bf0a43069a1",
+  "docs/legacy-compatibility.json": "dcb66727eafa3f79884b1ddf0cd3e8e6988ad9d19cb4fbea34e718587a817113",
+  "lib/feature-flags.ts": "9d7a4e9a00310f868ce7cb0297fa6cd5f0cd8f581af5d4a1fe79e2c10aae35cf",
+  "lib/types.ts": "e8d28b5cd8a21231b275da51f9329f1cc9d3ecbc72f67f3ad4c4c8dc2af1ae1e",
+  "package.json": "deb0f75a4bf57342e75042f001f0e3f32da66510832bb65af4bb310d55613b99",
+  "tests/feature-flags.test.ts": "deleted"
+}

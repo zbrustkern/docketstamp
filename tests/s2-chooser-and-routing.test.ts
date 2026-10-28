@@ -81,56 +81,56 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
         {
           slug: 'security-deposit-accounting-request',
           promptSlug: 'security-deposit-return-demand-letter',
-          displayTitle: 'Demand a deposit accounting and any balance due',
-          subtitle: 'Demand an itemized accounting and request any balance you believe remains due.',
+          displayTitle: 'Demand your security deposit back',
+          subtitle: 'Demand full return of your security deposit and an itemized accounting of any deductions.',
         },
         {
           slug: 'credit-report-dispute-request',
           promptSlug: 'credit-bureau-dispute-letter-fcra-611',
-          displayTitle: 'Dispute an error on your credit report',
-          subtitle: 'Ask the credit bureau to investigate information you identify as inaccurate.',
+          displayTitle: 'Dispute a credit-report error',
+          subtitle: 'Demand investigation and removal or correction of inaccurate credit report tradelines under FCRA §611.',
         },
         {
           slug: 'debt-dispute-information-request',
           promptSlug: 'debt-validation-demand-letter-fdcpa-809',
           displayTitle: 'Dispute a debt and demand verification',
-          subtitle: 'Dispute a collection claim and demand written verification; legal protections depend on coverage and timing.',
+          subtitle: 'Formally dispute alleged debts and demand written verification under FDCPA §809.',
         },
         {
           slug: 'service-cancellation-request',
           promptSlug: 'contract-membership-cancellation-notice',
           displayTitle: 'Cancel a service or policy in writing',
-          subtitle: 'Give written notice requesting cancellation and ask for confirmation of the effective date.',
+          subtitle: 'Formally terminate contracts, policies, or subscriptions with written proof of cancellation and billing revocation.',
         },
         {
           slug: 'tenant-repair-and-maintenance-notice',
           promptSlug: 'notice-of-intent-to-withhold-or-repair-and-deduct',
           displayTitle: 'Demand repairs from your landlord',
-          subtitle: 'Describe the condition you report, demand repairs, and request a written schedule.',
+          subtitle: 'Formally notify your landlord of defective conditions and demand a written repair schedule.',
         },
         {
           slug: 'tenant-notice-of-intent-to-vacate',
           promptSlug: 'lease-termination-non-renewal-notice',
           displayTitle: 'Give formal move-out notice',
-          subtitle: 'Tell your landlord when you plan to move out; check your lease and applicable rules for requirements.',
+          subtitle: 'Formally notify your landlord of your move-out date and provide your forwarding address for deposit return.',
         },
         {
           slug: 'product-complaint-refund-request',
           promptSlug: 'smart-device-degraded-functionality-refund-demand',
-          displayTitle: 'Demand a refund for a product or service issue',
-          subtitle: 'Describe what happened and demand a refund; this does not satisfy an agreement-specific dispute process.',
+          displayTitle: 'Demand a refund for removed or restricted features',
+          subtitle: 'Formally demand a refund for degraded hardware functionality or paywalled features prior to formal dispute resolution.',
         },
         {
           slug: 'arbitration-opt-out-procedure-request',
           promptSlug: 'arbitration-opt-out-notice-30-day',
-          displayTitle: 'Ask about arbitration terms and opt-out steps',
-          subtitle: 'Request the agreement and any procedure; the letter does not exercise an opt-out.',
+          displayTitle: 'Send an arbitration opt-out notice',
+          subtitle: 'Formally opt out of mandatory binding arbitration and class-action waivers.',
         },
         {
           slug: 'personal-data-deletion-request',
           promptSlug: 'ccpa-gdpr-data-deletion-opt-out-request',
           displayTitle: 'Demand deletion of your personal data',
-          subtitle: 'Demand deletion and ask the company to identify any verification or designated submission process.',
+          subtitle: 'Formally demand statutory deletion of personal, health, and biometric data and revoke consent for AI profiling.',
         },
       ];
 
@@ -268,7 +268,7 @@ describe('S2 Chooser and Routing Acceptance Gate', () => {
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[1].label,
-        'Ask about arbitration terms and opt-out steps'
+        'Send an arbitration opt-out notice'
       );
       assert.equal(
         HARDWARE_OEM_PURPOSE_OPTIONS[2].label,

@@ -5,6 +5,7 @@ import { dispatchAuthorizedObligation, resolvePostalObligation } from "@/lib/adm
 import { validateFrozenNoticeOrder } from "@/lib/frozen-notice-order";
 import { validatePersonalSender } from "@/lib/order-processor";
 import { readOrderRecord } from "@/lib/order-record";
+import { drainAcceptedDispatchEffects } from "@/lib/admin-console/finance/authority";
 
 const ALREADY_DISPATCHING = new Set(["DISPATCHING", "PROCESSING_DISPATCH", "MAILED", "IN_TRANSIT", "DELIVERED"]);
 
@@ -39,12 +40,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "The promotional authorization does not match this order." }, { status: 400 });
     }
     if (ALREADY_DISPATCHING.has(order.status)) {
-      return NextResponse.json({ success: true, orderId, status: order.status, lobLetterId: order.lobLetterId, alreadyProcessed: true, viewToken: order.viewToken });
+      const freeAuthorizationFactId = (order as any).freeAuthorizationFactId;
+      const followupStatus = typeof freeAuthorizationFactId === "string"
+        ? await drainAcceptedDispatchEffects({ orderId, authority: { freeAuthorizationFactId } })
+        : "ACCEPTED_AUTHORITY_MISSING";
+      return NextResponse.json({ success: true, orderId, status: order.status, lobLetterId: order.lobLetterId, alreadyProcessed: true, followupStatus, viewToken: order.viewToken });
     }
 
     const actorId = `customer:${order.userId || order.id}`;
     const evidenceRef = `checkout:promo:${order.discountCode}`;
-    await authorizeFreeOrder(orderId, { kind: "promo", evidenceRef, actorId });
+    const freeAuthorization = await authorizeFreeOrder(orderId, { kind: "promo", evidenceRef, actorId });
 
     const result = await dispatchAuthorizedObligation({
       orderId,
@@ -61,7 +66,8 @@ export async function POST(req: NextRequest) {
         postalProviderReference: result.providerLetterId,
         fulfillmentError: undefined,
       });
-      return NextResponse.json({ success: true, orderId, status: "PROCESSING_DISPATCH", lobLetterId: result.providerLetterId, viewToken: order.viewToken });
+      const followupStatus = await drainAcceptedDispatchEffects({ orderId, authority: { freeAuthorizationFactId: freeAuthorization.authorizationId } });
+      return NextResponse.json({ success: true, orderId, status: "PROCESSING_DISPATCH", lobLetterId: result.providerLetterId, followupStatus, viewToken: order.viewToken });
     }
     if (result.status === "simulated") {
       await updateOrderStatus(orderId, { status: "QUEUED_FOR_FULFILLMENT", fulfillmentError: "Postal dispatch was simulated; no USPS mailing was created." });
@@ -72,6 +78,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, orderId, status: "QUEUED_FOR_FULFILLMENT", code: "POSTAL_RESULT_AMBIGUOUS" }, { status: 202 });
     }
     if (result.status === "blocked") {
+      if (result.reason === "ALREADY_ACCEPTED") {
+        const followupStatus = await drainAcceptedDispatchEffects({ orderId, authority: { freeAuthorizationFactId: freeAuthorization.authorizationId } });
+        return NextResponse.json({ success: true, orderId, status: "PROCESSING_DISPATCH", alreadyProcessed: true, followupStatus, viewToken: order.viewToken });
+      }
       return NextResponse.json({ success: false, orderId, status: result.reason, error: "Free order is not authorized for postal dispatch." }, { status: 409 });
     }
     return NextResponse.json({ success: false, orderId, error: "Postal dispatch result was not recognized." }, { status: 500 });

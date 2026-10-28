@@ -1,7 +1,7 @@
 /**
  * Master document template registry and postal service metadata
  *
- * Exports deterministic document templates and three USPS mailing service options.
+ * Exports standardized document templates and three USPS mailing service options.
  */
 
 import { NoticeTemplateDefinition, MailTierId, PricingTierMetadata } from '../types';
@@ -27,7 +27,7 @@ export {
   biometricPrivacyDeletionNotice,
 };
 
-export const ALL_NOTICE_CARTRIDGES: NoticeTemplateDefinition[] = [
+export const ALL_DOCUMENT_TEMPLATES: NoticeTemplateDefinition[] = [
   intentToVacateNotice,
   securityDepositNotice,
   tenantRepairNotice,
@@ -38,6 +38,9 @@ export const ALL_NOTICE_CARTRIDGES: NoticeTemplateDefinition[] = [
   arbitrationOptOutNotice,
   biometricPrivacyDeletionNotice,
 ];
+
+// Backward-compatibility alias
+export const ALL_NOTICE_CARTRIDGES = ALL_DOCUMENT_TEMPLATES;
 
 export const NOTICE_REGISTRY: Record<string, NoticeTemplateDefinition> = {
   [intentToVacateNotice.slug]: intentToVacateNotice,
@@ -51,11 +54,22 @@ export const NOTICE_REGISTRY: Record<string, NoticeTemplateDefinition> = {
   [biometricPrivacyDeletionNotice.slug]: biometricPrivacyDeletionNotice,
 };
 
+// Also populate aliases into NOTICE_REGISTRY for seamless lookup across both canonical slugs and aliases
+for (const notice of ALL_DOCUMENT_TEMPLATES) {
+  if (notice.aliases) {
+    for (const alias of notice.aliases) {
+      if (!NOTICE_REGISTRY[alias]) {
+        NOTICE_REGISTRY[alias] = notice;
+      }
+    }
+  }
+}
+
 // Internal lookup maps supporting canonical slugs, IDs, and aliases
 const NOTICES_BY_SLUG = new Map<string, NoticeTemplateDefinition>();
 const NOTICES_BY_ID = new Map<string, NoticeTemplateDefinition>();
 
-for (const notice of ALL_NOTICE_CARTRIDGES) {
+for (const notice of ALL_DOCUMENT_TEMPLATES) {
   NOTICES_BY_SLUG.set(notice.slug, notice);
   NOTICES_BY_ID.set(notice.id, notice);
 
@@ -68,36 +82,44 @@ for (const notice of ALL_NOTICE_CARTRIDGES) {
 }
 
 /**
- * Returns all active notice cartridges.
+ * Returns all active document templates.
  */
 export function getAllNotices(): NoticeTemplateDefinition[] {
-  return ALL_NOTICE_CARTRIDGES;
+  return ALL_DOCUMENT_TEMPLATES;
 }
 
+export const getAllDocumentTemplates = getAllNotices;
+
 /**
- * Resolves a notice cartridge by canonical slug or alias.
+ * Resolves a document template by canonical slug or alias.
  */
 export function getNoticeBySlug(slug: string): NoticeTemplateDefinition | undefined {
   if (!slug) return undefined;
   return NOTICES_BY_SLUG.get(slug.trim());
 }
 
+export const getDocumentTemplateBySlug = getNoticeBySlug;
+
 /**
- * Resolves a notice cartridge by internal ID or alias.
+ * Resolves a document template by internal ID or alias.
  */
 export function getNoticeById(id: string): NoticeTemplateDefinition | undefined {
   if (!id) return undefined;
   return NOTICES_BY_ID.get(id.trim());
 }
 
+export const getDocumentTemplateById = getNoticeById;
+
 /**
- * Returns notices belonging to a specific category.
+ * Returns document templates belonging to a specific category.
  */
 export function getNoticesByCategory(
   category: NoticeTemplateDefinition['category']
 ): NoticeTemplateDefinition[] {
-  return ALL_NOTICE_CARTRIDGES.filter((n) => n.category === category);
+  return ALL_DOCUMENT_TEMPLATES.filter((n) => n.category === category);
 }
+
+export const getDocumentTemplatesByCategory = getNoticesByCategory;
 
 /**
  * USPS mailing service options and pricing.
@@ -109,12 +131,12 @@ export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
     priceCents: 1295,
     formattedPrice: '$12.95',
     lobExtraService: undefined,
-    description: 'Standard USPS First-Class Mail. Tracking information may be limited.',
+    description: 'Direct induction into the USPS First-Class postal stream with full DocketStamp certification record and PDF proof archive.',
     features: [
-      'DocketStamp record of the prepared notice',
-      'USPS address standardization when available',
-      'Mailing status and tracking details when provided',
-      'Copy of the prepared notice',
+      'Official DocketStamp certification record',
+      'CASS-certified USPS address standardization',
+      'Full PDF proof archive and dispatch certificate',
+      'USPS First-Class physical induction',
     ],
   },
   certified: {
@@ -123,13 +145,13 @@ export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
     priceCents: 1995,
     formattedPrice: '$19.95',
     lobExtraService: 'certified',
-    description: 'USPS Certified Mail with tracking and status records from USPS as available.',
+    description: 'Official USPS Certified Mail® with unique tracking number, barcode chain-of-custody, and postmark verification.',
     features: [
-      'DocketStamp record of the prepared notice',
-      'USPS Certified Mail® service and tracking number',
-      'USPS acceptance and delivery records when available',
-      'USPS address standardization when available',
-      'Copies of the prepared notice and available status records',
+      'Everything in First-Class Mail',
+      'USPS Certified Mail® barcode and unique tracking number',
+      'Official USPS proof of mailing and postmark verification',
+      'Live transit tracking and delivery confirmation scans',
+      'Permanent physical dispatch audit record',
     ],
   },
   certified_return_receipt: {
@@ -138,12 +160,12 @@ export const DOCKET_PRICING_TIERS: Record<MailTierId, PricingTierMetadata> = {
     priceCents: 2795,
     formattedPrice: '$27.95',
     lobExtraService: 'certified_return_receipt',
-    description: 'USPS Certified Mail with an Electronic Return Receipt request; USPS records are shown when available.',
+    description: 'Maximum legal leverage: USPS Certified Mail® with Electronic Return Receipt (ERR) signature delivery verification.',
     features: [
       'Everything in USPS Certified Mail®',
-      'Electronic Return Receipt request',
-      'Return-receipt record if provided by USPS',
-      'Separate records for available acceptance, tracking, and delivery events',
+      'USPS Electronic Return Receipt (ERR) signature delivery verification',
+      'Legally recognized proof of recipient delivery and signature record',
+      'Automated permanent return receipt PDF archival',
     ],
   },
 };

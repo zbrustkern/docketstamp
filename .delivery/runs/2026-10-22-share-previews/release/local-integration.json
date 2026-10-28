@@ -1,0 +1,201 @@
+{
+  "files": [
+    {
+      "file": "app/account/layout.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/admin/layout.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/apple-icon.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/companies/page.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/docket/[docketId]/page.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/favicon.ico",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/icon.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/layout.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/notices/[slug]/page.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/opengraph-image.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/order/[id]/layout.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/page.tsx",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "app/twitter-image.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/FONTS.md",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/approved/cancellation.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/approved/home.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/approved/square.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/card-copy.json",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/card.css",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/fonts/1f3fe8c6df3d47c1-s.p.woff2",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/fonts/bb3ef058b751a6ad-s.p.woff2",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/fonts/e4af272ccee01ff0-s.p.woff2",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/fonts/licenses/Inter-LICENSE.txt",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/fonts/licenses/JetBrains-Mono-OFL.txt",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/fonts/licenses/Merriweather-OFL.txt",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "assets/share/icon-source.svg",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/apple-touch-icon-precomposed.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/apple-touch-icon.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/favicon-32x32.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/icon-192.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/icon-512.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/og-image.jpg",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/og-image.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/arbitration-opt-out-procedure-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/credit-report-dispute-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/debt-dispute-information-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/home.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/manifest.json",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/personal-data-deletion-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/product-complaint-refund-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/security-deposit-accounting-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/service-cancellation-request.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/square.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/tenant-notice-of-intent-to-vacate.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/share/v1/tenant-repair-and-maintenance-notice.png",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "public/site.webmanifest",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "scripts/render-share-assets.mjs",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "src/lib/docket/share-metadata.ts",
+      "matches_release_or_preserves_body": true
+    },
+    {
+      "file": "tests/share-metadata.test.ts",
+      "matches_release_or_preserves_body": true
+    }
+  ],
+  "passed": true
+}

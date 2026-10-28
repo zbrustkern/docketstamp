@@ -21,7 +21,7 @@ import { sendNoticeDeadlineReminderEmail } from "../lib/email-alerts";
 
 const slug = "pre-arbitration-notice-of-dispute-and-refund-request";
 const input = (overrides: Record<string, unknown> = {}): any => ({
-  deadlineDate: "2026-10-22", timezone: "America/Chicago", label: "Date I entered for account response",
+  deadlineDate: "2026-11-20", timezone: "America/Chicago", label: "Date I entered for account response",
   noticeSlug: slug, consent: true, leadTimeDays: 1, ...overrides,
 });
 

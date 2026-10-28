@@ -8,6 +8,8 @@ import { resolveFirebaseConfig } from "./firebase-config";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "mock-firestore.json");
+// Parallel offline suites must not read or overwrite each other's disk fixtures.
+const MEMORY_ONLY_MOCK = process.env.NODE_ENV === 'test' && process.env.USE_MOCK_FIRESTORE === 'true' && process.env.MOCK_FIRESTORE_MEMORY_ONLY === 'true';
 
 // Mock Document and Query Snapshots
 class MockDocumentSnapshot<T = unknown> {
@@ -172,7 +174,7 @@ class MockFirestore {
   private saveTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.loadFromDisk();
+    if (!MEMORY_ONLY_MOCK) this.loadFromDisk();
   }
 
   private loadFromDisk() {
@@ -195,6 +197,7 @@ class MockFirestore {
   }
 
   public scheduleSave() {
+    if (MEMORY_ONLY_MOCK) return;
     if (this.saveTimeout) return;
     this.saveTimeout = setTimeout(() => {
       this.saveTimeout = null;
@@ -203,6 +206,7 @@ class MockFirestore {
   }
 
   public saveToDisk() {
+    if (MEMORY_ONLY_MOCK) return;
     try {
       if (typeof process !== "undefined") {
         if (!fs.existsSync(DATA_DIR)) {
@@ -338,7 +342,7 @@ function initializeFirebase() {
     if (isHostedOrProductionRuntime()) {
       throw new Error('[Firebase Admin Critical] USE_MOCK_FIRESTORE is strictly prohibited in hosted and production runtimes.');
     }
-    console.log('[Firebase Admin] Using disk-persisted mock Firestore store (.data/mock-firestore.json) via USE_MOCK_FIRESTORE.');
+    console.log(MEMORY_ONLY_MOCK ? '[Firebase Admin] Using isolated in-memory mock Firestore.' : '[Firebase Admin] Using disk-persisted mock Firestore store (.data/mock-firestore.json) via USE_MOCK_FIRESTORE.');
     if (admin.apps.length === 0) {
       try {
         admin.initializeApp({ projectId });

@@ -1,0 +1,153 @@
+{
+  "checkedAt": "2026-10-21T03:19:36.431Z",
+  "project": "docketstamp",
+  "backend": {
+    "name": "projects/docketstamp/locations/us-central1/backends/docketstamp",
+    "serviceAccount": "firebase-app-hosting-compute@docketstamp.iam.gserviceaccount.com",
+    "uri": "docketstamp--docketstamp.us-central1.hosted.app"
+  },
+  "rolloutPolicy": {
+    "codebaseBranch": "main"
+  },
+  "builds": [
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-001",
+      "state": "FAILED",
+      "errors": [
+        {
+          "error": {
+            "code": 9,
+            "message": "Error resolving secret version with name=projects/docketstamp/secrets/admin-session-signing-key/versions/latest. Please ensure the secret exists in your project and that your App Hosting backend has access to it. If the secret already exists in your project, please grant your App Hosting backend access to it with the CLI command 'firebase apphosting:secrets:grantaccess'. See https://firebase.google.com/docs/app-hosting/configure#secret-parameters for more information.",
+            "details": [
+              {
+                "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+                "reason": "fah/misconfigured-secret",
+                "metadata": {
+                  "attribution": "USER",
+                  "user_facing_reason": "Misconfigured Secret",
+                  "user_facing_message": "Error resolving secret version with name=projects/docketstamp/secrets/admin-session-signing-key/versions/latest. Please ensure the secret exists in your project and that your App Hosting backend has access to it. If the secret already exists in your project, please grant your App Hosting backend access to it with the CLI command 'firebase apphosting:secrets:grantaccess'. See https://firebase.google.com/docs/app-hosting/configure#secret-parameters for more information."
+                }
+              }
+            ]
+          },
+          "errorSource": "CLOUD_BUILD",
+          "cloudResource": "https://cloud.google.com/build"
+        }
+      ],
+      "createTime": "2026-10-21T03:15:55.029315296Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "4e24aece1233e1a520474ef1746fd3f83f916971",
+          "hash": "4e24aece1233e1a520474ef1746fd3f83f916971",
+          "commitMessage": "Integrate template governance and demand copy with validated letter flows\n\nPreserve staged address and factual input safeguards, keep legacy URL aliases, and hold live checkout until both Lob keys are configured. Bind production admin signing and record full regression, browser, layout, and build validation.",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/4e24aece1233e1a520474ef1746fd3f83f916971",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-21T03:03:20Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-18-004",
+      "state": "READY",
+      "createTime": "2026-10-18T23:29:02.493454636Z",
+      "source": {
+        "codebase": {
+          "branch": "main",
+          "displayName": "b97551226aec144d469ca18b01ebc139df66f95c",
+          "hash": "b97551226aec144d469ca18b01ebc139df66f95c",
+          "commitMessage": "fix(admin): remove email address callouts from admin UI and error notices",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/b97551226aec144d469ca18b01ebc139df66f95c",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-18T23:29:00Z"
+        }
+      }
+    }
+  ],
+  "rollouts": [
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-21-001",
+      "state": "FAILED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-21-001",
+      "createTime": "2026-10-21T03:15:55.088022964Z",
+      "updateTime": "2026-10-21T03:16:35.625047Z"
+    },
+    {
+      "name": "projects/docketstamp/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-18-004",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp/locations/us-central1/backends/docketstamp/builds/build-2026-10-18-004",
+      "createTime": "2026-10-18T23:29:02.558291581Z",
+      "updateTime": "2026-10-18T23:33:01.001840Z"
+    }
+  ],
+  "runtime": {
+    "readyRevision": "projects/docketstamp/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-18-004",
+    "createdRevision": "projects/docketstamp/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-10-18-004",
+    "condition": {
+      "type": "Ready",
+      "state": "CONDITION_SUCCEEDED",
+      "lastTransitionTime": "2026-10-18T23:32:57.892234Z"
+    },
+    "publicEnvironment": [
+      {
+        "name": "ENVIRONMENT",
+        "value": "production"
+      },
+      {
+        "name": "FIREBASE_PROJECT_ID",
+        "value": "docketstamp"
+      },
+      {
+        "name": "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "value": "docketstamp"
+      },
+      {
+        "name": "NEXT_PUBLIC_APP_URL",
+        "value": "https://docketstamp.com"
+      }
+    ],
+    "credentialModes": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "mode": "live",
+        "secretReference": {
+          "secret": "projects/937129689950/secrets/stripe-secret-key",
+          "version": "2"
+        }
+      },
+      {
+        "name": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_DISPATCH_API_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_ADDRESS_VERIFICATION_KEY",
+        "mode": "missing"
+      },
+      {
+        "name": "LOB_API_KEY",
+        "mode": "missing"
+      }
+    ],
+    "secretNames": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "reference": {
+          "secret": "projects/937129689950/secrets/stripe-secret-key",
+          "version": "2"
+        }
+      }
+    ]
+  }
+}
