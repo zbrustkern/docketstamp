@@ -30,6 +30,7 @@ import {
   CreditCard,
   Lock,
   ExternalLink,
+  MapPin,
 } from 'lucide-react';
 import { MailTierId, InterpolatedDocument } from '@/lib/docket/types';
 import { DOCKET_PRICING_TIERS } from '@/lib/docket/notices';
@@ -82,6 +83,9 @@ export interface CheckoutModalProps {
   onWorkflowStepChange?: (step: WorkspaceWorkflowStep) => void;
   onCheckoutComplete?: () => void;
   workflowStep?: WorkspaceWorkflowStep;
+  onUpdateAddressEvidence?: (evidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>>) => void;
+  onApplyFieldValues?: (updates: Record<string, string>) => void;
+  onFocusField?: (fieldKey: string) => void;
 }
 
 export interface LockedAttempt {
@@ -204,6 +208,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onCheckoutComplete,
   onWorkflowStepChange,
   workflowStep,
+  onUpdateAddressEvidence,
+  onApplyFieldValues,
+  onFocusField,
 }) => {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
@@ -217,6 +224,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lockedAttempt, setLockedAttempt] = useState<LockedAttempt | null>(null);
+  const [isVerifyingAddresses, setIsVerifyingAddresses] = useState(false);
+  const [addressReviewSuggestion, setAddressReviewSuggestion] = useState<{
+    role: 'sender' | 'recipient';
+    original: { name: string; addressLine1: string; addressLine2?: string; city: string; state: string; zip: string };
+    suggested: Record<string, string>;
+    evidence?: AddressVerificationEvidence;
+  } | null>(null);
+  const [addressVerificationIssue, setAddressVerificationIssue] = useState<{
+    role: 'sender' | 'recipient';
+    message: string;
+    addressText: string;
+    fieldToFocus: string;
+  } | null>(null);
   const availabilityDeniedRef = useRef(false);
   const onClose = () => {
     closeModal();
@@ -412,52 +432,78 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     .join(' • ');
 
   // Step 1: Initialize lock & intent
-  const handleProceedToPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLoading || isSuperseding) return;
-    if (lockedAttempt && lockedAttempt.fingerprint !== currentFingerprint) {
-      await supersedeAttempt(lockedAttempt);
-      return;
+  const getMailingAddress = (role: 'sender' | 'recipient', values: Record<string, string> = userValues) => {
+    if (role === 'sender') {
+      return {
+        name: values.senderFullName || '',
+        addressLine1: values.senderAddressLine1 || '',
+        addressLine2: values.senderAddressLine2 || '',
+        city: values.senderCity || '',
+        state: values.senderState || '',
+        zip: values.senderZip || '',
+      };
     }
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setErrorMessage('Please enter a valid email address for order information.');
-      return;
-    }
+    return {
+      name:
+        values.recipientFormalName ||
+        values.serviceProviderName ||
+        values.collectionAgencyName ||
+        values.creditorName ||
+        values.disputedAccountName ||
+        values.recipientName ||
+        'RECIPIENT',
+      addressLine1: values.recipientAddressLine1 || '',
+      addressLine2: values.recipientAddressLine2 || '',
+      city: values.recipientCity || '',
+      state: values.recipientState || '',
+      zip: values.recipientZip || '',
+    };
+  };
 
-    const senderEvidence = addressVerificationEvidence.sender;
-    const recipientEvidence = addressVerificationEvidence.recipient;
-    if (!senderEvidence || !recipientEvidence || senderEvidence.payload.draftRevision !== draftRevision || recipientEvidence.payload.draftRevision !== draftRevision) {
-      setErrorMessage('Check and confirm both mailing addresses after your last edit before locking this letter.');
-      return;
-    }
-
-    // If an identical lock attempt already exists, advance to payment step
-    if (lockedAttempt && lockedAttempt.fingerprint === currentFingerprint) {
-      emitBusinessEvent({
-        eventName: 'legacy_intent_initialized',
-        noticeId: doc.noticeDefinition.slug,
-        tier: lockedAttempt.tier,
-        orderId: lockedAttempt.orderId,
-        entrySurface: entrySource,
-        draftRevision,
-        logicalKey: `intent-initialized:${lockedAttempt.orderId}`,
+  const verifyAddressInline = async (
+    role: 'sender' | 'recipient',
+    rev: number,
+    values: Record<string, string> = userValues
+  ) => {
+    const address = getMailingAddress(role, values);
+    try {
+      const response = await fetch('/api/docket/verify-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          role,
+          draftId,
+          draftRevision: rev,
+          recipientName: role === 'recipient' ? address.name : undefined,
+        }),
       });
-      setStep(lockedAttempt.reviewPayload ? 'review' : 'payment');
-      onWorkflowStepChange?.(lockedAttempt.reviewPayload ? 'review' : 'payment');
-      return;
+      const result = await response.json();
+      return { ok: response.ok, status: response.status, result, address };
+    } catch {
+      return { ok: false, status: 500, result: null, address };
     }
+  };
 
+  const executeLockAndIntent = async (
+    evidenceMap: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>>,
+    cleanEmail: string,
+    overrideRevision?: number,
+    overrideValues?: Record<string, string>
+  ) => {
     setIsLoading(true);
     setErrorMessage(null);
-    const originatingFingerprint = currentFingerprint;
-    const originatingRevision = draftRevision;
+    const activeValues = overrideValues || userValues;
+    const originatingFingerprint = overrideValues
+      ? computeFingerprint(selectedTier, cleanEmail, activeValues, isSignatureAdopted, isAffirmed)
+      : currentFingerprint;
+    const originatingRevision = overrideRevision ?? draftRevision;
     let identityDigest = '';
 
     let publicErrorCode: unknown = 'CHECKOUT_UNAVAILABLE';
     try {
       identityDigest = await checkoutFingerprintDigest(`${draftId}:${originatingRevision}:${originatingFingerprint}`);
-        const storage = getCheckoutSessionStorage();
+      const storage = getCheckoutSessionStorage();
       let defaultDocketId = doc.docketId;
       if (lockedDocketIdsRef.current.has(defaultDocketId)) defaultDocketId = generateDocketId();
       const requestIdentity = getOrCreateCheckoutRequest(storage, {
@@ -480,10 +526,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setIsLoading(false);
         return;
       }
-      // If doc.docketId was already locked in a prior attempt that changed, generate a fresh docket ID
       const attemptDocketId = requestIdentity.docketId;
 
-      // Fetch Firebase ID token if user is signed in
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (user) {
         try {
@@ -501,12 +545,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         headers,
         body: JSON.stringify({
           slug: doc.noticeDefinition.slug,
-          userValues,
+          userValues: activeValues,
           draftId,
           draftRevision: originatingRevision,
           checkoutCapability: getCheckoutCapability(draftId),
           idempotencyKey: requestIdentity.idempotencyKey,
-          verificationEvidence: { sender: addressVerificationEvidence.sender, recipient: addressVerificationEvidence.recipient },
+          verificationEvidence: { sender: evidenceMap.sender, recipient: evidenceMap.recipient },
           tier: selectedTier,
           customerEmail: cleanEmail,
           docketId: attemptDocketId,
@@ -518,22 +562,58 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           signatureAdoption: {
             adopted: isSignatureAdopted,
             affirmed: isAffirmed,
-            signerName: userValues.senderFullName || '',
+            signerName: activeValues.senderFullName || '',
           },
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        if (['ADDRESS_VERIFICATION_REQUIRED', 'ADDRESS_VERIFICATION_STALE', 'ADDRESS_NORMALIZATION_REVIEW_REQUIRED'].includes(data?.code)) {
-          onAddressEvidenceInvalid?.();
+        if (data?.code === 'ADDRESS_NORMALIZATION_REVIEW_REQUIRED' && data.suggestedAddress) {
+          const role = (data.role as 'sender' | 'recipient') || 'recipient';
+          const original = getMailingAddress(role, activeValues);
+          setAddressReviewSuggestion({
+            role,
+            original,
+            suggested: {
+              [role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1']: data.suggestedAddress.addressLine1,
+              [role === 'sender' ? 'senderAddressLine2' : 'recipientAddressLine2']: data.suggestedAddress.addressLine2 || '',
+              [role === 'sender' ? 'senderCity' : 'recipientCity']: data.suggestedAddress.city,
+              [role === 'sender' ? 'senderState' : 'recipientState']: data.suggestedAddress.state,
+              [role === 'sender' ? 'senderZip' : 'recipientZip']: data.suggestedAddress.zip,
+            },
+          });
           setStep('delivery');
           onWorkflowStepChange?.('delivery');
-          setErrorMessage(data.code === 'ADDRESS_NORMALIZATION_REVIEW_REQUIRED'
-            ? 'USPS suggests a different address. Close checkout, review and accept the suggested address, then verify it again.'
-            : 'Address verification expired or no longer matches this draft. Close checkout, check both mailing addresses again, and retry.');
+          setIsLoading(false);
           return;
         }
+
+        if (data?.code === 'ADDRESS_VERIFICATION_FAILED') {
+          const role = (data.role as 'sender' | 'recipient') || 'recipient';
+          const address = getMailingAddress(role, activeValues);
+          const addressText = [address.addressLine1, address.addressLine2, `${address.city}, ${address.state} ${address.zip}`].filter(Boolean).join(' · ');
+          setAddressVerificationIssue({
+            role,
+            message: data.error || data.detail || `USPS could not confirm delivery to this ${role} address.`,
+            addressText,
+            fieldToFocus: role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1',
+          });
+          setStep('delivery');
+          onWorkflowStepChange?.('delivery');
+          setIsLoading(false);
+          return;
+        }
+
+        if (['ADDRESS_VERIFICATION_REQUIRED', 'ADDRESS_VERIFICATION_STALE'].includes(data?.code)) {
+          onAddressEvidenceInvalid?.();
+          setErrorMessage('Verifying fresh address evidence with USPS. Please try continuing again.');
+          setStep('delivery');
+          onWorkflowStepChange?.('delivery');
+          setIsLoading(false);
+          return;
+        }
+
         if (data?.code === 'CHECKOUT_ATTEMPT_BUSY' && data.attemptId) {
           const recovery = {
             attemptId: String(data.attemptId), draftId, draftRevision: originatingRevision,
@@ -627,10 +707,175 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       onWorkflowStepChange?.(freshAttempt.reviewPayload ? 'review' : 'payment');
     } catch (err: any) {
       console.error('[Checkout Error]', err);
-      // Error preservation: preserve email, tier, and draft values
       setErrorMessage(checkoutErrorMessage(publicErrorCode, 'CHECKOUT_UNAVAILABLE'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleProceedToPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading || isVerifyingAddresses || isSuperseding) return;
+    if (lockedAttempt && lockedAttempt.fingerprint !== currentFingerprint) {
+      await supersedeAttempt(lockedAttempt);
+      return;
+    }
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setErrorMessage('Please enter a valid email address for order information.');
+      return;
+    }
+
+    // If an identical lock attempt already exists, advance to payment step
+    if (lockedAttempt && lockedAttempt.fingerprint === currentFingerprint) {
+      emitBusinessEvent({
+        eventName: 'legacy_intent_initialized',
+        noticeId: doc.noticeDefinition.slug,
+        tier: lockedAttempt.tier,
+        orderId: lockedAttempt.orderId,
+        entrySurface: entrySource,
+        draftRevision,
+        logicalKey: `intent-initialized:${lockedAttempt.orderId}`,
+      });
+      setStep(lockedAttempt.reviewPayload ? 'review' : 'payment');
+      onWorkflowStepChange?.(lockedAttempt.reviewPayload ? 'review' : 'payment');
+      return;
+    }
+
+    setErrorMessage(null);
+    setAddressVerificationIssue(null);
+    setAddressReviewSuggestion(null);
+
+    // Auto-verify addresses if missing or stale for current draftRevision
+    const effectiveEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>> = {
+      ...addressVerificationEvidence,
+    };
+    const isSenderStaleOrMissing =
+      !effectiveEvidence.sender || effectiveEvidence.sender.payload.draftRevision !== draftRevision;
+    const isRecipientStaleOrMissing =
+      !effectiveEvidence.recipient || effectiveEvidence.recipient.payload.draftRevision !== draftRevision;
+
+    if (isSenderStaleOrMissing || isRecipientStaleOrMissing) {
+      setIsVerifyingAddresses(true);
+      const rolesToVerify: Array<'sender' | 'recipient'> = [];
+      if (isSenderStaleOrMissing) rolesToVerify.push('sender');
+      if (isRecipientStaleOrMissing) rolesToVerify.push('recipient');
+
+      const updatedEvidence: Partial<Record<'sender' | 'recipient', AddressVerificationEvidence>> = {};
+
+      for (const role of rolesToVerify) {
+        const { ok, status, result, address } = await verifyAddressInline(role, draftRevision);
+        if (!ok || !result?.valid || !result?.evidence) {
+          setIsVerifyingAddresses(false);
+          const message =
+            status === 429
+              ? 'Address checking is temporarily rate limited. Please try again in a few moments.'
+              : status >= 500
+              ? 'Address checking is temporarily unavailable. Please retry before checkout.'
+              : result?.code === 'ADDRESS_UNDELIVERABLE'
+              ? `USPS could not confirm delivery to this ${role === 'sender' ? 'sender' : 'recipient'} address. Check the street, unit, city, state, and ZIP.`
+              : result?.error || `This ${role === 'sender' ? 'sender' : 'recipient'} address could not be verified by USPS.`;
+          const addressText = [address.addressLine1, address.addressLine2, `${address.city}, ${address.state} ${address.zip}`].filter(Boolean).join(' · ');
+          setAddressVerificationIssue({
+            role,
+            message,
+            addressText,
+            fieldToFocus: role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1',
+          });
+          return;
+        }
+
+        const normalized = result.standardizedAddress;
+        const suggested = {
+          [role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1']: normalized.primary_line || address.addressLine1,
+          [role === 'sender' ? 'senderAddressLine2' : 'recipientAddressLine2']: normalized.secondary_line || '',
+          [role === 'sender' ? 'senderCity' : 'recipientCity']: normalized.city || address.city,
+          [role === 'sender' ? 'senderState' : 'recipientState']: normalized.state || address.state,
+          [role === 'sender' ? 'senderZip' : 'recipientZip']: normalized.zip_code_plus_4 ? `${normalized.zip_code}-${normalized.zip_code_plus_4}` : normalized.zip_code || address.zip,
+        };
+        const isChanged = Object.entries(suggested).some(
+          ([key, value]) => (userValues[key] || '').trim().toUpperCase() !== value.trim().toUpperCase()
+        );
+
+        if (isChanged) {
+          setIsVerifyingAddresses(false);
+          setAddressReviewSuggestion({
+            role,
+            original: address,
+            suggested,
+            evidence: result.evidence,
+          });
+          return;
+        }
+
+        updatedEvidence[role] = result.evidence;
+        effectiveEvidence[role] = result.evidence;
+      }
+
+      setIsVerifyingAddresses(false);
+      onUpdateAddressEvidence?.(updatedEvidence);
+    }
+
+    await executeLockAndIntent(effectiveEvidence, cleanEmail);
+  };
+
+  const handleApplyAddressSuggestion = async (suggestion: {
+    role: 'sender' | 'recipient';
+    original: { name: string; addressLine1: string; addressLine2?: string; city: string; state: string; zip: string };
+    suggested: Record<string, string>;
+    evidence?: AddressVerificationEvidence;
+  }) => {
+    setIsVerifyingAddresses(true);
+    setAddressReviewSuggestion(null);
+    onApplyFieldValues?.(suggestion.suggested);
+
+    const mergedValues = {
+      ...userValues,
+      ...suggestion.suggested,
+    };
+    const nextRev = draftRevisionRef.current + 1;
+    const cleanEmail = email.trim();
+
+    const { ok, status, result, address } = await verifyAddressInline(suggestion.role, nextRev, mergedValues);
+    setIsVerifyingAddresses(false);
+
+    if (!ok || !result?.valid || !result?.evidence) {
+      const message =
+        status === 429
+          ? 'Address checking is temporarily rate limited. Please try again later.'
+          : result?.error || 'Could not verify standardized address with USPS. Please check the address details.';
+      setAddressVerificationIssue({
+        role: suggestion.role,
+        message,
+        addressText: [address.addressLine1, address.addressLine2, `${address.city}, ${address.state} ${address.zip}`].filter(Boolean).join(' · '),
+        fieldToFocus: suggestion.role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1',
+      });
+      return;
+    }
+
+    const updatedMap = {
+      ...addressVerificationEvidence,
+      [suggestion.role]: result.evidence,
+    };
+    onUpdateAddressEvidence?.({ [suggestion.role]: result.evidence });
+    await executeLockAndIntent(updatedMap, cleanEmail, nextRev, mergedValues);
+  };
+
+  const handleKeepOriginalAddress = async (suggestion: {
+    role: 'sender' | 'recipient';
+    original: { name: string; addressLine1: string; addressLine2?: string; city: string; state: string; zip: string };
+    suggested: Record<string, string>;
+    evidence?: AddressVerificationEvidence;
+  }) => {
+    setAddressReviewSuggestion(null);
+    const cleanEmail = email.trim();
+    if (suggestion.evidence) {
+      const updatedMap = {
+        ...addressVerificationEvidence,
+        [suggestion.role]: suggestion.evidence,
+      };
+      onUpdateAddressEvidence?.({ [suggestion.role]: suggestion.evidence });
+      await executeLockAndIntent(updatedMap, cleanEmail, draftRevisionRef.current);
     }
   };
 
@@ -790,6 +1035,97 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span>{errorMessage}</span>
               </div>
             )}
+
+            {/* Inline Address Verification Delivery Issue */}
+            {addressVerificationIssue && (
+              <div
+                role="alert"
+                className="p-3 bg-rose-950/85 border border-rose-700 rounded-lg text-xs text-rose-200 space-y-2"
+              >
+                <div className="flex items-center gap-2 font-bold text-rose-300">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>USPS Delivery Issue ({addressVerificationIssue.role === 'sender' ? 'Sender' : 'Recipient'} Address)</span>
+                </div>
+                <p className="leading-snug text-rose-200">{addressVerificationIssue.message}</p>
+                <div className="font-mono text-[11px] p-2 bg-slate-900/90 rounded border border-rose-900/50 text-slate-300">
+                  {addressVerificationIssue.addressText}
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const field = addressVerificationIssue.fieldToFocus;
+                      setAddressVerificationIssue(null);
+                      if (onFocusField) {
+                        onFocusField(field);
+                      } else {
+                        onClose();
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-rose-900/60 hover:bg-rose-900 text-white font-medium text-xs transition"
+                  >
+                    Edit {addressVerificationIssue.role === 'sender' ? 'Sender' : 'Recipient'} Address
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Inline USPS Address Standardization Suggestion */}
+            {addressReviewSuggestion && (
+              <div
+                role="region"
+                aria-label="USPS Address Suggestion"
+                className="p-3 bg-sky-950/90 border border-sky-600/70 rounded-lg text-xs text-sky-100 space-y-2.5"
+              >
+                <div className="flex items-center gap-2 font-bold text-sky-300">
+                  <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>USPS Address Standardization Suggested ({addressReviewSuggestion.role === 'sender' ? 'Sender' : 'Recipient'})</span>
+                </div>
+                <p className="text-slate-300 text-[11.5px] leading-relaxed">
+                  USPS confirmed deliverability and recommended standardized postal formatting. Choose an option to continue:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-slate-900/90 rounded border border-slate-800 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 font-mono block text-[10px] uppercase">As Entered:</span>
+                    <span className="text-slate-300 font-medium">
+                      {[
+                        addressReviewSuggestion.original.addressLine1,
+                        addressReviewSuggestion.original.addressLine2,
+                        `${addressReviewSuggestion.original.city}, ${addressReviewSuggestion.original.state} ${addressReviewSuggestion.original.zip}`
+                      ].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-emerald-400 font-mono block text-[10px] uppercase">USPS Standardized:</span>
+                    <span className="text-white font-medium">
+                      {[
+                        addressReviewSuggestion.suggested[addressReviewSuggestion.role === 'sender' ? 'senderAddressLine1' : 'recipientAddressLine1'],
+                        addressReviewSuggestion.suggested[addressReviewSuggestion.role === 'sender' ? 'senderAddressLine2' : 'recipientAddressLine2'],
+                        `${addressReviewSuggestion.suggested[addressReviewSuggestion.role === 'sender' ? 'senderCity' : 'recipientCity']}, ${addressReviewSuggestion.suggested[addressReviewSuggestion.role === 'sender' ? 'senderState' : 'recipientState']} ${addressReviewSuggestion.suggested[addressReviewSuggestion.role === 'sender' ? 'senderZip' : 'recipientZip']}`
+                      ].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => void handleApplyAddressSuggestion(addressReviewSuggestion)}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs transition shadow-sm"
+                  >
+                    Apply USPS Standardized Address
+                  </button>
+                  {addressReviewSuggestion.evidence && (
+                    <button
+                      type="button"
+                      onClick={() => void handleKeepOriginalAddress(addressReviewSuggestion)}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs transition border border-slate-700"
+                    >
+                      Keep Entered Address
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {lockedAttempt?.attemptId && lockedAttempt.fingerprint !== currentFingerprint && (
               <button type="button" onClick={() => { supersedingIdsRef.current.delete(lockedAttempt.attemptId!); void supersedeAttempt(lockedAttempt); }} disabled={isSuperseding} className="rounded border border-amber-700 px-3 py-2 text-xs text-amber-100 disabled:opacity-50">
                 {isSuperseding ? 'Resolving prior payment…' : 'Retry prior payment status check'}
@@ -845,10 +1181,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isLoading || isSuperseding || unresolvedStaleLockedAttempt || unresolvedRecoveredAttempt || !physicalFit.fits}
+                disabled={isLoading || isVerifyingAddresses || isSuperseding || unresolvedStaleLockedAttempt || unresolvedRecoveredAttempt || !physicalFit.fits}
                 className="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider font-mono transition shadow-lg flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
-                {isLoading ? (
+                {isVerifyingAddresses ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Checking USPS delivery…</span>
+                  </>
+                ) : isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Preparing payment...</span>

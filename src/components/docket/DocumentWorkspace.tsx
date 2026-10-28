@@ -245,7 +245,10 @@ const DocumentWorkspaceInner: React.FC<{
     if (!review?.evidence || !review.suggested) return;
     if (review.status === 'suggestion') {
       for (const [key, value] of Object.entries(review.suggested)) handleFieldValueChange(key, value);
-      setAddressReview((current) => ({ ...current, [role]: { status: 'idle', message: 'Address updated. Verify the accepted version to bind fresh evidence.' } }));
+      setAddressReview((current) => ({ ...current, [role]: { status: 'checking', message: 'Address updated. Binding verification evidence…' } }));
+      setTimeout(() => {
+        void verifyMailingAddress(role);
+      }, 60);
       return;
     }
     setAddressEvidence((current) => ({ ...current, [role]: review.evidence }));
@@ -790,6 +793,17 @@ const DocumentWorkspaceInner: React.FC<{
         isAffirmed={isAffirmed}
         entrySource={entrySource}
         draftRevision={draftRevision}
+        onUpdateAddressEvidence={(updated) => setAddressEvidence((prev) => ({ ...prev, ...updated }))}
+        onApplyFieldValues={(updates) => {
+          for (const key of Object.keys(updates)) userEditedKeysRef.current.add(key);
+          setUserValues((prev) => ({ ...prev, ...updates }));
+        }}
+        onFocusField={(fieldKey) => {
+          setIsCheckoutOpen(false);
+          transitionWorkflowStep('details');
+          setActiveFieldKey(fieldKey);
+          setMobileView('drawer');
+        }}
       />
     </div>
   );
