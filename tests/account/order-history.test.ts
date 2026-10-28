@@ -59,7 +59,41 @@ describe("order history presentation", () => {
     assert.equal(history.recordKind, "DocketStamp notice record");
     assert.equal(history.postal.provider, "lob");
     assert.equal(history.postal.reference, "lob-canonical");
+    assert.equal(history.providerLabel, "USPS Certified Mail");
     assert.equal(history.docketReference, "DS-123");
     assert.equal(history.serviceLevel, "CERTIFIED");
+  });
+
+  it("directs customer tracking to USPS.com and formats clean USPS provider labels", () => {
+    const certified = getOrderHistoryPresentation(order({
+      postalProvider: "lob",
+      postalProviderReference: "ltr_123",
+      lobLetterId: "ltr_123",
+      lobTrackingNumber: "9400111899562537624123",
+      serviceLevel: "CERTIFIED",
+    }));
+    assert.equal(certified.providerLabel, "USPS Certified Mail");
+    assert.equal(certified.trackingNumber, "9400111899562537624123");
+    assert.equal(certified.trackingUrl, "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899562537624123");
+
+    const returnReceipt = getOrderHistoryPresentation(order({
+      postalProvider: "lob",
+      postalProviderReference: "ltr_789",
+      lobLetterId: "ltr_789",
+      lobTrackingNumber: "9400111899562537624789",
+      serviceLevel: "CERTIFIED_RETURN_RECEIPT",
+    }));
+    assert.equal(returnReceipt.providerLabel, "USPS Certified Mail");
+    assert.equal(returnReceipt.trackingUrl, "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899562537624789");
+
+    const firstClass = getOrderHistoryPresentation(order({
+      postalProvider: "lob",
+      postalProviderReference: "ltr_456",
+      lobLetterId: "ltr_456",
+      lobTrackingNumber: "9400111899562537624456",
+      serviceLevel: "FIRST_CLASS",
+    }));
+    assert.equal(firstClass.providerLabel, "USPS Postal Record");
+    assert.equal(firstClass.trackingUrl, "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899562537624456");
   });
 });

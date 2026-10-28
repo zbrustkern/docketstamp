@@ -250,7 +250,7 @@ DOCKET ID:       ${docketId}
 SERVICE LEVEL:   ${serviceLevelLabel}
 RECIPIENT:       ${effectiveRecipientName}
 DESTINATION:     ${effectiveAddressSummary}
-${trackingNumber ? `PROVIDER TRACKING: ${trackingNumber}\n` : ""}${orderId ? `ORDER ID:         ${orderId}\n` : ""}
+${trackingNumber ? `USPS TRACKING:   ${trackingNumber}\n` : ""}${orderId ? `ORDER ID:         ${orderId}\n` : ""}
 ORDER STATUS:
 ${docketUrl}
 
@@ -310,7 +310,7 @@ ${uplFooter}
       ${
         trackingNumber
           ? `<tr>
-        <td class="label">Provider tracking</td>
+        <td class="label">USPS tracking</td>
         <td class="value" style="font-family: ui-monospace, Menlo, monospace; color: #10B981; font-weight: bold;">${escapeHtml(
           trackingNumber
         )}</td>

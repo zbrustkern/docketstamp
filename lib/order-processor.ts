@@ -437,13 +437,17 @@ export async function processPaidOrder(
   }
 
   // 6. Update Firestore Order to PROCESSING_DISPATCH
+  const directLobTrackingUrl = fulfillment.trackingNumber
+    ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${fulfillment.trackingNumber}`
+    : fulfillment.url;
+
   await updateOrderStatus(orderId, {
     status: "PROCESSING_DISPATCH",
     lobLetterId: fulfillment.order_id,
     postalProvider: "lob",
     postalProviderReference: fulfillment.order_id,
     lobTrackingNumber: fulfillment.trackingNumber,
-    lobTrackingUrl: fulfillment.url,
+    lobTrackingUrl: directLobTrackingUrl,
     expectedDeliveryDate: fulfillment.expectedDeliveryDate,
     fulfillmentError: undefined,
     ...(clientContext?.isTest !== undefined || clientContext?.paymentMode
@@ -597,13 +601,17 @@ export async function recordAuthorizedDispatchAccepted(input: {
   isTest: boolean;
 }): Promise<void> {
   const { orderId, order, lobLetterId } = input;
+  const directTrackingUrl = input.trackingNumber
+    ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${input.trackingNumber}`
+    : input.trackingUrl;
+
   await updateOrderStatus(orderId, {
     status: "PROCESSING_DISPATCH",
     lobLetterId,
     postalProvider: "lob",
     postalProviderReference: lobLetterId,
     ...(input.trackingNumber ? { lobTrackingNumber: input.trackingNumber } : {}),
-    ...(input.trackingUrl ? { lobTrackingUrl: input.trackingUrl } : {}),
+    ...(directTrackingUrl ? { lobTrackingUrl: directTrackingUrl } : {}),
     ...(input.expectedDeliveryDate ? { expectedDeliveryDate: input.expectedDeliveryDate } : {}),
     fulfillmentError: undefined,
     isTest: input.isTest,

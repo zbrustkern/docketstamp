@@ -15,7 +15,9 @@ export function getOrderHistoryPresentation(order: Order) {
   const stored = order as Order & { schemaVersion?: number; kind?: string };
   const postal = resolvePostalProvenance(stored);
   const providerLabel = postal.provider === "lob"
-    ? "Lob postal record"
+    ? (order.serviceLevel === "CERTIFIED" || order.serviceLevel === "CERTIFIED_RETURN_RECEIPT"
+        ? "USPS Certified Mail"
+        : "USPS Postal Record")
     : postal.provider === "handwrytten"
     ? "Historical Handwrytten record"
     : postal.evidence === "conflict"
@@ -27,7 +29,9 @@ export function getOrderHistoryPresentation(order: Order) {
     ? order.handwryttenStatus
     : undefined;
   const trackingUrl = postal.provider === "lob"
-    ? safeTrackingUrl(order.lobTrackingUrl)
+    ? (order.lobTrackingNumber
+        ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(order.lobTrackingNumber)}`
+        : safeTrackingUrl(order.lobTrackingUrl))
     : postal.provider === "handwrytten"
     ? safeTrackingUrl(order.handwryttenTrackingUrl)
     : undefined;

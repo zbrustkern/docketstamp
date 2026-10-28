@@ -55,7 +55,10 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
     : 'Not available';
 
   const trackingNumber = order?.lobTrackingNumber;
-  const trackingUrl = order.lobTrackingUrl || undefined;
+  const trackingUrl =
+    (trackingNumber
+      ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(trackingNumber)}`
+      : order.lobTrackingUrl) || undefined;
   const serviceLevelLabel =
     order.serviceLevel === 'CERTIFIED_RETURN_RECEIPT'
       ? 'USPS Certified Mail® w/ Electronic Return Receipt'
@@ -296,7 +299,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
                 {isDelivered
                   ? 'A delivery status is recorded for this order.'
                   : order?.expectedDeliveryDate
-                  ? `Provider estimate: ${order.expectedDeliveryDate}`
+                  ? `Estimated USPS delivery: ${order.expectedDeliveryDate}`
                   : 'No delivery status or estimate is currently recorded.'}
               </div>
             </div>
@@ -305,16 +308,16 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
 
         {/* Tracking and document availability */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Provider tracking */}
+          {/* USPS Tracking & Delivery */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
             <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Mail className="w-4 h-4 text-sky-400" /> Postal provider information
+              <Mail className="w-4 h-4 text-sky-400" /> USPS Tracking & Delivery
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="text-[11px] font-mono text-slate-400 block mb-1">
-                  Provider tracking identifier
+                  USPS Tracking Number
                 </label>
                 <div className="font-mono text-base font-bold text-sky-400 bg-slate-950 border border-slate-800 rounded px-3 py-2 flex items-center justify-between">
                   <span>{trackingNumber || 'Not available'}</span>
@@ -322,19 +325,24 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
               </div>
 
               {trackingUrl && (
-                <a
-                  href={trackingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-mono text-sky-400 hover:text-sky-300 underline font-semibold"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Open provider tracking
-                </a>
+                <div>
+                  <a
+                    href={trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-mono text-sky-400 hover:text-sky-300 underline font-semibold"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Track on USPS.com
+                  </a>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    USPS tracking updates typically appear within 24–48 hours once inducted at the postal sorting facility.
+                  </p>
+                </div>
               )}
 
               {order?.expectedDeliveryDate && (
                 <div className="pt-2 text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300">Provider delivery estimate:</span>{' '}
+                  <span className="font-semibold text-slate-300">Estimated USPS delivery:</span>{' '}
                   {order.expectedDeliveryDate}
                 </div>
               )}
@@ -359,7 +367,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
               {order?.serviceLevel === 'CERTIFIED_RETURN_RECEIPT' && (
                 <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-800/80 mt-3">
                   <span className="font-semibold text-slate-300">Electronic Return Receipt:</span>{' '}
-                  This service was selected for the order. Any record supplied by the postal provider will appear when available.
+                  This service was selected for the order. Any record supplied by USPS will appear when available.
                 </div>
               )}
             </div>

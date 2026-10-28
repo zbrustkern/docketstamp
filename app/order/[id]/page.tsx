@@ -283,7 +283,7 @@ export default function OrderStatusPage() {
             <div className="w-11 h-11 rounded-2xl bg-sky-500/10 text-sky-300 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-serif font-bold text-white">{history.recordKind}</h1>
-              <p className="text-sm text-slate-300 mt-1">This page shows order details and postal evidence recorded for this reference. Missing or conflicting provider data is shown as unknown.</p>
+              <p className="text-sm text-slate-300 mt-1">This page shows order details and postal evidence recorded for this reference. Missing or conflicting postal data is shown as unknown.</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
@@ -291,7 +291,7 @@ export default function OrderStatusPage() {
             <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 text-slate-200">{history.providerLabel}</span>
             {order.customerEmail && <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1.5 text-slate-200">Order email: {order.customerEmail}</span>}
           </div>
-          {history.postal.evidence === "conflict" && <p className="text-xs text-amber-200">Postal identifiers conflict. No provider-specific tracking lookup is shown for this record.</p>}
+          {history.postal.evidence === "conflict" && <p className="text-xs text-amber-200">Postal identifiers conflict. No direct tracking lookup is shown for this record.</p>}
         </section>
 
         {/* POSTAL EVIDENCE */}
@@ -301,15 +301,24 @@ export default function OrderStatusPage() {
             <h2 className="text-base font-bold text-white">Postal evidence</h2>
           </div>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div><dt className="text-xs text-slate-400">Provider</dt><dd className="mt-1 text-slate-100">{history.providerLabel}</dd></div>
-            <div><dt className="text-xs text-slate-400">Provider status</dt><dd className="mt-1 text-slate-100">{history.providerStatus}</dd></div>
-            <div><dt className="text-xs text-slate-400">Provider reference</dt><dd className="mt-1 font-mono text-slate-100 break-all">{history.providerReference || "Not available"}</dd></div>
+            <div><dt className="text-xs text-slate-400">Postal service</dt><dd className="mt-1 text-slate-100">{history.providerLabel}</dd></div>
+            <div><dt className="text-xs text-slate-400">Postal status</dt><dd className="mt-1 text-slate-100">{history.providerStatus}</dd></div>
+            <div><dt className="text-xs text-slate-400">Postal reference</dt><dd className="mt-1 font-mono text-slate-100 break-all">{history.providerReference || "Not available"}</dd></div>
             <div><dt className="text-xs text-slate-400">Recorded mailed date</dt><dd className="mt-1 text-slate-100">{history.mailedDate}</dd></div>
             <div><dt className="text-xs text-slate-400">Docket reference</dt><dd className="mt-1 font-mono text-slate-100 break-all">{history.docketReference}</dd></div>
             <div><dt className="text-xs text-slate-400">Recorded service level</dt><dd className="mt-1 text-slate-100">{history.serviceLevel}</dd></div>
           </dl>
-          {history.trackingNumber && <p className="text-sm text-slate-200">Tracking number: <span className="font-mono">{history.trackingNumber}</span></p>}
-          {history.trackingUrl && <a href={history.trackingUrl} target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center gap-2 rounded-xl border border-sky-700 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-400">Open provider tracking <ExternalLink className="w-4 h-4" /></a>}
+          {history.trackingNumber && <p className="text-sm text-slate-200">USPS Tracking Number: <span className="font-mono">{history.trackingNumber}</span></p>}
+          {history.trackingUrl && (
+            <div className="pt-1">
+              <a href={history.trackingUrl} target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center gap-2 rounded-xl border border-sky-700 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                Track on USPS.com <ExternalLink className="w-4 h-4" />
+              </a>
+              <p className="text-xs text-slate-400 mt-2">
+                USPS tracking updates typically appear within 24–48 hours once inducted at the postal sorting facility.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* PRIVACY UNLOCK BANNER IF REDACTED */}
