@@ -92,9 +92,7 @@ input[type="date"] {
 }
 
 input[type="date"]::-webkit-date-and-time-value {
-  display: inline-flex;
-  align-items: center;
-  text-align: left;
-  min-width: 0;
+  width: 100%;
   min-height: 1.5rem;
+  text-align: left;
 }

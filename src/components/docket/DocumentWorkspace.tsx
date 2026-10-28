@@ -232,8 +232,9 @@ const DocumentWorkspaceInner: React.FC<{
         [role === 'sender' ? 'senderState' : 'recipientState']: normalized.state || address.state,
         [role === 'sender' ? 'senderZip' : 'recipientZip']: normalized.zip_code_plus_4 ? `${normalized.zip_code}-${normalized.zip_code_plus_4}` : normalized.zip_code || address.zip,
       };
+      const alreadyVerified = addressReview[role]?.status === 'verified';
       const changed = Object.entries(suggested).some(([key, value]) => (activeValues[key] || '').trim().toUpperCase() !== value.trim().toUpperCase());
-      if (!changed) {
+      if (!changed || alreadyVerified) {
         setAddressEvidence((current) => ({ ...current, [role]: result.evidence }));
         setVerificationStatus(result.evidence.payload?.providerMode === 'live_cass' ? 'confirmed' : 'simulated');
         setAddressReview((current) => ({
@@ -280,6 +281,8 @@ const DocumentWorkspaceInner: React.FC<{
       setDraftRevision(nextRev);
       setUserValues(mergedValues);
       const nextEvidence = review.standardizedEvidence;
+      const otherRole: VerifiedAddressRole = role === 'sender' ? 'recipient' : 'sender';
+      const otherWasVerified = addressReview[otherRole]?.status === 'verified';
       if (nextEvidence && nextEvidence.payload?.draftRevision === nextRev) {
         setAddressEvidence((current) => ({ ...current, [role]: nextEvidence }));
         setVerificationStatus(nextEvidence.payload?.providerMode === 'live_cass' ? 'confirmed' : 'simulated');
@@ -292,6 +295,9 @@ const DocumentWorkspaceInner: React.FC<{
             evidence: nextEvidence,
           },
         }));
+        if (otherWasVerified) {
+          void verifyMailingAddress(otherRole, mergedValues, nextRev);
+        }
       } else {
         setAddressEvidence({});
         setAddressReview((current) => ({

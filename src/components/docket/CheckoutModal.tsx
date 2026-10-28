@@ -389,6 +389,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (isOpen) {
       previousActiveElementRef.current = document.activeElement as HTMLElement | null;
       setErrorMessage(null);
+      for (const role of ['sender', 'recipient'] as const) {
+        if (addressVerificationEvidence?.[role]) {
+          resolvedAddressRolesRef.current.add(role);
+        }
+      }
       // If we previously locked an attempt that is now stale, reset to delivery step
       if (lockedAttempt && lockedAttempt.fingerprint !== currentFingerprint) {
         setStep('delivery');
@@ -403,7 +408,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
       }
     }
-  }, [isOpen, currentFingerprint, lockedAttempt]);
+  }, [isOpen, currentFingerprint, lockedAttempt, addressVerificationEvidence]);
 
   // Keyboard Escape listener
   useEffect(() => {
@@ -849,7 +854,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         updatedEvidence[role] = result.evidence;
 
-        if (isChanged && !resolvedAddressRolesRef.current.has(role)) {
+        const isRoleResolved =
+          resolvedAddressRolesRef.current.has(role) ||
+          Boolean(addressVerificationEvidence?.[role]);
+
+        if (isChanged && !isRoleResolved) {
           onUpdateAddressEvidence?.(updatedEvidence);
           setAddressReviewSuggestion({
             role,
@@ -860,6 +869,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           });
           return;
         }
+
+        resolvedAddressRolesRef.current.add(role);
       }
     }
 
