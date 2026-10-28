@@ -19,7 +19,7 @@ const base = '/Users/zeke/.nvm/versions/node/v20.12.1/lib/node_modules/firebase-
   ]);
   const select = (items,fields) => items.sort((a,b)=>b.createTime.localeCompare(a.createTime)).slice(0,3).map(x=>Object.fromEntries(fields.map(f=>[f,x[f]])));
   const result = {checkedAt:new Date().toISOString(),project,traffic,
-    builds:select(builds.builds,['name','state','errors','createTime','source']),
+    builds:select(builds.builds,['name','state','errors','createTime','source','buildLogsUri']),
     rollouts:select(rollouts.rollouts,['name','state','build','createTime','updateTime','error']),
     readyRevision:runtime.latestReadyRevision,condition:runtime.terminalCondition,
     publicEnvironment:(runtime.template?.containers||[]).flatMap(c=>c.env||[]).filter(e=>['ENVIRONMENT','NEXT_PUBLIC_APP_URL','LOB_ENV','FIREBASE_PROJECT_ID','NEXT_PUBLIC_FIREBASE_PROJECT_ID'].includes(e.name)).map(e=>({name:e.name,value:e.value})),

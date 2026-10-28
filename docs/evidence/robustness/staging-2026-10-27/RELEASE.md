@@ -21,3 +21,14 @@ Commit the tested candidate and push only `HEAD:staging` without force. Observe 
 Provider proofs, real postal delivery, interactive account sign-in, iOS acceptance, operator recovery cadence and measured commercial uplift remain the separate gates described in [RESULT.md](../RESULT.md). A staging rollout does not satisfy production release acceptance.
 
 Rollback, if needed, must target the known ready staging build above and preserve durable payment facts, snapshots and accepted provider IDs. Never blindly retry an uncertain mailing.
+
+## Verified completion
+
+- Deployed source: `a6f36854c8403f78d645e8e4e71d1d1fbee3376e` (robustness implementation `76f4cf7` plus the hosting placeholder correction).
+- App Hosting build `build-2026-10-27-002` reached `READY`; rollout `rollout-2026-10-27-002` reached `SUCCEEDED`. Cloud Run ready revision is `docketstamp-build-2026-10-27-002`; App Hosting traffic assigns 100% to that build. The ready condition succeeded at `2026-10-27T15:24:27.001996Z` (10:24 a.m. America/Chicago). See [after.json](after.json).
+- All nine required indexes reached `READY`; [indexes.json](indexes.json) records their final state. Both dedicated signing and Stripe webhook signing reference enabled staging secret versions. Runtime environment, app origin and Firebase project remain staging; Lob remains `staging_mock_cass`.
+- All 13 [public smoke checks](smoke.json) passed: home, notice workspace, admin/account shells, favicon, noindex, served new client UI and registered staging web identity; synthetic CASS returned signed revision-bound simulated evidence; fitness input remained blocked; a nonexistent scoped attempt returned 404. No order, payment, mailing or email was created. The verifier retains classifications and chunk hashes, not secret/proof tokens or customer values.
+- Browser review confirmed the deployed notice workspace mounts with the address verification controls, physical sheet and form. A [screenshot](workspace.jpg) records the empty test draft. Interactive account/admin sign-in and provider-backed end-to-end payment/dispatch were not performed.
+- Remote `staging` equals the deployed SHA. Remote production `main` remains `b66b69956eae54f59e3ef608be29207d7b143f45`, matching preflight; no production backend/configuration was changed.
+
+The final verification files are local release evidence added after the source push. No redundant documentation-only staging rollout was started.
