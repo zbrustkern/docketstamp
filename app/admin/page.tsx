@@ -624,18 +624,21 @@ export default function AdminDashboardPage() {
           fetchIncidents();
           fetchDiscounts();
           fetchScenarios();
-          if (typeof window !== "undefined") {
-            const urlTab = new URLSearchParams(window.location.search).get("tab");
-            if (urlTab === "incidents" || urlTab === "margins" || urlTab === "discounts" || urlTab === "scenarios" || urlTab === "orders" || urlTab === "templates") {
-              setActiveTab(urlTab as any);
-            }
-          }
         }
       } catch (err) {
         console.error("Admin auth check failed:", err);
       }
     };
     checkAuth();
+  }, []);
+
+  useEffect(() => {
+    const urlTab = new URLSearchParams(window.location.search).get("tab");
+    if (urlTab === "measurement") {
+      setActiveTab("margins");
+    } else if (urlTab === "incidents" || urlTab === "margins" || urlTab === "discounts" || urlTab === "scenarios" || urlTab === "orders" || urlTab === "templates") {
+      setActiveTab(urlTab as any);
+    }
   }, []);
 
   // Auto-connect if already signed into an authorized admin Google account in browser
@@ -1074,18 +1077,8 @@ export default function AdminDashboardPage() {
                   : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
               }`}
             >
-              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-              <span>Unit Economics</span>
-              <span className={`ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold ${
-                activeTab === "margins"
-                  ? "bg-stone-800 text-amber-300 sm:bg-amber-100 sm:text-amber-900"
-                  : "bg-stone-100 text-stone-600 sm:bg-amber-100 sm:text-amber-900"
-              }`}>
-                {metrics?.margins?.netContributionMarginPercent !== null &&
-                metrics?.margins?.netContributionMarginPercent !== undefined
-                  ? `${metrics.margins.netContributionMarginPercent}% (Est.)`
-                  : "N/A"}
-              </span>
+              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+              <span>Experiment</span>
             </button>
 
             <button
@@ -1787,10 +1780,16 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ===================== TAB: UNIT ECONOMICS & MARGINS ===================== */}
+        {/* ===================== TAB: EXPERIMENT & FULFILLMENT ===================== */}
         {activeTab === "margins" && (
           <div className="space-y-8">
             <ExecutiveReportingPanel />
+            <details className="rounded-2xl border border-stone-200 bg-white px-4 py-3 sm:px-5">
+              <summary className="cursor-pointer text-sm font-semibold text-stone-800">
+                Legacy analytics and estimates
+                <span className="ml-2 text-xs font-normal text-stone-500">Unverified historical rollups and formula-based costs</span>
+              </summary>
+              <div className="mt-4 space-y-8 border-t border-stone-200 pt-4">
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="space-y-1">
@@ -2235,6 +2234,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+              </div>
+            </details>
           </div>
         )}
 
@@ -3317,8 +3318,8 @@ export default function AdminDashboardPage() {
             activeTab === "margins" ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"
           }`}
         >
-          <DollarSign className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">Margins</span>
+          <TrendingUp className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">Experiment</span>
         </button>
 
         <button
