@@ -273,7 +273,23 @@ export function ExecutiveReportingPanel() {
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="sources-heading">
         <div><h3 id="sources-heading" className="text-sm font-bold text-slate-900">Acquisition sources</h3><p className="mt-1 text-xs text-slate-500">The original eligible entry determines the channel; unknown attribution stays in its own row.</p></div>
-        <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[640px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="pb-2 font-semibold">Source / campaign</th><th className="pb-2 font-semibold">Sessions</th><th className="pb-2 font-semibold">Paid orders</th><th className="pb-2 font-semibold">Collections</th><th className="pb-2 font-semibold">Spend</th><th className="pb-2 font-semibold">Join</th></tr></thead><tbody className="divide-y divide-slate-100">{(report.channels || []).map(row => <tr key={row.key}><td className="py-2 pr-3 font-medium text-slate-800">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</td><td className="py-2">{row.sessions}</td><td className="py-2">{row.paidOrders}</td><td className="py-2">{money(row.netCollectionsMinor)}</td><td className="py-2">{money(row.spendMinor)}</td><td className="py-2">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</td></tr>)}</tbody></table>{!report.channels?.length && <p className="py-4 text-xs text-slate-500">No eligible sessions in this scope.</p>}</div>
+        {report.channels?.length ? <>
+          <div className="mt-3 space-y-2 sm:hidden">
+            {report.channels.map(row => <article key={row.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <h4 className="break-words text-xs font-semibold text-slate-900">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</h4>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-[10px]">
+                <div><dt className="text-slate-500">Sessions</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.sessions}</dd></div>
+                <div><dt className="text-slate-500">Paid orders</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.paidOrders}</dd></div>
+                <div><dt className="text-slate-500">Collections</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.netCollectionsMinor)}</dd></div>
+                <div><dt className="text-slate-500">Spend</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.spendMinor)}</dd></div>
+                <div><dt className="text-slate-500">Join coverage</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</dd></div>
+              </dl>
+            </article>)}
+          </div>
+          <div className="mt-3 hidden overflow-x-auto sm:block">
+            <table className="w-full min-w-[640px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="pb-2 font-semibold">Source / campaign</th><th className="pb-2 font-semibold">Sessions</th><th className="pb-2 font-semibold">Paid orders</th><th className="pb-2 font-semibold">Collections</th><th className="pb-2 font-semibold">Spend</th><th className="pb-2 font-semibold">Join</th></tr></thead><tbody className="divide-y divide-slate-100">{report.channels.map(row => <tr key={row.key}><td className="py-2 pr-3 font-medium text-slate-800">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</td><td className="py-2">{row.sessions}</td><td className="py-2">{row.paidOrders}</td><td className="py-2">{money(row.netCollectionsMinor)}</td><td className="py-2">{money(row.spendMinor)}</td><td className="py-2">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</td></tr>)}</tbody></table>
+          </div>
+        </> : <p className="mt-3 py-4 text-xs text-slate-500">No eligible sessions in this scope.</p>}
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="health-heading">
