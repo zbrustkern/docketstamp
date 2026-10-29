@@ -107,7 +107,7 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
   ].filter((id): id is string => typeof id === 'string'))];
   const [orders, targetedPostal, targetedCosts, classificationRows] = await Promise.all([
     getManyDocuments('orders', orderIds),
-    queryByOrderIds('postal_facts_v1', scope.environment, scopedOpen.map(row => row.order.id)),
+    queryByOrderIds('postal_facts_v1', scope.environment, orderIds),
     queryByOrderIds('cost_records_v1', scope.environment, orderIds),
     queryByOrderIds('identity_classifications_v1', scope.environment, orderIds),
   ]);
@@ -125,15 +125,56 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
   const classifications = new Map(classificationRows.rows.map(row => [row.orderId, row]));
   const factsById = new Map<string, Record<string, any>>();
   for (const fact of [...money.rows, ...scopedOpen.map(row => row.fact)]) factsById.set(fact.factId, fact);
-  const facts = [...factsById.values()].map(row => classifications.has(row.orderId)
+  const rawFacts = [...factsById.values()];
+  const exclusionRank: Record<string, number> = { customer: 0, unresolved: 1, suspected_bot: 2, free_promo: 3, comp: 4, automated_test: 5, employee: 6, founder: 7 };
+  const captureClassByOrder = new Map<string, string>();
+  for (const fact of rawFacts) {
+    const orderId = typeof fact.orderId === 'string' ? fact.orderId : undefined;
+    const primary = typeof fact.classification === 'string' ? fact.classification : fact.classification?.primary;
+    if (!orderId || typeof primary !== 'string') continue;
+    const prior = captureClassByOrder.get(orderId);
+    if (!prior || (exclusionRank[primary] ?? 1) > (exclusionRank[prior] ?? 1)) captureClassByOrder.set(orderId, primary);
+  }
+  const facts = rawFacts.map(row => classifications.has(row.orderId)
     ? { ...row, classification: { primary: classifications.get(row.orderId)!.primary }, classificationOverrideRef: classifications.get(row.orderId)!._documentId }
     : row);
+  const orderRows = [...orderMap.values()].map(order => {
+    const ownerClass = classifications.get(order.id)?.primary;
+    const paymentClass = captureClassByOrder.get(order.id);
+    const orderClass = order.isFounderTest === true ? 'founder'
+      : order.isComp === true ? 'comp'
+      : order.paymentMethod === 'PROMO_CODE' && Number(order.amountInCents) === 0 ? 'free_promo'
+      : undefined;
+    const primary = ownerClass || paymentClass || orderClass;
+    return primary ? { ...order, classification: { primary } } : order;
+  });
+  // Classification is an order-level owner/payment fact, so carry it to every session
+  // event linked to that order before computing customer funnel denominators. If a
+  // session is linked to both customer and non-customer orders, exclude it from
+  // customer counts rather than letting one browser label win.
+  const sessionClass = new Map<string, string>();
+  for (const order of orderRows) {
+    const classification = typeof order.classification === 'string' ? order.classification : order.classification?.primary;
+    if (!classification) continue;
+    for (const session of [order.sessionId, order.telemetrySessionId].filter((id): id is string => Boolean(id))) {
+      const prior = sessionClass.get(session);
+      if (!prior || (exclusionRank[classification] ?? 1) > (exclusionRank[prior] ?? 1)) sessionClass.set(session, classification);
+    }
+  }
+  const classifiedEvents = allEvents.map(event => {
+    const orderClassification = event.orderId ? classifications.get(event.orderId)?.primary : undefined;
+    const linkedSessionClassification = event.sessionId ? sessionClass.get(event.sessionId) : undefined;
+    const classification = linkedSessionClassification || orderClassification;
+    return classification
+      ? { ...event, classification }
+      : event;
+  });
   const costs = [...new Map([...spend.rows, ...targetedCosts.rows].map(row => [row.id || row._documentId, row])).values()];
   const postal = [...new Map([...postalInWindow.rows, ...targetedPostal.rows].map(row => [row.factId || row._documentId, row])).values()];
   const openObligations = scopedOpen.map(({ fact, order }) => ({ fact, order }));
   const sourceComplete = [money, events, historicalEntries, postalInWindow, spend, outbox, orders, targetedPostal, targetedCosts, classificationRows].every(source => source.complete) && joinsComplete;
-  const generationId = digest({ scope, asOf, facts, events: allEvents, orders: [...orderMap.values()], postal, costs, outbox: scopedOpen }).slice(0,32);
-  const report = computeReport({ scope, asOf, generationId, facts, events: allEvents, orders: [...orderMap.values()], postal, costs, openObligations, sourceComplete } as ReportInput);
+  const generationId = digest({ scope, asOf, facts, events: classifiedEvents, orders: orderRows, postal, costs, outbox: scopedOpen }).slice(0,32);
+  const report = computeReport({ scope, asOf, generationId, facts, events: classifiedEvents, orders: orderRows, postal, costs, openObligations, sourceComplete } as ReportInput);
   return { report, reportHash: digest(report), mode: 'projection_only' as const };
 }
 

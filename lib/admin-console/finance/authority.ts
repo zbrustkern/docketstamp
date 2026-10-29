@@ -1,12 +1,13 @@
 import crypto from "node:crypto";
 import type Stripe from "stripe";
-import { firestoreDb } from "@/lib/firebase-admin";
+import { firestoreDb, sanitizeFirestoreData } from "@/lib/firebase-admin";
 import type { Order } from "@/lib/types";
 import { resolvePaymentMode } from "@/lib/payment-mode";
 import { recordAuthorizedPaymentObserved, type ProcessOrderOptions, type ProcessPaidOrderResult } from "@/lib/order-processor";
 import { getDispatchLock, reconcileAcceptedDispatchOutboxes } from "@/lib/admin-console/postal/attempt-store";
 import {
   MoneyFactSchema,
+  EventEnvelopeSchema,
   ProviderEventReceiptSchema,
 } from "@/lib/admin-console/contracts";
 
@@ -54,6 +55,12 @@ function safeDocId(value: string): string {
   return digest(value);
 }
 
+function contractId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim();
+  return normalized.length > 0 && normalized.length <= 160 ? normalized : undefined;
+}
+
 function nowIso(ms = Date.now()): string {
   return new Date(ms).toISOString();
 }
@@ -73,7 +80,7 @@ function expectedRuntimeMode(): StripeMoneyMode {
   }
 }
 
-function classificationFor(order: Order, mode: StripeMoneyMode) {
+export function classifyCapturedOrder(order: Pick<Order, "id" | "isFounderTest" | "isComp" | "paymentMethod" | "amountInCents">, mode: StripeMoneyMode) {
   let primary: "customer" | "founder" | "employee" | "automated_test" | "comp" | "free_promo" | "suspected_bot" | "unresolved" = "unresolved";
   const overlappingFacts: Array<"customer" | "founder" | "employee" | "automated_test" | "comp" | "free_promo" | "suspected_bot" | "unresolved"> = [];
   if (mode === "test" || mode === "mock") {
@@ -84,6 +91,11 @@ function classificationFor(order: Order, mode: StripeMoneyMode) {
     primary = "comp";
   } else if (order.paymentMethod === "PROMO_CODE" && order.amountInCents === 0) {
     primary = "free_promo";
+  } else if (mode === "live") {
+    // A verified live capture on an ordinary paid order is the operational
+    // customer signal. Founder QA must be marked on the server-owned order;
+    // ambiguous or unavailable payment modes remain unresolved for review.
+    primary = "customer";
   }
   if (order.isFounderTest === true && primary !== "founder") overlappingFacts.push("founder");
   return {
@@ -94,6 +106,22 @@ function classificationFor(order: Order, mode: StripeMoneyMode) {
     policyVersion: 1,
     classifiedAt: nowIso(),
   };
+}
+
+function orderMailTier(order: Order): "first_class" | "certified" | "certified_return_receipt" | undefined {
+  const serviceLevel = String(order.serviceLevel || "").toUpperCase();
+  if (serviceLevel === "FIRST_CLASS" || serviceLevel === "FIRST-CLASS") return "first_class";
+  if (serviceLevel === "CERTIFIED_RETURN_RECEIPT") return "certified_return_receipt";
+  if (serviceLevel === "CERTIFIED") return "certified";
+  return undefined;
+}
+
+function orderEntrySurface(order: Order): string | undefined {
+  const source = String(order.entrySource || "");
+  if (source === "home_chooser") return "home";
+  if (source === "companies_directory") return "company_directory";
+  if (source === "direct_notice" || source === "recipient_prefill" || source === "staged_draft") return "notice_workspace";
+  return undefined;
 }
 
 export function computeOrderSnapshotHash(order: Order): string {
@@ -192,6 +220,8 @@ export async function recordPaymentAuthority(
     const conflictReceiptRef = firestoreDb.collection(RECEIPTS).doc(conflictReceiptId);
     const orderRef = orderId ? firestoreDb.collection("orders").doc(orderId) : null;
     const factRef = firestoreDb.collection(PAYMENT_FACTS).doc(factId);
+    const paymentEventId = safeDocId(`business-event:payment-verified:${factId}`);
+    const paymentEventRef = firestoreDb.collection("business_events_v1").doc(paymentEventId);
     const outboxRef = firestoreDb.collection(OUTBOX).doc(outboxId);
     const receiptSnap = await transaction.get(receiptRef);
     const conflictReceiptSnap = await transaction.get(conflictReceiptRef);
@@ -200,6 +230,7 @@ export async function recordPaymentAuthority(
     const checkoutAttemptRef = checkoutAttemptId ? firestoreDb.collection("checkout_attempts_v1").doc(checkoutAttemptId) : null;
     const checkoutAttemptSnap = checkoutAttemptRef ? await transaction.get(checkoutAttemptRef) : null;
     const factSnap = await transaction.get(factRef);
+    const paymentEventSnap = await transaction.get(paymentEventRef);
     const outboxSnap = orderId ? await transaction.get(outboxRef) : null;
 
     if (receiptSnap.exists) {
@@ -315,7 +346,7 @@ export async function recordPaymentAuthority(
       receivedAt: nowIso(receivedAt),
       verification: "verified",
       evidenceRef: `stripe/payment_intents/${paymentIntent.id}`,
-      classification: classificationFor(order, mode),
+      classification: classifyCapturedOrder(order, mode),
     });
 
     if (factSnap.exists) {
@@ -342,6 +373,36 @@ export async function recordPaymentAuthority(
       }
     } else {
       transaction.set(factRef, paymentFact);
+      if (!paymentEventSnap.exists) {
+        const details = order as Order & { checkoutAttemptId?: string; telemetryJourneyId?: string };
+        const tier = orderMailTier(order);
+        const event = EventEnvelopeSchema.parse({
+          schemaVersion: 1,
+          product: "docketstamp",
+          environment: appEnvironment(),
+          eventId: paymentEventId,
+          eventName: "payment_verified",
+          eventVersion: 1,
+          occurredAt: paymentFact.effectiveAt,
+          receivedAt: paymentFact.receivedAt,
+          emitter: "server",
+          sessionId: contractId(order.telemetrySessionId) || contractId(order.sessionId),
+          journeyId: contractId(details.telemetryJourneyId),
+          checkoutAttemptId: contractId(details.checkoutAttemptId),
+          orderId,
+          correlationId: factId,
+          noticeId: contractId(order.noticeId) || contractId(order.noticeType),
+          tier,
+          entrySurface: orderEntrySurface(order),
+          experienceVersion: typeof order.experienceVersion === "string" ? order.experienceVersion.trim().slice(0, 80) || undefined : undefined,
+          safeProperties: { mode, result: "verified", ...(tier ? { tier } : {}) },
+        });
+        transaction.set(paymentEventRef, sanitizeFirestoreData({
+          ...event,
+          logicalDigest: digest(event),
+          classification: paymentFact.classification,
+        }));
+      }
     }
 
     const receipt = safeReceipt(context, account, mode, eventAndPaymentDigest, {

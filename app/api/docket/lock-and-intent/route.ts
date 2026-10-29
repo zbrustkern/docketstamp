@@ -20,6 +20,7 @@ import { createCapability, createAttemptId, reserveAttempt, setAttemptState, sha
 import { verifyUsAddress } from '@/lib/fulfillment/lob';
 import { addressVerificationStatusLabel } from '@/lib/docket/address-verification-status';
 import { resolvePaymentMode } from '@/lib/payment-mode';
+import { serverEnvironment } from '@/lib/admin-console/commands/access';
 
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       verificationEvidence,
       telemetrySessionId,
       sessionId: altSessionId,
+      journeyId: rawJourneyId,
       experienceVersion,
       entrySource,
       signatureAdoption,
@@ -487,6 +489,9 @@ export async function POST(req: NextRequest) {
       : typeof altSessionId === 'string' && altSessionId.trim()
       ? altSessionId.trim().slice(0, 100)
       : undefined;
+    const cleanJourneyId = typeof rawJourneyId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(rawJourneyId.trim())
+      ? rawJourneyId.trim()
+      : undefined;
 
     const cleanExpVersion = typeof experienceVersion === 'string' && experienceVersion.trim()
       ? experienceVersion.trim().slice(0, 50)
@@ -539,6 +544,7 @@ export async function POST(req: NextRequest) {
       experienceVersion: cleanExpVersion,
       sessionId: cleanSessionId,
       telemetrySessionId: cleanSessionId,
+      telemetryJourneyId: cleanJourneyId,
       entrySource: cleanEntrySource,
       attribution: {
         sessionId: cleanSessionId,
@@ -573,7 +579,24 @@ export async function POST(req: NextRequest) {
 
     // Commit snapshot before requesting payment credentials
     failureCode = 'ORDER_PERSISTENCE';
-    const policyCommit = await createOrderUnderPolicy(orderRecord as any, notice.slug, policyNexus);
+    const policyCommit = await createOrderUnderPolicy(orderRecord as any, notice.slug, policyNexus, {
+      eventId: `document_locked:${orderId}`,
+      eventName: 'document_locked',
+      environment: serverEnvironment(),
+      occurredAt: new Date(lockedAt).toISOString(),
+      sessionId: cleanSessionId,
+      journeyId: cleanJourneyId,
+      draftRevision,
+      checkoutAttemptId: attemptId,
+      orderId,
+      noticeId: notice.slug,
+      tier: activeTier,
+      entrySurface: cleanEntrySource,
+      experienceVersion: cleanExpVersion,
+      classification: 'unresolved',
+      classificationEvidenceRef: `orders/${orderId}`,
+      safeProperties: { result: 'locked' },
+    });
     if (!policyCommit.ok) {
       await setAttemptState(attemptId, 'cancelled');
       return NextResponse.json({

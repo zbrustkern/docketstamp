@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type Stripe from "stripe";
 import { firestoreDb } from "@/lib/firebase-admin";
 import {
+  classifyCapturedOrder,
   computeOrderSnapshotHash,
   getVerifiedPaymentObligation,
   recordPaymentAuthority,
@@ -20,6 +21,7 @@ function order(id: string) {
     serviceLevel: "CERTIFIED" as const, recipientAddress: { ...address }, returnAddress: { ...address },
     documentHtml: "<html>Frozen</html>", status: "PENDING_PAYMENT" as const,
     amountInCents: 1200, finalAmountInCents: 1200, paymentMethod: "STRIPE" as const,
+    telemetrySessionId: `session-${id}`, telemetryJourneyId: `journey-${id}`, entrySource: "direct_notice",
     createdAt: 1, updatedAt: 1,
   };
 }
@@ -33,6 +35,11 @@ function event(id: string, type: string, object: unknown, created = 1_800_000_00
   return { id, object: "event", api_version: "2024-06-20", created, data: { object }, livemode: false, pending_webhooks: 0, request: null, type } as unknown as Stripe.Event;
 }
 
+assert.equal(classifyCapturedOrder(order("ordinary-live"), "live").primary, "customer");
+assert.equal(classifyCapturedOrder({ ...order("founder-live"), isFounderTest: true }, "live").primary, "founder");
+assert.equal(classifyCapturedOrder({ ...order("test-live-flag"), isFounderTest: true }, "test").primary, "automated_test");
+assert.equal(classifyCapturedOrder(order("unknown-mode"), "unknown").primary, "unresolved");
+
 async function main() {
   const orders = firestoreDb.collection("orders");
   await orders.doc("order-capture").set(order("order-capture"));
@@ -41,6 +48,17 @@ async function main() {
   assert.equal(accepted.accepted, true);
   assert.equal(accepted.status, "accepted");
   assert.ok(accepted.paymentFactId);
+  const paymentEvents = firestoreDb.collection("business_events_v1").where("orderId", "==", "order-capture");
+  const firstPaymentEventRows = await paymentEvents.get();
+  assert.equal(firstPaymentEventRows.docs.length, 1, "new capture creates exactly one authoritative payment event");
+  const firstPaymentEvent = firstPaymentEventRows.docs[0].data() as Record<string, any>;
+  assert.equal(firstPaymentEvent.eventName, "payment_verified");
+  assert.equal(firstPaymentEvent.emitter, "server");
+  assert.equal(firstPaymentEvent.sessionId, "session-order-capture");
+  assert.equal(firstPaymentEvent.journeyId, "journey-order-capture");
+  assert.equal(firstPaymentEvent.tier, "certified");
+  assert.equal(firstPaymentEvent.entrySurface, "notice_workspace");
+  assert.equal(firstPaymentEvent.classification.primary, "automated_test");
 
   const proof = await getVerifiedPaymentObligation("order-capture");
   assert.ok(proof);
@@ -52,6 +70,7 @@ async function main() {
   const duplicate = await recordPaymentAuthority(paymentIntent("pi-capture", "order-capture"), context);
   assert.equal(duplicate.accepted, true);
   assert.equal(duplicate.duplicate, true);
+  assert.equal((await paymentEvents.get()).docs.length, 1, "duplicate webhooks do not create another payment event");
 
   const receipt = (await firestoreDb.collection("provider_event_receipts_v1").doc(accepted.receiptId).get()).data() as Record<string, unknown>;
   assert.equal("rawBody" in receipt, false);

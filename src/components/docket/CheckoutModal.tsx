@@ -45,9 +45,9 @@ import { PHYSICAL_LAYOUT } from '@/lib/docket/renderer/physical-layout';
 import { useAuth } from '@/context/AuthContext';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { trackFunnelEvent, getSessionId } from '@/lib/telemetry';
+import { trackFunnelEvent } from '@/lib/telemetry';
 import { EntrySource } from '@/lib/types';
-import { emitBusinessEvent } from '@/lib/admin-console/measurement/client';
+import { emitBusinessEvent, getBusinessJourneyId, getBusinessSessionId } from '@/lib/admin-console/measurement/client';
 import { hasExplicitMarketingConsent } from '@/lib/admin-console/measurement/privacy';
 import { checkoutErrorMessage, isTemplateAvailabilityError } from '@/lib/docket/checkout-errors';
 import type { AddressVerificationEvidence } from '@/lib/docket/address-verification-client';
@@ -574,7 +574,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           customerEmail: cleanEmail,
           docketId: attemptDocketId,
           userId: user?.uid,
-          telemetrySessionId: getSessionId(),
+          telemetrySessionId: getBusinessSessionId(),
+          journeyId: getBusinessJourneyId(doc.noticeDefinition.slug),
           experienceVersion: 'home_v2',
           entrySource,
           marketingConsent: hasExplicitMarketingConsent(),

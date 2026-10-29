@@ -16,6 +16,7 @@ export interface EventRow {
 export interface OrderRow {
   id: string; status: string; environment?: string; sessionId?: string; telemetrySessionId?: string;
   noticeId?: string; noticeType?: string; serviceLevel?: string; updatedAt?: number; createdAt?: number;
+  classification?: string | { primary: string };
   lobLetterId?: string; postalMode?: string; freeAuthorizationId?: string; fulfillmentError?: string;
 }
 export interface PostalRow { factId: string; orderId: string; state: string; lobMode: string; environment?: string; occurredAt: string; receivedAt: string }
@@ -29,7 +30,7 @@ export interface ReportInput {
   postal: PostalRow[]; costs?: CostRow[]; openObligations?: Array<{ fact: FactRow; order: OrderRow }>;
   sourceComplete: boolean; generationId: string;
 }
-export const JOURNEY = ['entry_viewed', 'notice_selected', 'details_ready', 'signature_adopted', 'document_locked', 'payment_attempted', 'payment_verified', 'fulfillment_accepted'] as const;
+export const JOURNEY = ['entry_viewed', 'notice_selected', 'workspace_viewed', 'details_ready', 'signature_adopted', 'document_locked', 'payment_form_ready', 'payment_attempted', 'payment_verified', 'fulfillment_accepted'] as const;
 const time = (v: string) => Date.parse(v);
 const day = 86400000;
 const classify = (value: string | { primary: string } | undefined) => typeof value === 'string' ? value : value?.primary || 'unresolved';
@@ -43,11 +44,14 @@ export function computeReport(input: ReportInput) {
   const sameEnvironment = (row: { environment?: string }) => row.environment === scope.environment;
   if (!scope.environment) throw new Error('Report environment must be explicit');
   const orderMap = new Map(input.orders.map(o => [o.id, o]));
-  const attributionEvents = input.events.filter(e => sameEnvironment(e) && time(e.receivedAt) <= now && time(e.occurredAt) <= now + 300000 &&
-    (!scope.noticeId || e.noticeId === scope.noticeId) && (!scope.tier || e.tier === scope.tier) &&
-    (!scope.entrySurface || e.entrySurface === scope.entrySurface) && classify(e.classification) === (scope.classification || 'customer'));
+  // Scope is applied after collecting the entry evidence. A landing event often has no
+  // selected notice or mail tier yet, so filtering it first breaks the session join and
+  // makes a valid campaign appear to have paid orders but no traffic.
+  const candidateEvents = [...new Map(input.events.map(e => [e.eventId, e])).values()].filter(e =>
+    sameEnvironment(e) && time(e.receivedAt) <= now && time(e.occurredAt) <= now + 300000 &&
+    classify(e.classification) === (scope.classification || 'customer'));
   const acquisitionEntries = new Map<string, EventRow>();
-  for (const event of attributionEvents.filter(e => e.eventName === 'entry_viewed' && e.sessionId).sort((a,b) => time(a.occurredAt) - time(b.occurredAt))) {
+  for (const event of candidateEvents.filter(e => e.eventName === 'entry_viewed' && e.sessionId).sort((a,b) => time(a.occurredAt) - time(b.occurredAt))) {
     if (!acquisitionEntries.has(event.sessionId!)) acquisitionEntries.set(event.sessionId!, event);
   }
   const channelKey = (event: EventRow) => {
@@ -55,7 +59,7 @@ export function computeReport(input: ReportInput) {
     return source?.campaignId ? `${source.source || 'unknown'}:${source.medium || 'unknown'}:${source.campaignId}` : source?.source || 'unknown';
   };
   const orderMatches = (orderId?: string) => {
-    if (!orderId) return !scope.noticeId && !scope.tier;
+    if (!orderId) return !scope.noticeId && !scope.tier && !scope.channel && !scope.entrySurface;
     const order = orderMap.get(orderId);
     if (scope.noticeId && order?.noticeId !== scope.noticeId && order?.noticeType !== scope.noticeId) return false;
     const tiers: Record<string, string> = { FIRST_CLASS: 'first_class', CERTIFIED: 'certified', CERTIFIED_RETURN_RECEIPT: 'certified_return_receipt' };
@@ -69,13 +73,33 @@ export function computeReport(input: ReportInput) {
     }
     return true;
   };
+  const sessionOrders = new Map<string, OrderRow[]>();
+  for (const order of input.orders.filter(o => !o.environment || sameEnvironment(o))) {
+    const session = order.sessionId || order.telemetrySessionId;
+    if (!session) continue;
+    sessionOrders.set(session, [...(sessionOrders.get(session) || []), order]);
+  }
+  const sessionMatches = (session: string) => {
+    const entry = acquisitionEntries.get(session);
+    const sessionEvents = candidateEvents.filter(e => e.sessionId === session);
+    const ordersForSession = sessionOrders.get(session) || [];
+    if (scope.channel && (!entry || channelKey(entry) !== scope.channel)) return false;
+    if (scope.entrySurface && (!entry || entry.entrySurface !== scope.entrySurface)) return false;
+    if (scope.noticeId && !sessionEvents.some(e => e.noticeId === scope.noticeId) &&
+      !ordersForSession.some(o => o.noticeId === scope.noticeId || o.noticeType === scope.noticeId)) return false;
+    const tierValues: Record<string, string> = { FIRST_CLASS: 'first_class', CERTIFIED: 'certified', CERTIFIED_RETURN_RECEIPT: 'certified_return_receipt' };
+    if (scope.tier && !sessionEvents.some(e => e.tier === scope.tier) &&
+      !ordersForSession.some(o => tierValues[o.serviceLevel || ''] === scope.tier)) return false;
+    return true;
+  };
+  const scopedSessions = new Set([...new Set(candidateEvents.map(e => e.sessionId).filter((v): v is string => Boolean(v)))].filter(sessionMatches));
   const allFacts = [...new Map(input.facts.map(f => [f.factId, f])).values()].filter(f =>
     sameEnvironment(f) && f.verification === 'verified' && Number.isSafeInteger(f.amountMinor) && f.amountMinor >= 0 && time(f.receivedAt) <= now && time(f.effectiveAt) <= now,
   );
   const desiredClass = scope.classification || 'customer';
   const classFacts = allFacts.filter(f => classify(f.classification) === desiredClass && orderMatches(f.orderId));
   const scopedAttribution = Boolean(scope.channel || scope.entrySurface);
-  const unattributedOrders = scopedAttribution ? new Set(allFacts.filter(f => inWindow(f.effectiveAt) && signForMoney(f.kind) !== 0 && f.orderId)
+  const unattributedOrders = scopedAttribution ? new Set(allFacts.filter(f => classify(f.classification) === desiredClass && inWindow(f.effectiveAt) && signForMoney(f.kind) !== 0 && f.orderId)
     .filter(f => {
       const order = orderMap.get(f.orderId!);
       const session = order?.sessionId || order?.telemetrySessionId;
@@ -95,18 +119,22 @@ export function computeReport(input: ReportInput) {
     classify(fact.classification) === desiredClass && orderMatches(order.id),
   );
   const unknownCapture = allFacts.filter(f => f.kind === 'capture' && classify(f.classification) === 'unresolved');
+  const excludedByClassification = Object.fromEntries((['founder','employee','automated_test','comp','free_promo','suspected_bot','unresolved'] as const).map(kind => {
+    const paidOrders = new Set(allFacts.filter(f => f.kind === 'capture' && classify(f.classification) === kind && f.orderId).map(f => f.orderId!));
+    const sessions = new Set(input.events.filter(e => e.eventName === 'entry_viewed' && e.sessionId && classify(e.classification) === kind && inWindow(e.occurredAt)).map(e => e.sessionId!));
+    return [kind, { paidOrders: paidOrders.size, sessions: sessions.size }];
+  }));
   const moneyByCurrency: Record<string, number> = {};
   for (const fact of financial) moneyByCurrency[fact.currency] = (moneyByCurrency[fact.currency] || 0) + signForMoney(fact.kind) * fact.amountMinor;
 
   const seenEvents = new Set<string>();
-  const events = input.events.filter(e => {
-    if (seenEvents.has(e.eventId) || !sameEnvironment(e) || time(e.receivedAt) > now || time(e.occurredAt) > now + 300000) return false;
+  const events = candidateEvents.filter(e => {
+    if (seenEvents.has(e.eventId)) return false;
     seenEvents.add(e.eventId);
-    if (scope.noticeId && e.noticeId !== scope.noticeId) return false;
-    if (scope.tier && e.tier !== scope.tier) return false;
-    if (scope.entrySurface && e.entrySurface !== scope.entrySurface) return false;
-    if (scope.channel && e.acquisition?.original?.source !== scope.channel) return false;
-    return classify(e.classification) === desiredClass;
+    // Keep the whole journey for a session selected through its entry, selected order,
+    // or an explicit event label. Event stages need not repeat filters such as tier.
+    if (e.sessionId) return scopedSessions.has(e.sessionId);
+    return !scope.noticeId && !scope.tier && !scope.channel && !scope.entrySurface;
   });
   const entries = new Map<string, EventRow>();
   for (const e of events.filter(e => e.eventName === 'entry_viewed' && e.sessionId && inWindow(e.occurredAt)).sort((a,b) => time(a.occurredAt) - time(b.occurredAt))) {
@@ -133,6 +161,17 @@ export function computeReport(input: ReportInput) {
   for (const p of postal.sort((a,b) => time(a.occurredAt) - time(b.occurredAt) || a.factId.localeCompare(b.factId))) latestPostal.set(p.orderId, p);
   const acceptedStates = new Set(['accepted_by_lob','mailed','in_transit','delivered','returned']);
   const accepted = (id: string) => { const p = latestPostal.get(id); return Boolean(p && p.lobMode === 'live' && acceptedStates.has(p.state)); };
+  const visiblePostalOrderIds = new Set([...classFacts.map(f => f.orderId), ...openFacts.map(({ order }) => order.id)].filter((id): id is string => Boolean(id)));
+  const visiblePostal = postal.filter(p => visiblePostalOrderIds.has(p.orderId));
+  const liveLatestPostal = [...latestPostal.values()].filter(p => p.lobMode === 'live' && paidOrderIds.has(p.orderId));
+  const hasPostalState = (states: readonly string[]) => liveLatestPostal.filter(p => states.includes(p.state)).length;
+  const postalStages = {
+    lobAccepted: hasPostalState(['accepted_by_lob','mailed','in_transit','delivered','returned']),
+    mailed: hasPostalState(['mailed','in_transit','delivered','returned']),
+    inTransit: hasPostalState(['in_transit']),
+    delivered: hasPostalState(['delivered']),
+    returned: hasPostalState(['returned']),
+  };
   // Contribution follows the acquired session cohort and its seven-day outcome window,
   // rather than subtracting today's media spend from today's cash receipts.
   const cohortOrders = [...cohortEntryByOrder.keys()];
@@ -186,10 +225,10 @@ export function computeReport(input: ReportInput) {
       if (stage === prior + 1) prior = stage;
     }
   }
-  for (const session of converted) stageSets[6].add(session);
+  for (const session of converted) stageSets[8].add(session);
   for (const orderId of paidOrderIds) {
     const order = orderMap.get(orderId); const session = order?.sessionId || order?.telemetrySessionId;
-    if (session && entries.has(session) && accepted(orderId)) stageSets[7].add(session);
+    if (session && entries.has(session) && accepted(orderId)) stageSets[9].add(session);
   }
   const immature = [...entries.values()].filter(e => now < time(e.occurredAt) + 7 * day).length;
   const validTimes = [...allFacts.map(f => time(f.receivedAt)), ...events.map(e => time(e.receivedAt)), ...postal.map(p => time(p.receivedAt))].filter(Number.isFinite);
@@ -234,9 +273,10 @@ export function computeReport(input: ReportInput) {
       contributionAfterAcquisition: metric('contribution_after_acquisition', afterAcquisitionMinor, 'money_minor', afterAcquisitionMinor === null ? 'unavailable' : beforeEvidenceClass, { currency: 'USD' }),
       acquisitionSpend: metric('acquisition_spend', spendMinor, 'money_minor', spendMinor === null ? 'unavailable' : 'verified', { currency: 'USD' }),
     },
-    moneyByCurrency, exceptions, journey: JOURNEY.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
+    moneyByCurrency, exceptions, postalStages, journey: JOURNEY.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
     quality: {
       classificationUnresolved: unknownCapture.length, unmatchedCaptures, immatureSessions: immature, missingPrerequisites,
+      excludedByClassification,
       eligibleSessions: entries.size, convertingSessions: converted.size,
       costCoverage: cohortOrders.length ? coveredActual / cohortOrders.length : null,
       spendCoverage: sourceCount ? [...channels.values()].filter(c => c.spendMinor !== null).length / sourceCount : null,
@@ -244,8 +284,11 @@ export function computeReport(input: ReportInput) {
     },
     evidence: {
       money: financial.map(f => ({ id:f.factId, orderId:f.orderId, kind:f.kind, amountMinor:f.amountMinor, currency:f.currency, verification:f.verification, effectiveAt:f.effectiveAt, classification:classify(f.classification) })),
-      events: events.filter(e => e.sessionId && entries.has(e.sessionId)).map(e => ({ id:e.eventId,eventName:e.eventName,sessionId:e.sessionId,occurredAt:e.occurredAt,receivedAt:e.receivedAt })),
-      postal: postal.map(p => ({ id:p.factId,orderId:p.orderId,state:p.state,lobMode:p.lobMode,occurredAt:p.occurredAt })),
+      events: events.filter(e => e.sessionId && entries.has(e.sessionId)).map(e => {
+        const linkedOrders = sessionOrders.get(e.sessionId!) || [];
+        return { id:e.eventId,eventName:e.eventName,sessionId:e.sessionId,orderId:e.orderId || (linkedOrders.length === 1 ? linkedOrders[0].id : undefined),occurredAt:e.occurredAt,receivedAt:e.receivedAt };
+      }),
+      postal: visiblePostal.map(p => ({ id:p.factId,orderId:p.orderId,state:p.state,lobMode:p.lobMode,occurredAt:p.occurredAt })),
     },
   };
 }

@@ -177,6 +177,7 @@ export interface Order {
   sessionId?: string;
   entrySource?: string;
   telemetrySessionId?: string;
+  telemetryJourneyId?: string;
   createdAt: number;
   updatedAt: number;
 }

@@ -260,8 +260,14 @@ test('a durably accepted postal attempt repairs payment/follow-on outboxes witho
   const accepted = await firestoreDb.collection('dispatch_attempts_v1').doc(claim.attempt.attemptId).get();
   assert.equal(accepted.data()?.state, 'accepted');
   assert.equal((await firestoreDb.collection('orders').doc(orderId).get()).data()?.status, 'PROCESSING_DISPATCH');
+  const postalFacts = await firestoreDb.collection('postal_facts_v1').where('orderId', '==', orderId).get();
+  const acceptanceEvents = await firestoreDb.collection('business_events_v1').where('orderId', '==', orderId).where('eventName', '==', 'fulfillment_accepted').get();
+  assert.equal(postalFacts.size, 1, 'One provider acceptance writes one postal fact in the accepted-attempt transaction.');
+  assert.equal(postalFacts.docs[0].data()?.state, 'accepted_by_lob', 'Lob acceptance remains distinct from postal delivery.');
+  assert.equal(acceptanceEvents.size, 1, 'One accepted attempt writes one server fulfillment milestone.');
   const outboxes = await firestoreDb.collection('business_outbox_v1').where('orderId', '==', orderId).get();
   assert.ok(outboxes.docs.some((doc: any) => doc.data()?.kind === 'payment_obligation' && doc.data()?.status === 'consumed'));
   assert.ok(outboxes.docs.some((doc: any) => doc.data()?.kind === 'dispatch_accepted_effects' && doc.data()?.status === 'pending'));
   assert.equal(await reconcileAcceptedDispatchOutboxes(claim.attempt.attemptId, paymentFactId), true);
+  assert.equal((await firestoreDb.collection('postal_facts_v1').where('orderId', '==', orderId).get()).size, 1, 'Outbox recovery does not duplicate the provider acceptance fact.');
 });

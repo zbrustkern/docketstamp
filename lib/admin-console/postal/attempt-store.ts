@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import { z } from "zod";
 import { firestoreDb, sanitizeFirestoreData } from "@/lib/firebase-admin";
+import { PostalFactSchema } from "@/lib/admin-console/contracts";
+import { appendServerBusinessEvent } from "@/lib/admin-console/measurement/server-events";
 import { DispatchAttemptSchema } from "./model";
 
 const ATTEMPTS = "dispatch_attempts_v1";
@@ -30,6 +32,14 @@ function sha(value: string) { return crypto.createHash("sha256").update(value).d
 function lockId(environment: string, lobMode: string, orderId: string, snapshotVersion: number) { return sha(`${environment}:${lobMode}:${orderId}:${snapshotVersion}`); }
 function iso(ms: number) { return new Date(ms).toISOString(); }
 function stableId(value: string) { return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
+function classificationForOrder(order: Record<string, unknown>, paymentFact?: Record<string, unknown>) {
+  const recorded = (paymentFact?.classification as Record<string, unknown> | undefined)?.primary;
+  if (typeof recorded === "string") return recorded as "customer" | "founder" | "employee" | "automated_test" | "comp" | "free_promo" | "suspected_bot" | "unresolved";
+  if (order.isFounderTest === true) return "founder" as const;
+  if (order.isComp === true) return "comp" as const;
+  if (order.paymentMethod === "PROMO_CODE") return "free_promo" as const;
+  return "unresolved" as const;
+}
 
 export async function getDispatchLock(input: {
   environment: "local" | "staging" | "production";
@@ -179,6 +189,10 @@ export async function finishDispatchAttempt(input: {
     if (input.state === "accepted" && !input.providerLetterId) throw new Error("PROVIDER_LETTER_ID_REQUIRED");
     const orderRef = firestoreDb.collection("orders").doc(String(attempt.orderId));
     const orderSnap = await tx.get(orderRef);
+    const paymentFactRef = typeof attempt.paymentFactId === "string"
+      ? firestoreDb.collection("payment_facts_v1").doc(attempt.paymentFactId)
+      : null;
+    const paymentFactSnap = paymentFactRef ? await tx.get(paymentFactRef) : null;
     const paymentOutboxRef = attempt.paymentFactId
       ? firestoreDb.collection("business_outbox_v1").doc(stableId(`payment-obligation:${String(attempt.orderId)}`))
       : null;
@@ -187,6 +201,46 @@ export async function finishDispatchAttempt(input: {
       ? firestoreDb.collection("business_outbox_v1").doc(stableId(`dispatch-accepted-effects:${String(attempt.orderId)}:${String(attempt.snapshotVersion)}`))
       : null;
     const acceptedEffectsSnap = acceptedEffectsRef ? await tx.get(acceptedEffectsRef) : null;
+    const order = orderSnap?.exists ? orderSnap.data() as Record<string, unknown> : {};
+    const paymentFact = paymentFactSnap?.exists ? paymentFactSnap.data() as Record<string, unknown> : undefined;
+    const classification = classificationForOrder(order, paymentFact);
+    const postalState = input.state === "accepted" ? "accepted_by_lob" : input.state === "uncertain" ? "uncertain" : input.state === "failed" ? "failed" : undefined;
+    if (postalState) {
+      const fact = PostalFactSchema.parse({
+        schemaVersion: 1, product: "docketstamp", environment: attempt.environment,
+        factId: stableId(`dispatch-postal:${String(attempt.environment)}:${String(attempt.attemptId)}:${postalState}`),
+        orderId: attempt.orderId,
+        ...(input.providerLetterId ? { providerLetterId: input.providerLetterId } : {}),
+        providerAccountId: process.env.LOB_ACCOUNT_ID || "lob_default",
+        lobMode: attempt.lobMode,
+        cassMode: attempt.cassMode,
+        state: postalState,
+        providerState: input.state,
+        occurredAt: now, receivedAt: now,
+        snapshotHash: attempt.snapshotHash,
+        idempotencyKey: attempt.idempotencyKey,
+        evidenceRef: `dispatch_attempts_v1/${String(attempt.attemptId)}`,
+        artifactKind: "none",
+      });
+      tx.create(firestoreDb.collection("postal_facts_v1").doc(fact.factId), sanitizeFirestoreData(fact));
+      appendServerBusinessEvent(tx, {
+        eventId: `fulfillment_${input.state}:${String(attempt.attemptId)}`,
+        eventName: input.state === "accepted" ? "fulfillment_accepted" : input.state === "uncertain" ? "fulfillment_uncertain" : "fulfillment_failed",
+        environment: attempt.environment as "local" | "staging" | "production",
+        occurredAt: now,
+        sessionId: typeof order.sessionId === "string" ? order.sessionId : typeof order.telemetrySessionId === "string" ? order.telemetrySessionId : undefined,
+        journeyId: typeof order.telemetryJourneyId === "string" ? order.telemetryJourneyId : undefined,
+        checkoutAttemptId: typeof order.checkoutAttemptId === "string" ? order.checkoutAttemptId : undefined,
+        orderId: String(attempt.orderId),
+        noticeId: typeof order.noticeId === "string" ? order.noticeId : undefined,
+        tier: attempt.tier as "first_class" | "certified" | "certified_return_receipt",
+        entrySurface: typeof order.entrySource === "string" ? order.entrySource : undefined,
+        experienceVersion: typeof order.experienceVersion === "string" ? order.experienceVersion : undefined,
+        classification,
+        classificationEvidenceRef: paymentFact ? `payment_facts_v1/${String(attempt.paymentFactId)}` : `orders/${String(attempt.orderId)}`,
+        safeProperties: { result: input.state, mode: String(attempt.lobMode) },
+      });
+    }
     tx.update(attemptRef, sanitizeFirestoreData({
       state: input.state, updatedAt: now, ...(input.providerLetterId ? { providerLetterId: input.providerLetterId } : {}),
       ...(input.providerErrorCode ? { providerErrorCode: input.providerErrorCode } : {}),

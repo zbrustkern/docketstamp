@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {computeReport,type FactRow,type EventRow} from '../../lib/admin-console/reporting/compute';
+import {computeFunnelConversionReport} from '../../lib/telemetry-reporting';
 import {calendarScope} from '../../lib/admin-console/reporting/scope';
 import {firestoreDb} from '../../lib/firebase-admin';
 import {prepareGeneration,publishGeneration,readGeneration,readEvidence,rollbackGeneration} from '../../lib/admin-console/reporting/store';
@@ -23,6 +24,10 @@ async function run(){
   assert.equal(report.metrics.conversion.denominator,2);
   assert.equal(report.journey[1].observedSessions,0,'Payment cannot synthesize letter selection');
   assert.equal(report.exceptions.length,1);
+  assert.equal(report.postalStages.lobAccepted,2,'Provider acceptance includes terminal postal states but excludes paid orders without Lob acceptance.');
+  assert.equal(report.postalStages.mailed,2,'Lob acceptance is not counted as mailed.');
+  assert.equal(report.postalStages.delivered,1,'Delivery remains a separate postal outcome.');
+  assert.equal(report.postalStages.returned,1,'Returned mail remains separate from delivery.');
   assert.equal(report.exceptions[0].orderId,'o3');
   assert.equal(report.quality.classificationUnresolved,1);
   const changed=computeReport({...input,orders:orders.map(o=>({...o,status:'FAILED'}))});
@@ -47,6 +52,17 @@ async function run(){
   const channelScoped=computeReport({...input,scope:{...scope,channel:'search:paid:brand'},facts:[fact('channel-refund','old-channel-order',500,{kind:'refund'}),fact('social-capture','social-order',7000)],orders:[{id:'old-channel-order',status:'DELIVERED',environment:'local',sessionId:'old-channel-session'},{id:'social-order',status:'PROCESSING_DISPATCH',environment:'local',sessionId:'social-session'}],events:[acquiredOldEntry,socialEntry],postal:[],openObligations:[]});
   assert.equal(channelScoped.metrics.netCollections.value,-500,'Channel cash includes a current refund joined to historical acquisition evidence and excludes other-channel cash');
   assert.equal(channelScoped.metrics.paidOrders.value,0,'Channel order counts exclude paid orders from other acquisition channels');
+  const scopedEntry={...event('scope-entry','scope-session','entry_viewed','2026-10-13T09:00:00.000Z'),acquisition:{original:{source:'search',medium:'paid',campaignId:'launch'}},entrySurface:'notices'};
+  const scopedJourney=[scopedEntry,event('scope-workspace','scope-session','workspace_viewed','2026-10-13T09:01:00.000Z'),event('scope-lock','scope-session','document_locked','2026-10-13T09:02:00.000Z')];
+  const selectedOrder={id:'scope-order',status:'PROCESSING_DISPATCH',environment:'local',sessionId:'scope-session',noticeId:'deposit-demand',serviceLevel:'CERTIFIED'};
+  const scopedReport=computeReport({...input,scope:{...scope,channel:'search:paid:launch',noticeId:'deposit-demand',tier:'certified',entrySurface:'notices'},facts:[fact('scope-capture','scope-order',1995)],events:scopedJourney,orders:[selectedOrder],postal:[{factId:'scope-postal',orderId:'scope-order',state:'accepted_by_lob',lobMode:'live',environment:'local',occurredAt:'2026-10-15T09:00:00.000Z',receivedAt:'2026-10-15T09:00:00.000Z'}],openObligations:[]});
+  assert.equal(scopedReport.metrics.paidOrders.value,1,'Channel, notice, tier and surface filters preserve the selected session/order join');
+  assert.equal(scopedReport.metrics.conversion.denominator,1,'The eligible entry remains in a scoped funnel even though it has no notice/tier labels yet');
+  assert.equal(scopedReport.metrics.conversion.numerator,1,'A verified capture joins the original scoped entry');
+  assert.equal(scopedReport.journey.find(stage=>stage.name==='workspace_viewed')?.observedSessions,1,'Later stages remain visible without repeating acquisition filters');
+  const pendingLegacy=computeFunnelConversionReport([], [{id:'pending-order',customerEmail:'customer@example.test',amountInCents:1995,status:'PENDING_PAYMENT',recipientAddress:{firstName:'A',lastName:'',street1:'1',city:'C',state:'CA',zip:'90001'},returnAddress:{firstName:'B',lastName:'',street1:'2',city:'C',state:'CA',zip:'90001'},createdAt:1,updatedAt:1} as any]);
+  assert.equal(pendingLegacy.verifiedPaidOrders,0,'Pending checkout order rows are not payment authority');
+  assert.equal(pendingLegacy.attributionSummary.unattributedPaidOrders,0,'An unpaid order cannot enter the unknown paid bucket');
   const olderOpenFact=fact('older-paid','older-mailing',1995,{effectiveAt:'2026-09-01T09:00:00.000Z'});
   const olderOpen=computeReport({...input,facts:[],events:[],orders:[{id:'older-mailing',status:'QUEUED_FOR_FULFILLMENT',environment:'local'}],postal:[],openObligations:[{fact:olderOpenFact,order:{id:'older-mailing',status:'QUEUED_FOR_FULFILLMENT',environment:'local'}}]});
   assert.equal(olderOpen.exceptions.length,1,'Older paid obligations remain visible in current operations');
@@ -99,6 +115,22 @@ async function run(){
   assert.equal((await readEvidence(a.report.generationId,'money'))?.total,6);
   const next=await prepareGeneration(scope,'2026-10-20T04:01:00.000Z');await publishGeneration(next,a.report.generationId);
   assert.equal(await rollbackGeneration(scope,next.report.generationId),a.report.generationId);
+  const linkedFounderFact=fact('linked-founder-capture','linked-founder-order',1995);
+  const capturedFounderFact=fact('captured-founder-capture','captured-founder-order',1995,{classification:{primary:'founder'}});
+  const linkedFounderEntry=event('linked-founder-entry','linked-founder-session','entry_viewed','2026-10-14T09:00:00.000Z');
+  await firestoreDb.collection('payment_facts_v1').doc(linkedFounderFact.factId).set(linkedFounderFact);
+  await firestoreDb.collection('payment_facts_v1').doc(capturedFounderFact.factId).set(capturedFounderFact);
+  await firestoreDb.collection('orders').doc('linked-founder-order').set({id:'linked-founder-order',environment:'local',status:'PROCESSING_DISPATCH',sessionId:'linked-founder-session'});
+  await firestoreDb.collection('orders').doc('captured-founder-order').set({id:'captured-founder-order',environment:'local',status:'PROCESSING_DISPATCH',sessionId:'captured-founder-session'});
+  await firestoreDb.collection('business_events_v1').doc(linkedFounderEntry.eventId).set(linkedFounderEntry);
+  const capturedFounderEntry=event('captured-founder-entry','captured-founder-session','entry_viewed','2026-10-14T10:00:00.000Z');
+  await firestoreDb.collection('business_events_v1').doc(capturedFounderEntry.eventId).set(capturedFounderEntry);
+  await firestoreDb.collection('identity_classifications_v1').doc('classification-linked-founder-order').set({environment:'local',orderId:'linked-founder-order',primary:'founder'});
+  const linkedFounderGeneration=await prepareGeneration(scope,input.asOf);
+  assert.ok(!linkedFounderGeneration.report.evidence.money.some(row=>row.id===linkedFounderFact.factId),'An order-level founder override removes its capture from customer money');
+  assert.ok(!linkedFounderGeneration.report.evidence.events.some(row=>row.id===linkedFounderEntry.eventId),'An order-level founder override also removes the linked browser session from customer funnel evidence');
+  assert.ok(!linkedFounderGeneration.report.evidence.events.some(row=>row.id===capturedFounderEntry.eventId),'A capture-level founder classification also removes its linked browser session from customer funnel evidence');
+  assert.deepEqual(linkedFounderGeneration.report.quality.excludedByClassification.founder,{paidOrders:3,sessions:2},'Owner QA exclusions include both fixture payments and all order-linked founder sessions.');
   console.log('Reporting oracle, no synthetic milestones, postal-independent money, DST, replay and generation rollback passed.');
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

@@ -17,6 +17,10 @@ export async function GET(req: NextRequest) {
       ...calendarScope(serverEnvironment(), new Date(), req.nextUrl.searchParams.get('timezone') || 'America/Chicago', validRange,
         req.nextUrl.searchParams.get('start') || undefined, req.nextUrl.searchParams.get('end') || undefined),
       ...(req.nextUrl.searchParams.get('channel') ? { channel: req.nextUrl.searchParams.get('channel')! } : {}),
+      ...(req.nextUrl.searchParams.get('classification') ? { classification: req.nextUrl.searchParams.get('classification')! } : {}),
+      ...(req.nextUrl.searchParams.get('noticeId') ? { noticeId: req.nextUrl.searchParams.get('noticeId')! } : {}),
+      ...(req.nextUrl.searchParams.get('tier') ? { tier: req.nextUrl.searchParams.get('tier')! } : {}),
+      ...(req.nextUrl.searchParams.get('entrySurface') ? { entrySurface: req.nextUrl.searchParams.get('entrySurface')! } : {}),
     });
     if(scope.environment!==serverEnvironment()) throw new AdminAccessError(403,'ENVIRONMENT_SCOPE_DENIED');
     const report=await readGeneration(scope);

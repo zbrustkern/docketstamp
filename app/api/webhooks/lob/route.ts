@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import {
   firestoreDb,
+  sanitizeFirestoreData,
   getOrdersCollection,
   getOrderById,
   getOrderByDocketId,
@@ -9,6 +10,11 @@ import {
 } from "@/lib/firebase-admin";
 import { Order, OrderStatus } from "@/lib/types";
 import { resolvePostalProvenance } from "@/lib/order-record";
+import { PostalFactSchema } from "@/lib/admin-console/contracts";
+import { normalizeLobEventState } from "@/lib/admin-console/postal/model";
+import { serverEnvironment } from "@/lib/admin-console/commands/access";
+import { resolveLobDispatchMode } from "@/src/lib/fulfillment/lob";
+import { computeOrderSnapshotHash } from "@/lib/admin-console/finance/authority";
 
 /**
  * Maps Lob webhook events to internal OrderStatus lifecycle states.
@@ -235,6 +241,12 @@ export async function POST(req: NextRequest) {
     const eventId = target !== body && typeof body.id === "string" && body.id !== letterId
       ? body.id
       : crypto.createHash("sha256").update(rawBody, "utf8").digest("hex");
+    const providerEventId = crypto.createHash("sha256").update(eventId, "utf8").digest("hex");
+    const eventEnvironment = serverEnvironment();
+    const lobAccountId = process.env.LOB_ACCOUNT_ID || "lob_default";
+    const resolvedMode = resolveLobDispatchMode();
+    const lobMode = resolvedMode === "live" || resolvedMode === "test_api" || resolvedMode === "mock" ? resolvedMode : "unknown";
+    const cassMode = process.env.LOB_ENV === "staging_mock_cass" ? "staging_mock_cass" : lobMode === "live" ? "live" : "unknown";
     const eventOccurredAt = parseEventTime(
       body.created,
       body.date_created,
@@ -269,6 +281,15 @@ export async function POST(req: NextRequest) {
 
       const receivedAt = Date.now();
       const effectiveEventTime = eventOccurredAt ?? receivedAt;
+      const factId = crypto.createHash("sha256").update(`lob-postal:${eventEnvironment}:${lobAccountId}:${lobMode}:${providerEventId}`).digest("hex");
+      const postalFactRef = firestoreDb.collection("postal_facts_v1").doc(factId);
+      const postalFactSnap = await transaction.get(postalFactRef);
+      const normalizedState = normalizeLobEventState(eventType.toLowerCase());
+      const publicEventType = /^[a-z0-9_.:-]{1,120}$/i.test(eventType) ? eventType : "unmapped";
+      const recordedSnapshotHash = (current as Order & { paymentSnapshotHash?: unknown }).paymentSnapshotHash;
+      const snapshotHash = typeof recordedSnapshotHash === "string" && /^[a-f0-9]{64}$/i.test(recordedSnapshotHash)
+        ? recordedSnapshotHash
+        : computeOrderSnapshotHash(current);
       const latestKnownEventTime = existingEvents.reduce((latest, event) => {
         return Math.max(latest, eventTimeFromHistory(event) ?? 0);
       }, 0);
@@ -309,6 +330,23 @@ export async function POST(req: NextRequest) {
       });
       updates.lobTrackingEvents = existingEvents;
       transaction.update(docRef, updates);
+      if (!postalFactSnap.exists) {
+        const postalFact = PostalFactSchema.parse({
+          schemaVersion: 1, product: "docketstamp", environment: eventEnvironment,
+          factId, orderId: current.id,
+          ...(letterId ? { providerLetterId: letterId } : {}),
+          providerEventId,
+          providerAccountId: lobAccountId, lobMode, cassMode,
+          state: normalizedState,
+          providerState: publicEventType,
+          occurredAt: new Date(effectiveEventTime).toISOString(),
+          receivedAt: new Date(receivedAt).toISOString(),
+          snapshotHash,
+          evidenceRef: `lob_events_v1/${providerEventId}`,
+          artifactKind: "none",
+        });
+        transaction.create(postalFactRef, sanitizeFirestoreData(postalFact));
+      }
       return {
         matched: true as const,
         duplicate: false,

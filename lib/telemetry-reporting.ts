@@ -113,6 +113,23 @@ export function isTestOrCompOrder(order: Partial<Order>): boolean {
 }
 
 /**
+ * Legacy funnel inputs carry order snapshots rather than payment facts. Only
+ * server lifecycle states reached after payment verification are counted here;
+ * PENDING_PAYMENT, verification failures, and terminal failures are not proof
+ * of a capture. The v1 admin report remains authoritative because it joins the
+ * verified payment_facts_v1 collection directly.
+ */
+function hasVerifiedPaidLifecycle(order: Partial<Order>): boolean {
+  const paymentConfirmedStatuses = new Set<Order['status']>([
+    'PAYMENT_RECEIVED', 'DISPATCHING', 'PROCESSING_HANDWRYTTEN',
+    'PROCESSING_DISPATCH', 'QUEUED_FOR_FULFILLMENT', 'DISPATCHED_TO_USPS',
+    'MAILED', 'IN_TRANSIT', 'DELIVERED', 'RETURNED_TO_SENDER',
+  ]);
+  if (!order.status || !paymentConfirmedStatuses.has(order.status)) return false;
+  return order.paymentMethod !== 'PROMO_CODE' && order.paymentMethod !== 'STUDIO_COMP';
+}
+
+/**
  * Computes deterministic funnel conversion and stage drop-off reports from raw
  * telemetry events and authoritative order records.
  *
@@ -245,6 +262,8 @@ export function computeFunnelConversionReport(
       continue;
     }
 
+    // Do not turn an order row into payment authority just because it exists.
+    if (!hasVerifiedPaidLifecycle(order)) continue;
     verifiedPaidOrders++;
     validPaidOrders.push(order);
 

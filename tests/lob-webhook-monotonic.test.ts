@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import test from "node:test";
 import { NextRequest } from "next/server";
 import { POST as postLobWebhook } from "../app/api/webhooks/lob/route";
-import { getOrderById, saveOrder } from "../lib/firebase-admin";
+import { firestoreDb, getOrderById, saveOrder } from "../lib/firebase-admin";
 import { processPaidOrder } from "../lib/order-processor";
 import type { Order, OrderStatus } from "../lib/types";
 
@@ -93,6 +93,9 @@ test("concurrent replay and out-of-order Lob events preserve monotonic postal st
   assert.equal(stored.lobStatus, "letter.delivered");
   assert.equal(stored.lobTrackingNumber, "tracking-delivered");
   assert.equal((stored.lobTrackingEvents as Array<Record<string, unknown>>).length, 3);
+  const postalFacts = await firestoreDb.collection("postal_facts_v1").where("orderId", "==", id).get();
+  assert.equal(postalFacts.size, 3, "Each unique provider status creates one postal fact; duplicate delivery creates none.");
+  assert.deepEqual(new Set(postalFacts.docs.map((doc: any) => doc.data().state)), new Set(["delivered", "in_transit", "mailed"]));
 });
 
 test("an exact historical Lob reference still accepts its signed tracking event", async () => {

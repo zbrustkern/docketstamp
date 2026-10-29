@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { firestoreDb, sanitizeFirestoreData } from '@/lib/firebase-admin';
+import { appendServerBusinessEvent, type ServerBusinessEventInput } from '@/lib/admin-console/measurement/server-events';
 import { ALL_NOTICE_CARTRIDGES } from '@/src/lib/docket/notices';
 import { STATE_STATUTES } from '@/src/lib/docket/data/state-statutes';
 import { UPL_COMPLIANCE_FOOTER_TEXT } from '@/src/lib/docket/guardrails';
@@ -295,7 +296,7 @@ export async function createStagedDraftUnderPolicy<T extends Record<string, any>
   });
 }
 
-export async function createOrderUnderPolicy<T extends Record<string, any>>(order: T, slug: string, nexus: PolicyNexus): Promise<{ ok: true; revision: number; contentDigest: string } | { ok: false; decision: AvailabilityDecision }> {
+export async function createOrderUnderPolicy<T extends Record<string, any>>(order: T, slug: string, nexus: PolicyNexus, measurementEvent?: ServerBusinessEventInput): Promise<{ ok: true; revision: number; contentDigest: string } | { ok: false; decision: AvailabilityDecision }> {
   const orderRef = firestoreDb.collection('orders').doc(String(order.id));
   return firestoreDb.runTransaction(async (tx) => {
     const { document } = await readPolicySnapshot(tx);
@@ -305,6 +306,7 @@ export async function createOrderUnderPolicy<T extends Record<string, any>>(orde
     const contentDigest = notice ? getNoticeContentDigest(notice) : '';
     const locked = sanitizeFirestoreData({ ...order, templatePolicyRevision: document.revision, templateContentDigest: contentDigest, policyNexus: nexus, policyDecisionAt: new Date().toISOString() });
     tx.create(orderRef, locked as any);
+    if (measurementEvent) appendServerBusinessEvent(tx, measurementEvent);
     return { ok: true as const, revision: document.revision, contentDigest };
   });
 }

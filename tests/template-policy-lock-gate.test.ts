@@ -38,6 +38,11 @@ test('a frozen order survives a later pause while a new lock is denied before pa
     const frozenBeforePause = (await firstOrderRef.get()).data();
     assert.ok(frozenBeforePause?.documentHtml);
     assert.equal(frozenBeforePause?.templatePolicyRevision, 0);
+    const lockEvent = (await firestoreDb.collection('business_events_v1').doc(`document_locked:${firstResult.orderId}`).get()).data();
+    assert.equal(lockEvent?.eventName, 'document_locked', 'The locked-document milestone is written by the same policy transaction as the frozen order.');
+    assert.equal(lockEvent?.orderId, firstResult.orderId);
+    assert.equal(lockEvent?.emitter, 'server');
+    assert.equal(JSON.stringify(lockEvent).includes('Taylor Morgan'), false, 'Measurement records no signer or letter content.');
     const frozenHtml = frozenBeforePause.documentHtml;
 
     const paused = await policy.commitTemplateMutation('test-owner', {

@@ -13,6 +13,14 @@ export const ATTRIBUTION_STORAGE_KEY = "docketstamp_order_attribution_v1";
 /** Read-only migration source; writes use the canonical namespace. */
 export const LEGACY_ATTRIBUTION_STORAGE_KEY = "smn_attribution";
 
+function acquisitionEntrySurface(pathname: string): string | null {
+  if (pathname === '/') return 'home';
+  if (pathname.startsWith('/notices/')) return 'notice_workspace';
+  if (pathname === '/companies') return 'company_directory';
+  if (pathname === '/letters') return 'notice_directory';
+  return null;
+}
+
 function readAttributionStorage(): string | null {
   const canonical = sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY) || localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
   if (canonical) return canonical;
@@ -101,13 +109,7 @@ function AttributionTrackerInner() {
 
     try {
       const currentPath = pathname || window.location.pathname;
-      const entrySurface = currentPath === '/' ? 'home' : currentPath.startsWith('/notices/') ? 'notice_workspace' : currentPath.startsWith('/companies') ? 'company_directory' : 'other';
-      emitBusinessEvent({
-        eventName: 'entry_viewed',
-        entrySurface,
-        logicalKey: `entry:${currentPath}`,
-      });
-
+      const entrySurface = acquisitionEntrySurface(currentPath);
       const isGpcActive =
         typeof navigator !== "undefined" &&
         (navigator as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
@@ -119,6 +121,16 @@ function AttributionTrackerInner() {
           win.fbq("dataProcessingOptions", ["LDU"], 0, 0);
         }
       }
+
+      // Account, order, admin, and utility routes are not acquisition entries.
+      // Keep them out of the session denominator and let the next eligible
+      // public entry establish the acquisition touch.
+      if (!entrySurface) return;
+      const emitEntryViewed = () => emitBusinessEvent({
+        eventName: 'entry_viewed',
+        entrySurface,
+        logicalKey: `entry:${currentPath}`,
+      });
 
       const utmSource = searchParams.get("utm_source") || undefined;
       const utmMedium = searchParams.get("utm_medium") || undefined;
@@ -173,6 +185,7 @@ function AttributionTrackerInner() {
         });
 
         writeAttributionStorage(JSON.stringify(attribution));
+        emitEntryViewed();
         return;
       }
 
@@ -194,9 +207,24 @@ function AttributionTrackerInner() {
           if (updated) {
             writeAttributionStorage(JSON.stringify(parsed));
           }
+          // The old order-attribution store can predate the v1 measurement
+          // ledger. Backfill that ledger before emitting the entry so this
+          // first event carries the same compact acquisition reference.
+          if (!readAttributionLedger()?.originalAcquisition) {
+            const source = parsed.utmSource || 'direct';
+            const medium = parsed.utmMedium || 'none';
+            recordAttributionTouch({
+              pathname: parsed.landingPath || currentPath,
+              source,
+              medium,
+              campaign: parsed.utmCampaign === '(direct/organic)' ? 'direct_organic' : parsed.utmCampaign || 'unknown',
+              kind: 'acquisition',
+            });
+          }
         } catch {
           // ignore
         }
+        emitEntryViewed();
         return;
       }
 
@@ -271,7 +299,15 @@ function AttributionTrackerInner() {
       }
 
       writeAttributionStorage(JSON.stringify(defaultAttribution));
+      emitEntryViewed();
     } catch (e) {
+      // Capture failures are non-fatal. Keep the visit observable with
+      // acquisition unknown rather than losing the entry event altogether.
+      emitBusinessEvent({
+        eventName: 'entry_viewed',
+        entrySurface: acquisitionEntrySurface(pathname) || undefined,
+        logicalKey: `entry:${pathname || window.location.pathname}`,
+      });
       console.warn("[Attribution Tracker] Non-fatal capture notice:", e);
     }
   }, [searchParams, pathname]);
