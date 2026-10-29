@@ -324,8 +324,57 @@ export async function recordDispatchReconciliation(input: {
     const attemptRef = firestoreDb.collection(ATTEMPTS).doc(attemptId);
     const attemptSnap = await tx.get(attemptRef);
     if (!attemptSnap.exists) throw new Error("ATTEMPT_NOT_FOUND");
+    const attempt = attemptSnap.data() as Record<string, unknown>;
     const orderRef = firestoreDb.collection("orders").doc(input.orderId);
     const orderSnap = await tx.get(orderRef);
+    const paymentFactRef = typeof attempt.paymentFactId === "string"
+      ? firestoreDb.collection("payment_facts_v1").doc(String(attempt.paymentFactId))
+      : null;
+    const paymentFactSnap = paymentFactRef ? await tx.get(paymentFactRef) : null;
+    const reconciliationState = input.resolution === "accepted" ? "accepted_by_lob" : "failed";
+    const reconciliationId = stableId(`postal-reconciliation:${input.environment}:${input.orderId}:${attemptId}:${input.resolution}`);
+    const postalFactRef = firestoreDb.collection("postal_facts_v1").doc(reconciliationId);
+    const postalFactSnap = await tx.get(postalFactRef);
+    const reconciliationEventId = `fulfillment_reconciled_${input.resolution}:${attemptId}`;
+    const businessEventRef = firestoreDb.collection("business_events_v1").doc(reconciliationEventId);
+    const businessEventSnap = await tx.get(businessEventRef);
+    const order = orderSnap.exists ? orderSnap.data() as Record<string, unknown> : {};
+    const paymentFact = paymentFactSnap?.exists ? paymentFactSnap.data() as Record<string, unknown> : undefined;
+    const classification = classificationForOrder(order, paymentFact);
+    const providerEventId = stableId(`reconciliation:${input.environment}:${input.orderId}:${attemptId}:${input.resolution}`);
+    if (!postalFactSnap.exists) {
+      const postalFact = PostalFactSchema.parse({
+        schemaVersion: 1, product: "docketstamp", environment: input.environment,
+        factId: reconciliationId, orderId: input.orderId,
+        ...(input.providerLetterId ? { providerLetterId: input.providerLetterId } : {}),
+        providerEventId, providerAccountId: process.env.LOB_ACCOUNT_ID || "lob_default",
+        lobMode: input.lobMode,
+        cassMode: attempt.cassMode === "live" || attempt.cassMode === "staging_mock_cass" ? attempt.cassMode : "unknown",
+        state: reconciliationState,
+        providerState: input.resolution === "accepted" ? "reconciled_accepted" : "reconciled_not_accepted",
+        occurredAt: now, receivedAt: now, snapshotHash: String(attempt.snapshotHash),
+        idempotencyKey: String(attempt.idempotencyKey), evidenceRef: input.evidenceRef, artifactKind: "none",
+      });
+      tx.create(postalFactRef, sanitizeFirestoreData(postalFact));
+    }
+    if (!businessEventSnap.exists) {
+      appendServerBusinessEvent(tx, {
+        eventId: reconciliationEventId,
+        eventName: input.resolution === "accepted" ? "fulfillment_accepted" : "fulfillment_failed",
+        environment: input.environment, occurredAt: now,
+        sessionId: typeof order.sessionId === "string" ? order.sessionId : typeof order.telemetrySessionId === "string" ? order.telemetrySessionId : undefined,
+        journeyId: typeof order.telemetryJourneyId === "string" ? order.telemetryJourneyId : undefined,
+        checkoutAttemptId: typeof order.checkoutAttemptId === "string" ? order.checkoutAttemptId : undefined,
+        orderId: input.orderId,
+        noticeId: typeof order.noticeId === "string" ? order.noticeId : undefined,
+        tier: attempt.tier as "first_class" | "certified" | "certified_return_receipt",
+        entrySurface: typeof order.entrySource === "string" ? order.entrySource : undefined,
+        experienceVersion: typeof order.experienceVersion === "string" ? order.experienceVersion : undefined,
+        classification,
+        classificationEvidenceRef: paymentFact ? `payment_facts_v1/${String(attempt.paymentFactId)}` : `orders/${input.orderId}`,
+        safeProperties: { result: input.resolution === "accepted" ? "accepted" : "failed", mode: input.lobMode, reasonCode: "provider_reconciliation" },
+      });
+    }
     tx.update(attemptRef, sanitizeFirestoreData({ state, updatedAt: now, leaseExpiresAt: null,
       providerErrorCode: input.resolution === "not_accepted" ? "RECONCILED_NOT_ACCEPTED" : null,
       ...(input.providerLetterId ? { providerLetterId: input.providerLetterId } : {}),

@@ -271,3 +271,54 @@ test('a durably accepted postal attempt repairs payment/follow-on outboxes witho
   assert.equal(await reconcileAcceptedDispatchOutboxes(claim.attempt.attemptId, paymentFactId), true);
   assert.equal((await firestoreDb.collection('postal_facts_v1').where('orderId', '==', orderId).get()).size, 1, 'Outbox recovery does not duplicate the provider acceptance fact.');
 });
+
+
+test('uncertain dispatch reconciliation writes one final postal fact and business milestone', async () => {
+  const suffix = id();
+  const { firestoreDb } = await import('../lib/firebase-admin');
+  const { claimDispatchAttempt, finishDispatchAttempt, recordDispatchReconciliation } = await import('../lib/admin-console/postal/attempt-store');
+  const { sha256 } = await import('../src/lib/checkout-attempts/store');
+  const orderId = `order_reconciliation_${suffix}`;
+  const paymentFactId = `payment_reconciliation_${suffix}`;
+  const snapshotHash = sha256(`snapshot_reconciliation_${suffix}`);
+  const sessionId = `session_reconciliation_${suffix}`;
+  await firestoreDb.collection('orders').doc(orderId).set({
+    id: orderId, status: 'PAYMENT_RECEIVED', paymentMethod: 'STRIPE',
+    telemetrySessionId: sessionId, telemetryJourneyId: `journey_${suffix}`,
+    noticeId: 'consumer-rights', entrySource: 'direct_notice', snapshotHash,
+  });
+  const claim = await claimDispatchAttempt({
+    authority: {
+      product: 'docketstamp', environment: 'local', orderId, snapshotHash, snapshotVersion: 1,
+      tier: 'certified', currency: 'USD', payableAmountMinor: 1295,
+      lobMode: 'mock', cassMode: 'staging_mock_cass', paymentFactId,
+    },
+    actorId: `stripe:${suffix}`, requestId: `payment-obligation:${orderId}`, evidenceRef: `evidence:${suffix}`,
+  });
+  assert.equal(claim.claimed, true);
+  if (!claim.claimed) return;
+  const start = Date.now();
+  await finishDispatchAttempt({ attemptId: claim.attempt.attemptId, state: 'uncertain', nowMs: start });
+  const beforeFacts = await firestoreDb.collection('postal_facts_v1').where('orderId', '==', orderId).get();
+  const beforeEvents = await firestoreDb.collection('business_events_v1').where('orderId', '==', orderId).get();
+  assert.equal(beforeFacts.size, 1);
+  assert.equal(beforeFacts.docs[0].data()?.state, 'uncertain');
+  assert.equal(beforeEvents.size, 1);
+  assert.equal(beforeEvents.docs[0].data()?.eventName, 'fulfillment_uncertain');
+
+  await recordDispatchReconciliation({
+    environment: 'local', lobMode: 'mock', orderId, snapshotVersion: 1,
+    resolution: 'not_accepted', evidenceRef: `reconciliation:${suffix}`, nowMs: start + 1000,
+  });
+  const facts = await firestoreDb.collection('postal_facts_v1').where('orderId', '==', orderId).get();
+  const events = await firestoreDb.collection('business_events_v1').where('orderId', '==', orderId).get();
+  assert.equal(facts.size, 2, 'Uncertain plus reconciled failure remain as two durable state transitions.');
+  assert.ok(facts.docs.some(doc => doc.data()?.state === 'failed'));
+  assert.equal(events.size, 2, 'The reconciliation adds exactly one server milestone.');
+  assert.equal(events.docs.filter(doc => doc.data()?.eventName === 'fulfillment_failed').length, 1);
+  await assert.rejects(recordDispatchReconciliation({
+    environment: 'local', lobMode: 'mock', orderId, snapshotVersion: 1,
+    resolution: 'not_accepted', evidenceRef: `reconciliation:${suffix}`, nowMs: start + 2000,
+  }), /RECONCILIATION_NOT_REQUIRED/);
+  assert.equal((await firestoreDb.collection('postal_facts_v1').where('orderId', '==', orderId).get()).size, 2, 'A repeated resolution does not duplicate the final fact.');
+});
