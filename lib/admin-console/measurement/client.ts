@@ -274,9 +274,13 @@ export async function flushBusinessEventQueue(): Promise<void> {
   if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.onLine || flushing) return;
   flushing = true;
   try {
-    const queue = readQueue();
-    writeQueue(queue);
-    while (queue.length) {
+    writeQueue(readQueue());
+    while (true) {
+      // Events can be enqueued while fetch is pending. Always start from the
+      // current persisted queue so completing an older request cannot replace
+      // newer milestones with the stale snapshot captured before the await.
+      const queue = readQueue();
+      if (!queue.length) break;
       const now = Date.now();
       const index = queue.findIndex((row) => !row.nextAttemptAt || row.nextAttemptAt <= now);
       if (index < 0) {
@@ -285,46 +289,55 @@ export async function flushBusinessEventQueue(): Promise<void> {
         break;
       }
       const item = queue[index];
+      const eventId = String(item.envelope.eventId || '');
       let response: Response | undefined;
       try {
         const body = JSON.stringify(item.envelope);
         if (byteLength(body) > MAX_EVENT_BODY_BYTES) {
-          queue.splice(index, 1);
-          writeQueue(queue);
+          writeQueue(readQueue().filter((row) => String(row.envelope.eventId || '') !== eventId));
           continue;
         }
         response = await fetch('/api/telemetry', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true,
         });
       } catch {
-        item.attempts = (item.attempts || 0) + 1;
-        if (item.attempts >= MAX_RETRY_ATTEMPTS) {
-          quarantine(item, 'retry_limit_network');
-          queue.splice(index, 1);
+        const latest = readQueue();
+        const current = latest.find((row) => String(row.envelope.eventId || '') === eventId);
+        if (!current) continue;
+        current.attempts = (current.attempts || 0) + 1;
+        if (current.attempts >= MAX_RETRY_ATTEMPTS) {
+          quarantine(current, 'retry_limit_network');
+          writeQueue(latest.filter((row) => String(row.envelope.eventId || '') !== eventId));
         }
-        else item.nextAttemptAt = retryTime(undefined, item.attempts);
-        writeQueue(queue);
-        if (queue[index]) scheduleRetry(queue[index].nextAttemptAt || Date.now() + 1000);
+        else {
+          current.nextAttemptAt = retryTime(undefined, current.attempts);
+          writeQueue(latest);
+          scheduleRetry(current.nextAttemptAt);
+        }
         break;
       }
 
       if (response.status === 408 || response.status === 429 || response.status >= 500) {
-        item.attempts = (item.attempts || 0) + 1;
-        if (item.attempts >= MAX_RETRY_ATTEMPTS) {
-          quarantine(item, `retry_limit_${response.status}`);
-          queue.splice(index, 1);
+        const latest = readQueue();
+        const current = latest.find((row) => String(row.envelope.eventId || '') === eventId);
+        if (!current) continue;
+        current.attempts = (current.attempts || 0) + 1;
+        if (current.attempts >= MAX_RETRY_ATTEMPTS) {
+          quarantine(current, `retry_limit_${response.status}`);
+          writeQueue(latest.filter((row) => String(row.envelope.eventId || '') !== eventId));
         }
-        else item.nextAttemptAt = retryTime(response, item.attempts);
-        writeQueue(queue);
-        if (queue[index]) scheduleRetry(queue[index].nextAttemptAt || Date.now() + 1000);
+        else {
+          current.nextAttemptAt = retryTime(response, current.attempts);
+          writeQueue(latest);
+          scheduleRetry(current.nextAttemptAt);
+        }
         break;
       }
 
       // Keep a small, payload-free record and drop permanent rejects so one
       // malformed legacy item cannot hold up later valid events.
       if (!response.ok) quarantine(item, `http_${response.status}`);
-      queue.splice(index, 1);
-      writeQueue(queue);
+      writeQueue(readQueue().filter((row) => String(row.envelope.eventId || '') !== eventId));
     }
   } finally {
     flushing = false;
