@@ -178,7 +178,8 @@ describe('DocketStamp shared input and interpolation safeguards', () => {
     const printedText = document.rawParagraphs.join('\n');
     assert.doesNotMatch(printedText, /USER SUPPLIED CITATION|one hour|guaranteed treble damages|Wrong State|USER ADDRESS/);
     assert.match(printedText, /Ind\. Code § 32-31-3-12/);
-    assert.match(printedText, /45 days/);
+    assert.match(printedText, /applicable triggers, conditions and exceptions/);
+    assert.doesNotMatch(printedText, /45 days of surrender/);
     assert.equal(document.docketId, 'DS-2026-ABC123');
     assert.equal(document.signatureBlock.executionDate, 'October 20, 2026');
   });

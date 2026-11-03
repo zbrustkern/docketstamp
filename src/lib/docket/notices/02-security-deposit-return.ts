@@ -152,7 +152,7 @@ export const securityDepositNotice: NoticeTemplateDefinition = {
   bodyParagraphs: [
     'PLEASE TAKE FORMAL NOTICE that I, {{senderFullName}}, demand the return of the residential security deposit balance of {{balanceRequested}} held in connection with my former tenancy at {{vacatedPremisesAddress}}, vacated on {{moveOutDate}}. Total deposit paid was {{depositAmount}}; total returned to date is {{amountReceivedToDate}}.',
     'Basis for demand: {{basisForRequest}}',
-    'Pursuant to governing {{propertyState}} statutory provisions ({{statuteCitation}}), a landlord is required to deliver a full written itemized statement of lawful deductions and remit the remaining deposit within {{statuteDeadline}} of surrender of possession.',
-    'Please remit the demanded balance of {{balanceRequested}} payable to {{senderFullName}} and mailed to {{senderFullAddress}} within {{responseDays}} of receipt of this notice, together with full itemized documentation of any claimed deductions. Failure to respond promptly may result in formal legal escalation, including small claims action for statutory bad-faith damages where provided by law.',
+    'I demand compliance with {{propertyState}} security-deposit law ({{statuteCitation}}). {{#depositDeadlineStatement}}{{depositDeadlineStatement}}{{/depositDeadlineStatement}}{{^depositDeadlineStatement}}Any statutory return or accounting deadline depends on the applicable triggers, conditions and exceptions.{{/depositDeadlineStatement}}',
+    'Please remit the demanded balance of {{balanceRequested}} payable to {{senderFullName}} and mailed to {{senderFullAddress}} within {{responseDays}} of receipt of this notice, together with an itemized statement and documentation of any claimed deductions. My requested response period does not change any statutory deadline. I reserve all remedies available under applicable law.',
   ],
 };

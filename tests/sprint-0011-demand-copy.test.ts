@@ -50,7 +50,8 @@ describe('SPRINT-0011 customer-facing copy integration', () => {
     });
     const printedCopy = document.rawParagraphs.join(' ');
     assert.match(printedCopy, /Tex\. Prop\. Code/);
-    assert.match(printedCopy, /30 days/);
+    assert.match(printedCopy, /30-day refund period/);
+    assert.match(printedCopy, /written forwarding-address requirement/);
     assert.match(printedCopy, /within 10 business days of receipt/);
   });
 

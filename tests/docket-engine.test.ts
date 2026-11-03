@@ -456,7 +456,7 @@ describe('5. Document Interpolation Engine', () => {
     assert.equal(securityDepositNotice.usesStateStatuteLookup, true);
     assert.ok(doc.rawParagraphs.some((p) => p.includes('$1,850.00')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('Tex. Prop. Code')));
-    assert.ok(doc.rawParagraphs.some((p) => p.includes('30 days')));
+    assert.ok(doc.rawParagraphs.some((p) => p.includes('30-day refund period')));
     assert.ok(doc.rawParagraphs.some((p) => p.includes('within 7 calendar days of receipt')));
   });
 

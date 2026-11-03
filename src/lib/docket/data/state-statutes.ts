@@ -40,6 +40,8 @@ export const STATE_STATUTES: Record<string, StateStatuteEntry> = {
     returnDeadlineLabel: '14 business days',
     statuteCitation: 'Ariz. Rev. Stat. § 33-1321(D)',
     statutoryNuance: '14 business days after termination, delivery of possession, and demand by tenant.',
+    // A.R.S. § 33-1321(D), checked 2026-11-03: https://www.azleg.gov/ars/33/01321.htm
+    depositDeadlineStatement: 'The 14-day period excludes Saturdays, Sundays and legal holidays and follows termination of tenancy, delivery of possession and tenant demand, subject to applicable conditions and exceptions.',
     returnDeadlineDays: 14,
     statuteSummary: '14 business days after termination, delivery of possession, and demand by tenant.',
     penaltyClause: 'Damages equal to twice the amount wrongfully withheld.',
@@ -532,6 +534,9 @@ export const STATE_STATUTES: Record<string, StateStatuteEntry> = {
     returnDeadlineLabel: '30 days',
     statuteCitation: 'Tex. Prop. Code Ann. § 92.103 / § 92.109',
     statutoryNuance: 'On or before the 30th day after tenant surrenders premises, provided tenant furnishes written forwarding address.',
+    // Tex. Prop. Code §§ 92.103, 92.107; Texas State Law Library, checked 2026-11-03:
+    // https://guides.sll.texas.gov/landlord-tenant-law/security-deposits
+    depositDeadlineStatement: 'The 30-day refund period runs from surrender, subject to the written forwarding-address requirement in § 92.107 and other applicable conditions and exceptions.',
     returnDeadlineDays: 30,
     statuteSummary: 'On or before the 30th day after tenant surrenders premises, provided tenant furnishes written forwarding address.',
     penaltyClause: 'Triple the amount of the deposit wrongfully withheld plus $100 statutory penalty and attorney fees.',

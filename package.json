@@ -11,7 +11,7 @@
     "test:payment-mode": "node --import tsx tests/payment-mode-safety.test.ts",
     "test:meta": "node --import tsx tests/meta-conversions-api.test.ts",
     "test:telemetry": "node --import tsx tests/visitor-telemetry.test.ts",
-    "test:docket": "node --import tsx --test --test-concurrency=1 tests/docket-engine.test.ts tests/docket-input-validation.test.ts tests/docket-lock-input-validation.test.ts",
+    "test:docket": "node --import tsx --test --test-concurrency=1 tests/docket-engine.test.ts tests/docket-input-validation.test.ts tests/docket-lock-input-validation.test.ts tests/deposit-deadline-conditions.test.ts",
     "test:address-intake": "node --import tsx --test tests/address-intake.test.ts tests/postal-code-lookup.test.ts",
     "test:stripe-bootstrap": "node --import tsx --test tests/bootstrap-stripe.test.ts",
     "test:admin-auth": "node --import tsx tests/admin-account-binding.test.ts",

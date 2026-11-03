@@ -75,6 +75,7 @@ function resolveStatutoryValues(
       result.statuteCitation = statute.statuteCitation;
       result.statutoryCitation = statute.statuteCitation;
       result.statuteDeadline = statute.returnDeadlineLabel;
+      result.depositDeadlineStatement = statute.depositDeadlineStatement || '';
       result.returnDeadlineDays = String(statute.returnDeadlineDays || 30);
       result.returnDeadlineLabel = statute.returnDeadlineLabel;
       result.statutoryNuance = statute.statutoryNuance;

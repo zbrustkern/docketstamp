@@ -91,7 +91,8 @@ describe('Docket lock route input boundary', () => {
       const order = await getOrderById(result.orderId);
       assert.ok(order?.documentHtml);
       assert.match(order.documentHtml!, /Ind\. Code § 32-31-3-12/);
-      assert.match(order.documentHtml!, /45 days/);
+      assert.match(order.documentHtml!, /applicable triggers, conditions and exceptions/);
+    assert.doesNotMatch(order.documentHtml!, /45 days of surrender/);
       assert.match(order.documentHtml!, /My records show the deposit was paid/);
       assert.match(order.documentHtml!, /88 Rental Lane, Unit 2, Carmel, IN 46032/);
       assert.match(order.documentHtml!, /ADDRESS CHECK SIMULATED \(STAGING\)/);

@@ -14,6 +14,7 @@ export const SERVER_DERIVED_NOTICE_KEYS = new Set([
   'statuteCitation',
   'statutoryCitation',
   'statuteDeadline',
+  'depositDeadlineStatement',
   'returnDeadlineDays',
   'returnDeadlineLabel',
   'statutoryNuance',

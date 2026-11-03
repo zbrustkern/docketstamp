@@ -52,6 +52,8 @@ export interface StateStatuteEntry {
   returnDeadlineLabel: string;
   statuteCitation: string;
   statutoryNuance: string;
+  // Reviewed prose describing timing conditions, never a finding that they occurred.
+  depositDeadlineStatement?: string;
   // Compatibility fields
   statutoryCitation?: string;
   returnDeadlineDays?: number;
