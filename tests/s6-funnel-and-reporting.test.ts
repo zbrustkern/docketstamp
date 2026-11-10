@@ -1,3 +1,4 @@
+import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import test, { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
@@ -24,7 +25,11 @@ import { TelemetryEvent, Order } from '../lib/types';
 import { getOrderById } from '../lib/firebase-admin';
 
 // Enable mock stripe payment mode in test environment
-process.env.ALLOW_LOCAL_MOCK_PAYMENTS = 'true';
+Object.assign(process.env, {
+  NODE_ENV: 'test',
+  LOB_ENV: 'staging_mock_cass',
+  ALLOW_LOCAL_MOCK_PAYMENTS: 'true',
+});
 
 describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
   beforeEach(() => {
@@ -581,7 +586,7 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
   // ==========================================================================
   describe('6. Lock-and-Intent & Order Processor Telemetry Propagation', () => {
     it('persists telemetrySessionId, experienceVersion, and entrySource on the order snapshot', async () => {
-      const validPayload = {
+      const validPayload = withVerifiedLockFixture({
         slug: 'security-deposit-return-demand-letter',
         userValues: {
           senderFullName: 'Alex Mercer',
@@ -609,7 +614,7 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
         telemetrySessionId: 'sess_lock_propagation_test',
         experienceVersion: 'home_v2',
         entrySource: 'home_chooser',
-      };
+      });
 
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
@@ -631,7 +636,7 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
     });
 
     it('enforces Invariant 1 NAICS 713940 fitness blocker in lock-and-intent', async () => {
-      const fitnessPayload = {
+      const fitnessPayload = withVerifiedLockFixture({
         slug: 'security-deposit-return-demand-letter',
         userValues: {
           senderFullName: 'Alex Mercer',
@@ -650,9 +655,10 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
           depositAmount: '$2,000.00',
           amountReceivedToDate: '$0.00',
           balanceRequested: '$2,000.00',
+          basisForRequest: 'My records show the deposit was paid and no refund has been received.',
           responseDays: '14 calendar days',
         },
-      };
+      });
 
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',

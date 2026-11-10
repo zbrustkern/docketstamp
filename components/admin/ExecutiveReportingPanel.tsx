@@ -93,6 +93,8 @@ function friendlyFlag(flag: string) {
     IMMATURE_COHORT: "Some visits have not completed the 7 day conversion window",
     STALE_EVIDENCE: "Evidence has not refreshed recently",
     OPEN_OUTBOX_NOT_MEASURED: "Open fulfillment obligations could not be reconciled",
+    SPEND_COVERAGE_INCOMPLETE: "Advertising spend records are incomplete or unverified for this cohort",
+    COST_COVERAGE_INCOMPLETE: "Supplier or processor costs are incomplete for this cohort",
   };
   return labels[flag] || flag.replaceAll("_", " ").toLowerCase();
 }
@@ -267,7 +269,13 @@ export function ExecutiveReportingPanel() {
         <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="economics-heading">
           <div><h3 id="economics-heading" className="text-sm font-bold text-slate-900">Cost and acquisition coverage</h3><p className="mt-1 text-xs text-slate-500">Profit stays unavailable until actual costs and campaign spend cover the cohort.</p></div>
           <div className="mt-3 grid grid-cols-2 gap-2"><div className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">Actual order-cost coverage</p><p className="mt-1 text-base font-bold text-slate-900">{report.quality?.costCoverage === null || report.quality?.costCoverage === undefined ? "Unavailable" : `${Math.round(report.quality.costCoverage * 100)}%`}</p></div><div className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">Acquisition spend coverage</p><p className="mt-1 text-base font-bold text-slate-900">{report.quality?.spendCoverage === null || report.quality?.spendCoverage === undefined ? "Unavailable" : `${Math.round(report.quality.spendCoverage * 100)}%`}</p></div></div>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-3 text-xs"><span className="text-slate-500">Before acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionBeforeAcquisition)}</b></span><span className="text-slate-500">After acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionAfterAcquisition)}</b></span></div>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-3 text-xs">
+            <span className="text-slate-500">Before acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionBeforeAcquisition)}</b></span>
+            <span className="text-slate-500">Acquisition spend <b className="ml-1 text-slate-900">{display(metrics.acquisitionSpend)}</b></span>
+            <span className="text-slate-500">After acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionAfterAcquisition)}</b></span>
+            <span className="text-slate-500">Cost per attributable paid order <b className="ml-1 text-slate-900">{display(metrics.costPerAttributableOrder)}</b></span>
+          </div>
+          <p className="mt-2 text-[10px] text-slate-500">Acquisition cost is calculated per attributable paid cohort order, not proven new-customer CAC.</p>
         </section>
       </div>
 

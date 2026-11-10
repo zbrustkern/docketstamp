@@ -197,12 +197,26 @@ export function computeReport(input: ReportInput) {
       ? cohortNetUsd - estimatedCosts.filter(c => c.orderId && cohortOrders.includes(c.orderId) && c.kind !== 'spend').reduce((sum, c) => sum + c.amountMinor, 0)
       : null;
   const beforeEvidenceClass = coveredActual === cohortOrders.length && cohortOrders.length ? 'verified' : coveredEstimate === cohortOrders.length && cohortOrders.length ? 'estimated' : 'unavailable';
-  const spendRows = actualCosts.filter(c => c.kind === 'spend' && inWindow(c.effectiveAt));
+  const allSpendRowsInWindow = costRows.filter(c =>
+    c.environment === scope.environment &&
+    c.kind === 'spend' &&
+    c.currency === 'USD' &&
+    time(c.effectiveAt) <= now &&
+    inWindow(c.effectiveAt) &&
+    (!scope.channel || c.campaignKey === scope.channel)
+  );
+  const spendRows = allSpendRowsInWindow.filter(c => c.authority === 'actual' && c.coverage === 'complete');
   const activeSourceKeys = new Set([...entries.values()].map(sourceKey));
-  const spendKnown = spendRows.length > 0 && spendRows.every(c => c.coverage === 'complete') &&
-    (activeSourceKeys.size === 0 || [...activeSourceKeys].every(key => spendRows.some(c => c.campaignKey === key)));
+  const spendKnown = scope.channel
+    ? allSpendRowsInWindow.length > 0 && allSpendRowsInWindow.every(c => c.authority === 'actual' && c.coverage === 'complete')
+    : allSpendRowsInWindow.length > 0 &&
+      allSpendRowsInWindow.every(c => c.authority === 'actual' && c.coverage === 'complete') &&
+      (activeSourceKeys.size === 0 || [...activeSourceKeys].every(key => spendRows.some(c => c.campaignKey === key)));
   const spendMinor = spendKnown ? spendRows.reduce((sum, c) => sum + c.amountMinor, 0) : null;
   const afterAcquisitionMinor = beforeAcquisitionMinor !== null && spendMinor !== null ? beforeAcquisitionMinor - spendMinor : null;
+  const costPerAttributableOrderMinor = spendMinor !== null && cohortOrders.length > 0
+    ? Math.round(spendMinor / cohortOrders.length)
+    : null;
 
   const exceptions: Array<{orderId: string; reason: string; priority: number; ageSeconds: number; evidenceRef: string}> = [];
   for (const { fact, order } of openFacts) {
@@ -234,7 +248,18 @@ export function computeReport(input: ReportInput) {
   const validTimes = [...allFacts.map(f => time(f.receivedAt)), ...events.map(e => time(e.receivedAt)), ...postal.map(p => time(p.receivedAt))].filter(Number.isFinite);
   const watermark = validTimes.length ? new Date(Math.max(...validTimes)).toISOString() : null;
   const stale = Boolean(watermark && now - time(watermark) > 900000);
-  const qualityFlags = ['OBSERVED_BROWSER_COVERAGE_UNKNOWN','PROVIDER_RECONCILIATION_NOT_MEASURED','LEGACY_RECORDS_NOT_BACKFILLED', ...(reportSourceComplete ? [] : ['SOURCE_SCAN_PARTIAL']), ...(unattributedOrders.size ? ['CHANNEL_ATTRIBUTION_INCOMPLETE'] : []), ...(immature ? ['IMMATURE_COHORT'] : []), ...(stale ? ['STALE_EVIDENCE'] : []), ...(input.openObligations === undefined ? ['OPEN_OUTBOX_NOT_MEASURED'] : [])];
+  const qualityFlags = [
+    'OBSERVED_BROWSER_COVERAGE_UNKNOWN',
+    'PROVIDER_RECONCILIATION_NOT_MEASURED',
+    'LEGACY_RECORDS_NOT_BACKFILLED',
+    ...(reportSourceComplete ? [] : ['SOURCE_SCAN_PARTIAL']),
+    ...(unattributedOrders.size ? ['CHANNEL_ATTRIBUTION_INCOMPLETE'] : []),
+    ...(immature ? ['IMMATURE_COHORT'] : []),
+    ...(stale ? ['STALE_EVIDENCE'] : []),
+    ...(input.openObligations === undefined ? ['OPEN_OUTBOX_NOT_MEASURED'] : []),
+    ...(!spendKnown ? ['SPEND_COVERAGE_INCOMPLETE'] : []),
+    ...(cohortOrders.length > 0 && coveredActual < cohortOrders.length ? ['COST_COVERAGE_INCOMPLETE'] : []),
+  ];
   const exclusions: Record<string, number> = { unresolvedCaptures: unknownCapture.length, unmatchedCaptures, unattributedChannelOrders: unattributedOrders.size };
   const evidenceQueryRef = (metric: string) => `/api/admin/console/evidence?generationId=${input.generationId}&metric=${metric}`;
   const metric = (key: string, value: number | null, unit: 'count'|'ratio'|'money_minor', evidenceClass: 'verified'|'observed'|'estimated'|'unavailable', extra: Record<string, unknown> = {}) => MetricSchema.parse({
@@ -251,8 +276,9 @@ export function computeReport(input: ReportInput) {
     row.paidOrders = ids.length;
     const facts = cohortFinancial.filter(f => f.orderId && ids.includes(f.orderId));
     row.netCollectionsMinor = facts.some(f => f.currency !== 'USD') ? null : facts.reduce((sum,f) => sum + signForMoney(f.kind) * f.amountMinor, 0);
-    const spend = spendRows.filter(c => c.campaignKey === row.key);
-    row.spendMinor = spendKnown && spend.length ? spend.reduce((sum,c) => sum + c.amountMinor, 0) : null;
+    const channelSpendRows = allSpendRowsInWindow.filter(c => c.campaignKey === row.key);
+    const channelSpendKnown = channelSpendRows.length > 0 && channelSpendRows.every(c => c.authority === 'actual' && c.coverage === 'complete');
+    row.spendMinor = channelSpendKnown ? channelSpendRows.reduce((sum, c) => sum + c.amountMinor, 0) : null;
     const costs = actualCosts.filter(c => c.orderId && ids.includes(c.orderId) && c.kind !== 'spend');
     const covered = ids.length > 0 && ids.every(id => costs.some(c => c.orderId === id && c.kind === 'supplier') && costs.some(c => c.orderId === id && c.kind === 'processor'));
     row.contributionMinor = covered && row.netCollectionsMinor !== null ? row.netCollectionsMinor - costs.reduce((sum,c) => sum + c.amountMinor,0) : null;
@@ -272,6 +298,7 @@ export function computeReport(input: ReportInput) {
       contributionBeforeAcquisition: metric('contribution_before_acquisition', beforeAcquisitionMinor, 'money_minor', beforeEvidenceClass, { currency: 'USD' }),
       contributionAfterAcquisition: metric('contribution_after_acquisition', afterAcquisitionMinor, 'money_minor', afterAcquisitionMinor === null ? 'unavailable' : beforeEvidenceClass, { currency: 'USD' }),
       acquisitionSpend: metric('acquisition_spend', spendMinor, 'money_minor', spendMinor === null ? 'unavailable' : 'verified', { currency: 'USD' }),
+      costPerAttributableOrder: metric('cost_per_attributable_order', costPerAttributableOrderMinor, 'money_minor', costPerAttributableOrderMinor === null ? 'unavailable' : 'verified', { currency: 'USD', denominator: cohortOrders.length }),
     },
     moneyByCurrency, exceptions, postalStages, journey: JOURNEY.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
     quality: {

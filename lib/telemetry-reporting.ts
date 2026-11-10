@@ -121,7 +121,7 @@ export function isTestOrCompOrder(order: Partial<Order>): boolean {
  */
 function hasVerifiedPaidLifecycle(order: Partial<Order>): boolean {
   const paymentConfirmedStatuses = new Set<Order['status']>([
-    'PAYMENT_RECEIVED', 'DISPATCHING', 'PROCESSING_HANDWRYTTEN',
+    'PAYMENT_RECEIVED', 'DISPATCHING',
     'PROCESSING_DISPATCH', 'QUEUED_FOR_FULFILLMENT', 'DISPATCHED_TO_USPS',
     'MAILED', 'IN_TRANSIT', 'DELIVERED', 'RETURNED_TO_SENDER',
   ]);

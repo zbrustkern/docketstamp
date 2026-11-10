@@ -75,6 +75,99 @@ async function run(){
   const cohortReport=computeReport({...input,asOf:'2026-10-27T04:00:00.000Z',facts:cohortFacts,events:[cohortEntry],orders:[{id:'cohort-order',status:'PROCESSING_DISPATCH',environment:'local',sessionId:'cohort-session'}],postal:[],costs:cohortCosts,openObligations:[]});
   assert.equal(cohortReport.metrics.contributionBeforeAcquisition.value,1300,'Contribution reconciles late cohort capture and refund against complete supplier and processor costs');
   assert.equal(cohortReport.metrics.contributionAfterAcquisition.value,null,'Contribution after acquisition stays unknown while matching campaign spend is missing');
+
+  // Channel-scoped economics: multi-channel test ensuring brand channel isolates all funnel stages and spend
+  const brandEntry = { ...event('brand-entry-1', 'brand-s1', 'entry_viewed', '2026-10-15T09:00:00.000Z'), acquisition: { original: { source: 'search', medium: 'paid', campaignId: 'brand' } } };
+  const brandNoticeSelected = event('brand-funnel-1', 'brand-s1', 'notice_selected', '2026-10-15T09:05:00.000Z');
+  const socialInWindowEntry = { ...event('social-entry-1', 'social-s1', 'entry_viewed', '2026-10-15T10:00:00.000Z'), acquisition: { original: { source: 'social', medium: 'paid', campaignId: 'launch' } } };
+  const socialNoticeSelected = event('social-funnel-1', 'social-s1', 'notice_selected', '2026-10-15T10:05:00.000Z');
+
+  const brandCapture = fact('brand-cap-1', 'brand-o1', 2000, { effectiveAt: '2026-10-15T09:30:00.000Z' });
+  const socialCaptureFact = fact('social-cap-1', 'social-o1', 7000, { effectiveAt: '2026-10-15T10:30:00.000Z' });
+
+  const brandOrder = { id: 'brand-o1', status: 'DELIVERED', environment: 'local', sessionId: 'brand-s1' };
+  const socialOrder = { id: 'social-o1', status: 'DELIVERED', environment: 'local', sessionId: 'social-s1' };
+
+  const supplierCostBrand = { id: 'c-sup-brand', environment: 'local', currency: 'USD', orderId: 'brand-o1', kind: 'supplier' as const, amountMinor: 100, effectiveAt: '2026-10-15T09:30:00.000Z', sourceRef: 'sup-1', authority: 'actual' as const, coverage: 'complete' as const };
+  const processorCostBrand = { id: 'c-proc-brand', environment: 'local', currency: 'USD', orderId: 'brand-o1', kind: 'processor' as const, amountMinor: 100, effectiveAt: '2026-10-15T09:30:00.000Z', sourceRef: 'proc-1', authority: 'actual' as const, coverage: 'complete' as const };
+  const supplierCostSocial = { id: 'c-sup-social', environment: 'local', currency: 'USD', orderId: 'social-o1', kind: 'supplier' as const, amountMinor: 200, effectiveAt: '2026-10-15T10:30:00.000Z', sourceRef: 'sup-2', authority: 'actual' as const, coverage: 'complete' as const };
+  const processorCostSocial = { id: 'c-proc-social', environment: 'local', currency: 'USD', orderId: 'social-o1', kind: 'processor' as const, amountMinor: 250, effectiveAt: '2026-10-15T10:30:00.000Z', sourceRef: 'proc-2', authority: 'actual' as const, coverage: 'complete' as const };
+
+  const brandSpend = { id: 'spend-brand', environment: 'local', currency: 'USD', kind: 'spend' as const, amountMinor: 500, campaignKey: 'search:paid:brand', effectiveAt: '2026-10-16T00:00:00.000Z', sourceRef: 'google-ads', authority: 'actual' as const, coverage: 'complete' as const };
+  const socialSpend = { id: 'spend-social', environment: 'local', currency: 'USD', kind: 'spend' as const, amountMinor: 3000, campaignKey: 'social:paid:launch', effectiveAt: '2026-10-16T00:00:00.000Z', sourceRef: 'meta-ads', authority: 'actual' as const, coverage: 'complete' as const };
+
+  const channelMultiReport = computeReport({
+    ...input,
+    scope: { ...scope, channel: 'search:paid:brand' },
+    facts: [brandCapture, socialCaptureFact],
+    events: [brandEntry, brandNoticeSelected, socialInWindowEntry, socialNoticeSelected],
+    orders: [brandOrder, socialOrder],
+    postal: [],
+    costs: [supplierCostBrand, processorCostBrand, supplierCostSocial, processorCostSocial, brandSpend, socialSpend],
+    openObligations: [],
+  });
+
+  assert.equal(channelMultiReport.quality.eligibleSessions, 1, 'Channel scope retains only brand eligible sessions');
+  assert.equal(channelMultiReport.quality.convertingSessions, 1, 'Channel scope converts brand session');
+  assert.equal(channelMultiReport.metrics.conversion.value, 1, 'Conversion reflects only brand channel (1/1)');
+  assert.equal(channelMultiReport.metrics.paidOrders.value, 1, 'Paid orders includes only brand order');
+  assert.equal(channelMultiReport.metrics.netCollections.value, 2000, 'Net collections includes only brand cash');
+  assert.equal(channelMultiReport.metrics.contributionBeforeAcquisition.value, 1800, 'Contribution before acquisition is 2000 - 100 - 100 = 1800');
+  assert.equal(channelMultiReport.metrics.acquisitionSpend.value, 500, 'Acquisition spend reflects ONLY search:paid:brand spend (500) and NEVER includes social:paid:launch (3000)');
+  assert.equal(channelMultiReport.metrics.contributionAfterAcquisition.value, 1300, 'Contribution after acquisition is 1800 - 500 = 1300 and never subtracts social spend');
+  assert.equal(channelMultiReport.metrics.costPerAttributableOrder.value, 500, 'Cost per attributable order is 500 / 1 = 500');
+  assert.equal(channelMultiReport.quality.flags.includes('SPEND_COVERAGE_INCOMPLETE'), false, 'Complete spend has no SPEND_COVERAGE_INCOMPLETE flag');
+  assert.equal(channelMultiReport.quality.flags.includes('COST_COVERAGE_INCOMPLETE'), false, 'Complete costs has no COST_COVERAGE_INCOMPLETE flag');
+
+  // Missing spend test: contributionBeforeAcquisition available, but acquisitionSpend and contributionAfterAcquisition are null
+  const missingSpendReport = computeReport({
+    ...input,
+    scope: { ...scope, channel: 'search:paid:brand' },
+    facts: [brandCapture, socialCaptureFact],
+    events: [brandEntry, brandNoticeSelected, socialInWindowEntry, socialNoticeSelected],
+    orders: [brandOrder, socialOrder],
+    postal: [],
+    costs: [supplierCostBrand, processorCostBrand, supplierCostSocial, processorCostSocial, socialSpend],
+    openObligations: [],
+  });
+  assert.equal(missingSpendReport.metrics.contributionBeforeAcquisition.value, 1800, 'Contribution before acquisition remains available when supplier and processor costs are complete');
+  assert.equal(missingSpendReport.metrics.acquisitionSpend.value, null, 'Acquisition spend is null when channel spend is missing');
+  assert.equal(missingSpendReport.metrics.acquisitionSpend.evidenceClass, 'unavailable');
+  assert.equal(missingSpendReport.metrics.contributionAfterAcquisition.value, null, 'Contribution after acquisition is null when matching spend is missing');
+  assert.equal(missingSpendReport.metrics.costPerAttributableOrder.value, null, 'Cost per attributable order is null when spend is missing');
+  assert.ok(missingSpendReport.quality.flags.includes('SPEND_COVERAGE_INCOMPLETE'), 'Quality flags must include SPEND_COVERAGE_INCOMPLETE when spend is missing');
+
+  // Partial spend test: coverage: 'partial' must NOT be treated as complete spend
+  const partialBrandSpend = { ...brandSpend, id: 'spend-brand-partial', coverage: 'partial' as const };
+  const partialSpendReport = computeReport({
+    ...input,
+    scope: { ...scope, channel: 'search:paid:brand' },
+    facts: [brandCapture, socialCaptureFact],
+    events: [brandEntry, brandNoticeSelected, socialInWindowEntry, socialNoticeSelected],
+    orders: [brandOrder, socialOrder],
+    postal: [],
+    costs: [supplierCostBrand, processorCostBrand, partialBrandSpend],
+    openObligations: [],
+  });
+  assert.equal(partialSpendReport.metrics.acquisitionSpend.value, null, 'Partial spend row must keep acquisition spend unavailable');
+  assert.equal(partialSpendReport.metrics.contributionAfterAcquisition.value, null, 'Partial spend row must keep contribution after acquisition unavailable');
+  assert.equal(partialSpendReport.metrics.contributionBeforeAcquisition.value, 1800, 'Contribution before acquisition is still available with complete supplier/processor costs');
+  assert.ok(partialSpendReport.quality.flags.includes('SPEND_COVERAGE_INCOMPLETE'), 'Quality flags must include SPEND_COVERAGE_INCOMPLETE for partial spend');
+
+  // Incomplete cost coverage test: missing processor cost flags COST_COVERAGE_INCOMPLETE
+  const incompleteCostReport = computeReport({
+    ...input,
+    scope: { ...scope, channel: 'search:paid:brand' },
+    facts: [brandCapture],
+    events: [brandEntry],
+    orders: [brandOrder],
+    postal: [],
+    costs: [supplierCostBrand, brandSpend],
+    openObligations: [],
+  });
+  assert.equal(incompleteCostReport.metrics.contributionBeforeAcquisition.value, null, 'Incomplete supplier/processor costs keep contribution before acquisition unavailable');
+  assert.equal(incompleteCostReport.metrics.contributionAfterAcquisition.value, null, 'Incomplete supplier/processor costs keep contribution after acquisition unavailable');
+  assert.ok(incompleteCostReport.quality.flags.includes('COST_COVERAGE_INCOMPLETE'), 'Quality flags must include COST_COVERAGE_INCOMPLETE');
   const dstToday=calendarScope('local',new Date('2025-03-09T16:00:00.000Z'),'America/Chicago','today');
   assert.equal(Date.parse(dstToday.endUtcExclusive)-Date.parse(dstToday.startUtc),23*60*60*1000,'Spring DST day is 23 hours in UTC');
   const dstFall=calendarScope('local',new Date('2025-11-02T16:00:00.000Z'),'America/Chicago','today');
@@ -103,6 +196,14 @@ async function run(){
   await firestoreDb.collection('orders').doc('social-current-order').set({id:'social-current-order',environment:'local',status:'PROCESSING_DISPATCH',sessionId:'social-current-session'});
   await firestoreDb.collection('business_events_v1').doc('channel-old-entry').set({...event('channel-old-entry','channel-old-session','entry_viewed','2026-09-20T09:00:00.000Z'),acquisition:{original:{source:'search',medium:'paid',campaignId:'brand'}}});
   await firestoreDb.collection('business_events_v1').doc('social-current-entry').set({...event('social-current-entry','social-current-session','entry_viewed','2026-09-20T09:00:00.000Z'),acquisition:{original:{source:'social',medium:'paid',campaignId:'launch'}}});
+  await firestoreDb.collection('cost_records_v1').doc('spend-brand-db').set({
+    id: 'spend-brand-db', environment: 'local', currency: 'USD', kind: 'spend', campaignKey: 'search:paid:brand',
+    amountMinor: 500, authority: 'actual', coverage: 'complete', effectiveAt: '2026-10-18T00:00:00.000Z', sourceRef: 'google-ads',
+  });
+  await firestoreDb.collection('cost_records_v1').doc('spend-social-db').set({
+    id: 'spend-social-db', environment: 'local', currency: 'USD', kind: 'spend', campaignKey: 'social:paid:launch',
+    amountMinor: 3000, authority: 'actual', coverage: 'complete', effectiveAt: '2026-10-18T00:00:00.000Z', sourceRef: 'meta-ads',
+  });
   const a=await prepareGeneration(scope,input.asOf),b=await prepareGeneration(scope,input.asOf);
   assert.equal(a.reportHash,b.reportHash,'Projection replay must be deterministic');
   assert.ok(a.report.exceptions.some(e=>e.orderId==='old-open-order'),'An older open paid mailing is recovered from its durable outbox fact');
@@ -110,6 +211,8 @@ async function run(){
   const channelGeneration=await prepareGeneration({...scope,channel:'search:paid:brand'},input.asOf);
   assert.equal(channelGeneration.report.metrics.netCollections.value,-500,'Channel-scoped query uses the historical entry join for the current refund and excludes other-channel cash');
   assert.equal(channelGeneration.report.metrics.paidOrders.value,0,'Channel-scoped order counts exclude other-channel captures');
+  assert.equal(channelGeneration.report.metrics.acquisitionSpend.value, 500, 'Channel-scoped generation in Firestore isolates brand spend and never subtracts social spend');
+  assert.equal(channelGeneration.report.metrics.costPerAttributableOrder.value, null, 'Cost per attributable order is null when cohort orders count is zero');
   await publishGeneration(a);
   assert.equal((await readGeneration(scope))?.generationId,a.report.generationId);
   assert.equal((await readEvidence(a.report.generationId,'money'))?.total,6);
