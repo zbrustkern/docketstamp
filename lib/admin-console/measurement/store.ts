@@ -1,3 +1,4 @@
+import { AcquisitionSnapshotSchema, type AcquisitionSnapshot } from '@/lib/acquisition';
 import crypto from 'node:crypto';
 import { firestoreDb, sanitizeFirestoreData } from '@/lib/firebase-admin';
 import { EventEnvelopeSchema, AttributionTouchSchema, DiagnosticSchema } from '@/lib/admin-console/contracts';
@@ -23,10 +24,12 @@ export async function acceptBusinessEvent(
   context: {
     classification: { primary: 'customer' | 'founder' | 'employee' | 'automated_test' | 'comp' | 'free_promo' | 'suspected_bot' | 'unresolved'; evidenceClass: 'observed' | 'inferred'; policyVersion: 1; evidenceRef: string };
     acquisition?: { original?: unknown; subsequentTouches?: unknown[] };
+    acquisitionV2?: AcquisitionSnapshot;
   },
 ): Promise<'accepted' | 'duplicate' | 'conflict'> {
   const event = EventEnvelopeSchema.parse(input);
-  const digest = eventDigest(event);
+  const v2 = context.acquisitionV2 ? AcquisitionSnapshotSchema.parse(context.acquisitionV2) : undefined;
+  const digest = v2 ? crypto.createHash('sha256').update(eventDigest(event) + stableJson(v2)).digest('hex') : eventDigest(event);
   const acquisition = context.acquisition ? {
     original: context.acquisition.original ? AttributionTouchSchema.parse(context.acquisition.original) : undefined,
     subsequentTouches: (context.acquisition.subsequentTouches || []).slice(-20).map((touch) => AttributionTouchSchema.parse(touch)),
@@ -37,7 +40,7 @@ export async function acceptBusinessEvent(
     if (existing.exists) {
       return existing.data()?.logicalDigest === digest ? 'duplicate' : 'conflict';
     }
-    tx.set(ref, sanitizeFirestoreData({ ...event, logicalDigest: digest, classification: context.classification, acquisition }));
+    tx.set(ref, sanitizeFirestoreData({ ...event, logicalDigest: digest, classification: context.classification, acquisition, ...(v2 ? { acquisitionV2: v2 } : {}) }));
     return 'accepted';
   });
 }

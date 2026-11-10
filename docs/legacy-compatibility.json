@@ -268,7 +268,7 @@
     },
     {
       "id": "reviewed-compatibility-026",
-      "file": "lib/admin-console/measurement/client.ts",
+      "file": "lib/admin-console/measurement/session.ts",
       "category": "namespace",
       "match": "^(?:smn_telemetry_session)$",
       "context": "^const\\ LEGACY_SESSION_KEY\\ =\\ 'smn_telemetry_session';$",

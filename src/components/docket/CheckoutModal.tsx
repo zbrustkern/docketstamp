@@ -1,4 +1,5 @@
 'use client';
+import { captureCurrentAcquisition } from '@/lib/acquisition-client';
 
 /**
  * CheckoutModal: USPS Service Tier Selection & Stripe Payment Execution
@@ -559,6 +560,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
       }
 
+      const acquisition = captureCurrentAcquisition();
       const res = await fetch('/api/docket/lock-and-intent', {
         method: 'POST',
         headers,
@@ -579,6 +581,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           experienceVersion: 'home_v2',
           entrySource,
           marketingConsent: hasExplicitMarketingConsent(),
+          acquisitionV2: acquisition.snapshot,
+          acquisitionClicks: acquisition.rawClicks,
           signatureAdoption: {
             adopted: isSignatureAdopted,
             affirmed: isAffirmed,

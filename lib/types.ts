@@ -1,3 +1,4 @@
+import type { AcquisitionSnapshot } from './acquisition';
 export interface MailingAddress {
   firstName: string;
   lastName: string;
@@ -164,6 +165,7 @@ export interface Order {
   discountAmountInCents?: number;
   paymentMethod?: "STRIPE" | "PROMO_CODE" | "STUDIO_COMP";
   attribution?: OrderAttribution;
+  acquisitionV2?: AcquisitionSnapshot & { frozenAt: string };
   metaCapiTrackedAt?: number; // Timestamp when Meta Conversions API purchase was dispatched
   recipientOccasion?: RecipientOccasion;
   viewToken?: string;

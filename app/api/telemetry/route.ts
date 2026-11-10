@@ -1,3 +1,4 @@
+import { sanitizeAcquisition } from '@/lib/acquisition';
 import { NextRequest, NextResponse } from "next/server";
 import crypto from 'node:crypto';
 import { ingestTelemetryEvent } from "@/lib/metrics-rollup";
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Contract v1 events are stored additively. Legacy payloads continue through the adapter below.
     if (body.schemaVersion === 1) {
       const receivedAt = new Date().toISOString();
-      const { acquisition: rawAcquisition, classification: _untrustedClassification, ...wireEvent } = body;
+      const { acquisition: rawAcquisition, acquisitionV2: rawAcquisitionV2, classification: _untrustedClassification, ...wireEvent } = body;
       const parsed = EventEnvelopeSchema.safeParse({
         ...wireEvent,
         environment: serverEnvironment(),
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
             evidenceRef: isAutomated ? 'server_user_agent_bot_heuristic_v1' : event.environment === 'production' ? 'server_non_bot_user_agent_candidate_v1' : 'server_nonproduction_environment_v1',
           },
           acquisition,
+          ...(rawAcquisitionV2 ? { acquisitionV2: sanitizeAcquisition(rawAcquisitionV2, event.sessionId, Date.parse(receivedAt)) } : {}),
         });
         if (result === 'conflict') {
           await recordMeasurementDiagnostic({

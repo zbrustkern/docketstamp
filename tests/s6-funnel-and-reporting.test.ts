@@ -1,3 +1,4 @@
+import { observeAcquisition, PILOT_CAMPAIGN } from '../lib/acquisition';
 import { withVerifiedLockFixture } from './helpers/verified-lock-fixture';
 import test, { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -616,6 +617,8 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
         entrySource: 'home_chooser',
       });
 
+      const observation = observeAcquisition({ search: `?utm_source=google&utm_medium=cpc&utm_campaign=${PILOT_CAMPAIGN}&gclid=synthetic_lock_click`, origin: 'http://localhost:3000', sessionId: 'sess_lock_propagation_test', surface: 'home', now: Date.now(), touchId: 'touch_lock' });
+      Object.assign(validPayload, { checkoutCapability: 'offline_acquisition_capability_1234567890', idempotencyKey: 'offline_acquisition_request_01', acquisitionV2: { schemaVersion: 2, firstObserved: observation.touch, currentSession: observation.touch, persistence: 'persistent', missingReasons: [] }, acquisitionClicks: observation.rawClicks });
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -633,6 +636,18 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
       assert.equal(savedOrder.telemetrySessionId, 'sess_lock_propagation_test');
       assert.equal(savedOrder.experienceVersion, 'home_v2');
       assert.equal(savedOrder.entrySource, 'home_chooser');
+      assert.equal(savedOrder.attribution?.utmSource, 'google');
+      assert.equal(savedOrder.acquisitionV2?.currentSession?.campaignId, PILOT_CAMPAIGN);
+      assert.ok(savedOrder.acquisitionV2?.frozenAt);
+      assert.ok(!JSON.stringify(savedOrder).includes('synthetic_lock_click'));
+      const { firestoreDb } = await import('../lib/firebase-admin');
+      const clicks = await firestoreDb.collection('acquisition_click_evidence_v2').where('orderId', '==', data.orderId).get();
+      assert.equal(clicks.size, 1);
+      const replayPayload = { ...validPayload, acquisitionV2: { schemaVersion: 2, firstObserved: null, currentSession: null, persistence: 'unavailable', missingReasons: [] }, acquisitionClicks: [] };
+      const replay = await lockAndIntentPost(new NextRequest('http://localhost:3000/api/docket/lock-and-intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(replayPayload) }));
+      assert.equal(replay.status, 200);
+      assert.equal((await replay.json()).orderId, data.orderId);
+      assert.deepEqual((await getOrderById(data.orderId))?.acquisitionV2, savedOrder.acquisitionV2, 'idempotent retry cannot rewrite frozen acquisition');
     });
 
     it('enforces Invariant 1 NAICS 713940 fitness blocker in lock-and-intent', async () => {

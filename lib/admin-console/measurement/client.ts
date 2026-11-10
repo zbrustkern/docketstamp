@@ -2,12 +2,14 @@
 
 import { AttributionTouchSchema, EventEnvelopeSchema } from '@/lib/admin-console/contracts';
 import { readAttributionLedger } from './attribution';
+import { readCurrentAcquisition } from '@/lib/acquisition-client';
+import { sanitizeAcquisition } from '@/lib/acquisition';
+import { getBusinessSessionId } from './session';
+export { getBusinessSessionId } from './session';
 
 const QUEUE_KEY = 'docketstamp_business_events_v1';
 const DEAD_LETTER_KEY = 'docketstamp_business_events_failed_v1';
 const MILESTONES_KEY = 'docketstamp_business_milestones_v1';
-const SESSION_KEY = 'docketstamp_telemetry_session_v1';
-const LEGACY_SESSION_KEY = 'smn_telemetry_session';
 const MAX_QUEUE = 100;
 export const MAX_EVENT_BODY_BYTES = 3500;
 const MAX_QUEUE_BYTES = 64 * 1024;
@@ -15,7 +17,6 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 8;
 const memoryQueue: Array<Record<string, unknown>> = [];
 const memoryMilestones = new Map<string, Record<string, unknown>>();
-let memorySessionId: string | undefined;
 const memoryJourneys = new Map<string, string>();
 let flushing = false;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -46,7 +47,7 @@ function compactTouch(value: unknown) {
 export function compactEventForTransport(input: unknown): Record<string, unknown> | null {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
   const candidate = input as Record<string, unknown>;
-  const { acquisition: rawAcquisition, ...rawEvent } = candidate;
+  const { acquisition: rawAcquisition, acquisitionV2: rawV2, ...rawEvent } = candidate;
   const parsed = EventEnvelopeSchema.safeParse(rawEvent);
   if (!parsed.success) return null;
   const event = parsed.data as unknown as Record<string, unknown>;
@@ -59,6 +60,7 @@ export function compactEventForTransport(input: unknown): Record<string, unknown
     : undefined;
   let result: Record<string, unknown> = {
     ...event,
+    ...(rawV2 ? { acquisitionV2: sanitizeAcquisition(rawV2, parsed.data.sessionId) } : {}),
     ...(original ? { acquisition: { original, ...(subsequent ? { subsequentTouches: [subsequent] } : {}) } } : {}),
   };
   if (byteLength(JSON.stringify(result)) <= MAX_EVENT_BODY_BYTES) return result;
@@ -141,22 +143,6 @@ function randomId(prefix: string): string {
   catch { return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`; }
 }
 
-export function getBusinessSessionId(): string {
-  try {
-    const existing = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem(LEGACY_SESSION_KEY);
-    if (existing) {
-      sessionStorage.setItem(SESSION_KEY, existing);
-      sessionStorage.removeItem(LEGACY_SESSION_KEY);
-      return existing;
-    }
-    const id = randomId('sess');
-    sessionStorage.setItem(SESSION_KEY, id);
-    return id;
-  } catch {
-    return memorySessionId || (memorySessionId = randomId('sess'));
-  }
-}
-
 export function getBusinessJourneyId(noticeId?: string): string {
   const key = `docketstamp_journey_v1:${noticeId || 'unselected'}`;
   try {
@@ -212,7 +198,7 @@ function eventForMilestone(params: {
 }) {
   const sessionId = getBusinessSessionId();
   const journeyId = getBusinessJourneyId(params.noticeId);
-  const logicalKey = params.logicalKey || `${params.eventName}:${journeyId}:${params.draftRevision ?? 0}:${params.checkoutAttemptId || ''}`;
+  const logicalKey = `${sessionId}:${params.logicalKey || `${params.eventName}:${journeyId}:${params.draftRevision ?? 0}:${params.checkoutAttemptId || ''}`}`;
   const now = Date.now();
   let milestone: Record<string, unknown> | undefined;
   try {
@@ -221,11 +207,14 @@ function eventForMilestone(params: {
     if (entries && typeof entries === 'object') milestone = entries[logicalKey];
     if (milestone && typeof milestone.expiresAt === 'number' && milestone.expiresAt > now && milestone.envelope) {
       const storedEnvelope = milestone.envelope as Record<string, unknown>;
-      const { acquisition, ...wireEnvelope } = storedEnvelope;
-      return { ...EventEnvelopeSchema.parse(wireEnvelope), ...(acquisition ? { acquisition } : {}) };
+      const { acquisition, acquisitionV2, ...wireEnvelope } = storedEnvelope;
+      return { ...EventEnvelopeSchema.parse(wireEnvelope), ...(acquisition ? { acquisition } : {}), ...(acquisitionV2 ? { acquisitionV2 } : {}) };
     }
   } catch {
     milestone = memoryMilestones.get(logicalKey);
+    if (milestone && typeof milestone.expiresAt === 'number' && milestone.expiresAt > now && milestone.envelope) {
+      return milestone.envelope as Record<string, unknown>;
+    }
   }
 
   const occurredAt = new Date(now).toISOString();
@@ -252,8 +241,10 @@ function eventForMilestone(params: {
   });
 
   const attribution = readAttributionLedger();
+  const currentAcquisition = readCurrentAcquisition().snapshot;
   const envelope = {
     ...contractEnvelope,
+    ...(currentAcquisition.currentSession || currentAcquisition.persistence !== 'unavailable' ? { acquisitionV2: currentAcquisition } : {}),
     ...(attribution ? { acquisition: { original: attribution.originalAcquisition, subsequentTouches: attribution.subsequentTouches.slice(-1) } } : {}),
   };
   const record = { envelope, expiresAt: now + MAX_AGE_MS };

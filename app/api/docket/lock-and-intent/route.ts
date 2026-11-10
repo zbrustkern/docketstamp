@@ -1,3 +1,4 @@
+import { sanitizeAcquisition, sanitizeRawClicks } from '@/lib/acquisition';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getNoticeBySlug, DOCKET_PRICING_TIERS } from '@/lib/docket/notices';
@@ -68,6 +69,8 @@ export async function POST(req: NextRequest) {
       entrySource,
       signatureAdoption,
       marketingConsent = false,
+      acquisitionV2: rawAcquisition,
+      acquisitionClicks: rawAcquisitionClicks,
     } = body as Record<string, any>;
 
     const noticeKey = slug || noticeSlug;
@@ -509,6 +512,9 @@ export async function POST(req: NextRequest) {
       ? entrySource.trim()
       : 'unknown';
 
+    const acquisition = sanitizeAcquisition(rawAcquisition, cleanSessionId || '', lockedAt);
+    if (req.headers.get('sec-gpc') === '1') for (const touch of [acquisition.firstObserved, acquisition.currentSession]) if (touch) touch.clicks = [];
+    const acquisitionClicks = sanitizeRawClicks(rawAcquisitionClicks, acquisition, lockedAt);
     const orderRecord: Order = {
       id: orderId,
       schemaVersion: 2,
@@ -548,10 +554,14 @@ export async function POST(req: NextRequest) {
       entrySource: cleanEntrySource,
       attribution: {
         sessionId: cleanSessionId,
-        utmSource: cleanEntrySource,
+        entrySource: cleanEntrySource,
+        utmSource: acquisition.currentSession?.source,
+        utmMedium: acquisition.currentSession?.medium,
+        utmCampaign: acquisition.currentSession?.campaignId,
         // Customer consent assertion captured at lock; omitted/denied stays false.
         marketingConsent: marketingConsent === true,
       },
+      acquisitionV2: { ...acquisition, frozenAt: new Date(lockedAt).toISOString() },
       recipientAddress: {
         firstName: interpolatedDoc.recipientAddress.name,
         lastName: '',
@@ -596,7 +606,7 @@ export async function POST(req: NextRequest) {
       classification: 'unresolved',
       classificationEvidenceRef: `orders/${orderId}`,
       safeProperties: { result: 'locked' },
-    });
+    }, acquisitionClicks);
     if (!policyCommit.ok) {
       await setAttemptState(attemptId, 'cancelled');
       return NextResponse.json({

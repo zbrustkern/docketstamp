@@ -1,3 +1,5 @@
+import type { RawClick } from './acquisition';
+import { Timestamp } from 'firebase-admin/firestore';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { firestoreDb, sanitizeFirestoreData } from '@/lib/firebase-admin';
@@ -296,7 +298,7 @@ export async function createStagedDraftUnderPolicy<T extends Record<string, any>
   });
 }
 
-export async function createOrderUnderPolicy<T extends Record<string, any>>(order: T, slug: string, nexus: PolicyNexus, measurementEvent?: ServerBusinessEventInput): Promise<{ ok: true; revision: number; contentDigest: string } | { ok: false; decision: AvailabilityDecision }> {
+export async function createOrderUnderPolicy<T extends Record<string, any>>(order: T, slug: string, nexus: PolicyNexus, measurementEvent?: ServerBusinessEventInput, acquisitionClicks: RawClick[] = []): Promise<{ ok: true; revision: number; contentDigest: string } | { ok: false; decision: AvailabilityDecision }> {
   const orderRef = firestoreDb.collection('orders').doc(String(order.id));
   return firestoreDb.runTransaction(async (tx) => {
     const { document } = await readPolicySnapshot(tx);
@@ -306,6 +308,13 @@ export async function createOrderUnderPolicy<T extends Record<string, any>>(orde
     const contentDigest = notice ? getNoticeContentDigest(notice) : '';
     const locked = sanitizeFirestoreData({ ...order, templatePolicyRevision: document.revision, templateContentDigest: contentDigest, policyNexus: nexus, policyDecisionAt: new Date().toISOString() });
     tx.create(orderRef, locked as any);
+    // Restricted first-party evidence, never part of an order response or analytics event.
+    // One record per click so TTL cannot extend an earlier click's retention.
+    for (const [index, click] of acquisitionClicks.entries()) {
+      tx.create(firestoreDb.collection('acquisition_click_evidence_v2').doc(`${order.id}_${index}`), {
+        orderId: String(order.id), ...click, expiresAt: Timestamp.fromDate(new Date(click.expiresAt)),
+      });
+    }
     if (measurementEvent) appendServerBusinessEvent(tx, measurementEvent);
     return { ok: true as const, revision: document.revision, contentDigest };
   });
