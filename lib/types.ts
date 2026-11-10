@@ -107,6 +107,7 @@ export interface DocumentIntegrityEvidence {
 }
 
 export interface Order {
+  environment?: 'local' | 'staging' | 'production';
   /** v2 orders are deterministic DocketStamp notice orders; absent means pre-migration history. */
   schemaVersion?: 2;
   kind?: "notice";
