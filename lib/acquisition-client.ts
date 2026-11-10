@@ -4,6 +4,33 @@ import { getBusinessSessionId } from './admin-console/measurement/session';
 
 export const FIRST_KEY = 'docketstamp_first_touch_v2';
 export const CURRENT_KEY = 'docketstamp_current_touch_v2';
+export const GOOGLE_MEASUREMENT_DENIED_KEY = 'docketstamp_google_measurement_denied_v1';
+export const GOOGLE_OFFLINE_PREFERENCE_KEY = 'docketstamp_google_offline_preference_set_v1';
+export function clearStoredAcquisitionEvidence(blockFutureCapture = false): void {
+  const clearRaw = (stored: Stored | null): Stored | null => stored ? {
+    snapshot: { ...stored.snapshot, firstObserved: stored.snapshot.firstObserved ? { ...stored.snapshot.firstObserved, clicks: [] } : null, currentSession: stored.snapshot.currentSession ? { ...stored.snapshot.currentSession, clicks: [] } : null },
+    rawClicks: [],
+  } : null;
+  memory = clearRaw(memory);
+  try {
+    const first = clearRaw(read(FIRST_KEY, true));
+    if (first) localStorage.setItem(FIRST_KEY, JSON.stringify(first));
+    if (blockFutureCapture) {
+      localStorage.setItem(GOOGLE_MEASUREMENT_DENIED_KEY, '1');
+      localStorage.setItem(GOOGLE_OFFLINE_PREFERENCE_KEY, '1');
+    }
+  } catch { /* storage denial is fail-closed in restricted() */ }
+  try {
+    const current = clearRaw(read(CURRENT_KEY));
+    if (current) sessionStorage.setItem(CURRENT_KEY, JSON.stringify(current));
+  } catch { /* storage denial is fail-closed */ }
+}
+export function allowFutureAcquisitionEvidence(): void {
+  try { localStorage.removeItem(GOOGLE_MEASUREMENT_DENIED_KEY); } catch { /* storage denial remains fail-closed */ }
+}
+export function markGoogleOfflinePreferenceExists(): void {
+  try { localStorage.setItem(GOOGLE_OFFLINE_PREFERENCE_KEY, '1'); } catch { /* storage denial remains fail-closed */ }
+}
 type Stored = { snapshot: AcquisitionSnapshot; rawClicks: RawClick[] };
 let memory: Stored | null = null;
 let observedDocument = false;
@@ -18,7 +45,7 @@ function write(key: string, value: Stored, local = false) {
   try { (local ? localStorage : sessionStorage).setItem(key, JSON.stringify(value)); return true; } catch { return false; }
 }
 function restricted() {
-  try { return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true || localStorage.getItem('docketstamp_marketing_consent_v1') === 'denied'; } catch { return true; }
+  try { return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true || localStorage.getItem('docketstamp_marketing_consent_v1') === 'denied' || localStorage.getItem(GOOGLE_MEASUREMENT_DENIED_KEY) === '1'; } catch { return true; }
 }
 
 export function readCurrentAcquisition(): Stored {

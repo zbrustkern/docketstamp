@@ -62,12 +62,7 @@ import { MarketingDestinationsWidget } from "@/components/admin/MarketingDestina
 import { ProofInspectorModal } from "@/components/admin/ProofInspectorModal";
 import { AddressRetryModal } from "@/components/admin/AddressRetryModal";
 import { StudioCompModal } from "@/components/admin/StudioCompModal";
-import { CohortAnalytics } from "@/components/admin/CohortAnalytics";
-import { ValuationHeuristicsWidget } from "@/components/admin/ValuationHeuristicsWidget";
-import { VisitorTelemetryDashboard } from "@/components/admin/VisitorTelemetryDashboard";
 import { OrderJourneyDrawer } from "@/components/admin/OrderJourneyDrawer";
-import { CampaignPerformanceWidget } from "@/components/admin/CampaignPerformanceWidget";
-import { HighIntentCartsWidget } from "@/components/admin/HighIntentCartsWidget";
 import { OutgoingEmailPanel } from "@/components/admin/OutgoingEmailPanel";
 import { TemplateGovernancePanel } from "@/components/admin/TemplateGovernancePanel";
 import { ExecutiveReportingPanel } from "@/components/admin/ExecutiveReportingPanel";
@@ -82,22 +77,13 @@ export default function AdminDashboardPage() {
   const [authError, setAuthError] = useState("");
 
   // Tab Navigation State
-  const [activeTab, setActiveTab] = useState<"orders" | "margins" | "discounts" | "scenarios" | "incidents" | "email" | "templates">("orders");
-
-  // Margins, Ad Spend & Campaign Attribution State
-  const [adSpendInput, setAdSpendInput] = useState<string>("0.00");
-  const [adSpendSynced, setAdSpendSynced] = useState<boolean>(false);
-  const [savingAdSpend, setSavingAdSpend] = useState<boolean>(false);
-  const [adSpendSuccess, setAdSpendSuccess] = useState<string>("");
-  const [copiedTrackingTemplate, setCopiedTrackingTemplate] = useState<boolean>(false);
-  const [campaignSearchQuery, setCampaignSearchQuery] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "orders" | "discounts" | "scenarios" | "incidents" | "templates">("dashboard");
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [retryingId, setRetryingId] = useState<string | null>(null);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncingStripeId, setSyncingStripeId] = useState<string | null>(null);
   const [expandedJourneyOrderId, setExpandedJourneyOrderId] = useState<string | null>(null);
 
@@ -193,10 +179,7 @@ export default function AdminDashboardPage() {
       } else {
         setIsAuthenticated(true);
         setAdminUserEmail(data.email || currentUser.email || null);
-        fetchMetrics();
         fetchIncidents();
-        fetchDiscounts();
-        fetchScenarios();
       }
     } catch (err: unknown) {
       setAuthError(googleSignInErrorMessage(err, { admin: true }));
@@ -226,40 +209,10 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error("Failed to load metrics");
       const data: AdminMetrics = await res.json();
       setMetrics(data);
-      if (!adSpendSynced && data.adSpendCents !== undefined) {
-        setAdSpendInput(((data.adSpendCents || 0) / 100).toFixed(2));
-        setAdSpendSynced(true);
-      }
     } catch (err) {
       console.error("Error loading admin metrics:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveAdSpend = async () => {
-    setSavingAdSpend(true);
-    setAdSpendSuccess("");
-    try {
-      const val = parseFloat(adSpendInput) || 0;
-      const amountCents = Math.round(val * 100);
-      const res = await fetch("/api/admin/ad-spend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adSpendCents: amountCents }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setAdSpendSuccess("Ad spend updated & saved to cloud.");
-        fetchMetrics();
-        setTimeout(() => setAdSpendSuccess(""), 4000);
-      } else {
-        alert(data.error || "Failed to save ad spend.");
-      }
-    } catch (e) {
-      alert("Error saving ad spend.");
-    } finally {
-      setSavingAdSpend(false);
     }
   };
 
@@ -269,13 +222,17 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/admin/retry-fulfillment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({
+          orderId,
+          requestId: crypto.randomUUID(),
+          reason: "Operator requested a safe retry of the frozen postal order snapshot",
+        }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) {
+      if (!res.ok || !data.ok) {
         alert(`Retry failed: ${data.error || "Unknown error"}`);
       } else {
-        alert(`Order successfully submitted to fulfillment. Reference: ${data.letterId || data.orderId || orderId}`);
+        alert(`Postal retry result: ${data.status || "completed"}${data.providerLetterId ? ` (Lob reference: ${data.providerLetterId})` : ""}${data.followupAction ? `\n${data.followupAction}` : ""}`);
       }
       await fetchMetrics();
     } catch (err: unknown) {
@@ -286,46 +243,23 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSyncLob = async (orderId: string) => {
-    setSyncingId(orderId);
-    try {
-      const res = await fetch("/api/admin/sync-lob", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert(`Sync failed: ${data.error || "Unknown error"}`);
-      } else {
-        alert(
-          `Lob postal status updated: ${data.lobStatus || data.status}${
-            data.mailedDate ? ` (Mailed: ${data.mailedDate})` : ""
-          }`
-        );
-      }
-      await fetchMetrics();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Network error";
-      alert(`Error syncing status from Lob USPS: ${msg}`);
-    } finally {
-      setSyncingId(null);
-    }
-  };
-
   const handleSyncStripe = async (orderId: string) => {
     setSyncingStripeId(orderId);
     try {
       const res = await fetch("/api/admin/sync-stripe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({
+          orderId,
+          requestId: crypto.randomUUID(),
+          reason: "Operator requested read-only Stripe evidence reconciliation for this order",
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
         alert(data.message || data.error || "Could not verify Stripe payment for this order.");
       } else {
-        alert(data.message || "Stripe payment verified and robotic dispatch started!");
+        alert("Stripe evidence reconciliation completed. This action does not initiate mailing.");
         await fetchMetrics();
       }
     } catch {
@@ -620,10 +554,7 @@ export default function AdminDashboardPage() {
           if (data.email) {
             setAdminUserEmail(data.email);
           }
-          fetchMetrics();
           fetchIncidents();
-          fetchDiscounts();
-          fetchScenarios();
         }
       } catch (err) {
         console.error("Admin auth check failed:", err);
@@ -634,12 +565,22 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const urlTab = new URLSearchParams(window.location.search).get("tab");
-    if (urlTab === "measurement") {
-      setActiveTab("margins");
-    } else if (urlTab === "incidents" || urlTab === "margins" || urlTab === "discounts" || urlTab === "scenarios" || urlTab === "orders" || urlTab === "templates") {
-      setActiveTab(urlTab as any);
+    if (urlTab === "measurement" || urlTab === "margins" || urlTab === "dashboard" || urlTab === "experiment") {
+      setActiveTab("dashboard");
+    } else if (urlTab === "email") {
+      setActiveTab("discounts");
+    } else if (urlTab === "incidents" || urlTab === "discounts" || urlTab === "scenarios" || urlTab === "orders" || urlTab === "templates") {
+      setActiveTab(urlTab);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeTab === "orders") fetchMetrics();
+    if (activeTab === "discounts") fetchDiscounts();
+    if (activeTab === "scenarios") fetchScenarios();
+    if (activeTab === "incidents") fetchIncidents();
+  }, [activeTab, isAuthenticated]);
 
   // Auto-connect if already signed into an authorized admin Google account in browser
   useEffect(() => {
@@ -796,12 +737,6 @@ export default function AdminDashboardPage() {
     return true; // "ALL"
   });
 
-  const revenueDollars = metrics && metrics.totalRevenueCents > 0
-    ? `$${(metrics.totalRevenueCents / 100).toFixed(2)}`
-    : metrics
-    ? "No positive amount found"
-    : "Unavailable";
-
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#FAF8F5] pb-24 md:pb-20 text-stone-900">
       {/* ADMIN HEADER */}
@@ -820,8 +755,8 @@ export default function AdminDashboardPage() {
                   </span>
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 </div>
-                <span className="text-[10px] text-amber-700 font-medium block leading-none">
-                  Interim Rollup &bull; Unverified
+                <span className="text-[10px] text-stone-500 font-medium block leading-none">
+                  Dashboard &amp; operator tools
                 </span>
               </div>
             </div>
@@ -829,21 +764,11 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setShowCompModal(true)}
-                className="text-xs font-bold text-stone-950 bg-amber-500 hover:bg-amber-600 active:scale-95 px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-2xs transition cursor-pointer"
-                title="Complimentary Dispatch (Held in S0)"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Comp (Held)</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => {
-                  fetchMetrics();
-                  fetchIncidents();
-                  fetchDiscounts();
-                  fetchScenarios();
+                  if (activeTab === "orders") fetchMetrics();
+                  else if (activeTab === "discounts") fetchDiscounts();
+                  else if (activeTab === "scenarios") fetchScenarios();
+                  else fetchIncidents();
                 }}
                 disabled={loading || loadingIncidents || loadingDiscounts || loadingScenarios}
                 className="p-2 text-stone-600 hover:bg-stone-100 active:scale-90 rounded-lg transition cursor-pointer"
@@ -878,32 +803,22 @@ export default function AdminDashboardPage() {
                   <span className="font-serif text-lg font-bold text-stone-900">
                     DocketStamp Admin
                   </span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300/80">
-                    Interim Reporting &bull; Probe Unverified
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
+                    Operator Console
                   </span>
                 </div>
-                <p className="text-xs text-stone-500">
-                  Observed order &amp; session rollup (unverified legacy economics; direct provider mutations held).
-                </p>
+                <p className="text-xs text-stone-500">Reporting, fulfillment operations, and system health.</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setShowCompModal(true)}
-                className="text-xs font-semibold text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3.5 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                <span>Comp Dispatch (Held)</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => {
-                  fetchMetrics();
-                  fetchIncidents();
-                  fetchDiscounts();
-                  fetchScenarios();
+                  if (activeTab === "orders") fetchMetrics();
+                  else if (activeTab === "discounts") fetchDiscounts();
+                  else if (activeTab === "scenarios") fetchScenarios();
+                  else fetchIncidents();
                 }}
                 disabled={loading || loadingIncidents || loadingDiscounts || loadingScenarios}
                 className="p-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition cursor-pointer"
@@ -969,17 +884,13 @@ export default function AdminDashboardPage() {
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    setShowCompModal(true);
+                    setActiveTab("scenarios");
                   }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-amber-50 text-xs font-semibold text-amber-900 bg-amber-50/60 border border-amber-200 transition text-left cursor-pointer"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-indigo-50 text-xs font-semibold text-indigo-800 transition text-left cursor-pointer"
                 >
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                    Comp Dispatch (Held)
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-amber-500" />
+                  <span className="flex items-center gap-2"><Globe className="w-4 h-4" />SEO &amp; Scenarios</span>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-
                 <Link
                   href="/"
                   className="flex items-center justify-between p-2.5 rounded-xl hover:bg-stone-50 text-xs font-semibold text-stone-700 transition"
@@ -1015,216 +926,91 @@ export default function AdminDashboardPage() {
       <div className="border-b border-stone-200/80 bg-white shadow-2xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <nav className="flex sm:flex-wrap items-center gap-1.5 sm:gap-2 overflow-x-auto py-2.5 sm:py-0 no-scrollbar scroll-smooth" aria-label="Admin Tabs">
-            <button
-              type="button"
-              onClick={() => setActiveTab("orders")}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                activeTab === "orders"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-stone-900 sm:text-stone-900 sm:shadow-none sm:ring-0 font-semibold"
-                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
-              }`}
-            >
-              <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
-              <span>Command Center</span>
-              {metrics?.totalOrders !== undefined && (
-                <span className={`ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold ${
-                  activeTab === "orders"
-                    ? "bg-stone-800 text-stone-200 sm:bg-stone-100 sm:text-stone-600"
-                    : "bg-stone-100 text-stone-600 sm:bg-stone-100"
-                }`}>
-                  {metrics.totalOrders}
-                </span>
-              )}
-            </button>
-
-            {/* 2. SYSTEM HEALTH & INCIDENTS */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("incidents")}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                hasActiveAlerts
-                  ? activeTab === "incidents"
-                    ? "bg-rose-600 text-white shadow-xs ring-1 ring-rose-600 sm:bg-rose-50/30 sm:border-rose-600 sm:text-rose-700 sm:shadow-none sm:ring-0 font-bold"
-                    : "bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-rose-600 font-semibold"
-                  : activeTab === "incidents"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-amber-50/30 sm:border-amber-600 sm:text-amber-900 sm:shadow-none sm:ring-0 font-bold"
-                  : "bg-white text-stone-700 hover:text-stone-900 hover:bg-stone-50 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-600 font-medium sm:shadow-none"
-              }`}
-            >
-              {hasActiveAlerts ? (
-                <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white sm:text-rose-600 animate-pulse shrink-0" />
-              ) : (
-                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-              )}
-              <span>System Health</span>
-              {hasActiveAlerts ? (
-                <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-bold border border-rose-200">
-                  {unresolvedIncidents.length}
-                </span>
-              ) : (
-                <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] bg-amber-100 text-amber-900 font-medium">
-                  Unverified
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("margins")}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                activeTab === "margins"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-emerald-600 sm:text-emerald-900 sm:shadow-none sm:ring-0 font-semibold"
-                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
-              }`}
-            >
-              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-              <span>Experiment</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("discounts")}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                activeTab === "discounts"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-amber-600 sm:text-amber-900 sm:shadow-none sm:ring-0 font-semibold"
-                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
-              }`}
-            >
-              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
-              <span>Discounts</span>
-              {discountStats?.activeCodes !== undefined && discountStats.activeCodes > 0 && (
-                <span className={`ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold ${
-                  activeTab === "discounts"
-                    ? "bg-stone-800 text-amber-300 sm:bg-amber-100 sm:text-amber-800"
-                    : "bg-stone-100 text-stone-600 sm:bg-amber-100 sm:text-amber-800"
-                }`}>
-                  {discountStats.activeCodes}
-                </span>
-              )}
-            </button>
-
+            {([
+              { id: "dashboard", label: "Dashboard", icon: TrendingUp },
+              { id: "orders", label: "Orders & Fulfillment", icon: Package },
+              { id: "incidents", label: "System Health & Incidents", icon: ShieldCheck },
+              { id: "templates", label: "Templates & Coverage", icon: BookOpen },
+              { id: "discounts", label: "Discounts & Email", icon: Tag },
+            ] as const).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                aria-current={activeTab === id ? "page" : undefined}
+                className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
+                  activeTab === id
+                    ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-stone-900 sm:text-stone-900 sm:shadow-none sm:ring-0 font-semibold"
+                    : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span>{label}</span>
+                {id === "orders" && metrics?.totalOrders !== undefined && (
+                  <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600">{metrics.totalOrders}</span>
+                )}
+                {id === "incidents" && hasActiveAlerts && (
+                  <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">{unresolvedIncidents.length}</span>
+                )}
+                {id === "discounts" && (discountStats?.activeCodes || 0) > 0 && (
+                  <span className="ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">{discountStats?.activeCodes}</span>
+                )}
+              </button>
+            ))}
+            <span className="hidden sm:inline-block h-6 border-l border-stone-200 mx-1" aria-hidden="true" />
             <button
               type="button"
               onClick={() => setActiveTab("scenarios")}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                activeTab === "scenarios"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-indigo-600 sm:text-indigo-900 sm:shadow-none sm:ring-0 font-semibold"
-                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
-              }`}
+              aria-current={activeTab === "scenarios" ? "page" : undefined}
+              className={`shrink-0 py-2 sm:py-3 px-3 rounded-full sm:rounded-none text-xs sm:text-sm inline-flex items-center gap-1.5 cursor-pointer transition whitespace-nowrap ${activeTab === "scenarios" ? "bg-indigo-50 text-indigo-900 font-semibold" : "text-stone-500 hover:text-stone-900 hover:bg-stone-50"}`}
             >
-              <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
+              <Globe className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
               <span>SEO</span>
-              {scenarioSummary?.activeScenariosCount !== undefined && (
-                <span className={`ml-1 py-0.5 px-1.5 rounded-full text-[10px] font-bold ${
-                  activeTab === "scenarios"
-                    ? "bg-stone-800 text-indigo-300 sm:bg-indigo-100 sm:text-indigo-800"
-                    : "bg-stone-100 text-stone-600 sm:bg-indigo-100 sm:text-indigo-800"
-                }`}>
-                  {scenarioSummary.activeScenariosCount}
-                </span>
-              )}
-            </button>
-
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("email")}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                activeTab === "email"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-sky-600 sm:text-sky-900 sm:shadow-none sm:ring-0 font-semibold"
-                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 shrink-0" />
-              <span>Outgoing Email</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("templates")}
-              aria-current={activeTab === "templates" ? "page" : undefined}
-              className={`shrink-0 py-2 sm:py-3.5 px-3.5 sm:px-3 rounded-full sm:rounded-none sm:border-b-2 font-medium text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2 cursor-pointer transition whitespace-nowrap ${
-                activeTab === "templates"
-                  ? "bg-stone-900 text-white shadow-xs ring-1 ring-stone-900 sm:bg-transparent sm:border-sky-700 sm:text-sky-900 sm:shadow-none sm:ring-0 font-semibold"
-                  : "bg-white text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200/90 shadow-2xs sm:bg-transparent sm:border-transparent sm:text-stone-500 sm:hover:border-stone-300 sm:shadow-none"
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-700 shrink-0" />
-              <span>Templates &amp; coverage</span>
             </button>
           </nav>
         </div>
       </div>
 
       <main className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-8 space-y-4 sm:space-y-8 min-w-0">
-        {/* LIVE LOB USPS STATUS & BALANCE WIDGET */}
-        <LobStatusWidget />
-        <MarketingDestinationsWidget />
+        {activeTab === "incidents" && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <LobStatusWidget />
+            <MarketingDestinationsWidget />
+          </div>
+        )}
+        {activeTab === "incidents" && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowCompModal(true)}
+              className="text-xs font-semibold text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-2 rounded-xl transition"
+              title="Complimentary dispatch creation remains held."
+            >
+              Complimentary dispatch review (held)
+            </button>
+          </div>
+        )}
         {/* ===================== TAB: ORDERS & OPERATIONS ===================== */}
         {activeTab === "orders" && (
           <div className="space-y-5 sm:space-y-8">
-            {/* KPI METRIC CARDS (2x2 on Mobile, 4x1 on Desktop) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Order Amount Sum</span>
-                  <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
+            <div className="grid grid-cols-2 gap-3 max-w-xl">
+              <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
+                <div className="flex items-center justify-between text-stone-500 text-[10px] font-semibold uppercase tracking-wider">
+                  <span>Order records</span>
+                  <Package className="w-4 h-4 text-amber-600" />
                 </div>
-                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">{revenueDollars}</p>
-                <p className="text-[10px] sm:text-[11px] text-amber-700 font-medium">
-                  Interim status-based order fields; payment ledger unverified
-                </p>
+                <p className="font-serif text-2xl font-bold text-stone-900">{metrics ? metrics.totalOrders : "—"}</p>
+                <p className="text-[10px] text-stone-500">Operational inventory; includes pending and unpaid records.</p>
               </div>
-
-              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Post-Payment Statuses</span>
-                  <PenTool className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" />
+              <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
+                <div className="flex items-center justify-between text-stone-500 text-[10px] font-semibold uppercase tracking-wider">
+                  <span>Post-payment status</span>
+                  <PenTool className="w-4 h-4 text-indigo-600" />
                 </div>
-                <p className="font-serif text-xl sm:text-2xl font-bold text-indigo-900">
-                  {metrics?.ordersByStatus.processing || 0}
-                </p>
-                <p className="text-[10px] sm:text-[11px] text-indigo-600 font-medium">Status-derived; not reconciled</p>
-              </div>
-
-              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>All Orders</span>
-                  <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
-                </div>
-                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-                  {metrics ? metrics.totalOrders : "—"}
-                </p>
-                <p className="text-[10px] sm:text-[11px] text-stone-400">
-                  Includes pending and unpaid records
-                </p>
-              </div>
-
-              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200 shadow-2xs space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
-                  <span>Session Conversion</span>
-                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
-                </div>
-                <p className="font-serif text-xl sm:text-2xl font-bold text-stone-900">Unavailable</p>
-                <p className="text-[10px] sm:text-[11px] text-stone-400">
-                  Legacy events are not joined to verified paid orders
-                </p>
+                <p className="font-serif text-2xl font-bold text-indigo-900">{metrics?.ordersByStatus.processing || 0}</p>
+                <p className="text-[10px] text-stone-500">Order count only; not a payment reconciliation.</p>
               </div>
             </div>
-
-            {/* ALL-IN-ONE COMMAND CENTER: CAMPAIGN PERFORMANCE & HIGH-INTENT CART RECOVERY */}
-            <CampaignPerformanceWidget
-              metrics={metrics}
-              orders={metrics?.recentOrders || []}
-            />
-
-            <HighIntentCartsWidget metrics={metrics} />
-
-            {/* ENRICHED VISITOR TELEMETRY & DROP-OFF WATERFALL */}
-            <VisitorTelemetryDashboard metrics={metrics} />
-
-            {/* COHORT & HANDWRITING STYLE ANALYTICS */}
-            <CohortAnalytics metrics={metrics} />
 
             {/* RECENT ORDERS TABLE & MOBILE CARDS */}
             <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-8 border border-stone-200 shadow-sm space-y-4 sm:space-y-5 w-full min-w-0 overflow-hidden">
@@ -1454,43 +1240,32 @@ export default function AdminDashboardPage() {
                               <span>View Proof</span>
                             </button>
 
-                            {resolvePostalProvenance(order).provider === "lob" ? (
-                              <button
-                                type="button"
-                                onClick={() => handleSyncLob(order.id)}
-                                disabled={syncingId === order.id}
-                                title="Held in S0 pending S3-T02/T03 read-only Lob reconciliation"
-                                className="py-2.5 text-center text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 active:scale-98 rounded-xl border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                              >
-                                <RefreshCw
-                                  className={`w-3.5 h-3.5 shrink-0 ${syncingId === order.id ? "animate-spin" : ""}`}
-                                />
-                                <span>Sync Lob (Held: S3)</span>
-                              </button>
-                            ) : canRetry ? (
+                            {canRetry ? (
                               <button
                                 type="button"
                                 onClick={() => handleRetryFulfillment(order.id)}
                                 disabled={retryingId === order.id}
-                                title="Held in S0 pending S3-T02 immutable snapshot retry contract"
+                                title="Retry postal dispatch using the frozen order snapshot; ambiguous outcomes require review."
                                 className="py-2.5 text-center text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 active:scale-98 rounded-xl border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
                                 <RefreshCw
                                   className={`w-3.5 h-3.5 shrink-0 ${retryingId === order.id ? "animate-spin" : ""}`}
                                 />
-                                <span>{retryingId === order.id ? "Checking..." : "Retry (Held: S3)"}</span>
+                                <span>{retryingId === order.id ? "Checking..." : "Retry dispatch"}</span>
                               </button>
-                            ) : (
+                            ) : isPending ? (
                               <button
                                 type="button"
                                 onClick={() => handleSyncStripe(order.id)}
                                 disabled={syncingStripeId === order.id}
-                                title="Held in S0 pending S2-T01/S3-T03 verified Stripe settlement authority"
+                                title="Reconcile Stripe payment evidence. This does not initiate mailing."
                                 className="py-2.5 text-center text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 active:scale-98 rounded-xl border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
                                 <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                                <span>Stripe Sync (Held: S2)</span>
+                                <span>Reconcile Stripe</span>
                               </button>
+                            ) : (
+                              <span className="text-xs text-stone-400">No action available</span>
                             )}
                           </div>
                         </div>
@@ -1692,7 +1467,7 @@ export default function AdminDashboardPage() {
                                       <button
                                         onClick={() => handleRetryFulfillment(order.id)}
                                         disabled={retryingId === order.id}
-                                        title="Held in S0 pending S3-T02 immutable snapshot retry contract"
+                                        title="Retry postal dispatch using the frozen order snapshot; ambiguous outcomes require review."
                                         className="px-2 py-0.5 text-[10px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 rounded border border-amber-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
                                       >
                                         <RefreshCw
@@ -1700,7 +1475,7 @@ export default function AdminDashboardPage() {
                                             retryingId === order.id ? "animate-spin" : ""
                                           }`}
                                         />
-                                        {retryingId === order.id ? "Checking..." : "Retry (Held: S3)"}
+                                        {retryingId === order.id ? "Checking..." : "Retry dispatch"}
                                       </button>
                                       <button
                                         type="button"
@@ -1709,24 +1484,9 @@ export default function AdminDashboardPage() {
                                         title="Inspect address retry modal (Execution held until S3-T02)"
                                       >
                                         <MapPin className="w-2.5 h-2.5 text-amber-700" />
-                                        <span>Address (Held: S3)</span>
+                                        <span>Review address</span>
                                       </button>
                                     </div>
-                                  )}
-                                  {resolvePostalProvenance(order).provider === "lob" && (
-                                    <button
-                                      onClick={() => handleSyncLob(order.id)}
-                                      disabled={syncingId === order.id}
-                                      title="Held in S0 pending S3-T02/T03 read-only Lob reconciliation"
-                                      className="px-2 py-0.5 text-[10px] font-medium text-amber-900 bg-amber-50 hover:bg-amber-100 rounded border border-amber-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
-                                    >
-                                      <RefreshCw
-                                        className={`w-2.5 h-2.5 ${
-                                          syncingId === order.id ? "animate-spin" : ""
-                                        }`}
-                                      />
-                                      {syncingId === order.id ? "Checking..." : "Sync Lob (Held: S3)"}
-                                    </button>
                                   )}
                                   {isMailed && (
                                     <span className="text-[11px] text-purple-700 font-medium inline-flex items-center gap-1">
@@ -1742,14 +1502,14 @@ export default function AdminDashboardPage() {
                                     <button
                                       onClick={() => handleSyncStripe(order.id)}
                                       disabled={syncingStripeId === order.id}
-                                      title="Held in S0 pending S2-T01/S3-T03 verified Stripe settlement authority"
+                                      title="Reconcile Stripe payment evidence. This does not initiate mailing."
                                       className="px-2 py-1 text-[11px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-300 transition inline-flex items-center gap-1 shadow-xs disabled:opacity-50 cursor-pointer"
                                     >
                                       <CreditCard className={`w-3 h-3 ${syncingStripeId === order.id ? "animate-spin" : ""}`} />
-                                      {syncingStripeId === order.id ? "Checking..." : "Verify Stripe (Held: S2)"}
+                                      {syncingStripeId === order.id ? "Checking..." : "Reconcile Stripe"}
                                     </button>
                                   )}
-                                  {!isPending && !canRetry && resolvePostalProvenance(order).provider !== "lob" && (
+                                  {!isPending && !canRetry && (
                                     <span className="text-stone-300">—</span>
                                   )}
                                 </div>
@@ -1780,462 +1540,19 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ===================== TAB: EXPERIMENT & FULFILLMENT ===================== */}
-        {activeTab === "margins" && (
-          <div className="space-y-8">
+        {/* ===================== TAB: PRIMARY DASHBOARD ===================== */}
+        {activeTab === "dashboard" && (
+          <div className="space-y-5 sm:space-y-8">
+            {hasActiveAlerts && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  {unresolvedIncidents.length} unresolved operational alert{unresolvedIncidents.length === 1 ? "" : "s"}
+                </div>
+                <button type="button" onClick={() => setActiveTab("incidents")} className="text-xs font-semibold underline underline-offset-2">Review System Health</button>
+              </div>
+            )}
             <ExecutiveReportingPanel />
-            <details className="rounded-2xl border border-stone-200 bg-white px-4 py-3 sm:px-5">
-              <summary className="cursor-pointer text-sm font-semibold text-stone-800">
-                Legacy analytics and estimates
-                <span className="ml-2 text-xs font-normal text-stone-500">Unverified historical rollups and formula-based costs</span>
-              </summary>
-              <div className="mt-4 space-y-8 border-t border-stone-200 pt-4">
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="font-bold">Interim Rollup Notice: Legacy Unverified Unit Economics</p>
-                <p className="text-amber-900/90 leading-relaxed">
-                  Gross revenue below sums observed <code className="font-mono">order.amountInCents</code> on paid orders without fabricating a $9.00 fallback. Gateway fees and fulfillment COGS remain legacy formula estimates (<code className="font-mono">estimated_legacy_unverified</code>) until verified Stripe balance transactions and Lob tier schedules are active.
-                </p>
-              </div>
-            </div>
-
-            {/* UNIT ECONOMICS KPI SUMMARY */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-xs font-semibold uppercase tracking-wider">
-                  <span>Observed Gross Revenue</span>
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
-                </div>
-                <p className="font-serif text-2xl font-bold text-stone-900">
-                  ${((metrics?.margins?.grossRevenueCents || 0) / 100).toFixed(2)}
-                </p>
-                <p className="text-[11px] text-stone-500">
-                  {metrics?.margins?.paidCardsCount || 0} paid orders (Observed amountInCents)
-                </p>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-xs font-semibold uppercase tracking-wider">
-                  <span>Est. Gateway Fees (Unverified)</span>
-                  <Receipt className="w-4 h-4 text-rose-500" />
-                </div>
-                <p className="font-serif text-2xl font-bold text-rose-700">
-                  -${((metrics?.margins?.stripeFeesCents || 0) / 100).toFixed(2)}
-                </p>
-                <p className="text-[11px] text-amber-700">
-                  Formula estimate (2.9% + 30¢ on paid orders; not Stripe balance-verified)
-                </p>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-1">
-                <div className="flex items-center justify-between text-stone-500 text-xs font-semibold uppercase tracking-wider">
-                  <span>Est. Fulfillment COGS (Unverified)</span>
-                  <Package className="w-4 h-4 text-indigo-600" />
-                </div>
-                <p className="font-serif text-2xl font-bold text-indigo-900">
-                  -${((metrics?.margins?.fulfillmentCogsCents || 0) / 100).toFixed(2)}
-                </p>
-                <p className="text-[11px] text-amber-700">
-                  Legacy estimate (not verified Lob First-Class / Certified / ERR tier schedule)
-                </p>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-1 bg-amber-50/30">
-                <div className="flex items-center justify-between text-amber-900 text-xs font-semibold uppercase tracking-wider">
-                  <span>Est. Net Contribution (Unverified)</span>
-                  <Coins className="w-4 h-4 text-amber-600" />
-                </div>
-                <p className="font-serif text-2xl font-bold text-stone-900">
-                    {metrics?.margins?.netContributionMarginCents !== undefined
-                    ? `${metrics.margins.netContributionMarginCents >= 0 ? "+" : "-"}$${(Math.abs(metrics.margins.netContributionMarginCents) / 100).toFixed(2)}`
-                    : "Unavailable"}
-                </p>
-                <p className="text-[11px] text-amber-800 font-medium">
-                  {metrics?.margins?.netContributionMarginPercent !== null &&
-                  metrics?.margins?.netContributionMarginPercent !== undefined
-                    ? `${metrics.margins.netContributionMarginPercent}% estimated margin (Unverified)`
-                    : "N/A (0 observed revenue) • Unverified Estimate"}
-                </p>
-              </div>
-            </div>
-
-            {/* COLLAPSIBLE ILLUSTRATIVE ASSUMPTIONS SIMULATOR BOUNDARY */}
-            <details className="group bg-stone-100/80 rounded-3xl border border-amber-300/80 p-4 sm:p-6 space-y-6">
-              <summary className="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-400">
-                      Illustrative Assumptions Simulator (Not Observed Accounting)
-                    </span>
-                    <span className="text-xs font-semibold text-stone-700">
-                      Collapsed by default &bull; Click to expand hypothetical scenario worksheets
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-500">
-                    Contains user-adjustable ad spend CPA simulation and hypothetical LTV/valuation heuristics. Never mixed with observed accounting totals.
-                  </p>
-                </div>
-                <span className="text-xs font-bold text-amber-900 bg-white px-3 py-1.5 rounded-xl border border-amber-300 shrink-0 self-start sm:self-center">
-                  Toggle Simulator
-                </span>
-              </summary>
-
-              <div className="pt-4 border-t border-stone-200/80 space-y-8">
-                {/* INTERACTIVE AD SPEND & CPA SIMULATOR */}
-                {(() => {
-                  const enteredAdSpend = parseFloat(adSpendInput) || 0;
-                  const paidCount = metrics?.margins?.paidCardsCount || 0;
-                  const netContribDollars = (metrics?.margins?.netContributionMarginCents || 0) / 100;
-                  const grossRevDollars = (metrics?.margins?.grossRevenueCents || 0) / 100;
-                  const cpaDollars = paidCount > 0 ? enteredAdSpend / paidCount : (enteredAdSpend > 0 ? enteredAdSpend : 0);
-                  const netProfitAfterAds = netContribDollars - enteredAdSpend;
-                  const roasRatio = enteredAdSpend > 0 ? (grossRevDollars / enteredAdSpend).toFixed(2) : "—";
-                  const isProfitable = netProfitAfterAds >= 0 && (paidCount > 0 || enteredAdSpend === 0);
-
-                  return (
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                              Illustrative Assumptions Simulator (Not Observed Accounting)
-                            </span>
-                            <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                              <Calculator className="w-4 h-4 text-amber-600" />
-                              Hypothetical Ad Spend &amp; CPA Worksheet
-                            </h2>
-                          </div>
-                          <p className="text-xs text-stone-500">
-                            Enter hypothetical ad spend to simulate blended CPA and ROAS against interim unverified margin estimates.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={handleSaveAdSpend}
-                            disabled={savingAdSpend}
-                            className="text-xs font-semibold text-white bg-stone-900 hover:bg-stone-800 px-4 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 ${savingAdSpend ? "animate-spin" : ""}`} />
-                            <span>{savingAdSpend ? "Saving..." : "Save Manual Spend"}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {adSpendSuccess && (
-                        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs rounded-xl flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>{adSpendSuccess}</span>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* LEFT: Ad Spend Input Controls */}
-                        <div className="lg:col-span-5 space-y-4 bg-stone-50 p-5 rounded-2xl border border-stone-200">
-                          <div>
-                            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                              Simulated / Manual Ad Spend (USD)
-                            </label>
-                            <div className="relative">
-                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
-                                $
-                              </span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={adSpendInput}
-                                onChange={(e) => setAdSpendInput(e.target.value)}
-                                placeholder="0.00"
-                                className="w-full pl-8 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Quick Increments */}
-                          <div className="space-y-1.5">
-                            <span className="text-[11px] font-medium text-stone-500">Quick Simulation Presets:</span>
-                            <div className="flex flex-wrap gap-2">
-                              {[
-                                { label: "+$10", val: 10 },
-                                { label: "+$25", val: 25 },
-                                { label: "+$50", val: 50 },
-                                { label: "+$100", val: 100 },
-                              ].map((preset) => (
-                                <button
-                                  key={preset.label}
-                                  type="button"
-                                  onClick={() => {
-                                    const curr = parseFloat(adSpendInput) || 0;
-                                    setAdSpendInput((curr + preset.val).toFixed(2));
-                                  }}
-                                  className="text-xs font-medium px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-lg transition cursor-pointer"
-                                >
-                                  {preset.label}
-                                </button>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => setAdSpendInput("0.00")}
-                                className="text-xs font-medium px-2.5 py-1 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg transition cursor-pointer"
-                              >
-                                Reset
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* RIGHT: Simulated Metrics */}
-                        <div className="lg:col-span-7 space-y-4">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <div className="p-4 rounded-2xl border bg-stone-50 border-stone-200 space-y-1">
-                              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
-                                Simulated CPA
-                              </span>
-                              <p className="font-serif text-xl font-bold text-stone-900">
-                                ${cpaDollars.toFixed(2)}
-                              </p>
-                              <p className="text-[10px] text-stone-400">
-                                {paidCount > 0 ? `Across ${paidCount} paid orders` : "0 paid orders observed"}
-                              </p>
-                            </div>
-
-                            <div className="p-4 rounded-2xl border bg-stone-50 border-stone-200 space-y-1">
-                              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
-                                Simulated ROAS
-                              </span>
-                              <p className="font-serif text-xl font-bold text-stone-900">
-                                {roasRatio !== "—" ? `${roasRatio}x` : "—"}
-                              </p>
-                              <p className="text-[10px] text-stone-400">Observed Gross Rev / Manual Spend</p>
-                            </div>
-
-                            <div className={`p-4 rounded-2xl border space-y-1 ${isProfitable ? "bg-stone-50 border-stone-200" : "bg-rose-50/50 border-rose-200"}`}>
-                              <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">
-                                Simulated Net After Ads
-                              </span>
-                              <p className={`font-serif text-xl font-bold ${netProfitAfterAds >= 0 ? "text-stone-900" : "text-rose-700"}`}>
-                                {netProfitAfterAds >= 0 ? `+$${netProfitAfterAds.toFixed(2)}` : `-$${Math.abs(netProfitAfterAds).toFixed(2)}`}
-                              </p>
-                              <p className="text-[10px] text-stone-400">Hypothetical estimate only</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* LTV, CAC & VALUATION HEURISTICS ENGINE */}
-                {(() => {
-                  const parsedAdSpend = parseFloat(adSpendInput) || 0;
-                  const currentPaidCount = metrics?.margins?.paidCardsCount || 0;
-                  const currentCac =
-                    currentPaidCount > 0
-                      ? parsedAdSpend / currentPaidCount
-                      : parsedAdSpend > 0
-                      ? parsedAdSpend
-                      : 0;
-
-                  return (
-                    <ValuationHeuristicsWidget
-                      initialAssumptions={metrics?.valuationAssumptions}
-                      actualCacDollars={currentCac}
-                      paidOrdersCount={currentPaidCount}
-                    />
-                  );
-                })()}
-              </div>
-            </details>
-
-            {/* CAMPAIGN ATTRIBUTION & GOOGLE ADS INTEL */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-indigo-600" />
-                    Campaign Attribution &amp; Traffic Intelligence
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Legacy order attribution grouped by stored UTM parameters and Google Ads Click Identifiers (GCLID); provider reconciliation is unavailable.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Search campaigns..."
-                      value={campaignSearchQuery}
-                      onChange={(e) => setCampaignSearchQuery(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Attribution Table */}
-              {(() => {
-                const attributions = (metrics?.campaignAttributions || []).filter((c) => {
-                  const q = campaignSearchQuery.toLowerCase();
-                  return (
-                    c.campaignKey.toLowerCase().includes(q) ||
-                    c.utmSource.toLowerCase().includes(q) ||
-                    c.utmMedium.toLowerCase().includes(q)
-                  );
-                });
-
-                if (attributions.length === 0) {
-                  return (
-                    <div className="py-12 text-center space-y-3 bg-stone-50/50 rounded-2xl border border-stone-200/60 p-6">
-                      <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
-                        <Compass className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-1 max-w-md mx-auto">
-                        <p className="text-sm font-semibold text-stone-800">
-                          {campaignSearchQuery ? "No matching campaigns found" : "Ready for Incoming Campaign Traffic"}
-                        </p>
-                        <p className="text-xs text-stone-500">
-                          {campaignSearchQuery
-                            ? "Try broadening your search term."
-                            : "As visitors arrive with Google Ads parameters (gclid) or UTM tags, their order revenue and net margins will automatically display here."}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="overflow-x-auto rounded-2xl border border-stone-200">
-                    <table className="w-full text-left text-xs text-stone-600">
-                      <thead className="bg-stone-50 text-stone-500 uppercase tracking-wider font-semibold border-b border-stone-200 text-[10px]">
-                        <tr>
-                          <th className="py-3 px-4">Campaign Name</th>
-                          <th className="py-3 px-4">Source / Medium</th>
-                          <th className="py-3 px-4">Google Tag</th>
-                          <th className="py-3 px-4 text-center">Paid Orders</th>
-                          <th className="py-3 px-4 text-right">Gross Rev</th>
-                          <th className="py-3 px-4 text-right">Net Margin</th>
-                          <th className="py-3 px-4 text-right">Margin %</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100">
-                        {attributions.map((c) => {
-                          const marginPct =
-                            c.grossRevenueCents > 0
-                              ? Math.round((c.netContributionMarginCents / c.grossRevenueCents) * 100)
-                              : 0;
-
-                          return (
-                            <tr key={c.campaignKey} className="hover:bg-stone-50/80 transition">
-                              <td className="py-3.5 px-4">
-                                <div className="font-semibold text-stone-900">{c.campaignKey}</div>
-                                {c.utmCampaign && c.utmCampaign !== "(not set)" && (
-                                  <div className="text-[10px] text-stone-400 font-mono">
-                                    utm_campaign={c.utmCampaign}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="py-3.5 px-4 font-mono text-[11px] text-stone-700">
-                                {c.utmSource} / {c.utmMedium}
-                              </td>
-                              <td className="py-3.5 px-4">
-                                {c.hasGclid ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                                    <Check className="w-3 h-3" /> GCLID
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-stone-400">—</span>
-                                )}
-                              </td>
-                              <td className="py-3.5 px-4 text-center font-bold text-stone-900">
-                                {c.orderCount}
-                              </td>
-                              <td className="py-3.5 px-4 text-right font-mono font-medium text-stone-900">
-                                ${(c.grossRevenueCents / 100).toFixed(2)}
-                              </td>
-                              <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
-                                +${(c.netContributionMarginCents / 100).toFixed(2)}
-                              </td>
-                              <td className="py-3.5 px-4 text-right font-bold text-stone-700">
-                                {marginPct}%
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* GOOGLE ADS TRACKING TEMPLATE & SETUP ASSISTANT */}
-            <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-8 border border-stone-800 space-y-6">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Google Ads Setup Assistant
-                  </span>
-                </div>
-                <h3 className="font-serif text-xl font-bold text-white flex items-center gap-2">
-                  Auto-Tagging &amp; UTM Tracking Template
-                </h3>
-                <p className="text-xs text-stone-300">
-                  Paste this tracking template into your Google Ads Campaign or Account settings. DocketStamp will automatically detect every ad click, keyword, and creative variant.
-                </p>
-              </div>
-
-              {/* Template Code Box */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-stone-400">
-                  <span className="font-semibold text-stone-300">Google Ads Tracking Template URL:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const template = "{lpurl}?utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_content={creative}&utm_term={keyword}";
-                      navigator.clipboard.writeText(template);
-                      setCopiedTrackingTemplate(true);
-                      setTimeout(() => setCopiedTrackingTemplate(false), 2500);
-                    }}
-                    className="text-xs font-semibold text-stone-900 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    {copiedTrackingTemplate ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedTrackingTemplate ? "Copied!" : "Copy Tracking Template"}</span>
-                  </button>
-                </div>
-                <div className="p-3.5 bg-black/60 rounded-xl border border-stone-700 font-mono text-xs text-amber-300 break-all select-all">
-                  {"{lpurl}?utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_content={creative}&utm_term={keyword}"}
-                </div>
-              </div>
-
-              {/* Step by step guide */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-xs border-t border-stone-800">
-                <div className="space-y-1 text-stone-300">
-                  <span className="text-amber-400 font-bold">Step 1: In Google Ads</span>
-                  <p className="text-stone-400 text-[11px] leading-relaxed">
-                    Navigate to <em>Campaign Settings → Campaign URL Options</em> (or Account Settings).
-                  </p>
-                </div>
-                <div className="space-y-1 text-stone-300">
-                  <span className="text-amber-400 font-bold">Step 2: Paste Template</span>
-                  <p className="text-stone-400 text-[11px] leading-relaxed">
-                    Paste the template above into the <strong>Tracking template</strong> input box.
-                  </p>
-                </div>
-                <div className="space-y-1 text-stone-300">
-                  <span className="text-amber-400 font-bold">Step 3: Enable Auto-Tagging</span>
-                  <p className="text-stone-400 text-[11px] leading-relaxed">
-                    Ensure Google Ads <strong>Auto-tagging (GCLID)</strong> is turned ON for high-fidelity conversion tracking.
-                  </p>
-                </div>
-              </div>
-            </div>
-              </div>
-            </details>
           </div>
         )}
 
@@ -3276,82 +2593,39 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {activeTab === "email" && <OutgoingEmailPanel />}
+        {activeTab === "discounts" && <OutgoingEmailPanel />}
         {activeTab === "templates" && <TemplateGovernancePanel />}
       </main>
 
-      {/* MOBILE PERSISTENT BOTTOM NAVIGATION (Thumb zone) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-stone-200 py-1.5 px-3 z-40 flex items-center justify-around shadow-lg">
-        <button
-          type="button"
-          onClick={() => setActiveTab("orders")}
-          className={`flex flex-col items-center py-1 transition cursor-pointer ${
-            activeTab === "orders" ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"
-          }`}
-        >
-          <Package className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">Orders</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("incidents")}
-          className={`flex flex-col items-center py-1 transition cursor-pointer ${
-            activeTab === "incidents" ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"
-          }`}
-        >
-          <div className="relative">
-            <ShieldCheck className="w-5 h-5" />
-            <span
-              className={`w-2 h-2 rounded-full absolute -top-0.5 -right-0.5 ring-2 ring-white ${
-                hasActiveAlerts ? "bg-rose-500 animate-pulse" : "bg-amber-500"
-              }`}
-            />
-          </div>
-          <span className="text-[10px] mt-0.5">Health</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("margins")}
-          className={`flex flex-col items-center py-1 transition cursor-pointer ${
-            activeTab === "margins" ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"
-          }`}
-        >
-          <TrendingUp className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">Experiment</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("discounts")}
-          className={`flex flex-col items-center py-1 transition cursor-pointer ${
-            activeTab === "discounts" ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"
-          }`}
-        >
-          <Tag className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">Promos</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("templates")}
-          aria-current={activeTab === "templates" ? "page" : undefined}
-          className={`flex flex-col items-center py-1 transition cursor-pointer ${
-            activeTab === "templates" ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"
-          }`}
-        >
-          <BookOpen className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">Templates</span>
-        </button>
-
+      {/* MOBILE PERSISTENT BOTTOM NAVIGATION */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-stone-200 py-1.5 px-2 z-40 flex items-center justify-around shadow-lg" aria-label="Admin mobile navigation">
+        {([
+          { id: "dashboard", label: "Dashboard", short: "Home", icon: TrendingUp },
+          { id: "orders", label: "Orders & Fulfillment", short: "Orders", icon: Package },
+          { id: "incidents", label: "System Health & Incidents", short: "Health", icon: ShieldCheck },
+          { id: "templates", label: "Templates & Coverage", short: "Templates", icon: BookOpen },
+          { id: "discounts", label: "Discounts & Email", short: "Discounts", icon: Tag },
+        ] as const).map(({ id, label, short, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            aria-label={label}
+            aria-current={activeTab === id ? "page" : undefined}
+            className={`flex flex-col items-center py-1 px-1 transition cursor-pointer ${activeTab === id ? "text-stone-900 font-bold" : "text-stone-400 hover:text-stone-700 font-medium"}`}
+          >
+            <Icon className="w-5 h-5" />
+            <span className="text-[9px] mt-0.5">{short}</span>
+          </button>
+        ))}
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center py-1 text-stone-400 hover:text-stone-700 font-medium transition cursor-pointer"
+          className="flex flex-col items-center py-1 px-1 text-stone-400 hover:text-stone-700 font-medium transition cursor-pointer"
+          aria-label="Open operator menu"
         >
           <Menu className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">Menu</span>
+          <span className="text-[9px] mt-0.5">Menu</span>
         </button>
       </nav>
 

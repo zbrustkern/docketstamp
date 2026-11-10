@@ -11,6 +11,8 @@ function hasMarketingConsent(): boolean {
   if (typeof window === "undefined") return false;
   try {
     return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl !== true &&
+      window.localStorage.getItem("docketstamp_google_measurement_denied_v1") !== "1" &&
+      window.localStorage.getItem("docketstamp_google_offline_preference_set_v1") !== "1" &&
       window.localStorage.getItem("docketstamp_marketing_consent_v1") === "granted";
   } catch { return false; }
 }

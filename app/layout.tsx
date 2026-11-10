@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { MarketingTags } from "@/components/MarketingTags";
+import MarketingConsentPreferences from "@/src/components/marketing/MarketingConsentPreferences";
 import { getPublicOrigin, publicShareMetadata, SHARE_IMAGES, HOME_SHARE_TITLE, HOME_SHARE_DESCRIPTION } from "@/src/lib/docket/share-metadata";
 
 const inter = Inter({
@@ -140,6 +141,7 @@ export default function RootLayout({
           <MarketingTags />
           <AttributionTracker />
           {children}
+          <MarketingConsentPreferences />
         </AuthProvider>
       </body>
     </html>

@@ -65,9 +65,9 @@ describe('template governance admin UI contract', () => {
   });
 
   it('is reachable in desktop tabs, mobile navigation, and the protected dashboard content', () => {
-    assert.match(navigation, /"templates"/);
-    assert.match(navigation, /Templates &amp; coverage/);
+    assert.match(navigation, /id: "templates", label: "Templates & Coverage"/);
+    assert.match(navigation, /id: "templates", label: "Templates & Coverage", short: "Templates"/);
     assert.match(navigation, /activeTab === "templates" && <TemplateGovernancePanel \/>/);
-    assert.match(navigation, /<span className="text-\[10px\] mt-0\.5">Templates<\/span>/);
+    assert.match(navigation, /aria-label=\{label\}/);
   });
 });

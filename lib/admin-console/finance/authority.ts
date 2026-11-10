@@ -5,6 +5,7 @@ import type { Order } from "@/lib/types";
 import { resolvePaymentMode } from "@/lib/payment-mode";
 import { recordAuthorizedPaymentObserved, type ProcessOrderOptions, type ProcessPaidOrderResult } from "@/lib/order-processor";
 import { getDispatchLock, reconcileAcceptedDispatchOutboxes } from "@/lib/admin-console/postal/attempt-store";
+import { createGoogleConversionOutboxInTransaction } from "@/lib/admin-console/advertising/outbox";
 import {
   MoneyFactSchema,
   EventEnvelopeSchema,
@@ -371,7 +372,35 @@ export async function recordPaymentAuthority(
           diagnosticCodes: ["DUPLICATE_CONFLICT"],
         };
       }
+      // Duplicate webhook delivery can repair a missing optional queue record.
+      try {
+        await createGoogleConversionOutboxInTransaction(transaction, {
+          order: order as Order & { marketingConsentEvidence?: Record<string, unknown> },
+          orderId,
+          paymentFact: existingFact,
+          environment: existingFact.environment,
+          now: receivedAt,
+          freshVerifiedCapture: { paymentIntentId: paymentIntent.id, amountReceivedMinor: paymentIntent.amount_received },
+        });
+      } catch {
+        // Queue repair remains optional and is retried by reconciliation.
+      }
     } else {
+      // Acquisition delivery is a separate, optional business obligation. A
+      // disabled or unavailable Google destination must never block payment or
+      // postal fulfillment; the outbox contains references, never raw clicks.
+      try {
+        await createGoogleConversionOutboxInTransaction(transaction, {
+          order: order as Order & { marketingConsentEvidence?: Record<string, unknown> },
+          orderId,
+          paymentFact,
+          environment: paymentFact.environment,
+          now: receivedAt,
+          freshVerifiedCapture: { paymentIntentId: paymentIntent.id, amountReceivedMinor: paymentIntent.amount_received },
+        });
+      } catch {
+        // A dedicated reconciliation path can repair this optional row later.
+      }
       transaction.set(factRef, paymentFact);
       if (!paymentEventSnap.exists) {
         const details = order as Order & { checkoutAttemptId?: string; telemetryJourneyId?: string };

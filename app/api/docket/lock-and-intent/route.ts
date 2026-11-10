@@ -22,6 +22,7 @@ import { verifyUsAddress } from '@/lib/fulfillment/lob';
 import { addressVerificationStatusLabel } from '@/lib/docket/address-verification-status';
 import { resolvePaymentMode } from '@/lib/payment-mode';
 import { serverEnvironment } from '@/lib/admin-console/commands/access';
+import { getMarketingConsentFromRequest } from '@/lib/admin-console/advertising/consent';
 
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -68,7 +69,6 @@ export async function POST(req: NextRequest) {
       experienceVersion,
       entrySource,
       signatureAdoption,
-      marketingConsent = false,
       acquisitionV2: rawAcquisition,
       acquisitionClicks: rawAcquisitionClicks,
     } = body as Record<string, any>;
@@ -512,8 +512,11 @@ export async function POST(req: NextRequest) {
       ? entrySource.trim()
       : 'unknown';
 
+    const marketingConsentEvidence = await getMarketingConsentFromRequest(req, cleanSessionId);
     const acquisition = sanitizeAcquisition(rawAcquisition, cleanSessionId || '', lockedAt);
-    if (req.headers.get('sec-gpc') === '1') for (const touch of [acquisition.firstObserved, acquisition.currentSession]) if (touch) touch.clicks = [];
+    if (req.headers.get('sec-gpc') === '1' || marketingConsentEvidence.status !== 'granted') {
+      for (const touch of [acquisition.firstObserved, acquisition.currentSession]) if (touch) touch.clicks = [];
+    }
     const acquisitionClicks = sanitizeRawClicks(rawAcquisitionClicks, acquisition, lockedAt);
     const orderRecord: Order = {
       id: orderId,
@@ -559,9 +562,10 @@ export async function POST(req: NextRequest) {
         utmSource: acquisition.currentSession?.source,
         utmMedium: acquisition.currentSession?.medium,
         utmCampaign: acquisition.currentSession?.campaignId,
-        // Customer consent assertion captured at lock; omitted/denied stays false.
-        marketingConsent: marketingConsent === true,
+        // The request body is never authority to transmit to an advertising provider.
+        marketingConsent: marketingConsentEvidence.status === 'granted',
       },
+      marketingConsentEvidence,
       acquisitionV2: { ...acquisition, frozenAt: new Date(lockedAt).toISOString() },
       recipientAddress: {
         firstName: interpolatedDoc.recipientAddress.name,

@@ -2,11 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReportScope } from '@/lib/admin-console/reporting/compute';
+import { getRegisteredCampaign, listRegisteredCampaigns } from '@/lib/admin-console/advertising/campaigns';
+import { localDateKey } from '@/lib/admin-console/reporting/scope';
+import { parseSpendCsv, type ReviewedCostCsvRow } from '@/lib/admin-console/reporting/spend-csv';
+import { GoogleConversionPanel } from './GoogleConversionPanel';
 
 type Metric = { value: number | null; unit: string; currency?: string; evidenceClass: string; completeness: string; watermark: string | null; numerator?: number | null; denominator?: number | null };
 type JourneyStage = { name: string; observedSessions: number };
 type ExceptionRow = { orderId: string; reason: string; priority: number; ageSeconds: number; evidenceRef: string };
-type ChannelRow = { key: string; sessions: number; convertingSessions: number; paidOrders: number; netCollectionsMinor: number | null; spendMinor: number | null; contributionMinor: number | null; joinCoverage: number | null; afterAcquisitionMinor?: number | null; costPerPaidOrderMinor?: number | null };
+type ChannelRow = { key: string; sessions: number; convertingSessions: number; paidOrders: number; netCollectionsMinor: number | null; spendMinor: number | null; contributionMinor: number | null; joinCoverage: number | null; impressions?: number | null; clicks?: number | null; afterAcquisitionMinor?: number | null; costPerPaidOrderMinor?: number | null };
 type EvidenceRow = Record<string, unknown>;
 type TimelineEvidenceRow = EvidenceRow & {
   kind: string; at: unknown; id?: unknown; eventId?: unknown; eventName?: unknown;
@@ -19,11 +23,13 @@ type Report = {
   scope: { environment?: string; displayTimezone: string; startUtc: string; endUtcExclusive: string; classification?: string };
   watermark: string | null;
   sourceComplete: boolean;
+  sourceStatus?: Record<string,string>;
+  sourceWatermarks?: Record<string,string|null>;
   metrics: Record<string, Metric>;
   journey?: JourneyStage[];
   exceptions?: ExceptionRow[];
   channels?: ChannelRow[];
-  attribution?: { orderSnapshots: number; sessionJoinFallbacks: number; unknownPaidOrders: number; conflicts: number; firstObservedPaidOrders: Record<string, number> };
+  attribution?: { orderSnapshots: number; sessionJoinFallbacks: number; unknownPaidOrders: number; conflicts: number; firstObservedPaidOrders: Record<string, number>; firstTouchAssists?: Record<string, number> };
   postalStages?: { lobAccepted: number; mailed: number; inTransit: number; delivered: number; returned: number };
   quality?: {
     immatureSessions?: number;
@@ -35,6 +41,9 @@ type Report = {
     eligibleSessions?: number;
     excludedByClassification?: Record<string, { paidOrders: number; sessions: number }>;
     flags?: string[];
+    providerReconciliation?: string;
+    paymentCoverageReason?: string;
+    paymentCoverageWatermark?: string | null;
   };
 };
 type Range = "today" | "yesterday" | "7d" | "30d" | "custom";
@@ -115,7 +124,11 @@ export function ExecutiveReportingPanel() {
   const [report, setReport] = useState<Report | null>(null);
   const [state, setState] = useState("loading");
   const [error, setError] = useState("");
-  const [costInput, setCostInput] = useState("");
+  const [costCsv, setCostCsv] = useState("");
+  const [costMode, setCostMode] = useState<'spend'|'supplier'|'processor'>('spend');
+  const [costSourceRef, setCostSourceRef] = useState("");
+  const [costCampaignKey, setCostCampaignKey] = useState<string>(listRegisteredCampaigns()[0]?.key || "");
+  const [costPreview, setCostPreview] = useState<ReviewedCostCsvRow[] | null>(null);
   const [costStatus, setCostStatus] = useState("");
   const [savingCosts, setSavingCosts] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -128,6 +141,11 @@ export function ExecutiveReportingPanel() {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const requestRevision = useRef(0);
   const selection = `${range}:${start}:${end}:${channel}:${classification}:${noticeId}:${tier}:${entrySurface}`;
+
+  const applyPilotPreset = () => {
+    setRange('custom'); setStart('2026-11-10'); setEnd('2026-11-16');
+    setChannel(listRegisteredCampaigns()[0]?.key || ''); setClassification('customer'); setNoticeId(''); setTier(''); setEntrySurface('');
+  };
 
   const load = useCallback(async () => {
     const revision = ++requestRevision.current;
@@ -159,15 +177,21 @@ export function ExecutiveReportingPanel() {
 
   useEffect(() => { void load(); return () => { requestRevision.current += 1; }; }, [load]);
 
+  const previewCosts = () => {
+    setCostStatus('');
+    try { setCostPreview(parseSpendCsv(costCsv, costMode, costCampaignKey, costSourceRef)); }
+    catch (error) { setCostPreview(null); setCostStatus(error instanceof Error ? error.message.replaceAll('_',' ').toLowerCase() : 'Could not validate this CSV.'); }
+  };
   const importCosts = async () => {
+    if (!costPreview?.length) return;
     setSavingCosts(true); setCostStatus('');
     try {
-      const records = JSON.parse(costInput);
-      const response = await fetch('/api/admin/console/cost-evidence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: crypto.randomUUID(), reason: 'Operator reviewed cost and campaign spend evidence', records }) });
+      const response = await fetch('/api/admin/console/cost-evidence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: crypto.randomUUID(), reason: costMode==='spend'?'Operator reviewed campaign day spend export':'Operator reviewed order cost evidence', records: costPreview }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Import failed');
-      setCostStatus(`Saved ${result.accepted || 0} records. Update the report to include them.`); setCostInput('');
-    } catch (error) { setCostStatus(error instanceof SyntaxError ? 'Enter a valid JSON array.' : error instanceof Error ? error.message : 'Import failed'); }
+      setCostStatus(`Reviewed ${result.accepted || 0} row(s): ${result.duplicates || 0} repeated, ${result.corrections || 0} corrections. Imported amount ${money(result.importedTotalMinor)}.${costMode==='spend'?` Missing dates between spend rows: ${result.missingDates?.length ? result.missingDates.join(', ') : 'none'}.`:''}`); setCostCsv(''); setCostPreview(null);
+      await refreshReport();
+    } catch (error) { setCostStatus(error instanceof Error ? error.message : 'Import failed'); }
     finally { setSavingCosts(false); }
   };
   const refreshReport = async () => {
@@ -225,13 +249,20 @@ export function ExecutiveReportingPanel() {
     ...evidence.money.filter(row => row.orderId === selectedOrderId).map(row => ({ ...row, kind: "payment", at: row.effectiveAt })),
     ...evidence.postal.filter(row => row.orderId === selectedOrderId).map(row => ({ ...row, kind: "postal", at: row.occurredAt })),
   ].sort((a, b) => Date.parse(String(a.at || "")) - Date.parse(String(b.at || ""))) as TimelineEvidenceRow[]) : [];
+  const previewMissingDates = costMode==='spend'&&costPreview?.length ? (()=>{
+    const timezone=getRegisteredCampaign(costCampaignKey)?.timezone||TIMEZONE;
+    const dates=[...new Set(costPreview.filter((row):row is Extract<ReviewedCostCsvRow,{kind:'spend'}>=>row.kind==='spend').map(row=>localDateKey(new Date(row.coverageStartUtc),timezone)))].sort();
+    const missing:string[]=[];
+    for(let i=1;i<dates.length;i++){const day=new Date(`${dates[i-1]}T00:00:00Z`);day.setUTCDate(day.getUTCDate()+1);while(day.toISOString().slice(0,10)<dates[i]){missing.push(day.toISOString().slice(0,10));day.setUTCDate(day.getUTCDate()+1);}}
+    return missing;
+  })():[];
 
   return <section aria-labelledby="executive-report-title" className="overflow-hidden rounded-2xl border border-slate-200 bg-[#f6f8fb] shadow-sm">
     <header className="border-b border-slate-200 bg-white p-4 sm:p-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Decision dashboard · DocketStamp</p>
-          <h2 id="executive-report-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Experiment &amp; fulfillment</h2>
+          <h2 id="executive-report-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Acquisition &amp; fulfillment scorecard</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Follow eligible visits through verified payment and postal outcomes. Each figure keeps its evidence level and missing joins visible.</p>
         </div>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Report view">
@@ -249,7 +280,7 @@ export function ExecutiveReportingPanel() {
       {range === "custom" && <div className="mt-3 flex flex-wrap items-end gap-3"><label className="text-[11px] font-semibold text-slate-600">Start<input type="date" value={start} onChange={e => setStart(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 bg-white p-2 text-sm" /></label><label className="text-[11px] font-semibold text-slate-600">End<input type="date" value={end} onChange={e => setEnd(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 bg-white p-2 text-sm" /></label></div>}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <label className="text-[11px] font-semibold text-slate-600">Entry surface<select value={entrySurface} onChange={e => setEntrySurface(e.target.value)} className="ml-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"><option value="">All surfaces</option><option value="home">Home</option><option value="notice_workspace">Notice page</option><option value="notice_directory">Notice directory</option><option value="company_directory">Company directory</option></select></label>
-        <button type="button" onClick={() => void refreshReport()} disabled={loading || !scope || loadedSelection !== selection} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Refreshing…" : "Update report"}</button>
+        <div className="flex gap-2"><button type="button" onClick={applyPilotPreset} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Pilot preset</button><button type="button" onClick={() => void refreshReport()} disabled={loading || !scope || loadedSelection !== selection} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Refreshing…" : "Update report"}</button></div>
       </div>
       {error && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
     </header>
@@ -260,6 +291,7 @@ export function ExecutiveReportingPanel() {
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[["Eligible sessions", metrics.conversion?.denominator ?? report.quality?.eligibleSessions ?? null, "Observed entry joins"], ["Verified paid orders", metrics.paidOrders?.value, evidenceLabel(metrics.paidOrders)], ["Net collections", metrics.netCollections?.value, evidenceLabel(metrics.netCollections)], ["Paid mailings needing attention", metrics.urgent?.value, evidenceLabel(metrics.urgent)]] .map(([label, value, note]) => <article key={String(label)} className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-bold text-slate-950 sm:text-2xl">{typeof value === "number" ? label === "Net collections" ? money(value) : new Intl.NumberFormat().format(value) : "Unavailable"}</p><p className="mt-1 text-[10px] text-slate-500">{String(note)}</p></article>)}
       </div>
+      <p className="text-[10px] text-slate-500">Report generated {local(report.asOf)} · events {report.sourceStatus?.acquisition || 'not reported'}{report.sourceWatermarks?.acquisition ? ` through ${local(report.sourceWatermarks.acquisition)}` : ''} · payments {report.sourceStatus?.payment || 'not reported'}{report.sourceWatermarks?.payment ? ` through ${local(report.sourceWatermarks.payment)}` : ''} · costs/spend {report.sourceStatus?.costs || 'not reported'}{report.sourceWatermarks?.costs ? ` through ${local(report.sourceWatermarks.costs)}` : ''} · Stripe reconciliation {report.quality?.providerReconciliation || 'not measured'}{report.quality?.paymentCoverageReason ? ` (${report.quality.paymentCoverageReason.replaceAll('_',' ').toLowerCase()})` : ''} · source scan {report.sourceComplete ? 'complete within scope' : 'partial'}.</p>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="journey-heading">
         <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 id="journey-heading" className="text-sm font-bold text-slate-900">Customer journey</h3><p className="mt-1 text-xs text-slate-500">Unique sessions by observed milestone. Payment and fulfillment counts come from server/provider facts.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">{CLASSIFICATIONS.find(item => item.value === classification)?.label}</span></div>
@@ -293,7 +325,16 @@ export function ExecutiveReportingPanel() {
             <span className="text-slate-500">After acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionAfterAcquisition)}</b></span>
             <span className="text-slate-500">Cost per attributable paid order <b className="ml-1 text-slate-900">{display(metrics.costPerAttributableOrder)}</b></span>
           </div>
-          <details className="mt-3 border-t border-slate-100 pt-3 text-xs"><summary className="cursor-pointer font-semibold text-slate-700">Import reviewed cost and spend evidence</summary><p className="my-2 text-slate-500">Paste records from reviewed provider invoices or Google Ads spend exports. Include explicit UTC coverage intervals for spend. Missing days stay incomplete. Imports are idempotent and conflicting amounts require review. No advertising settings change.</p><textarea aria-label="Reviewed cost evidence JSON" className="h-28 w-full rounded border border-slate-300 p-2 font-mono text-xs" value={costInput} onChange={e=>setCostInput(e.target.value)} placeholder='[{"kind":"spend","campaignKey":"google:cpc:ds_search_deposit_demand_pilot_01","amountMinor":0,"currency":"USD","effectiveAt":"2026-11-10T06:00:00.000Z","coverageStartUtc":"2026-11-10T06:00:00.000Z","coverageEndUtc":"2026-11-11T06:00:00.000Z","sourceRef":"google_ads_export_2026_11_10","authority":"actual","coverage":"complete"}]' /><button type="button" disabled={savingCosts || !costInput.trim()} onClick={()=>void importCosts()} className="mt-2 rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50">{savingCosts ? 'Saving…' : 'Save reviewed evidence'}</button><p role="status" className="mt-2 text-slate-600">{costStatus}</p></details>
+          <p className="mt-3 text-[10px] text-slate-500">Payment coverage: {report.quality?.providerReconciliation === 'complete' ? 'reconciled' : 'not reconciled'}{report.quality?.paymentCoverageWatermark ? ` through ${local(report.quality.paymentCoverageWatermark)}` : ''}. A complete database scan alone cannot establish zero orders.</p>
+          <details className="mt-3 border-t border-slate-100 pt-3 text-xs"><summary className="cursor-pointer font-semibold text-slate-700">Import reviewed Google Ads daily export</summary>
+            <p className="my-2 text-slate-500">Preview checks campaign identity, currency, dates, amounts, duplicate days and spreadsheet formulas. Spend rows require the registered platform ID. For the current partial day, add <code>coverage</code> with value <code>partial</code>; optional <code>coverage_end_utc</code> cannot extend beyond that local day. Order costs remain tied to order IDs; revisions replace the same source reference while preserving earlier evidence.</p>
+            <div className="grid gap-2 sm:grid-cols-2"><label className="text-[11px] font-semibold text-slate-600">Evidence type<select value={costMode} onChange={e=>{setCostMode(e.target.value as typeof costMode);setCostPreview(null);}} className="mt-1 block w-full rounded border border-slate-300 bg-white px-2 py-2 text-xs"><option value="spend">Campaign spend</option><option value="supplier">Supplier cost</option><option value="processor">Processor cost</option></select></label>{costMode==='spend'?<label className="text-[11px] font-semibold text-slate-600">Registered campaign<select value={costCampaignKey} onChange={e=>{setCostCampaignKey(e.target.value);setCostPreview(null);}} className="mt-1 block w-full rounded border border-slate-300 bg-white px-2 py-2 text-xs">{listRegisteredCampaigns().map(c=><option key={c.key} value={c.key}>{c.label} · {c.platformId}</option>)}</select></label>:<p className="self-end text-[11px] text-slate-500">Order IDs must match existing records. Currency is currently limited to USD.</p>}</div>
+            {costMode==='spend'&&<label className="mt-2 block text-[11px] font-semibold text-slate-600">Source reference<input value={costSourceRef} onChange={e=>{setCostSourceRef(e.target.value);setCostPreview(null);}} placeholder="google_ads_export_2026_11_10" className="mt-1 block w-full rounded border border-slate-300 px-2 py-2 font-mono text-xs" /></label>}
+            <textarea aria-label="Reviewed cost CSV" className="mt-2 h-28 w-full rounded border border-slate-300 p-2 font-mono text-xs" value={costCsv} onChange={e=>{setCostCsv(e.target.value);setCostPreview(null);}} placeholder={costMode==='spend'?'campaign_id,date,impressions,clicks,spend,currency\n24457739017,2026-11-10,1200,42,18.75,USD':'order_id,amount,currency,effective_at,source_ref,authority,coverage\norder_123,8.18,USD,2026-11-10T12:00:00.000Z,lob_invoice_123,actual,complete'} />
+            <div className="mt-2 flex flex-wrap gap-2"><button type="button" disabled={!costCsv.trim()||(costMode==='spend'&&!costSourceRef.trim())} onClick={previewCosts} className="rounded border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 disabled:opacity-50">Preview and validate</button><button type="button" disabled={savingCosts||!costPreview?.length} onClick={()=>void importCosts()} className="rounded bg-slate-900 px-3 py-2 font-semibold text-white disabled:opacity-50">{savingCosts?'Saving…':'Commit reviewed rows'}</button></div>
+            {costPreview && <div className="mt-3 rounded-lg bg-slate-50 p-3"><p className="font-semibold text-slate-800">Preview: {costPreview.length} row(s) · {money(costPreview.reduce((sum,row)=>sum+row.amountMinor,0))}{costMode==='spend'&&<> · {costPreview.reduce((sum,row)=>sum+(row.kind==='spend'?row.clicks:0),0).toLocaleString()} clicks · {costPreview.reduce((sum,row)=>sum+(row.kind==='spend'?row.impressions:0),0).toLocaleString()} impressions</>}</p><p className="mt-1 text-slate-600">{new Set(costPreview.map(row=>row.currency)).size===1?'USD':'Mixed currencies rejected'} · Repeated rows are idempotent; corrections require the next revision number.{costMode==='spend'?` Missing dates between rows: ${previewMissingDates.length?previewMissingDates.join(', '):'none'}.`:''}</p><ul className="mt-2 max-h-24 overflow-auto text-[10px] text-slate-600">{costPreview.map(row=><li key={row.kind==='spend'?`${row.coverageStartUtc}:${row.revision}`:`${row.orderId}:${row.sourceRef}:${row.revision}`}>{row.kind==='spend'?`${local(row.coverageStartUtc)} · ${row.clicks} clicks / ${row.impressions} impressions`:`${row.orderId} · ${row.sourceRef}`} · rev {row.revision} · {money(row.amountMinor)} {row.coverage==='partial'?'· partial':''}</li>)}</ul></div>}
+            <p role="status" className="mt-2 text-slate-600">{costStatus}</p>
+          </details>
           <p className="mt-2 text-[10px] text-slate-500">Acquisition cost is calculated per attributable paid cohort order, not proven new-customer CAC.</p>
         </section>
       </div>
@@ -302,7 +343,7 @@ export function ExecutiveReportingPanel() {
         <div><h3 id="sources-heading" className="text-sm font-bold text-slate-900">Acquisition sources</h3><p className="mt-1 text-xs text-slate-500">Current-session acquisition uses the frozen order snapshot, with the session entry as a labeled fallback. Unknown campaign evidence stays separate.</p></div>
         {report.attribution && <div className="mt-3 space-y-2 text-xs text-slate-600">
           <p>Frozen snapshots: {report.attribution.orderSnapshots} · Session fallback: {report.attribution.sessionJoinFallbacks} · Unknown paid attribution: {report.attribution.unknownPaidOrders} · Conflicts: {report.attribution.conflicts}</p>
-          <details><summary className="cursor-pointer font-semibold">First-observed attribution — separate view</summary><p className="my-2">Paid orders in the payment window, grouped by the earliest retained browser touch. Do not add these counts to current-session totals. This is not proof of a new customer.</p><ul>{Object.entries(report.attribution.firstObservedPaidOrders).map(([key, count]) => <li key={key}>{key}: {count}</li>)}</ul></details>
+          <details><summary className="cursor-pointer font-semibold">First-touch assists — separate from current-session totals</summary><p className="my-2">A first-observed touch is listed as an assist only when it differs from the current-session source. Assist orders are not added to current-session orders or revenue. This is not proof of a new customer.</p><ul>{Object.entries(report.attribution.firstTouchAssists || {}).map(([key, count]) => <li key={key}>{key}: {count} assisted order(s)</li>)}</ul><p className="mt-2 font-semibold">First-observed paid orders (separate view)</p><ul>{Object.entries(report.attribution.firstObservedPaidOrders).map(([key, count]) => <li key={key}>{key}: {count}</li>)}</ul></details>
         </div>}
         {report.channels?.length ? <>
           <div className="mt-3 space-y-2 sm:hidden">
@@ -313,6 +354,7 @@ export function ExecutiveReportingPanel() {
                 <div><dt className="text-slate-500">Paid orders</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.paidOrders}</dd></div>
                 <div><dt className="text-slate-500">Collections</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.netCollectionsMinor)}</dd></div>
                 <div><dt className="text-slate-500">Spend</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.spendMinor)}</dd></div>
+                <div><dt className="text-slate-500">Impressions / clicks</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.impressions?.toLocaleString() ?? 'Unknown'} / {row.clicks?.toLocaleString() ?? 'Unknown'}</dd></div>
                 <div><dt className="text-slate-500">After ads</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.afterAcquisitionMinor)}</dd></div>
                 <div><dt className="text-slate-500">Cost / paid order</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.costPerPaidOrderMinor)}</dd></div>
                 <div><dt className="text-slate-500">Join coverage</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</dd></div>
@@ -320,7 +362,7 @@ export function ExecutiveReportingPanel() {
             </article>)}
           </div>
           <div className="mt-3 hidden overflow-x-auto sm:block">
-            <table className="w-full min-w-[640px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="pb-2 font-semibold">Source / campaign</th><th className="pb-2 font-semibold">Sessions</th><th className="pb-2 font-semibold">Paid orders</th><th className="pb-2 font-semibold">Collections</th><th className="pb-2 font-semibold">Spend</th><th className="pb-2 font-semibold">After ads</th><th className="pb-2 font-semibold">Cost / paid order</th><th className="pb-2 font-semibold">Join</th></tr></thead><tbody className="divide-y divide-slate-100">{report.channels.map(row => <tr key={row.key}><td className="py-2 pr-3 font-medium text-slate-800">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</td><td className="py-2">{row.sessions}</td><td className="py-2">{row.paidOrders}</td><td className="py-2">{money(row.netCollectionsMinor)}</td><td className="py-2">{money(row.spendMinor)}</td><td className="py-2">{money(row.afterAcquisitionMinor)}</td><td className="py-2">{money(row.costPerPaidOrderMinor)}</td><td className="py-2">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</td></tr>)}</tbody></table>
+            <table className="w-full min-w-[760px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="pb-2 font-semibold">Source / campaign</th><th className="pb-2 font-semibold">Sessions</th><th className="pb-2 font-semibold">Impressions</th><th className="pb-2 font-semibold">Clicks</th><th className="pb-2 font-semibold">Paid orders</th><th className="pb-2 font-semibold">Collections</th><th className="pb-2 font-semibold">Spend</th><th className="pb-2 font-semibold">After ads</th><th className="pb-2 font-semibold">Cost / paid order</th><th className="pb-2 font-semibold">Join</th></tr></thead><tbody className="divide-y divide-slate-100">{report.channels.map(row => <tr key={row.key}><td className="py-2 pr-3 font-medium text-slate-800">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</td><td className="py-2">{row.sessions}</td><td className="py-2">{row.impressions?.toLocaleString() ?? "Unavailable"}</td><td className="py-2">{row.clicks?.toLocaleString() ?? "Unavailable"}</td><td className="py-2">{row.paidOrders}</td><td className="py-2">{money(row.netCollectionsMinor)}</td><td className="py-2">{money(row.spendMinor)}</td><td className="py-2">{money(row.afterAcquisitionMinor)}</td><td className="py-2">{money(row.costPerPaidOrderMinor)}</td><td className="py-2">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</td></tr>)}</tbody></table>
           </div>
         </> : <p className="mt-3 py-4 text-xs text-slate-500">No eligible sessions in this scope.</p>}
       </section>
@@ -353,5 +395,6 @@ export function ExecutiveReportingPanel() {
       </section>
       <footer className="text-[10px] text-slate-500">Report generation {shortId(report.generationId)} · watermark {report.watermark ? local(report.watermark) : "unavailable"} · evidence is redacted and read-only.</footer>
     </div>}
+    {view === 'overview' && <div className="border-t border-slate-200 p-4 sm:p-6"><GoogleConversionPanel /></div>}
   </section>;
 }

@@ -28,11 +28,18 @@ export interface CostRow {
   id: string; environment: string; currency: string; orderId?: string; kind: 'supplier' | 'processor' | 'spend';
   amountMinor: number; effectiveAt: string; sourceRef: string; authority?: 'actual'|'estimated';
   coverage: 'complete' | 'partial'; campaignKey?: string; coverageStartUtc?: string; coverageEndUtc?: string;
+  impressions?: number; clicks?: number; revision?: number;
+  receivedAt?: string; createdAt?: string;
 }
 export interface ReportInput {
   scope: ReportScope; asOf: string; facts: FactRow[]; events: EventRow[]; orders: OrderRow[];
   postal: PostalRow[]; costs?: CostRow[]; openObligations?: Array<{ fact: FactRow; order: OrderRow }>;
   sourceComplete: boolean; generationId: string;
+  /** True only when provider reconciliation establishes no omitted captures/refunds for the cohort. */
+  paymentCoverageComplete?: boolean;
+  paymentCoverageWatermark?: string | null;
+  paymentCoverageReason?: string;
+  sourceStatus?: Record<string, 'complete'|'partial'|'unavailable'>;
 }
 export const JOURNEY = ['entry_viewed', 'notice_selected', 'workspace_viewed', 'details_ready', 'signature_adopted', 'document_locked', 'payment_form_ready', 'payment_attempted', 'payment_verified', 'fulfillment_accepted'] as const;
 const time = (v: string) => Date.parse(v);
@@ -197,8 +204,15 @@ export function computeReport(input: ReportInput) {
   const sourceKey = channelKey;
   const feeFacts = classFacts.filter(f => f.kind === 'processor_fee' && f.providerMode === 'live' && f.currency === 'USD');
   const feeOrders = new Set(feeFacts.map(f => f.orderId));
-  const providerFees: CostRow[] = feeFacts.map(f => ({ id: f.factId, environment: scope.environment!, currency: f.currency, orderId: f.orderId, kind: 'processor', amountMinor: f.amountMinor, effectiveAt: f.effectiveAt, sourceRef: f.factId, authority: 'actual', coverage: 'complete' }));
-  const costRows = [...new Map([...(input.costs || []).filter(c => c.kind !== 'processor' || !feeOrders.has(c.orderId)), ...providerFees].map(c => [c.id, c])).values()].filter(c => Number.isSafeInteger(c.amountMinor) && c.amountMinor >= 0);
+  const providerFees: CostRow[] = feeFacts.map(f => ({ id: f.factId, environment: scope.environment!, currency: f.currency, orderId: f.orderId, kind: 'processor', amountMinor: f.amountMinor, effectiveAt: f.effectiveAt, receivedAt:f.receivedAt, sourceRef: f.factId, authority: 'actual', coverage: 'complete' }));
+  const costRowsByRevision = new Map<string, CostRow>();
+  for (const c of [...(input.costs || []).filter(c => c.kind !== 'processor' || !feeOrders.has(c.orderId)), ...providerFees]) {
+    if (!Number.isSafeInteger(c.amountMinor) || c.amountMinor < 0) continue;
+    const key = c.kind === 'spend' ? `${c.environment}:spend:${c.campaignKey}:${c.coverageStartUtc || c.effectiveAt}` : `${c.environment}:${c.kind}:${c.orderId}:${c.sourceRef}`;
+    const prior = costRowsByRevision.get(key);
+    if (!prior || (c.revision || 1) > (prior.revision || 1)) costRowsByRevision.set(key,c);
+  }
+  const costRows = [...costRowsByRevision.values()];
   const actualCosts = costRows.filter(c => c.environment === scope.environment && c.authority === 'actual' && c.coverage === 'complete' && c.currency === 'USD' && time(c.effectiveAt) <= now);
   const estimatedCosts = costRows.filter(c => c.environment === scope.environment && c.authority === 'estimated' && c.coverage === 'complete' && c.currency === 'USD' && time(c.effectiveAt) <= now);
   const cohortFinancial = classFacts.filter(f => {
@@ -219,14 +233,20 @@ export function computeReport(input: ReportInput) {
       ? cohortNetUsd - estimatedCosts.filter(c => c.orderId && cohortOrders.includes(c.orderId) && c.kind !== 'spend').reduce((sum, c) => sum + c.amountMinor, 0)
       : null;
   const beforeEvidenceClass = coveredActual === cohortOrders.length && cohortOrders.length ? 'verified' : coveredEstimate === cohortOrders.length && cohortOrders.length ? 'estimated' : 'unavailable';
-  const allSpendRowsInWindow = costRows.filter(c =>
+  const rawSpendRowsInWindow = costRows.filter(c =>
     c.environment === scope.environment &&
     c.kind === 'spend' &&
-    c.currency === 'USD' &&
     time(c.effectiveAt) <= now &&
     inWindow(c.effectiveAt) &&
     (!scope.channel || c.campaignKey === scope.channel)
   );
+  const latestSpendByInterval = new Map<string, CostRow>();
+  for (const row of rawSpendRowsInWindow) {
+    const key = `${row.campaignKey || 'unknown'}:${row.coverageStartUtc || row.effectiveAt}`;
+    const prior = latestSpendByInterval.get(key);
+    if (!prior || (row.revision || 1) > (prior.revision || 1)) latestSpendByInterval.set(key, row);
+  }
+  const allSpendRowsInWindow = [...latestSpendByInterval.values()];
   const spendRows = allSpendRowsInWindow.filter(c => c.authority === 'actual' && c.coverage === 'complete');
   const spendCoversRange = (rows: CostRow[]) => {
     if (scope.reportVersion < 2) return true; // Historical reports retain their original definition.
@@ -234,9 +254,8 @@ export function computeReport(input: ReportInput) {
     for (const row of rows) groups.set(row.campaignKey || 'unknown', [...(groups.get(row.campaignKey || 'unknown') || []), row]);
     if (!groups.size) return false;
     return [...groups].every(([key, group]) => {
-      const pilot = key === 'google:cpc:ds_search_deposit_demand_pilot_01';
-      const from = pilot ? Math.max(start, time('2026-11-10T06:00:00.000Z')) : start;
-      const until = pilot ? Math.min(end, now, time('2026-11-17T06:00:00.000Z')) : Math.min(end, now);
+      const from = start;
+      const until = Math.min(end, now);
       let cursor = from;
       for (const row of group.sort((a,b)=>time(a.coverageStartUtc || '')-time(b.coverageStartUtc || ''))) {
         const a=time(row.coverageStartUtc || ''), b=time(row.coverageEndUtc || '');
@@ -248,14 +267,20 @@ export function computeReport(input: ReportInput) {
   };
 
   const activeSourceKeys = new Set([...entries.values()].map(sourceKey));
-  const spendKnown = spendCoversRange(spendRows) && (scope.channel
+  const spendKnown = allSpendRowsInWindow.every(c => c.currency === 'USD') && spendCoversRange(spendRows) && (scope.channel
     ? allSpendRowsInWindow.length > 0 && allSpendRowsInWindow.every(c => c.authority === 'actual' && c.coverage === 'complete')
     : allSpendRowsInWindow.length > 0 &&
       allSpendRowsInWindow.every(c => c.authority === 'actual' && c.coverage === 'complete') &&
       (activeSourceKeys.size === 0 || [...activeSourceKeys].every(key => spendRows.some(c => c.campaignKey === key))));
   const spendMinor = spendKnown ? spendRows.reduce((sum, c) => sum + c.amountMinor, 0) : null;
   const cohortAttributionComplete = cohortOrders.every(id => { const key = orderAcquisition(orderMap.get(id)).key; return key !== 'unknown' && !key.endsWith(':unknown'); });
-  const afterAcquisitionMinor = cohortAttributionComplete && reportSourceComplete && beforeEvidenceClass === 'verified' && beforeAcquisitionMinor !== null && spendMinor !== null ? beforeAcquisitionMinor - spendMinor : null;
+  const matureCohort = now >= end + 7 * day && [...entries.values()].every(e => now >= time(e.occurredAt) + 7 * day);
+  const completeZeroOrderEvidence = matureCohort && reportSourceComplete && input.paymentCoverageComplete === true &&
+    unattributedOrders.size === 0 && unmatchedCaptures === 0 && attributionConflicts === 0 && desiredClass === 'customer' &&
+    !scope.noticeId && !scope.tier && !scope.entrySurface;
+  const zeroOrderSpendLoss = cohortOrders.length === 0 && completeZeroOrderEvidence && spendMinor !== null ? -spendMinor : null;
+  const afterAcquisitionMinor = zeroOrderSpendLoss !== null ? zeroOrderSpendLoss
+    : cohortAttributionComplete && reportSourceComplete && beforeEvidenceClass === 'verified' && beforeAcquisitionMinor !== null && spendMinor !== null ? beforeAcquisitionMinor - spendMinor : null;
   const costPerAttributableOrderMinor = cohortAttributionComplete && reportSourceComplete && spendMinor !== null && cohortOrders.length > 0
     ? Math.round(spendMinor / cohortOrders.length)
     : null;
@@ -289,12 +314,16 @@ export function computeReport(input: ReportInput) {
   const immature = [...entries.values()].filter(e => now < time(e.occurredAt) + 7 * day).length;
   const validTimes = [...allFacts.map(f => time(f.receivedAt)), ...events.map(e => time(e.receivedAt)), ...postal.map(p => time(p.receivedAt))].filter(Number.isFinite);
   const watermark = validTimes.length ? new Date(Math.max(...validTimes)).toISOString() : null;
+  const maxWatermark = (values: Array<string|undefined>) => {
+    const timestamps = values.filter((v):v is string=>Boolean(v)).map(time).filter(Number.isFinite);
+    return timestamps.length ? new Date(Math.max(...timestamps)).toISOString() : null;
+  };
   const stale = Boolean(watermark && now - time(watermark) > 900000);
   const qualityFlags = [
     'OBSERVED_BROWSER_COVERAGE_UNKNOWN',
-    'PROVIDER_RECONCILIATION_NOT_MEASURED',
+    ...(input.paymentCoverageComplete ? [] : ['PROVIDER_RECONCILIATION_NOT_MEASURED']),
     'LEGACY_RECORDS_NOT_BACKFILLED',
-    ...(reportSourceComplete ? [] : ['SOURCE_SCAN_PARTIAL']),
+    ...(input.sourceComplete ? [] : ['SOURCE_SCAN_PARTIAL']),
     ...(unattributedOrders.size ? ['CHANNEL_ATTRIBUTION_INCOMPLETE'] : []),
     ...(attributionConflicts ? ['ATTRIBUTION_CONFLICT'] : []),
     ...(!cohortAttributionComplete ? ['CHANNEL_ATTRIBUTION_INCOMPLETE'] : []),
@@ -312,11 +341,11 @@ export function computeReport(input: ReportInput) {
     scope, asOf: input.asOf, watermark, completeness: !reportSourceComplete ? 'partial' : stale ? 'stale' : 'complete_within_scope',
     exclusions, qualityFlags, evidenceQueryRef: evidenceQueryRef(key), ...extra,
   });
-  type ChannelRow = {key:string;sessions:number;convertingSessions:number;paidOrders:number;netCollectionsMinor:number|null;spendMinor:number|null;contributionMinor:number|null;joinCoverage:number|null;afterAcquisitionMinor?:number|null;costPerPaidOrderMinor?:number|null};
+  type ChannelRow = {key:string;sessions:number;convertingSessions:number;paidOrders:number;netCollectionsMinor:number|null;spendMinor:number|null;contributionMinor:number|null;joinCoverage:number|null;impressions:number|null;clicks:number|null;afterAcquisitionMinor?:number|null;costPerPaidOrderMinor?:number|null};
   const channels = new Map<string, ChannelRow>();
-  for (const [session, event] of entries) { const key = sourceKey(event); const row = channels.get(key) || { key, sessions: 0, convertingSessions: 0, paidOrders: 0, netCollectionsMinor: null, spendMinor: null, contributionMinor: null, joinCoverage: null }; row.sessions++; if (converted.has(session)) row.convertingSessions++; channels.set(key,row); }
+  for (const [session, event] of entries) { const key = sourceKey(event); const row = channels.get(key) || { key, sessions: 0, convertingSessions: 0, paidOrders: 0, netCollectionsMinor: null, spendMinor: null, contributionMinor: null, joinCoverage: null, impressions: null, clicks: null }; row.sessions++; if (converted.has(session)) row.convertingSessions++; channels.set(key,row); }
   for (const key of [...cohortOrders.map(id => orderAcquisition(orderMap.get(id)).key), ...allSpendRowsInWindow.map(c => c.campaignKey || 'unknown')]) {
-    if (!channels.has(key)) channels.set(key, { key, sessions: 0, convertingSessions: 0, paidOrders: 0, netCollectionsMinor: null, spendMinor: null, contributionMinor: null, joinCoverage: null });
+    if (!channels.has(key)) channels.set(key, { key, sessions: 0, convertingSessions: 0, paidOrders: 0, netCollectionsMinor: null, spendMinor: null, contributionMinor: null, joinCoverage: null, impressions: null, clicks: null });
   }
   for (const row of channels.values()) {
     const sessions = new Set([...entries].filter(([,e]) => sourceKey(e) === row.key).map(([id]) => id));
@@ -325,20 +354,31 @@ export function computeReport(input: ReportInput) {
     const facts = cohortFinancial.filter(f => f.orderId && ids.includes(f.orderId));
     row.netCollectionsMinor = facts.some(f => f.currency !== 'USD') ? null : facts.reduce((sum,f) => sum + signForMoney(f.kind) * f.amountMinor, 0);
     const channelSpendRows = allSpendRowsInWindow.filter(c => c.campaignKey === row.key);
-    const channelSpendKnown = spendCoversRange(channelSpendRows) && channelSpendRows.length > 0 && channelSpendRows.every(c => c.authority === 'actual' && c.coverage === 'complete');
+    row.impressions = channelSpendRows.length && channelSpendRows.every(c=>Number.isSafeInteger(c.impressions)) ? channelSpendRows.reduce((sum,c)=>sum+(c.impressions || 0),0) : null;
+    row.clicks = channelSpendRows.length && channelSpendRows.every(c=>Number.isSafeInteger(c.clicks)) ? channelSpendRows.reduce((sum,c)=>sum+(c.clicks || 0),0) : null;
+    const channelSpendKnown = channelSpendRows.every(c=>c.currency==='USD') && spendCoversRange(channelSpendRows) && channelSpendRows.length > 0 && channelSpendRows.every(c => c.authority === 'actual' && c.coverage === 'complete');
     row.spendMinor = channelSpendKnown ? channelSpendRows.reduce((sum, c) => sum + c.amountMinor, 0) : null;
     const costs = actualCosts.filter(c => c.orderId && ids.includes(c.orderId) && c.kind !== 'spend');
     const covered = ids.length > 0 && ids.every(id => costs.some(c => c.orderId === id && c.kind === 'supplier') && costs.some(c => c.orderId === id && c.kind === 'processor'));
     row.contributionMinor = covered && row.netCollectionsMinor !== null ? row.netCollectionsMinor - costs.reduce((sum,c) => sum + c.amountMinor,0) : null;
     row.joinCoverage = row.paidOrders ? ids.filter(id => orderAcquisition(orderMap.get(id)).provenance !== 'unknown').length / row.paidOrders : null;
-    row.afterAcquisitionMinor = row.key !== 'unknown' && !row.key.endsWith(':unknown') && reportSourceComplete && row.contributionMinor !== null && row.spendMinor !== null ? row.contributionMinor - row.spendMinor : null;
+    row.afterAcquisitionMinor = row.paidOrders === 0 && completeZeroOrderEvidence && row.spendMinor !== null ? -row.spendMinor
+      : row.key !== 'unknown' && !row.key.endsWith(':unknown') && reportSourceComplete && row.contributionMinor !== null && row.spendMinor !== null ? row.contributionMinor - row.spendMinor : null;
     row.costPerPaidOrderMinor = row.key !== 'unknown' && !row.key.endsWith(':unknown') && reportSourceComplete && row.spendMinor !== null && row.paidOrders ? Math.round(row.spendMinor / row.paidOrders) : null;
   }
   const netCollectionsUsd = Object.keys(moneyByCurrency).some(currency => currency !== 'USD') ? null : moneyByCurrency.USD ?? (input.sourceComplete ? 0 : null);
   const paidAccepted = [...paidOrderIds].filter(accepted).length;
   const sourceCount = channels.size;
   return {
-    generationId: input.generationId, scope, asOf: input.asOf, watermark, sourceComplete: reportSourceComplete,
+    generationId: input.generationId, scope, asOf: input.asOf, watermark, sourceComplete: input.sourceComplete,
+    sourceStatus: input.sourceStatus || { payment:'unavailable', acquisition:'unavailable', postal:'unavailable', costs:'unavailable' },
+    sourceWatermarks: {
+      payment: maxWatermark(allFacts.map(row=>row.receivedAt)),
+      acquisition: maxWatermark(candidateEvents.map(row=>row.receivedAt)),
+      postal: maxWatermark(postal.map(row=>row.receivedAt)),
+      costs: maxWatermark(costRows.map(row=>row.receivedAt || row.createdAt)),
+      provider: input.paymentCoverageWatermark || null,
+    },
     metrics: {
       paidOrders: metric('paid_orders', paidOrderIds.size, 'count', 'verified'),
       netCollections: metric('net_collections', netCollectionsUsd, 'money_minor', netCollectionsUsd === null ? 'unavailable' : 'verified', { currency: 'USD' }),
@@ -360,6 +400,13 @@ export function computeReport(input: ReportInput) {
         const key = acquisitionKey(snapshot(orderMap.get(id)?.acquisitionV2)?.firstObserved);
         counts[key] = (counts[key] || 0) + 1; return counts;
       }, {}),
+      firstTouchAssists: [...paidOrderIds].reduce<Record<string, number>>((counts, id) => {
+        const order = orderMap.get(id);
+        const first = acquisitionKey(snapshot(order?.acquisitionV2)?.firstObserved);
+        const current = orderAcquisition(order).key;
+        if (first !== current) counts[first] = (counts[first] || 0) + 1;
+        return counts;
+      }, {}),
     },
     moneyByCurrency, exceptions, postalStages, journey: JOURNEY.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
     quality: {
@@ -368,7 +415,7 @@ export function computeReport(input: ReportInput) {
       eligibleSessions: entries.size, convertingSessions: converted.size,
       costCoverage: cohortOrders.length ? coveredActual / cohortOrders.length : null,
       spendCoverage: sourceCount ? [...channels.values()].filter(c => c.spendMinor !== null).length / sourceCount : null,
-      providerReconciliation: 'not_measured', flags: qualityFlags,
+      providerReconciliation: input.paymentCoverageComplete ? 'complete' : 'not_measured', paymentCoverageReason: input.paymentCoverageReason || 'PROVIDER_RECONCILIATION_NOT_MEASURED', paymentCoverageWatermark: input.paymentCoverageWatermark || null, flags: qualityFlags,
     },
     evidence: {
       money: financial.map(f => ({ id:f.factId, orderId:f.orderId, kind:f.kind, amountMinor:f.amountMinor, currency:f.currency, verification:f.verification, effectiveAt:f.effectiveAt, classification:classify(f.classification) })),

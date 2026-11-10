@@ -41,6 +41,23 @@ describe('S5 Delivery and Payment Acceptance Gate', () => {
   };
 
   describe('1. 3-Tier Delivery Pricing & Representation Agreement', () => {
+    it('does not accept a browser consent assertion as advertising authority at lock', async () => {
+      const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(withVerifiedLockFixture({
+          slug: 'security-deposit-return-demand-letter', userValues: validTenantValues,
+          signatureAdoption: { adopted: true, affirmed: true, signerName: validTenantValues.senderFullName },
+          tier: 'first_class', customerEmail: 'consent-fixture@example.invalid',
+          marketingConsent: true,
+        })),
+      });
+      const response = await lockAndIntentPost(req);
+      assert.equal(response.status, 200);
+      const order = await getOrderById((await response.json()).orderId);
+      assert.equal(order?.attribution?.marketingConsent, false);
+      assert.equal(order?.marketingConsentEvidence?.status, 'unknown');
+    });
+
     it('defines all 3 USPS delivery tiers with exact amounts and service levels', () => {
       assert.equal(DOCKET_PRICING_TIERS.first_class.priceCents, 1295);
       assert.equal(DOCKET_PRICING_TIERS.first_class.formattedPrice, '$12.95');

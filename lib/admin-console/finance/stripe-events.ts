@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { firestoreDb } from "@/lib/firebase-admin";
 import { MoneyFactSchema, ProviderEventReceiptSchema } from "@/lib/admin-console/contracts";
 import { recordPaymentAuthority, stableProviderFactId } from "./authority";
+import { recordGoogleConversionRefundAdjustment } from "@/lib/admin-console/advertising/outbox";
 
 const RECEIPTS = "provider_event_receipts_v1";
 const FACTS = "payment_facts_v1";
@@ -223,6 +224,10 @@ export async function ingestStripeEvidenceEvent(event: Stripe.Event): Promise<{
     const transactionId = typeof refund.balance_transaction === "string" ? refund.balance_transaction : refund.balance_transaction?.id;
     if (status === "succeeded" && transactionId && capture?.orderId && Number.isInteger(refund.amount) && refund.currency) {
       const result = await recordCashFact(event, "refund", transactionId, String(capture.orderId), refund.currency, refund.amount, refund.created || event.created, refund.id, capture.classification as Record<string, unknown> | undefined);
+      if (result.accepted && result.status !== "conflict") {
+        try { await recordGoogleConversionRefundAdjustment(String(capture.orderId), appEnvironment()); }
+        catch { /* Refund facts are authoritative even if optional ads adjustment queueing fails. */ }
+      }
       return { accepted: result.accepted, duplicate: result.duplicate, status: result.status, orderId: String(capture.orderId) };
     }
     const diagnostics = !capture ? ["MISSING_ORDER"] : status === "succeeded" ? ["RECONCILIATION_REQUIRED"] : [];

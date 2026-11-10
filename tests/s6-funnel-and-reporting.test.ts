@@ -642,7 +642,8 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
       assert.ok(!JSON.stringify(savedOrder).includes('synthetic_lock_click'));
       const { firestoreDb } = await import('../lib/firebase-admin');
       const clicks = await firestoreDb.collection('acquisition_click_evidence_v2').where('orderId', '==', data.orderId).get();
-      assert.equal(clicks.size, 1);
+      assert.equal(clicks.size, 0, "unknown consent must not persist advertising click identifiers");
+      assert.equal(savedOrder.marketingConsentEvidence?.status, "unknown");
       const replayPayload = { ...validPayload, acquisitionV2: { schemaVersion: 2, firstObserved: null, currentSession: null, persistence: 'unavailable', missingReasons: [] }, acquisitionClicks: [] };
       const replay = await lockAndIntentPost(new NextRequest('http://localhost:3000/api/docket/lock-and-intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(replayPayload) }));
       assert.equal(replay.status, 200);

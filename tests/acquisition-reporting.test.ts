@@ -28,6 +28,16 @@ test('later refunds and provider processor fees reconcile once; duplicates and p
   assert.equal(replay.metrics.contributionAfterAcquisition.value,282);
 });
 
+test('cost revisions supersede their source fact without stacking corrected amounts',()=>{
+  const revised=[...input.costs!.filter(c=>c.kind!=='supplier'),
+    {...input.costs!.find(c=>c.kind==='supplier')!,id:'supplier-r1',sourceRef:'invoice_1',revision:1,amountMinor:818},
+    {...input.costs!.find(c=>c.kind==='supplier')!,id:'supplier-r2',sourceRef:'invoice_1',revision:2,amountMinor:900},
+  ];
+  const report=computeReport({...input,costs:revised});
+  assert.equal(report.metrics.contributionBeforeAcquisition.value,1007,'The revised $9.00 supplier cost replaces the original $8.18 line');
+  assert.equal(report.metrics.contributionAfterAcquisition.value,707);
+});
+
 test('snapshot wins over stale entry but conflict blocks economics; missing campaign never becomes pilot',()=>{
   const event={eventId:'e1',eventName:'entry_viewed',environment:'production',occurredAt:at,receivedAt:at,sessionId:'s1',classification:'customer',acquisition:{original:{source:'direct',medium:'none'}}};
   const conflict=computeReport({...input,events:[event]});
@@ -49,6 +59,28 @@ test('incomplete spend or costs never produces a profitable acquisition claim',(
   assert.equal(none.channels[0].paidOrders,0);
   assert.equal(none.channels[0].spendMinor,300);
   assert.equal(none.metrics.costPerAttributableOrder.value,null);
+});
+
+test('zero-order spend loss requires a mature provider-reconciled customer cohort',()=>{
+  const zero={...input,facts:[],orders:[],events:[],costs:input.costs!.filter(c=>c.kind==='spend')};
+  const unverified=computeReport(zero);
+  assert.equal(unverified.metrics.acquisitionSpend.value,300);
+  assert.equal(unverified.metrics.costPerAttributableOrder.value,null);
+  assert.equal(unverified.metrics.contributionAfterAcquisition.value,null,'A full Firestore scan is not provider proof of zero orders');
+  const reconciled=computeReport({...zero,paymentCoverageComplete:true});
+  assert.equal(reconciled.metrics.contributionAfterAcquisition.value,-300,'Mature, complete provider reconciliation with known spend shows acquisition loss');
+  assert.equal(reconciled.channels.find(row=>row.key===PILOT_KEY)?.afterAcquisitionMinor,-300);
+  assert.equal(computeReport({...zero,paymentCoverageComplete:true,asOf:'2026-11-13T12:00:00.000Z'}).metrics.contributionAfterAcquisition.value,null,'Immature acquisition windows cannot claim zero orders');
+  assert.equal(computeReport({...zero,paymentCoverageComplete:true,scope:{...zero.scope,tier:'certified'}}).metrics.contributionAfterAcquisition.value,null,'Product subsets cannot subtract full campaign spend');
+});
+
+test('first-touch assists remain separated from current-session paid order counts',()=>{
+  const direct=observeAcquisition({search:'',origin:'https://docketstamp.com',sessionId:'s0',surface:'home',now:Date.parse(at),touchId:'touch_direct'}).touch!;
+  const assistedSnapshot={...snapshot,firstObserved:direct,currentSession:touch};
+  const report=computeReport({...input,orders:[{...input.orders[0],acquisitionV2:assistedSnapshot}]});
+  assert.equal(report.channels.find(row=>row.key===PILOT_KEY)?.paidOrders,1);
+  assert.equal(report.attribution.firstTouchAssists.direct,1);
+  assert.equal(Object.values(report.attribution.firstTouchAssists).reduce((a,b)=>a+b,0),1,'Assist counts stay outside current-session purchase count');
 });
 
 test('spend intervals must cover the cohort; an incomplete day cannot produce CAC',()=>{

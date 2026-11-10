@@ -1,4 +1,5 @@
 import type { AcquisitionSnapshot } from './acquisition';
+import type { MarketingConsentEvidence } from './admin-console/advertising/consent';
 export interface MailingAddress {
   firstName: string;
   lastName: string;
@@ -167,6 +168,7 @@ export interface Order {
   paymentMethod?: "STRIPE" | "PROMO_CODE" | "STUDIO_COMP";
   attribution?: OrderAttribution;
   acquisitionV2?: AcquisitionSnapshot & { frozenAt: string };
+  marketingConsentEvidence?: MarketingConsentEvidence;
   metaCapiTrackedAt?: number; // Timestamp when Meta Conversions API purchase was dispatched
   recipientOccasion?: RecipientOccasion;
   viewToken?: string;

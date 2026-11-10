@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { firestoreDb, sanitizeFirestoreData } from '@/lib/firebase-admin';
 import { ScopeSchema } from '../contracts';
 import { computeReport, type ReportScope, type ReportInput, type ConsoleReport } from './compute';
+import { readPaymentCoverage } from '@/lib/admin-console/finance/coverage';
 
 export const scopeKey = (scope: ReportScope) => crypto.createHash('sha256').update(JSON.stringify(ScopeSchema.parse(scope))).digest('hex');
 const digest = (value: unknown) => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -179,8 +180,12 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
   const postal = [...new Map([...postalInWindow.rows, ...targetedPostal.rows].map(row => [row.factId || row._documentId, row])).values()];
   const openObligations = scopedOpen.map(({ fact, order }) => ({ fact, order }));
   const sourceComplete = [money, events, historicalEntries, lifetimeMoney, postalInWindow, spend, outbox, orders, targetedPostal, targetedCosts, classificationRows].every(source => source.complete) && joinsComplete;
-  const generationId = digest({ scope, asOf, facts, events: classifiedEvents, orders: orderRows, postal, costs, outbox: scopedOpen }).slice(0,32);
-  const report = computeReport({ scope, asOf, generationId, facts, events: classifiedEvents, orders: orderRows, postal, costs, openObligations, sourceComplete } as ReportInput);
+  const coverageEnd = new Date(Math.min(Date.parse(asOf), Date.parse(conversionEnd))).toISOString();
+  const paymentCoverage = await readPaymentCoverage(scope.environment, scope.startUtc, coverageEnd, asOf);
+  const generationId = digest({ scope, asOf, facts, events: classifiedEvents, orders: orderRows, postal, costs, outbox: scopedOpen, paymentCoverage }).slice(0,32);
+  const status=(complete:boolean):'complete'|'partial'=>complete?'complete':'partial';
+  const sourceStatus={payment:status(money.complete&&lifetimeMoney.complete),acquisition:status(events.complete&&historicalEntries.complete),postal:status(postalInWindow.complete&&targetedPostal.complete),costs:status(spend.complete&&targetedCosts.complete)};
+  const report = computeReport({ scope, asOf, generationId, facts, events: classifiedEvents, orders: orderRows, postal, costs, openObligations, sourceComplete, sourceStatus, paymentCoverageComplete: paymentCoverage.complete, paymentCoverageWatermark: paymentCoverage.watermark, paymentCoverageReason: paymentCoverage.reason } as unknown as ReportInput);
   return { report, reportHash: digest(report), mode: 'projection_only' as const };
 }
 
