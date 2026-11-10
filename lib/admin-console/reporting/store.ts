@@ -105,11 +105,12 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
   const orderIds = [...new Set([
     ...money.rows.map(row => row.orderId), ...events.rows.map(row => row.orderId), ...scopedOpen.map(row => row.order.id),
   ].filter((id): id is string => typeof id === 'string'))];
-  const [orders, targetedPostal, targetedCosts, classificationRows] = await Promise.all([
+  const [orders, targetedPostal, targetedCosts, classificationRows, lifetimeMoney] = await Promise.all([
     getManyDocuments('orders', orderIds),
     queryByOrderIds('postal_facts_v1', scope.environment, orderIds),
     queryByOrderIds('cost_records_v1', scope.environment, orderIds),
     queryByOrderIds('identity_classifications_v1', scope.environment, orderIds),
+    queryByOrderIds('payment_facts_v1', scope.environment, orderIds),
   ]);
   const authorityOrderIds = new Set([...money.rows, ...scopedOpen.map(row => row.fact)].map(row => row.orderId));
   const scopedOrders = orders.rows.filter(row => {
@@ -124,7 +125,7 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
   const allEvents = [...new Map([...events.rows, ...historicalEntries.rows].map(row => [row.eventId || row._documentId, row])).values()];
   const classifications = new Map(classificationRows.rows.map(row => [row.orderId, row]));
   const factsById = new Map<string, Record<string, any>>();
-  for (const fact of [...money.rows, ...scopedOpen.map(row => row.fact)]) factsById.set(fact.factId, fact);
+  for (const fact of [...money.rows, ...lifetimeMoney.rows, ...scopedOpen.map(row => row.fact)]) factsById.set(fact.factId, fact);
   const rawFacts = [...factsById.values()];
   const exclusionRank: Record<string, number> = { customer: 0, unresolved: 1, suspected_bot: 2, free_promo: 3, comp: 4, automated_test: 5, employee: 6, founder: 7 };
   const captureClassByOrder = new Map<string, string>();
@@ -172,7 +173,7 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
   const costs = [...new Map([...spend.rows, ...targetedCosts.rows].map(row => [row.id || row._documentId, row])).values()];
   const postal = [...new Map([...postalInWindow.rows, ...targetedPostal.rows].map(row => [row.factId || row._documentId, row])).values()];
   const openObligations = scopedOpen.map(({ fact, order }) => ({ fact, order }));
-  const sourceComplete = [money, events, historicalEntries, postalInWindow, spend, outbox, orders, targetedPostal, targetedCosts, classificationRows].every(source => source.complete) && joinsComplete;
+  const sourceComplete = [money, events, historicalEntries, lifetimeMoney, postalInWindow, spend, outbox, orders, targetedPostal, targetedCosts, classificationRows].every(source => source.complete) && joinsComplete;
   const generationId = digest({ scope, asOf, facts, events: classifiedEvents, orders: orderRows, postal, costs, outbox: scopedOpen }).slice(0,32);
   const report = computeReport({ scope, asOf, generationId, facts, events: classifiedEvents, orders: orderRows, postal, costs, openObligations, sourceComplete } as ReportInput);
   return { report, reportHash: digest(report), mode: 'projection_only' as const };

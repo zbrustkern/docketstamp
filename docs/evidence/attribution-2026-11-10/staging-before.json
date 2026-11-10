@@ -1,0 +1,128 @@
+{
+  "checkedAt": "2026-11-10T18:02:50.057Z",
+  "project": "docketstamp-staging",
+  "traffic": {
+    "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/traffic",
+    "rolloutPolicy": {
+      "codebaseBranch": "staging"
+    },
+    "reconciling": false,
+    "createTime": "2026-10-14T15:56:47.817068195Z",
+    "updateTime": "2026-10-14T15:56:45.930109Z",
+    "etag": "XoN3StiVm16LfOQHnZdggl0v0UxT8bJH3WVWpiHxcsc",
+    "uid": "c8c080eb-790e-4ae2-8e66-061fd04a2b60",
+    "current": {
+      "splits": [
+        {
+          "build": "projects/267056924276/locations/us-central1/backends/docketstamp/builds/build-2026-11-10-001",
+          "percent": 100
+        }
+      ]
+    }
+  },
+  "builds": [
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-11-10-001",
+      "state": "READY",
+      "createTime": "2026-11-10T01:35:44.478092891Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "b6341b0dcee1b0d7d612eca117795a4854cdbb6a",
+          "hash": "b6341b0dcee1b0d7d612eca117795a4854cdbb6a",
+          "commitMessage": "fix(reporting): isolate channel spend, flag incomplete economics, and remove legacy status",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/b6341b0dcee1b0d7d612eca117795a4854cdbb6a",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-11-10T01:35:41Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-11-03-001",
+      "state": "READY",
+      "createTime": "2026-11-03T00:47:42.477559564Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "8b566cfe5004d789c538c924d5c8ef20ba8d480d",
+          "hash": "8b566cfe5004d789c538c924d5c8ef20ba8d480d",
+          "commitMessage": "fix: qualify security deposit deadline conditions",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/8b566cfe5004d789c538c924d5c8ef20ba8d480d",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-11-03T00:47:21Z"
+        }
+      }
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-29-005",
+      "state": "READY",
+      "createTime": "2026-10-29T22:43:55.362814708Z",
+      "source": {
+        "codebase": {
+          "branch": "staging",
+          "displayName": "8ebe3296e314d5042218fbe6ee57103ca271d0ef",
+          "hash": "8ebe3296e314d5042218fbe6ee57103ca271d0ef",
+          "commitMessage": "fix(admin): show acquisition metrics on mobile",
+          "uri": "https://github.com/zbrustkern/docketstamp/commit/8ebe3296e314d5042218fbe6ee57103ca271d0ef",
+          "author": {
+            "displayName": "User Name",
+            "email": "zbrustkern@gmail.com",
+            "imageUri": "https://github.com/zbrustkern.png"
+          },
+          "commitTime": "2026-10-29T22:43:31Z"
+        }
+      }
+    }
+  ],
+  "rollouts": [
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-11-10-001",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-11-10-001",
+      "createTime": "2026-11-10T01:35:44.532061532Z",
+      "updateTime": "2026-11-10T01:39:02.453213Z"
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-11-03-001",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-11-03-001",
+      "createTime": "2026-11-03T00:47:42.553097906Z",
+      "updateTime": "2026-11-03T00:54:02.756717Z"
+    },
+    {
+      "name": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/rollouts/rollout-2026-10-29-005",
+      "state": "SUCCEEDED",
+      "build": "projects/docketstamp-staging/locations/us-central1/backends/docketstamp/builds/build-2026-10-29-005",
+      "createTime": "2026-10-29T22:43:55.406293934Z",
+      "updateTime": "2026-10-29T22:49:09.535353Z"
+    }
+  ],
+  "readyRevision": "projects/docketstamp-staging/locations/us-central1/services/docketstamp/revisions/docketstamp-build-2026-11-10-001",
+  "condition": {
+    "type": "Ready",
+    "state": "CONDITION_SUCCEEDED",
+    "lastTransitionTime": "2026-11-10T01:38:59.106974Z"
+  },
+  "publicEnvironment": [
+    {
+      "name": "LOB_ENV",
+      "value": "staging_mock_cass"
+    },
+    {
+      "name": "ENVIRONMENT",
+      "value": "staging"
+    },
+    {
+      "name": "NEXT_PUBLIC_APP_URL",
+      "value": "https://staging.docketstamp.com"
+    }
+  ]
+}

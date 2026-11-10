@@ -65,6 +65,6 @@ export function calendarScope(
   } else { startDate = addDays(today, -6); endDateExclusive = addDays(today, 1); }
   return {
     startUtc: localMidnightUtc(startDate, timezone), endUtcExclusive: localMidnightUtc(endDateExclusive, timezone),
-    displayTimezone: timezone, environment, classification: 'customer', reportVersion: 1, cohortPolicyVersion: 1,
+    displayTimezone: timezone, environment, classification: 'customer', reportVersion: 2, cohortPolicyVersion: 2,
   };
 }

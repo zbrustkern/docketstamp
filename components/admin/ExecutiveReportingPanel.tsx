@@ -6,7 +6,7 @@ import type { ReportScope } from '@/lib/admin-console/reporting/compute';
 type Metric = { value: number | null; unit: string; currency?: string; evidenceClass: string; completeness: string; watermark: string | null; numerator?: number | null; denominator?: number | null };
 type JourneyStage = { name: string; observedSessions: number };
 type ExceptionRow = { orderId: string; reason: string; priority: number; ageSeconds: number; evidenceRef: string };
-type ChannelRow = { key: string; sessions: number; convertingSessions: number; paidOrders: number; netCollectionsMinor: number | null; spendMinor: number | null; contributionMinor: number | null; joinCoverage: number | null };
+type ChannelRow = { key: string; sessions: number; convertingSessions: number; paidOrders: number; netCollectionsMinor: number | null; spendMinor: number | null; contributionMinor: number | null; joinCoverage: number | null; afterAcquisitionMinor?: number | null; costPerPaidOrderMinor?: number | null };
 type EvidenceRow = Record<string, unknown>;
 type TimelineEvidenceRow = EvidenceRow & {
   kind: string; at: unknown; id?: unknown; eventId?: unknown; eventName?: unknown;
@@ -23,6 +23,7 @@ type Report = {
   journey?: JourneyStage[];
   exceptions?: ExceptionRow[];
   channels?: ChannelRow[];
+  attribution?: { orderSnapshots: number; sessionJoinFallbacks: number; unknownPaidOrders: number; conflicts: number; firstObservedPaidOrders: Record<string, number> };
   postalStages?: { lobAccepted: number; mailed: number; inTransit: number; delivered: number; returned: number };
   quality?: {
     immatureSessions?: number;
@@ -89,6 +90,8 @@ function friendlyFlag(flag: string) {
     PROVIDER_RECONCILIATION_NOT_MEASURED: "Provider reconciliation coverage is not measured",
     LEGACY_RECORDS_NOT_BACKFILLED: "Older records are not backfilled",
     SOURCE_SCAN_PARTIAL: "Some source records could not be included",
+    ATTRIBUTION_CONFLICT: "Frozen order and session entry disagree; acquisition economics are held",
+    SESSION_JOIN_FALLBACK: "Some orders use historical session joins instead of frozen attribution",
     CHANNEL_ATTRIBUTION_INCOMPLETE: "Some paid orders do not have an acquisition join",
     IMMATURE_COHORT: "Some visits have not completed the 7 day conversion window",
     STALE_EVIDENCE: "Evidence has not refreshed recently",
@@ -112,6 +115,9 @@ export function ExecutiveReportingPanel() {
   const [report, setReport] = useState<Report | null>(null);
   const [state, setState] = useState("loading");
   const [error, setError] = useState("");
+  const [costInput, setCostInput] = useState("");
+  const [costStatus, setCostStatus] = useState("");
+  const [savingCosts, setSavingCosts] = useState(false);
   const [loading, setLoading] = useState(false);
   const [scope, setScope] = useState<ReportScope | null>(null);
   const [loadedSelection, setLoadedSelection] = useState("");
@@ -153,6 +159,17 @@ export function ExecutiveReportingPanel() {
 
   useEffect(() => { void load(); return () => { requestRevision.current += 1; }; }, [load]);
 
+  const importCosts = async () => {
+    setSavingCosts(true); setCostStatus('');
+    try {
+      const records = JSON.parse(costInput);
+      const response = await fetch('/api/admin/console/cost-evidence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: crypto.randomUUID(), reason: 'Operator reviewed cost and campaign spend evidence', records }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Import failed');
+      setCostStatus(`Saved ${result.accepted || 0} records. Update the report to include them.`); setCostInput('');
+    } catch (error) { setCostStatus(error instanceof SyntaxError ? 'Enter a valid JSON array.' : error instanceof Error ? error.message : 'Import failed'); }
+    finally { setSavingCosts(false); }
+  };
   const refreshReport = async () => {
     if (!scope || loading || loadedSelection !== selection) return;
     const revision = ++requestRevision.current;
@@ -270,17 +287,23 @@ export function ExecutiveReportingPanel() {
           <div><h3 id="economics-heading" className="text-sm font-bold text-slate-900">Cost and acquisition coverage</h3><p className="mt-1 text-xs text-slate-500">Profit stays unavailable until actual costs and campaign spend cover the cohort.</p></div>
           <div className="mt-3 grid grid-cols-2 gap-2"><div className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">Actual order-cost coverage</p><p className="mt-1 text-base font-bold text-slate-900">{report.quality?.costCoverage === null || report.quality?.costCoverage === undefined ? "Unavailable" : `${Math.round(report.quality.costCoverage * 100)}%`}</p></div><div className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">Acquisition spend coverage</p><p className="mt-1 text-base font-bold text-slate-900">{report.quality?.spendCoverage === null || report.quality?.spendCoverage === undefined ? "Unavailable" : `${Math.round(report.quality.spendCoverage * 100)}%`}</p></div></div>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-3 text-xs">
-            <span className="text-slate-500">Before acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionBeforeAcquisition)}</b></span>
-            <span className="text-slate-500">Acquisition spend <b className="ml-1 text-slate-900">{display(metrics.acquisitionSpend)}</b></span>
+            <span className="text-slate-500">Before acquisition ({metrics.contributionBeforeAcquisition?.evidenceClass || "unavailable"}) <b className="ml-1 text-slate-900">{display(metrics.contributionBeforeAcquisition)}</b></span>
+            <span className="text-slate-500">Observed spend to date <b className="ml-1 text-slate-900">{display(metrics.observedSpend)}</b></span>
+            <span className="text-slate-500">Reconciled acquisition spend <b className="ml-1 text-slate-900">{display(metrics.acquisitionSpend)}</b></span>
             <span className="text-slate-500">After acquisition <b className="ml-1 text-slate-900">{display(metrics.contributionAfterAcquisition)}</b></span>
             <span className="text-slate-500">Cost per attributable paid order <b className="ml-1 text-slate-900">{display(metrics.costPerAttributableOrder)}</b></span>
           </div>
+          <details className="mt-3 border-t border-slate-100 pt-3 text-xs"><summary className="cursor-pointer font-semibold text-slate-700">Import reviewed cost and spend evidence</summary><p className="my-2 text-slate-500">Paste records from reviewed provider invoices or Google Ads spend exports. Include explicit UTC coverage intervals for spend. Missing days stay incomplete. Imports are idempotent and conflicting amounts require review. No advertising settings change.</p><textarea aria-label="Reviewed cost evidence JSON" className="h-28 w-full rounded border border-slate-300 p-2 font-mono text-xs" value={costInput} onChange={e=>setCostInput(e.target.value)} placeholder='[{"kind":"spend","campaignKey":"google:cpc:ds_search_deposit_demand_pilot_01","amountMinor":0,"currency":"USD","effectiveAt":"2026-11-10T06:00:00.000Z","coverageStartUtc":"2026-11-10T06:00:00.000Z","coverageEndUtc":"2026-11-11T06:00:00.000Z","sourceRef":"google_ads_export_2026_11_10","authority":"actual","coverage":"complete"}]' /><button type="button" disabled={savingCosts || !costInput.trim()} onClick={()=>void importCosts()} className="mt-2 rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50">{savingCosts ? 'Saving…' : 'Save reviewed evidence'}</button><p role="status" className="mt-2 text-slate-600">{costStatus}</p></details>
           <p className="mt-2 text-[10px] text-slate-500">Acquisition cost is calculated per attributable paid cohort order, not proven new-customer CAC.</p>
         </section>
       </div>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="sources-heading">
-        <div><h3 id="sources-heading" className="text-sm font-bold text-slate-900">Acquisition sources</h3><p className="mt-1 text-xs text-slate-500">The original eligible entry determines the channel; unknown attribution stays in its own row.</p></div>
+        <div><h3 id="sources-heading" className="text-sm font-bold text-slate-900">Acquisition sources</h3><p className="mt-1 text-xs text-slate-500">Current-session acquisition uses the frozen order snapshot, with the session entry as a labeled fallback. Unknown campaign evidence stays separate.</p></div>
+        {report.attribution && <div className="mt-3 space-y-2 text-xs text-slate-600">
+          <p>Frozen snapshots: {report.attribution.orderSnapshots} · Session fallback: {report.attribution.sessionJoinFallbacks} · Unknown paid attribution: {report.attribution.unknownPaidOrders} · Conflicts: {report.attribution.conflicts}</p>
+          <details><summary className="cursor-pointer font-semibold">First-observed attribution — separate view</summary><p className="my-2">Paid orders in the payment window, grouped by the earliest retained browser touch. Do not add these counts to current-session totals. This is not proof of a new customer.</p><ul>{Object.entries(report.attribution.firstObservedPaidOrders).map(([key, count]) => <li key={key}>{key}: {count}</li>)}</ul></details>
+        </div>}
         {report.channels?.length ? <>
           <div className="mt-3 space-y-2 sm:hidden">
             {report.channels.map(row => <article key={row.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -290,12 +313,14 @@ export function ExecutiveReportingPanel() {
                 <div><dt className="text-slate-500">Paid orders</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.paidOrders}</dd></div>
                 <div><dt className="text-slate-500">Collections</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.netCollectionsMinor)}</dd></div>
                 <div><dt className="text-slate-500">Spend</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.spendMinor)}</dd></div>
+                <div><dt className="text-slate-500">After ads</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.afterAcquisitionMinor)}</dd></div>
+                <div><dt className="text-slate-500">Cost / paid order</dt><dd className="mt-0.5 font-semibold text-slate-900">{money(row.costPerPaidOrderMinor)}</dd></div>
                 <div><dt className="text-slate-500">Join coverage</dt><dd className="mt-0.5 font-semibold text-slate-900">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</dd></div>
               </dl>
             </article>)}
           </div>
           <div className="mt-3 hidden overflow-x-auto sm:block">
-            <table className="w-full min-w-[640px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="pb-2 font-semibold">Source / campaign</th><th className="pb-2 font-semibold">Sessions</th><th className="pb-2 font-semibold">Paid orders</th><th className="pb-2 font-semibold">Collections</th><th className="pb-2 font-semibold">Spend</th><th className="pb-2 font-semibold">Join</th></tr></thead><tbody className="divide-y divide-slate-100">{report.channels.map(row => <tr key={row.key}><td className="py-2 pr-3 font-medium text-slate-800">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</td><td className="py-2">{row.sessions}</td><td className="py-2">{row.paidOrders}</td><td className="py-2">{money(row.netCollectionsMinor)}</td><td className="py-2">{money(row.spendMinor)}</td><td className="py-2">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</td></tr>)}</tbody></table>
+            <table className="w-full min-w-[640px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="pb-2 font-semibold">Source / campaign</th><th className="pb-2 font-semibold">Sessions</th><th className="pb-2 font-semibold">Paid orders</th><th className="pb-2 font-semibold">Collections</th><th className="pb-2 font-semibold">Spend</th><th className="pb-2 font-semibold">After ads</th><th className="pb-2 font-semibold">Cost / paid order</th><th className="pb-2 font-semibold">Join</th></tr></thead><tbody className="divide-y divide-slate-100">{report.channels.map(row => <tr key={row.key}><td className="py-2 pr-3 font-medium text-slate-800">{row.key === "unknown" ? <span className="text-amber-800">Unknown attribution</span> : row.key}</td><td className="py-2">{row.sessions}</td><td className="py-2">{row.paidOrders}</td><td className="py-2">{money(row.netCollectionsMinor)}</td><td className="py-2">{money(row.spendMinor)}</td><td className="py-2">{money(row.afterAcquisitionMinor)}</td><td className="py-2">{money(row.costPerPaidOrderMinor)}</td><td className="py-2">{row.joinCoverage === null ? "Unavailable" : `${Math.round(row.joinCoverage * 100)}%`}</td></tr>)}</tbody></table>
           </div>
         </> : <p className="mt-3 py-4 text-xs text-slate-500">No eligible sessions in this scope.</p>}
       </section>
@@ -307,7 +332,7 @@ export function ExecutiveReportingPanel() {
         {!!report.quality?.flags?.length && <ul className="mt-3 grid grid-cols-1 gap-1 text-[10px] text-amber-900 sm:grid-cols-2">{report.quality.flags.map(flag => <li key={flag} className="rounded-md bg-amber-50 px-2.5 py-2">{friendlyFlag(flag)}</li>)}</ul>}
         <p className="mt-3 border-t border-slate-100 pt-3 text-[10px] text-slate-500">Private evidence contains identifiers and status only. Letter text, addresses and payment secrets are excluded.</p>
       </section>
-      <footer className="text-[10px] text-slate-500">Range: {local(report.scope.startUtc)} – {local(report.scope.endUtcExclusive)} ({report.scope.displayTimezone}) · 7 day conversion horizon · Collections are payment evidence, not accounting revenue.</footer>
+      <footer className="text-[10px] text-slate-500">Range: {local(report.scope.startUtc)} – {local(report.scope.endUtcExclusive)} ({report.scope.displayTimezone}) · 7 day purchase window; later refunds remain attached · No assumed repeat-purchase value · Collections are payment evidence, not accounting revenue.</footer>
     </div>}
 
     {report && view === "reconciliation" && <div className="space-y-4 p-4 sm:p-6">

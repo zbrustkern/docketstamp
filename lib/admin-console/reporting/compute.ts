@@ -1,3 +1,4 @@
+import { AcquisitionSnapshotSchema, acquisitionKey, type AcquisitionSnapshot } from '@/lib/acquisition';
 import type { z } from 'zod';
 import { ScopeSchema, MetricSchema } from '../contracts';
 
@@ -11,9 +12,12 @@ export interface EventRow {
   eventId: string; eventName: string; environment: string; occurredAt: string; receivedAt: string;
   sessionId?: string; journeyId?: string; orderId?: string; noticeId?: string; tier?: string;
   entrySurface?: string; classification?: string | { primary: string }; safeProperties?: Record<string, unknown>;
+  acquisitionV2?: AcquisitionSnapshot;
   acquisition?: { original?: { source?: string; medium?: string; campaignId?: string } };
 }
 export interface OrderRow {
+  acquisitionV2?: AcquisitionSnapshot;
+  entrySource?: string;
   id: string; status: string; environment?: string; sessionId?: string; telemetrySessionId?: string;
   noticeId?: string; noticeType?: string; serviceLevel?: string; updatedAt?: number; createdAt?: number;
   classification?: string | { primary: string };
@@ -23,7 +27,7 @@ export interface PostalRow { factId: string; orderId: string; state: string; lob
 export interface CostRow {
   id: string; environment: string; currency: string; orderId?: string; kind: 'supplier' | 'processor' | 'spend';
   amountMinor: number; effectiveAt: string; sourceRef: string; authority?: 'actual'|'estimated';
-  coverage: 'complete' | 'partial'; campaignKey?: string;
+  coverage: 'complete' | 'partial'; campaignKey?: string; coverageStartUtc?: string; coverageEndUtc?: string;
 }
 export interface ReportInput {
   scope: ReportScope; asOf: string; facts: FactRow[]; events: EventRow[]; orders: OrderRow[];
@@ -54,9 +58,23 @@ export function computeReport(input: ReportInput) {
   for (const event of candidateEvents.filter(e => e.eventName === 'entry_viewed' && e.sessionId).sort((a,b) => time(a.occurredAt) - time(b.occurredAt))) {
     if (!acquisitionEntries.has(event.sessionId!)) acquisitionEntries.set(event.sessionId!, event);
   }
+  const snapshot = (value: unknown) => {
+    const parsed = AcquisitionSnapshotSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
+  };
   const channelKey = (event: EventRow) => {
+    if (event.acquisitionV2) return acquisitionKey(snapshot(event.acquisitionV2)?.currentSession);
     const source = event.acquisition?.original;
-    return source?.campaignId ? `${source.source || 'unknown'}:${source.medium || 'unknown'}:${source.campaignId}` : source?.source || 'unknown';
+    return source?.campaignId ? `${source.source || 'unknown'}:${source.medium || 'unknown'}:${source.campaignId}` : source?.medium === 'cpc' ? `${source.source || 'unknown'}:cpc:unknown` : source?.source || 'unknown';
+  };
+  const orderAcquisition = (order?: OrderRow) => {
+    const session = order?.sessionId || order?.telemetrySessionId;
+    const entry = session ? acquisitionEntries.get(session) : undefined;
+    if (order?.acquisitionV2) {
+      const touch = snapshot(order.acquisitionV2)?.currentSession;
+      return { key: acquisitionKey(touch), at: touch?.observedAt, surface: touch?.entrySurface, provenance: touch ? 'order_snapshot' : 'unknown', entry };
+    }
+    return { key: entry ? channelKey(entry) : 'unknown', at: entry?.occurredAt, surface: entry?.entrySurface, provenance: entry ? 'session_join_fallback' : 'unknown', entry };
   };
   const orderMatches = (orderId?: string) => {
     if (!orderId) return !scope.noticeId && !scope.tier && !scope.channel && !scope.entrySurface;
@@ -65,11 +83,9 @@ export function computeReport(input: ReportInput) {
     const tiers: Record<string, string> = { FIRST_CLASS: 'first_class', CERTIFIED: 'certified', CERTIFIED_RETURN_RECEIPT: 'certified_return_receipt' };
     if (scope.tier && tiers[order?.serviceLevel || ''] !== scope.tier) return false;
     if (scope.channel || scope.entrySurface) {
-      const session = order?.sessionId || order?.telemetrySessionId;
-      const entry = session ? acquisitionEntries.get(session) : undefined;
-      if (!entry) return false;
-      if (scope.channel && channelKey(entry) !== scope.channel) return false;
-      if (scope.entrySurface && entry.entrySurface !== scope.entrySurface) return false;
+      const acquisition = orderAcquisition(order);
+      if (scope.channel && acquisition.key !== scope.channel) return false;
+      if (scope.entrySurface && acquisition.surface !== scope.entrySurface) return false;
     }
     return true;
   };
@@ -103,9 +119,11 @@ export function computeReport(input: ReportInput) {
     .filter(f => {
       const order = orderMap.get(f.orderId!);
       const session = order?.sessionId || order?.telemetrySessionId;
-      return Boolean(order && (!session || !acquisitionEntries.has(session)));
+      const key = orderAcquisition(order).key;
+      return key === 'unknown' || key.endsWith(':unknown');
     }).map(f => f.orderId!)) : new Set<string>();
-  const reportSourceComplete = input.sourceComplete && unattributedOrders.size === 0;
+  const attributionConflicts = input.orders.filter(o => { const a = orderAcquisition(o); return a.provenance === 'order_snapshot' && a.entry && a.key !== channelKey(a.entry); }).length;
+  const reportSourceComplete = input.sourceComplete && unattributedOrders.size === 0 && attributionConflicts === 0;
   const financial = classFacts.filter(f => inWindow(f.effectiveAt) && f.providerMode === 'live' && signForMoney(f.kind) !== 0);
   const captures = financial.filter(f => f.kind === 'capture' && f.amountMinor > 0);
   const paidOrderIds = new Set(captures.map(f => f.orderId).filter(Boolean) as string[]);
@@ -148,12 +166,13 @@ export function computeReport(input: ReportInput) {
   for (const fact of conversionCaptures) {
     const order = fact.orderId ? orderMap.get(fact.orderId) : undefined;
     const session = order?.sessionId || order?.telemetrySessionId;
-    const entry = session ? entries.get(session) : undefined;
-    if (entry && fact.orderId && time(fact.effectiveAt) >= time(entry.occurredAt) && time(fact.effectiveAt) < time(entry.occurredAt) + 7 * day) {
-      converted.add(session!);
-      cohortEntryByOrder.set(fact.orderId, time(entry.occurredAt));
-    }
-    else if (inWindow(fact.effectiveAt)) unmatchedCaptures++;
+    const acquisition = orderAcquisition(order);
+    const at = acquisition.at ? time(acquisition.at) : NaN;
+    if (fact.orderId && at >= start && at < end && time(fact.effectiveAt) >= at && time(fact.effectiveAt) < at + 7 * day) {
+      if (session && entries.has(session) && channelKey(entries.get(session)!) === acquisition.key) converted.add(session);
+      cohortEntryByOrder.set(fact.orderId, at);
+    } else if (inWindow(fact.effectiveAt)) unmatchedCaptures++;
+
   }
 
   const postal = [...new Map(input.postal.map(p => [p.factId, p])).values()].filter(p => sameEnvironment(p) && time(p.receivedAt) <= now);
@@ -176,13 +195,16 @@ export function computeReport(input: ReportInput) {
   // rather than subtracting today's media spend from today's cash receipts.
   const cohortOrders = [...cohortEntryByOrder.keys()];
   const sourceKey = channelKey;
-  const costRows = input.costs || [];
+  const feeFacts = classFacts.filter(f => f.kind === 'processor_fee' && f.providerMode === 'live' && f.currency === 'USD');
+  const feeOrders = new Set(feeFacts.map(f => f.orderId));
+  const providerFees: CostRow[] = feeFacts.map(f => ({ id: f.factId, environment: scope.environment!, currency: f.currency, orderId: f.orderId, kind: 'processor', amountMinor: f.amountMinor, effectiveAt: f.effectiveAt, sourceRef: f.factId, authority: 'actual', coverage: 'complete' }));
+  const costRows = [...new Map([...(input.costs || []).filter(c => c.kind !== 'processor' || !feeOrders.has(c.orderId)), ...providerFees].map(c => [c.id, c])).values()].filter(c => Number.isSafeInteger(c.amountMinor) && c.amountMinor >= 0);
   const actualCosts = costRows.filter(c => c.environment === scope.environment && c.authority === 'actual' && c.coverage === 'complete' && c.currency === 'USD' && time(c.effectiveAt) <= now);
-  const estimatedCosts = costRows.filter(c => c.environment === scope.environment && c.authority === 'estimated' && c.coverage === 'complete' && c.currency === 'USD');
+  const estimatedCosts = costRows.filter(c => c.environment === scope.environment && c.authority === 'estimated' && c.coverage === 'complete' && c.currency === 'USD' && time(c.effectiveAt) <= now);
   const cohortFinancial = classFacts.filter(f => {
     if (!f.orderId || f.providerMode !== 'live' || signForMoney(f.kind) === 0) return false;
     const entryAt = cohortEntryByOrder.get(f.orderId);
-    return entryAt !== undefined && time(f.effectiveAt) >= entryAt && time(f.effectiveAt) < entryAt + 7 * day;
+    return entryAt !== undefined && time(f.effectiveAt) >= entryAt && (f.kind !== 'capture' || time(f.effectiveAt) < entryAt + 7 * day);
   });
   const cohortNetUsd = cohortFinancial.every(f => f.currency === 'USD')
     ? cohortFinancial.reduce((sum, f) => sum + signForMoney(f.kind) * f.amountMinor, 0) : null;
@@ -206,15 +228,35 @@ export function computeReport(input: ReportInput) {
     (!scope.channel || c.campaignKey === scope.channel)
   );
   const spendRows = allSpendRowsInWindow.filter(c => c.authority === 'actual' && c.coverage === 'complete');
+  const spendCoversRange = (rows: CostRow[]) => {
+    if (scope.reportVersion < 2) return true; // Historical reports retain their original definition.
+    const groups = new Map<string, CostRow[]>();
+    for (const row of rows) groups.set(row.campaignKey || 'unknown', [...(groups.get(row.campaignKey || 'unknown') || []), row]);
+    if (!groups.size) return false;
+    return [...groups].every(([key, group]) => {
+      const pilot = key === 'google:cpc:ds_search_deposit_demand_pilot_01';
+      const from = pilot ? Math.max(start, time('2026-11-10T06:00:00.000Z')) : start;
+      const until = pilot ? Math.min(end, now, time('2026-11-17T06:00:00.000Z')) : Math.min(end, now);
+      let cursor = from;
+      for (const row of group.sort((a,b)=>time(a.coverageStartUtc || '')-time(b.coverageStartUtc || ''))) {
+        const a=time(row.coverageStartUtc || ''), b=time(row.coverageEndUtc || '');
+        if (!Number.isFinite(a) || !Number.isFinite(b) || a !== cursor || b <= a || b > until) return false;
+        cursor=b;
+      }
+      return cursor === until;
+    });
+  };
+
   const activeSourceKeys = new Set([...entries.values()].map(sourceKey));
-  const spendKnown = scope.channel
+  const spendKnown = spendCoversRange(spendRows) && (scope.channel
     ? allSpendRowsInWindow.length > 0 && allSpendRowsInWindow.every(c => c.authority === 'actual' && c.coverage === 'complete')
     : allSpendRowsInWindow.length > 0 &&
       allSpendRowsInWindow.every(c => c.authority === 'actual' && c.coverage === 'complete') &&
-      (activeSourceKeys.size === 0 || [...activeSourceKeys].every(key => spendRows.some(c => c.campaignKey === key)));
+      (activeSourceKeys.size === 0 || [...activeSourceKeys].every(key => spendRows.some(c => c.campaignKey === key))));
   const spendMinor = spendKnown ? spendRows.reduce((sum, c) => sum + c.amountMinor, 0) : null;
-  const afterAcquisitionMinor = beforeAcquisitionMinor !== null && spendMinor !== null ? beforeAcquisitionMinor - spendMinor : null;
-  const costPerAttributableOrderMinor = spendMinor !== null && cohortOrders.length > 0
+  const cohortAttributionComplete = cohortOrders.every(id => { const key = orderAcquisition(orderMap.get(id)).key; return key !== 'unknown' && !key.endsWith(':unknown'); });
+  const afterAcquisitionMinor = cohortAttributionComplete && reportSourceComplete && beforeEvidenceClass === 'verified' && beforeAcquisitionMinor !== null && spendMinor !== null ? beforeAcquisitionMinor - spendMinor : null;
+  const costPerAttributableOrderMinor = cohortAttributionComplete && reportSourceComplete && spendMinor !== null && cohortOrders.length > 0
     ? Math.round(spendMinor / cohortOrders.length)
     : null;
 
@@ -254,6 +296,9 @@ export function computeReport(input: ReportInput) {
     'LEGACY_RECORDS_NOT_BACKFILLED',
     ...(reportSourceComplete ? [] : ['SOURCE_SCAN_PARTIAL']),
     ...(unattributedOrders.size ? ['CHANNEL_ATTRIBUTION_INCOMPLETE'] : []),
+    ...(attributionConflicts ? ['ATTRIBUTION_CONFLICT'] : []),
+    ...(!cohortAttributionComplete ? ['CHANNEL_ATTRIBUTION_INCOMPLETE'] : []),
+    ...(cohortOrders.some(id => orderAcquisition(orderMap.get(id)).provenance === 'session_join_fallback') ? ['SESSION_JOIN_FALLBACK'] : []),
     ...(immature ? ['IMMATURE_COHORT'] : []),
     ...(stale ? ['STALE_EVIDENCE'] : []),
     ...(input.openObligations === undefined ? ['OPEN_OUTBOX_NOT_MEASURED'] : []),
@@ -263,26 +308,31 @@ export function computeReport(input: ReportInput) {
   const exclusions: Record<string, number> = { unresolvedCaptures: unknownCapture.length, unmatchedCaptures, unattributedChannelOrders: unattributedOrders.size };
   const evidenceQueryRef = (metric: string) => `/api/admin/console/evidence?generationId=${input.generationId}&metric=${metric}`;
   const metric = (key: string, value: number | null, unit: 'count'|'ratio'|'money_minor', evidenceClass: 'verified'|'observed'|'estimated'|'unavailable', extra: Record<string, unknown> = {}) => MetricSchema.parse({
-    key, value, unit, evidenceClass, source: ['payment_facts_v1','business_events_v1','postal_facts_v1'], definitionVersion: 1,
+    key, value, unit, evidenceClass, source: ['payment_facts_v1','business_events_v1','postal_facts_v1'], definitionVersion: 2,
     scope, asOf: input.asOf, watermark, completeness: !reportSourceComplete ? 'partial' : stale ? 'stale' : 'complete_within_scope',
     exclusions, qualityFlags, evidenceQueryRef: evidenceQueryRef(key), ...extra,
   });
-  type ChannelRow = {key:string;sessions:number;convertingSessions:number;paidOrders:number;netCollectionsMinor:number|null;spendMinor:number|null;contributionMinor:number|null;joinCoverage:number|null};
+  type ChannelRow = {key:string;sessions:number;convertingSessions:number;paidOrders:number;netCollectionsMinor:number|null;spendMinor:number|null;contributionMinor:number|null;joinCoverage:number|null;afterAcquisitionMinor?:number|null;costPerPaidOrderMinor?:number|null};
   const channels = new Map<string, ChannelRow>();
   for (const [session, event] of entries) { const key = sourceKey(event); const row = channels.get(key) || { key, sessions: 0, convertingSessions: 0, paidOrders: 0, netCollectionsMinor: null, spendMinor: null, contributionMinor: null, joinCoverage: null }; row.sessions++; if (converted.has(session)) row.convertingSessions++; channels.set(key,row); }
+  for (const key of [...cohortOrders.map(id => orderAcquisition(orderMap.get(id)).key), ...allSpendRowsInWindow.map(c => c.campaignKey || 'unknown')]) {
+    if (!channels.has(key)) channels.set(key, { key, sessions: 0, convertingSessions: 0, paidOrders: 0, netCollectionsMinor: null, spendMinor: null, contributionMinor: null, joinCoverage: null });
+  }
   for (const row of channels.values()) {
     const sessions = new Set([...entries].filter(([,e]) => sourceKey(e) === row.key).map(([id]) => id));
-    const ids = cohortOrders.filter(id => { const o = orderMap.get(id); return sessions.has(o?.sessionId || o?.telemetrySessionId || ''); });
+    const ids = cohortOrders.filter(id => orderAcquisition(orderMap.get(id)).key === row.key);
     row.paidOrders = ids.length;
     const facts = cohortFinancial.filter(f => f.orderId && ids.includes(f.orderId));
     row.netCollectionsMinor = facts.some(f => f.currency !== 'USD') ? null : facts.reduce((sum,f) => sum + signForMoney(f.kind) * f.amountMinor, 0);
     const channelSpendRows = allSpendRowsInWindow.filter(c => c.campaignKey === row.key);
-    const channelSpendKnown = channelSpendRows.length > 0 && channelSpendRows.every(c => c.authority === 'actual' && c.coverage === 'complete');
+    const channelSpendKnown = spendCoversRange(channelSpendRows) && channelSpendRows.length > 0 && channelSpendRows.every(c => c.authority === 'actual' && c.coverage === 'complete');
     row.spendMinor = channelSpendKnown ? channelSpendRows.reduce((sum, c) => sum + c.amountMinor, 0) : null;
     const costs = actualCosts.filter(c => c.orderId && ids.includes(c.orderId) && c.kind !== 'spend');
     const covered = ids.length > 0 && ids.every(id => costs.some(c => c.orderId === id && c.kind === 'supplier') && costs.some(c => c.orderId === id && c.kind === 'processor'));
     row.contributionMinor = covered && row.netCollectionsMinor !== null ? row.netCollectionsMinor - costs.reduce((sum,c) => sum + c.amountMinor,0) : null;
-    row.joinCoverage = row.paidOrders ? Math.min(1, ids.filter(id => { const o = orderMap.get(id); return Boolean(o?.sessionId || o?.telemetrySessionId); }).length / row.paidOrders) : null;
+    row.joinCoverage = row.paidOrders ? ids.filter(id => orderAcquisition(orderMap.get(id)).provenance !== 'unknown').length / row.paidOrders : null;
+    row.afterAcquisitionMinor = row.key !== 'unknown' && !row.key.endsWith(':unknown') && reportSourceComplete && row.contributionMinor !== null && row.spendMinor !== null ? row.contributionMinor - row.spendMinor : null;
+    row.costPerPaidOrderMinor = row.key !== 'unknown' && !row.key.endsWith(':unknown') && reportSourceComplete && row.spendMinor !== null && row.paidOrders ? Math.round(row.spendMinor / row.paidOrders) : null;
   }
   const netCollectionsUsd = Object.keys(moneyByCurrency).some(currency => currency !== 'USD') ? null : moneyByCurrency.USD ?? (input.sourceComplete ? 0 : null);
   const paidAccepted = [...paidOrderIds].filter(accepted).length;
@@ -297,8 +347,19 @@ export function computeReport(input: ReportInput) {
       urgent: metric('open_obligations', exceptions.length, 'count', 'verified'),
       contributionBeforeAcquisition: metric('contribution_before_acquisition', beforeAcquisitionMinor, 'money_minor', beforeEvidenceClass, { currency: 'USD' }),
       contributionAfterAcquisition: metric('contribution_after_acquisition', afterAcquisitionMinor, 'money_minor', afterAcquisitionMinor === null ? 'unavailable' : beforeEvidenceClass, { currency: 'USD' }),
+      observedSpend: metric('observed_spend', allSpendRowsInWindow.length ? allSpendRowsInWindow.filter(c => c.authority === 'actual').reduce((sum,c) => sum+c.amountMinor,0) : null, 'money_minor', 'observed', {currency:'USD'}),
       acquisitionSpend: metric('acquisition_spend', spendMinor, 'money_minor', spendMinor === null ? 'unavailable' : 'verified', { currency: 'USD' }),
       costPerAttributableOrder: metric('cost_per_attributable_order', costPerAttributableOrderMinor, 'money_minor', costPerAttributableOrderMinor === null ? 'unavailable' : 'verified', { currency: 'USD', denominator: cohortOrders.length }),
+    },
+    attribution: {
+      orderSnapshots: cohortOrders.filter(id => orderAcquisition(orderMap.get(id)).provenance === 'order_snapshot').length,
+      sessionJoinFallbacks: cohortOrders.filter(id => orderAcquisition(orderMap.get(id)).provenance === 'session_join_fallback').length,
+      unknownPaidOrders: [...paidOrderIds].filter(id => { const key = orderAcquisition(orderMap.get(id)).key; return key === 'unknown' || key.endsWith(':unknown'); }).length,
+      conflicts: attributionConflicts,
+      firstObservedPaidOrders: [...paidOrderIds].reduce<Record<string, number>>((counts, id) => {
+        const key = acquisitionKey(snapshot(orderMap.get(id)?.acquisitionV2)?.firstObserved);
+        counts[key] = (counts[key] || 0) + 1; return counts;
+      }, {}),
     },
     moneyByCurrency, exceptions, postalStages, journey: JOURNEY.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
     quality: {
