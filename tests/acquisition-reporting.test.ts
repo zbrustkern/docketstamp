@@ -57,3 +57,21 @@ test('spend intervals must cover the cohort; an incomplete day cannot produce CA
   assert.equal(gap.metrics.acquisitionSpend.value,null);
   assert.equal(gap.metrics.costPerAttributableOrder.value,null);
 });
+
+test('report rebuild retrieves refunds beyond the acquisition query window',async()=>{
+  const {firestoreDb}=await import('../lib/firebase-admin');
+  const {prepareGeneration}=await import('../lib/admin-console/reporting/store');
+  await firestoreDb.collection('orders').doc('o1').set(input.orders[0]);
+  for(const row of [...input.facts,fact('late_refund','refund',500,'2026-11-24T12:00:00.000Z'),fact('actual_fee','processor_fee',95)]) {
+    await firestoreDb.collection('payment_facts_v1').doc(row.factId).set(row);
+  }
+  for(const row of input.costs!) await firestoreDb.collection('cost_records_v1').doc(row.id!).set(row);
+  await firestoreDb.collection('orders').doc('legacy_unpaid').set({id:'legacy_unpaid',status:'PENDING_PAYMENT'});
+  await firestoreDb.collection('business_events_v1').doc('legacy_lock').set({eventId:'legacy_lock',environment:'production',eventName:'document_locked',emitter:'server',orderId:'legacy_unpaid',occurredAt:at,receivedAt:at});
+  const {report}=await prepareGeneration(input.scope,input.asOf);
+  assert.equal(report.metrics.contributionAfterAcquisition.value,282);
+  assert.equal(report.metrics.netCollections.value,1995);
+  assert.equal(report.sourceComplete,true,'server lock scopes legacy unpaid order');
+  await firestoreDb.collection('business_events_v1').doc('legacy_lock').set({eventId:'legacy_lock',environment:'production',eventName:'document_locked',emitter:'client',orderId:'legacy_unpaid',occurredAt:at,receivedAt:at});
+  assert.equal((await prepareGeneration(input.scope,input.asOf)).report.sourceComplete,false,'client event cannot scope a legacy order');
+});

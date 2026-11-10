@@ -519,6 +519,7 @@ export async function POST(req: NextRequest) {
       id: orderId,
       schemaVersion: 2,
       kind: 'notice',
+      environment: serverEnvironment(),
       noticeVersion: 1,
       postalProvider: 'unknown',
       userId: authenticatedUserId || undefined,

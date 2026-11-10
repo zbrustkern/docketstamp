@@ -112,7 +112,12 @@ export async function prepareGeneration(scopeInput: unknown, asOf = new Date().t
     queryByOrderIds('identity_classifications_v1', scope.environment, orderIds),
     queryByOrderIds('payment_facts_v1', scope.environment, orderIds),
   ]);
-  const authorityOrderIds = new Set([...money.rows, ...scopedOpen.map(row => row.fact)].map(row => row.orderId));
+  // Older checkout records lack environment. A server-emitted lock is enough to
+  // scope an unpaid order; browser-supplied order IDs never establish this trust.
+  const authorityOrderIds = new Set([
+    ...money.rows, ...scopedOpen.map(row => row.fact),
+    ...events.rows.filter(row => row.emitter === 'server' && row.eventName === 'document_locked'),
+  ].map(row => row.orderId));
   const scopedOrders = orders.rows.filter(row => {
     const allowed = row.environment === scope.environment || (!row.environment && authorityOrderIds.has(row.id));
     if (!allowed) joinsComplete = false;
