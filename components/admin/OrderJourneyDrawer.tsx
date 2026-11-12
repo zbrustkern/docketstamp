@@ -175,32 +175,59 @@ export function OrderJourneyDrawer({
             </span>
           </div>
 
-          <div className="flex gap-3 items-start">
-            {order.frontImageUrl && (
-              <div className="relative w-14 h-20 bg-stone-100 rounded-lg overflow-hidden border border-stone-200 shrink-0">
-                <Image
-                  src={order.frontImageUrl}
-                  alt="Card Cover"
-                  fill
-                  sizes="60px"
-                  className="object-cover"
-                  unoptimized
-                />
-              </div>
-            )}
-
-            <div className="space-y-1 text-xs min-w-0 flex-1">
-              <span className="text-[10px] text-stone-400 block font-medium">Handwriting Style</span>
-              <p className="font-semibold text-stone-800 text-xs">
-                {order.fontStyleId || "Unrecorded"}
-              </p>
-              {order.printedMessage && (
-                <p className="text-[10px] text-stone-500 italic truncate" title={order.printedMessage}>
-                  &ldquo;{order.printedMessage}&rdquo;
+          {order.noticeId || order.noticeType || order.documentHtml ? (
+            <div className="space-y-2 text-xs">
+              <div>
+                <span className="text-[10px] text-stone-400 block font-medium">Notice Template</span>
+                <p className="font-semibold text-stone-800 capitalize">
+                  {(order.noticeType || order.noticeId || "Formal Statutory Notice").replace(/-/g, " ")}
                 </p>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-stone-500">Document Snapshot:</span>
+                <span className="font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                  {order.documentIntegrityEvidence?.snapshotHash
+                    ? "SHA-256 Preserved"
+                    : order.documentHtml
+                    ? "Frozen HTML Recorded"
+                    : "Draft"}
+                </span>
+              </div>
+              {order.recipientAddress?.name && (
+                <div className="text-[11px] text-stone-600">
+                  <span className="text-stone-400">Target: </span>
+                  <span className="font-medium text-stone-800">{order.recipientAddress.name}</span>
+                </div>
               )}
             </div>
-          </div>
+          ) : (
+            <div className="flex gap-3 items-start">
+              {order.frontImageUrl && (
+                <div className="relative w-14 h-20 bg-stone-100 rounded-lg overflow-hidden border border-stone-200 shrink-0">
+                  <Image
+                    src={order.frontImageUrl}
+                    alt="Card Cover"
+                    fill
+                    sizes="60px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1 text-xs min-w-0 flex-1">
+                <span className="text-[10px] text-stone-400 block font-medium">Handwriting Style</span>
+                <p className="font-semibold text-stone-800 text-xs">
+                  {order.fontStyleId || "Unrecorded"}
+                </p>
+                {order.printedMessage && (
+                  <p className="text-[10px] text-stone-500 italic truncate" title={order.printedMessage}>
+                    &ldquo;{order.printedMessage}&rdquo;
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {order.handwrittenNote && (
             <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/50 text-[11px] text-stone-700 max-h-24 overflow-y-auto leading-relaxed whitespace-pre-wrap font-serif">
