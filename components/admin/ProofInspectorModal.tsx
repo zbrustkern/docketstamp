@@ -175,7 +175,10 @@ export function ProofInspectorModal({ orderId, onClose }: ProofInspectorModalPro
   };
 
   const docketId = order?.docketId || `DS-2026-${order?.id?.slice(-6).toUpperCase() || "RECORD"}`;
-  const snapshotHash = order?.documentIntegrityEvidence?.snapshotHash || (order as any)?.snapshotHash;
+  const snapshotHash =
+    order?.documentIntegrityEvidence?.digest ||
+    order?.documentIntegrityEvidence?.snapshotHash ||
+    (order as any)?.snapshotHash;
   const hasDocumentHtml = Boolean(documentHtml && documentHtml.trim().length > 0);
 
   // Address lines helper

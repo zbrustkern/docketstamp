@@ -9,6 +9,10 @@ export interface MailingAddress {
   state: string;
   zip: string;
   country?: string;
+  company?: string;
+  name?: string;
+  addressLine1?: string;
+  addressLine2?: string;
 }
 
 export type OrderStatus =
@@ -99,6 +103,7 @@ export interface DocumentIntegrityEvidence {
   schemaVersion: 1;
   algorithm: 'sha256';
   digest: string;
+  snapshotHash?: string;
   lockedAt: number;
   signatureAdoption: {
     signerName: string;

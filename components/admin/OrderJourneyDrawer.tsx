@@ -186,17 +186,19 @@ export function OrderJourneyDrawer({
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-stone-500">Document Snapshot:</span>
                 <span className="font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                  {order.documentIntegrityEvidence?.snapshotHash
+                  {order.documentIntegrityEvidence?.digest || order.documentIntegrityEvidence?.snapshotHash
                     ? "SHA-256 Preserved"
                     : order.documentHtml
                     ? "Frozen HTML Recorded"
                     : "Draft"}
                 </span>
               </div>
-              {order.recipientAddress?.name && (
+              {(order.recipientAddress?.name || order.recipientAddress?.company) && (
                 <div className="text-[11px] text-stone-600">
                   <span className="text-stone-400">Target: </span>
-                  <span className="font-medium text-stone-800">{order.recipientAddress.name}</span>
+                  <span className="font-medium text-stone-800">
+                    {order.recipientAddress?.name || order.recipientAddress?.company}
+                  </span>
                 </div>
               )}
             </div>
