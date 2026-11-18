@@ -2,13 +2,14 @@ import { CLICK_EVIDENCE_MS, clickDigest, type AcquisitionSnapshot, type RawClick
 import { getRegisteredCampaign } from './campaigns';
 import type { MarketingConsentEvidence } from './consent';
 import crypto from 'node:crypto';
+import { usesEnhancedWebMeasurement } from './web-purchase-scope';
 
 export const GOOGLE_CLICK_RETENTION_MS = CLICK_EVIDENCE_MS;
 export const GOOGLE_OFFLINE_SUPPORTED_IDENTIFIER = 'gclid' as const;
 export interface GoogleConversionCandidate {
   order: {
     id: string; environment?: string; paymentMode?: string; stripePaymentId?: string; paymentFactId?: string; isTest?: boolean; isComp?: boolean; isFounderTest?: boolean;
-    paymentMethod?: string; finalAmountInCents?: number; amountInCents?: number;
+    noticeId?: string; paymentMethod?: string; finalAmountInCents?: number; amountInCents?: number;
     acquisitionV2?: AcquisitionSnapshot; marketingConsentEvidence?: MarketingConsentEvidence;
   };
   paymentFact: { product?: string; environment?: string; provider?: string; providerAccountId?: string; providerObjectId?: string; factId?: string; kind: string; verification: string; providerMode: string; amountMinor: number; currency: string; effectiveAt: string; orderId?: string; classification?: { primary?: string } };
@@ -23,11 +24,12 @@ export type GoogleEligibilityReason =
   | 'TEST_OR_NONLIVE_PAYMENT' | 'UNVERIFIED_PAYMENT' | 'ORDER_MISMATCH' | 'INVALID_AMOUNT'
   | 'CURRENCY_UNSUPPORTED' | 'CONSENT_REQUIRED' | 'PRIVACY_SIGNAL' | 'CLICK_MISSING'
   | 'CLICK_TYPE_UNSUPPORTED' | 'CLICK_EXPIRED' | 'CLICK_MISMATCH' | 'CAMPAIGN_UNREGISTERED'
-  | 'DESTINATION_UNAPPROVED' | 'REFUNDED_OR_ADJUSTED' | 'PAYMENT_PROVIDER_UNSUPPORTED' | 'PAYMENT_BINDING_MISMATCH';
+  | 'WEB_MEASUREMENT_ONLY' | 'DESTINATION_UNAPPROVED' | 'REFUNDED_OR_ADJUSTED' | 'PAYMENT_PROVIDER_UNSUPPORTED' | 'PAYMENT_BINDING_MISMATCH';
 
 export function evaluateGoogleConversionEligibility(input: GoogleConversionCandidate) {
   const reasons: GoogleEligibilityReason[] = [];
   const order = input.order;
+  if (usesEnhancedWebMeasurement(order)) reasons.push('WEB_MEASUREMENT_ONLY');
   const fact = input.paymentFact;
   const now = input.now ?? Date.now();
   const amount = order.finalAmountInCents ?? order.amountInCents;

@@ -41,7 +41,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="text-xs text-slate-400 max-w-lg mx-auto leading-relaxed">
-            Effective Date: October 14, 2026 • Operated by <strong>Western Amalgamated</strong>, provider of <strong>DocketStamp</strong>.
+            Effective Date: November 18, 2026 • Operated by <strong>Western Amalgamated</strong>, provider of <strong>DocketStamp</strong>.
           </p>
         </div>
 
@@ -92,6 +92,12 @@ export default function PrivacyPolicyPage() {
             <p>
               Payment data (credit card numbers, Apple Pay, Google Pay credentials) is collected directly by Stripe Elements and processed on Stripe&apos;s PCI-DSS Level 1 compliant servers. DocketStamp servers never receive, process, or store raw credit card numbers or security codes.
             </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="font-serif text-lg font-bold text-white">Optional Google Ads measurement</h2>
+            <p>If you allow ad measurement, Google may use ad measurement cookies. We may share a transaction reference, purchase amount and currency, purchase time, and an available Google ad click ID with Google. If you allow email matching, we may also send a SHA-256 hash of your checkout email for eligible purchases. Google can match that hash with its own records to measure which ads led to purchases.</p>
+            <p>You can decline or withdraw permission in the Google ad measurement preferences on this site. A Global Privacy Control signal turns measurement off. The purchase signal excludes letter contents, mailing addresses, and recipient information.</p>
           </section>
         </div>
       </main>

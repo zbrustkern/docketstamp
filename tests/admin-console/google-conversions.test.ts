@@ -193,6 +193,13 @@ test('first verified payment transaction creates one held outbox reference witho
   await firestoreDb.collection('google_conversion_consent_v1').doc(binding).set({ purpose: 'google_offline_conversion', consentVersion: 1, environment: 'production', status: 'granted', grantId, gpc: false, recordedAt: evidence.recordedAt });
   await firestoreDb.collection('acquisition_click_evidence_v2').doc(`${orderId}_0`).set({ orderId, ...click });
   const outboxId = googleConversionOutboxId('production', orderId);
+  for (const conflict of [{ paymentFactId: 'other_capture' }, { stripePaymentId: 'pi_other' }, { amountReceivedInCents: 999 }]) {
+    const queued = await firestoreDb.runTransaction(tx => createGoogleConversionOutboxInTransaction(tx, {
+      order: { ...order, ...conflict } as any, orderId, paymentFact, environment: 'production', now: Date.now(),
+      freshVerifiedCapture: { paymentIntentId, amountReceivedMinor: 1295 },
+    }));
+    assert.equal(queued, false);
+  }
   const created = await firestoreDb.runTransaction(tx => createGoogleConversionOutboxInTransaction(tx, {
     order: order as any, orderId, paymentFact, environment: 'production', now: Date.now(),
     freshVerifiedCapture: { paymentIntentId, amountReceivedMinor: 1295 },
@@ -200,7 +207,7 @@ test('first verified payment transaction creates one held outbox reference witho
   assert.equal(created, true);
   const row = (await firestoreDb.collection(GOOGLE_CONVERSION_OUTBOX).doc(outboxId).get()).data()!;
   assert.equal(row.status, 'held');
-  assert.ok(row.diagnosticCodes.includes('DESTINATION_UNAPPROVED'));
+  assert.deepEqual(row.diagnosticCodes, ['DESTINATION_UNAPPROVED']);
   assert.equal(row.clickEvidenceRef, `acquisition_click_evidence_v2/${orderId}_0`);
   assert.equal(JSON.stringify(row).includes(click.value), false);
   assert.equal(await firestoreDb.runTransaction(tx => createGoogleConversionOutboxInTransaction(tx, {

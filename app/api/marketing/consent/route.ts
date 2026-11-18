@@ -5,7 +5,7 @@ import {
   verifyConsentSessionToken, getMarketingConsentFromRequest,
 } from '@/lib/admin-console/advertising/consent';
 
-const bodySchema = z.object({ choice: z.enum(['grant', 'refuse', 'withdraw']) }).strict();
+const bodySchema = z.object({ choice: z.enum(['grant', 'grant_enhanced', 'refuse', 'withdraw']) }).strict();
 function cookieOptions() {
   return { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/', maxAge: 60 * 60 * 24 * 30 };
 }
@@ -24,7 +24,7 @@ function withSession(req: NextRequest, response: NextResponse) {
 
 export async function GET(req: NextRequest) {
   const evidence = await getMarketingConsentFromRequest(req);
-  const response = withSession(req, NextResponse.json({ status: evidence.status, version: evidence.version, gpc: evidence.gpc }));
+  const response = withSession(req, NextResponse.json({ status: evidence.status, version: evidence.version, gpc: evidence.gpc, enhancedEmailMatching: evidence.enhancedEmailMatching === true }));
   response.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return response;
 }
@@ -48,9 +48,10 @@ export async function POST(req: NextRequest) {
   try {
     if (!token) token = createConsentSessionToken();
     const gpc = req.headers.get('sec-gpc') === '1';
-    const status = body.choice === 'grant' ? 'granted' : body.choice === 'refuse' ? 'denied' : 'withdrawn';
-    const evidence = await recordGoogleConversionConsent({ token, status, gpc });
-    const response = NextResponse.json({ status: evidence.status, version: evidence.version, gpc: evidence.gpc });
+    const enhancedEmailMatching = body.choice === 'grant_enhanced';
+    const status = enhancedEmailMatching || body.choice === 'grant' ? 'granted' : body.choice === 'refuse' ? 'denied' : 'withdrawn';
+    const evidence = await recordGoogleConversionConsent({ token, status, gpc, enhancedEmailMatching });
+    const response = NextResponse.json({ status: evidence.status, version: evidence.version, gpc: evidence.gpc, enhancedEmailMatching: evidence.enhancedEmailMatching === true });
     if (!verifyConsentSessionToken(priorToken)) response.cookies.set(GOOGLE_CONVERSION_CONSENT_COOKIE, token, cookieOptions());
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');
     return response;

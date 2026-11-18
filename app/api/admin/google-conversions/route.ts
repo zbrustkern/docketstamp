@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         id: safe(doc.id, 128), kind: safe(data.kind), orderId: safe(data.orderId, 128), status: safe(data.status),
         attempts: Number.isSafeInteger(data.attempts) && data.attempts >= 0 ? data.attempts : 0,
         diagnosticCodes: Array.isArray(data.diagnosticCodes) ? data.diagnosticCodes.slice(0, 12).map((v: unknown) => safe(v)).filter(Boolean) : [],
-        createdAt: instant(data.createdAt), submittedAt: instant(data.submittedAt),
+        webTagIssuedAt: instant(data.webTagIssuedAt), createdAt: instant(data.createdAt), submittedAt: instant(data.submittedAt),
         processingAcceptedAt: instant(data.processingAcceptedAt), attributedAt: instant(data.attributedAt),
         clickExpiresAt: instant(data.clickExpiresAt), nextAttemptAt: instant(data.nextAttemptAt),
       };
@@ -27,7 +27,10 @@ export async function GET(req: NextRequest) {
       environment, exportEnabled: environment === 'production' && Boolean(destination),
       apiEnabled: environment === 'production' && isGoogleDeliveryEnabled(destination || undefined),
       destinationVerified: Boolean(destination), rows, truncated: snapshot.docs.length > 50,
-      message: environment !== 'production' ? 'Staging and local purchases cannot be exported or sent to Google.' : !destination ? 'A compatible DocketStamp conversion destination and explicit activation approval are still required.' : 'Export creates a file; it does not upload or establish Google acceptance.',
+      message: [
+        environment === 'production' && process.env.GOOGLE_ENHANCED_WEB_PURCHASES === 'true' ? 'Eligible website purchases use the DocketStamp Google tag.' : 'Website purchase measurement is off.',
+        environment === 'production' && destination ? 'Exports create files for offline upload.' : 'Offline uploads are disabled.',
+      ].join(' '),
     }, { headers });
   } catch (error) {
     return NextResponse.json({ error: error instanceof AdminAccessError ? error.code : 'GOOGLE_DIAGNOSTICS_UNAVAILABLE' }, { status: error instanceof AdminAccessError ? error.status : 503, headers });

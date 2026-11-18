@@ -1,4 +1,5 @@
 import React from 'react';
+import PurchaseMeasurement from '@/src/components/marketing/PurchaseMeasurement';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -112,6 +113,7 @@ export default async function DocketStatusPage({ params }: DocketPageProps) {
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 font-sans pb-16">
+      <PurchaseMeasurement orderId={order.id} returnPath={`/docket/${docketId}`} />
       {/* Top Header Bar */}
       <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">

@@ -61,8 +61,10 @@ const CLASSIFICATIONS: Array<{ value: Classification; label: string }> = [
 ];
 const JOURNEY_STAGES = [
   ["entry_viewed", "Eligible visit"], ["workspace_viewed", "Workspace"],
+  ["draft_edit_started", "First edit"], ["draft_half_complete", "Half of details ready"],
+  ["details_ready", "Details ready"], ["signature_adopted", "Signature adopted"], ["checkout_viewed", "Checkout opened"],
   ["document_locked", "Document locked"], ["payment_form_ready", "Checkout ready"],
-  ["payment_verified", "Verified paid"], ["fulfillment_accepted", "Lob accepted"],
+  ["payment_attempted", "Payment attempted"], ["payment_verified", "Verified paid"], ["fulfillment_accepted", "Lob accepted"],
 ] as const;
 
 function money(value: number | null | undefined, currency = "USD") {
@@ -294,13 +296,13 @@ export function ExecutiveReportingPanel() {
       <p className="text-[10px] text-slate-500">Report generated {local(report.asOf)} · event record scan {report.sourceStatus?.acquisition || 'not reported'}{report.sourceWatermarks?.acquisition ? ` · newest event record ${local(report.sourceWatermarks.acquisition)}` : ''} · payment record scan {report.sourceStatus?.payment || 'not reported'}{report.sourceWatermarks?.payment ? ` · newest payment record ${local(report.sourceWatermarks.payment)}` : ''} · cost/spend record scan {report.sourceStatus?.costs || 'not reported'}{report.sourceWatermarks?.costs ? ` · newest cost record ${local(report.sourceWatermarks.costs)}` : ''} · Stripe reconciliation {report.quality?.providerReconciliation || 'not measured'}{report.quality?.paymentCoverageReason ? ` (${report.quality.paymentCoverageReason.replaceAll('_',' ').toLowerCase()})` : ''} · source scan {report.sourceComplete ? 'complete within scope' : 'partial'}.</p>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="journey-heading">
-        <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 id="journey-heading" className="text-sm font-bold text-slate-900">Customer journey</h3><p className="mt-1 text-xs text-slate-500">Unique sessions by observed milestone. Payment and fulfillment counts come from server/provider facts.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">{CLASSIFICATIONS.find(item => item.value === classification)?.label}</span></div>
+        <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 id="journey-heading" className="text-sm font-bold text-slate-900">Customer journey</h3><p className="mt-1 text-xs text-slate-500">Unique sessions that reached each step. First-edit and halfway tracking begins with the enhanced conversions release.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">{CLASSIFICATIONS.find(item => item.value === classification)?.label}</span></div>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
           {JOURNEY_STAGES.map(([name, label], index) => {
             const count = journeyCount(name);
-            const previous = index === 0 ? Math.max(1, journeyCount("entry_viewed")) : journeyCount(JOURNEY_STAGES[index - 1][0]);
-            const width = Math.min(100, previous ? count / previous * 100 : 0);
-            return <article key={name} className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="truncate text-[10px] font-semibold text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{count}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-teal-700" style={{ width: `${width}%` }} /></div><p className="mt-1 text-[9px] text-slate-500">{index === 0 ? "entry cohort" : `${width.toFixed(0)}% of prior stage`}</p></article>;
+            const visits = journeyCount("entry_viewed");
+            const width = Math.min(100, visits ? count / visits * 100 : 0);
+            return <article key={name} className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="truncate text-[10px] font-semibold text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{count}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-teal-700" style={{ width: `${width}%` }} /></div><p className="mt-1 text-[9px] text-slate-500">{index === 0 ? "entry cohort" : `${width.toFixed(0)}% of eligible visits`}</p></article>;
           })}
         </div>
       </section>

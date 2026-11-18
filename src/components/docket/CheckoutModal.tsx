@@ -33,6 +33,7 @@ import {
   ExternalLink,
   MapPin,
 } from 'lucide-react';
+import PurchaseMeasurement from '@/src/components/marketing/PurchaseMeasurement';
 import { MailTierId, InterpolatedDocument } from '@/lib/docket/types';
 import { DOCKET_PRICING_TIERS } from '@/lib/docket/notices';
 import { CHOOSER_METADATA_BY_SLUG } from '@/lib/docket/chooser-routing';
@@ -1296,6 +1297,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* STEP 3: Post-Payment Truthful Status Screen */}
         {step === 'confirmation' && lockedAttempt && (
           <div className="space-y-6">
+            <PurchaseMeasurement orderId={lockedAttempt.orderId} returnPath={`/docket/${lockedAttempt.docketId}`} />
             <div>
               <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider mb-1">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Payment Confirmed

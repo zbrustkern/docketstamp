@@ -10,6 +10,7 @@ type State = 'loading' | 'unknown' | 'granted' | 'denied' | 'withdrawn' | 'unava
 export default function MarketingConsentPreferences() {
   const pathname = usePathname();
   const [state, setState] = useState<State>('loading');
+  const [emailMatching, setEmailMatching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const gpc = typeof navigator !== 'undefined' && (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
@@ -31,6 +32,7 @@ export default function MarketingConsentPreferences() {
         if (!active) return;
         const next = data?.status === 'granted' ? 'granted' : data?.status === 'denied' ? 'denied' : data?.status === 'withdrawn' ? 'withdrawn' : 'unknown';
         setState(next);
+        setEmailMatching(data?.enhancedEmailMatching === true);
         if (next === 'granted') markGoogleOfflinePreferenceExists();
         if (next === 'denied' || next === 'withdrawn' || data?.gpc) {
           clearStoredAcquisitionEvidence(true);
@@ -54,11 +56,12 @@ export default function MarketingConsentPreferences() {
     try {
       const response = await fetch('/api/marketing/consent', {
         method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ choice }),
+        body: JSON.stringify({ choice: choice === 'grant' ? 'grant_enhanced' : choice }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error();
       setState(data.status);
+      setEmailMatching(data.enhancedEmailMatching === true);
       if (choice !== 'grant' || data.gpc) clearStoredAcquisitionEvidence(true);
       else { allowFutureAcquisitionEvidence(); markGoogleOfflinePreferenceExists(); }
       notifyMarketingConsentChanged();
@@ -75,7 +78,7 @@ export default function MarketingConsentPreferences() {
         <div className="max-w-2xl">
           <p className="font-semibold">Optional Google ad measurement</p>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            If you agree, DocketStamp may report an eligible paid order with its Google click ID, order ID, payment time, amount, and currency. It does not send your name, contact details, address, or document contents. This choice does not affect checkout.
+            If you allow measurement, Google may use ad measurement cookies. We may share a hashed version of your checkout email, an available ad click ID, a transaction reference, and the purchase time, amount and currency. Google uses these to match eligible purchases to ads. You can withdraw permission here.
           </p>
           {notice && <p role="status" className="mt-1 text-xs text-slate-700">{notice}</p>}
         </div>
@@ -84,7 +87,8 @@ export default function MarketingConsentPreferences() {
             <button type="button" disabled={busy || gpc || !storageAvailable()} onClick={() => void save('grant')} className="rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">{gpc ? 'Disabled by browser setting' : 'Allow'}</button>
             <button type="button" disabled={busy} onClick={() => void save('refuse')} className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">Decline</button>
           </> : <>
-            <span className="self-center text-xs text-slate-600">{state === 'granted' ? 'Allowed' : 'Off'}</span>
+            <span className="self-center text-xs text-slate-600">{emailMatching ? 'Allowed' : 'Click measurement allowed'}</span>
+            {!emailMatching && <button type="button" disabled={busy || gpc || !storageAvailable()} onClick={() => void save('grant')} className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold">Allow email matching</button>}
             {state === 'granted' ? <button type="button" disabled={busy} onClick={() => void save('withdraw')} className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">Withdraw</button> : <button type="button" disabled={busy || gpc || !storageAvailable()} onClick={() => void save('grant')} className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold disabled:opacity-50">Allow</button>}
           </>}
         </div>

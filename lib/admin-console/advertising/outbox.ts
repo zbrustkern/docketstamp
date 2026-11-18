@@ -33,7 +33,12 @@ export async function createGoogleConversionOutboxInTransaction(tx: any, input: 
   const authorityOrder = order as Order & { paymentFactId?: string; amountReceivedInCents?: number };
   const orderAmount = order.finalAmountInCents ?? order.amountInCents;
   const persistedCaptureMatches = paymentFact.factId === authorityOrder.paymentFactId && paymentFact.providerObjectId === order.stripePaymentId && authorityOrder.amountReceivedInCents === paymentFact.amountMinor;
-  const freshCaptureMatches = Boolean(freshVerifiedCapture && freshVerifiedCapture.paymentIntentId === paymentFact.providerObjectId && freshVerifiedCapture.amountReceivedMinor === paymentFact.amountMinor && (!order.stripePaymentId || order.stripePaymentId === freshVerifiedCapture.paymentIntentId));
+  const freshCaptureMatches = freshVerifiedCapture
+    && freshVerifiedCapture.paymentIntentId === paymentFact.providerObjectId
+    && freshVerifiedCapture.amountReceivedMinor === paymentFact.amountMinor
+    && (order.stripePaymentId == null || order.stripePaymentId === freshVerifiedCapture.paymentIntentId)
+    && (authorityOrder.paymentFactId == null || authorityOrder.paymentFactId === paymentFact.factId)
+    && (authorityOrder.amountReceivedInCents == null || authorityOrder.amountReceivedInCents === paymentFact.amountMinor);
   if (paymentFact.classification?.primary !== 'customer' || paymentFact.provider !== 'stripe' || paymentFact.providerMode !== 'live' || paymentFact.environment !== environment || environment !== 'production' || order.paymentMode && order.paymentMode !== 'live' || order.isTest === true || order.isComp === true || order.isFounderTest === true || paymentFact.orderId !== orderId || (process.env.STRIPE_ACCOUNT_ID && paymentFact.providerAccountId !== process.env.STRIPE_ACCOUNT_ID) || !Number.isSafeInteger(orderAmount) || orderAmount !== paymentFact.amountMinor || !(persistedCaptureMatches || freshCaptureMatches)) return false;
   const evidence = order.marketingConsentEvidence;
   const binding = typeof evidence?.sessionBinding === 'string' ? evidence.sessionBinding : '';
@@ -65,8 +70,15 @@ export async function createGoogleConversionOutboxInTransaction(tx: any, input: 
   const campaignId = snapshot?.currentSession?.campaignId;
   const campaignKey = campaignId ? `google:cpc:${campaignId}` : '';
   const destination = getApprovedGoogleDestination(process.env.GOOGLE_ADS_DESTINATION_KEY);
+  // On first capture the Stripe webhook commits these fields after queuing this row.
+  // Evaluate the same binding that will become visible when the transaction commits.
+  const captureBinding = freshCaptureMatches ? {
+    stripePaymentId: freshVerifiedCapture.paymentIntentId,
+    paymentFactId: paymentFact.factId,
+    paymentMode: 'live' as const,
+  } : {};
   const candidate = evaluateGoogleConversionEligibility({
-    order: { ...order, id: orderId, marketingConsentEvidence: consent },
+    order: { ...order, ...captureBinding, id: orderId },
     paymentFact: paymentFact as any,
     click: chosen,
     consent,

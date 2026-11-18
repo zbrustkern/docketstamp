@@ -11,6 +11,11 @@ runConfig:
 # Environment variables and Cloud Secret Manager bindings
 # Secrets are managed via Google Cloud Secret Manager and never committed to git.
 env:
+  - variable: GOOGLE_ENHANCED_WEB_PURCHASES
+    value: "true"
+    availability:
+      - RUNTIME
+
   # Sensitive Server-Only Secrets (Backed by Google Cloud Secret Manager)
   - variable: STRIPE_SECRET_KEY
     secret: stripe-secret-key

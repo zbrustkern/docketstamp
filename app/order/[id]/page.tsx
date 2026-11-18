@@ -19,7 +19,7 @@ import { Order } from "@/lib/types";
 import { getOrderHistoryPresentation } from "@/lib/account/order-history";
 import { useAuth } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
-import { trackGoogleAdsPurchase } from "@/lib/google-ads";
+import PurchaseMeasurement from '@/src/components/marketing/PurchaseMeasurement';
 import { trackMetaPurchase } from "@/lib/meta-ads";
 
 export default function OrderStatusPage() {
@@ -119,13 +119,6 @@ export default function OrderStatusPage() {
           setLoading(false);
 
           if (data.order && !data.order.isRedacted && data.order.status !== "PENDING_PAYMENT") {
-            trackGoogleAdsPurchase({
-              orderId: data.order.id,
-              amountInCents: data.order.finalAmountInCents ?? data.order.amountInCents,
-              customerEmail: data.order.customerEmail,
-              itemName: "DocketStamp notice dispatch",
-              itemCategory: "notice",
-            });
             trackMetaPurchase({
               orderId: data.order.id,
               value: (data.order.finalAmountInCents ?? data.order.amountInCents) / 100,
@@ -218,6 +211,7 @@ export default function OrderStatusPage() {
 
   return (
     <div className="min-h-screen bg-[#0F172A] pb-20 text-slate-100">
+      {!order.isRedacted && <PurchaseMeasurement orderId={order.id} returnPath={`/order/${order.id}`} />}
       {/* HEADER */}
       <header className="border-b border-slate-800 bg-[#0F172A]/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">

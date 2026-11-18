@@ -127,6 +127,7 @@ const DocumentWorkspaceInner: React.FC<{
   const documentPreviewRef = useRef<HTMLElement | null>(null);
 
   // Track keys edited by user to ensure hydration NEVER overwrites user edits
+  const editProgressRef = useRef({ started: '', halfway: '' });
   const userEditedKeysRef = useRef<Set<string>>(new Set());
   const draftRevisionRef = useRef<number>(draftIdentity.draftRevision);
   const [draftRevision, setDraftRevision] = useState(draftRevisionRef.current);
@@ -447,6 +448,14 @@ const DocumentWorkspaceInner: React.FC<{
   }, [notice, userValues]);
 
   useEffect(() => {
+    const progress = editProgressRef.current;
+    if (progress.started !== notice.slug || progress.halfway === notice.slug || validation.totalCount === 0
+      || validation.completedCount * 2 < validation.totalCount) return;
+    progress.halfway = notice.slug;
+    emitBusinessEvent({ eventName: 'draft_half_complete', noticeId: notice.slug, logicalKey: 'halfway:' + notice.slug });
+  }, [notice.slug, draftRevision, validation.completedCount, validation.totalCount]);
+
+  useEffect(() => {
     if (!validation.isValid) return;
     emitBusinessEvent({
       eventName: 'details_ready',
@@ -513,6 +522,10 @@ const DocumentWorkspaceInner: React.FC<{
   };
 
   const handleFieldValueChange = (key: string, value: string) => {
+    if (userValues[key] !== value && editProgressRef.current.started !== notice.slug) {
+      editProgressRef.current.started = notice.slug;
+      emitBusinessEvent({ eventName: 'draft_edit_started', noticeId: notice.slug, logicalKey: 'first-edit:' + notice.slug });
+    }
     draftRevisionRef.current += 1;
     historyReadinessRef.current.paymentReady = false;
     setDraftRevision(draftRevisionRef.current);

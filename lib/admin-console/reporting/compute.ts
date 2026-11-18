@@ -293,23 +293,25 @@ export function computeReport(input: ReportInput) {
     }
   }
   exceptions.sort((a,b) => a.priority - b.priority || b.ageSeconds - a.ageSeconds);
-  const stageSets = JOURNEY.map(() => new Set<string>());
+  const observedStages = [...JOURNEY, 'draft_edit_started', 'draft_half_complete', 'checkout_viewed'] as const;
+  const stageSets = observedStages.map(() => new Set<string>());
   let missingPrerequisites = 0;
   for (const [session, entry] of entries) {
     const observed = events.filter(e => e.sessionId === session && time(e.occurredAt) >= time(entry.occurredAt) && time(e.occurredAt) < time(entry.occurredAt) + 7 * day).sort((a,b) => time(a.occurredAt) - time(b.occurredAt));
     let prior = -1;
     for (const e of observed) {
-      const stage = JOURNEY.indexOf(e.eventName as typeof JOURNEY[number]);
+      const stage = observedStages.indexOf(e.eventName as typeof observedStages[number]);
       if (stage < 0) continue;
       stageSets[stage].add(session);
+      if (stage >= JOURNEY.length) continue; // Optional diagnostics are not prerequisites.
       if (stage > prior + 1) missingPrerequisites++;
       if (stage === prior + 1) prior = stage;
     }
   }
-  for (const session of converted) stageSets[8].add(session);
+  for (const session of converted) stageSets[JOURNEY.indexOf('payment_verified')].add(session);
   for (const orderId of paidOrderIds) {
     const order = orderMap.get(orderId); const session = order?.sessionId || order?.telemetrySessionId;
-    if (session && entries.has(session) && accepted(orderId)) stageSets[9].add(session);
+    if (session && entries.has(session) && accepted(orderId)) stageSets[JOURNEY.indexOf('fulfillment_accepted')].add(session);
   }
   const immature = [...entries.values()].filter(e => now < time(e.occurredAt) + 7 * day).length;
   const validTimes = [...allFacts.map(f => time(f.receivedAt)), ...events.map(e => time(e.receivedAt)), ...postal.map(p => time(p.receivedAt))].filter(Number.isFinite);
@@ -408,7 +410,7 @@ export function computeReport(input: ReportInput) {
         return counts;
       }, {}),
     },
-    moneyByCurrency, exceptions, postalStages, journey: JOURNEY.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
+    moneyByCurrency, exceptions, postalStages, journey: observedStages.map((name,i) => ({ name, observedSessions: stageSets[i].size, evidenceQueryRef: evidenceQueryRef(name) })), channels: [...channels.values()],
     quality: {
       classificationUnresolved: unknownCapture.length, unmatchedCaptures, immatureSessions: immature, missingPrerequisites,
       excludedByClassification,

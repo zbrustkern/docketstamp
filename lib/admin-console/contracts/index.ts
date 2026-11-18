@@ -84,7 +84,7 @@ export const EventEnvelopeSchema = z.object({
   environment: EnvironmentSchema,
   eventId: IdSchema,
   eventName: z.enum([
-    "entry_viewed", "notice_selected", "workspace_viewed", "details_ready", "signature_adopted",
+    "entry_viewed", "notice_selected", "workspace_viewed", "draft_edit_started", "draft_half_complete", "details_ready", "signature_adopted",
     "address_verification_result", "checkout_viewed", "document_locked", "payment_form_ready",
     "payment_attempted", "payment_client_result", "legacy_intent_initialized", "payment_verified", "free_order_authorized",
     "fulfillment_submission_started", "fulfillment_accepted", "fulfillment_uncertain", "fulfillment_failed",

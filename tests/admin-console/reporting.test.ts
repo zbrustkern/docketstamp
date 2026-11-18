@@ -15,6 +15,17 @@ async function run(){
   const postal=[{factId:'p1',orderId:'o1',state:'delivered',lobMode:'live',environment:'local',occurredAt:'2026-10-19T00:00:00.000Z',receivedAt:'2026-10-19T00:00:00.000Z'},{factId:'p2',orderId:'o2',state:'returned',lobMode:'live',environment:'local',occurredAt:'2026-10-19T00:00:00.000Z',receivedAt:'2026-10-19T00:00:00.000Z'}];
   const input={scope,asOf:'2026-10-20T04:00:00.000Z',facts,events,orders,postal,sourceComplete:true,generationId:'a'.repeat(32)};
   const report=computeReport(input);
+  const editing = computeReport({ ...input, events: [
+    ...events,
+    event('edit-1', 's1', 'draft_edit_started', '2026-10-12T09:01:00.000Z'),
+    event('edit-2', 's1', 'draft_edit_started', '2026-10-12T09:02:00.000Z'),
+    event('half', 's1', 'draft_half_complete', '2026-10-12T09:03:00.000Z'),
+    event('outside-cohort', 'unrelated', 'draft_half_complete', '2026-10-12T09:04:00.000Z'),
+  ] });
+  for (const stage of ['draft_edit_started', 'draft_half_complete']) {
+    assert.equal(editing.journey.find(row => row.name === stage)?.observedSessions, 1);
+  }
+  assert.equal(editing.quality.missingPrerequisites, report.quality.missingPrerequisites);
   for (const [unsupported, value] of [["campaignKey", "fixture"], ["offerId", "fixture"], ["device", "mobile"]] as const) {
     assert.throws(() => computeReport({ ...input, scope: { ...scope, [unsupported]: value } as any }), /Unrecognized key/, `${unsupported} filter must be rejected instead of publishing aggregate metrics under a narrow scope`);
   }

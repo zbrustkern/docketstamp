@@ -13,6 +13,7 @@ export interface GoogleConversionConsentEvidence {
   sessionBinding: string;
   recordedAt?: string;
   gpc: boolean;
+  enhancedEmailMatching?: true;
 }
 export type MarketingConsentEvidence = GoogleConversionConsentEvidence;
 
@@ -45,6 +46,7 @@ export async function recordGoogleConversionConsent(input: {
   token: string;
   status: Exclude<GoogleConversionConsentStatus, 'unknown'>;
   gpc: boolean;
+  enhancedEmailMatching?: boolean;
   now?: number;
 }): Promise<GoogleConversionConsentEvidence> {
   const nonce = verifyConsentSessionToken(input.token);
@@ -54,6 +56,7 @@ export async function recordGoogleConversionConsent(input: {
   const sessionBinding = digest(nonce);
   const status = input.gpc ? 'denied' : input.status;
   const grantId = status === 'granted' ? crypto.randomUUID() : undefined;
+  const enhanced = grantId && input.enhancedEmailMatching === true ? { enhancedEmailMatching: true as const } : {};
   const currentRef = firestoreDb.collection('google_conversion_consent_v1').doc(sessionBinding);
   const evidenceRef = firestoreDb.collection('google_conversion_consent_evidence_v1').doc(docId(`${sessionBinding}:${recordedAt}:${status}:${crypto.randomUUID()}`));
   await firestoreDb.runTransaction(async tx => {
@@ -62,12 +65,12 @@ export async function recordGoogleConversionConsent(input: {
     const row = sanitizeFirestoreData({
       schemaVersion: 1, purpose: 'google_offline_conversion', status,
       consentVersion: GOOGLE_CONVERSION_CONSENT_VERSION, revision: priorVersion + 1,
-      environment: serverEnvironment(), sessionBinding, ...(grantId ? { grantId } : {}), gpc: input.gpc, recordedAt,
+      environment: serverEnvironment(), sessionBinding, ...(grantId ? { grantId } : {}), ...enhanced, gpc: input.gpc, recordedAt,
     });
     tx.set(currentRef, row);
     tx.create(evidenceRef, row);
   });
-  return { status, version: 1, ...(grantId ? { grantId } : {}), sessionBinding, recordedAt, gpc: input.gpc };
+  return { status, version: 1, ...(grantId ? { grantId } : {}), ...enhanced, sessionBinding, recordedAt, gpc: input.gpc };
 }
 
 /** Verify server-recorded purpose consent against the HttpOnly signed browser session. */
@@ -99,7 +102,7 @@ export async function getMarketingConsentFromRequest(
     if (!Number.isFinite(recordedAtMs) || recordedAtMs > now || now - recordedAtMs > GOOGLE_CONVERSION_CONSENT_MAX_AGE_MS) {
       return { status: 'unknown', version: 1, sessionBinding, gpc: false };
     }
-    return { status: 'granted', version: 1, grantId: data.grantId, sessionBinding, recordedAt: String(data.recordedAt || ''), gpc: false };
+    return { status: 'granted', version: 1, grantId: data.grantId, sessionBinding, recordedAt: String(data.recordedAt || ''), gpc: false, ...(data.enhancedEmailMatching === true ? { enhancedEmailMatching: true } : {}) };
   } catch {
     return { status: 'unknown', version: 1, sessionBinding: '', gpc: req.headers.get('sec-gpc') === '1' };
   }
