@@ -65,9 +65,10 @@ export async function createGoogleConversionOutboxInTransaction(tx: any, input: 
     return [{ click, ref: clickRefs[index] }];
   });
   const snapshot = order.acquisitionV2;
-  const chosenEntry = clickEntries.find(({ click }) => click.type === 'gclid' && snapshot?.currentSession?.clicks.some(e => e.type === 'gclid' && e.digest === crypto.createHash('sha256').update(click.value).digest('hex') && e.expiresAt === click.expiresAt));
+  const candidateTouches = [snapshot?.currentSession, snapshot?.firstObserved].filter(Boolean);
+  const chosenEntry = clickEntries.find(({ click }) => click.type === 'gclid' && candidateTouches.some(touch => touch?.clicks.some(e => e.type === 'gclid' && e.digest === crypto.createHash('sha256').update(click.value).digest('hex') && e.expiresAt === click.expiresAt)));
   const chosen = chosenEntry?.click;
-  const campaignId = snapshot?.currentSession?.campaignId;
+  const campaignId = snapshot?.currentSession?.campaignId || snapshot?.firstObserved?.campaignId;
   const campaignKey = campaignId ? `google:cpc:${campaignId}` : '';
   const destination = getApprovedGoogleDestination(process.env.GOOGLE_ADS_DESTINATION_KEY);
   // On first capture the Stripe webhook commits these fields after queuing this row.

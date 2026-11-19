@@ -3,7 +3,7 @@ import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 
 export const FIRST_TOUCH_MS = 30 * 86400000;
-export const CLICK_EVIDENCE_MS = 7 * 86400000;
+export const CLICK_EVIDENCE_MS = 30 * 86400000;
 export const PILOT_CAMPAIGN = 'ds_search_deposit_demand_pilot_01';
 export const PILOT_KEY = `google:cpc:${PILOT_CAMPAIGN}`;
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);

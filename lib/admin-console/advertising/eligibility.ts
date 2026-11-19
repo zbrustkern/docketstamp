@@ -52,15 +52,17 @@ export function evaluateGoogleConversionEligibility(input: GoogleConversionCandi
     if (input.click.type !== GOOGLE_OFFLINE_SUPPORTED_IDENTIFIER) reasons.push('CLICK_TYPE_UNSUPPORTED');
     const observed = Date.parse(input.click.observedAt), expires = Date.parse(input.click.expiresAt);
     if (!/^[A-Za-z0-9_.~-]{1,255}$/.test(input.click.value) || !Number.isFinite(observed) || !Number.isFinite(expires) || observed > paidAt || expires <= now || expires > observed + GOOGLE_CLICK_RETENTION_MS || paidAt < observed) reasons.push('CLICK_EXPIRED');
-    const touches = [order.acquisitionV2?.currentSession].filter(Boolean);
-    const digestMatches = touches.some(touch => touch?.source === 'google' && touch.medium === 'cpc' && touch.clicks.some(e => e.type === 'gclid' && e.digest === clickDigest(input.click!.value) && e.expiresAt === input.click!.expiresAt));
-    if (!digestMatches) reasons.push('CLICK_MISMATCH');
-    const campaignId = order.acquisitionV2?.currentSession?.campaignId;
+    const touches = [order.acquisitionV2?.currentSession, order.acquisitionV2?.firstObserved].filter(Boolean);
+    const matchingTouch = touches.find(touch => touch?.source === 'google' && touch.medium === 'cpc' && touch.clicks.some(e => e.type === 'gclid' && e.digest === clickDigest(input.click!.value) && e.expiresAt === input.click!.expiresAt));
+    if (!matchingTouch) reasons.push('CLICK_MISMATCH');
+    const campaignId = matchingTouch?.campaignId ?? order.acquisitionV2?.currentSession?.campaignId ?? order.acquisitionV2?.firstObserved?.campaignId;
     if (!campaignId || !getRegisteredCampaign(`google:cpc:${campaignId}`)) reasons.push('CAMPAIGN_UNREGISTERED');
   }
   if (input.destinationApproved !== true) reasons.push('DESTINATION_UNAPPROVED');
   const uniqueReasons = [...new Set(reasons)];
-  if (uniqueReasons.length === 0 && input.click) return {
+  if (uniqueReasons.length === 0 && input.click) {
+    const resolvedCampaignId = order.acquisitionV2?.currentSession?.campaignId || order.acquisitionV2?.firstObserved?.campaignId;
+    return {
       eligible: true as const,
       reasons: [] as GoogleEligibilityReason[],
       click: input.click,
@@ -68,10 +70,11 @@ export function evaluateGoogleConversionEligibility(input: GoogleConversionCandi
       eventTimestamp: fact.effectiveAt,
       conversionValue: Number((fact.amountMinor / 100).toFixed(2)),
       currency: fact.currency,
-      campaignKey: `google:cpc:${order.acquisitionV2!.currentSession!.campaignId}`,
+      campaignKey: `google:cpc:${resolvedCampaignId}`,
       consentGrantId: consent!.grantId,
       consentSessionBinding: consent!.sessionBinding,
     };
+  }
   return { eligible: false as const, reasons: uniqueReasons };
 }
 

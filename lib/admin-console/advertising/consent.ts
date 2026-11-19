@@ -17,6 +17,18 @@ export interface GoogleConversionConsentEvidence {
 }
 export type MarketingConsentEvidence = GoogleConversionConsentEvidence;
 
+/** US opt-out default: permitted unless GPC is active or the visitor explicitly opted out. */
+export function isMeasurementPermitted(
+  consent: Pick<GoogleConversionConsentEvidence, 'status' | 'gpc'> | undefined | null,
+): boolean {
+  if (!consent || consent.gpc) return false;
+  return consent.status !== 'denied' && consent.status !== 'withdrawn';
+}
+
+export function consentCookieOptions() {
+  return { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/', maxAge: 60 * 60 * 24 * 30 };
+}
+
 function signingKey(): string {
   const key = process.env.GOOGLE_CONVERSION_CONSENT_SIGNING_KEY || process.env.ADMIN_SESSION_SIGNING_KEY || '';
   if (key.length < 32) throw new Error('CONSENT_SIGNING_KEY_UNAVAILABLE');
@@ -105,6 +117,25 @@ export async function getMarketingConsentFromRequest(
     return { status: 'granted', version: 1, grantId: data.grantId, sessionBinding, recordedAt: String(data.recordedAt || ''), gpc: false, ...(data.enhancedEmailMatching === true ? { enhancedEmailMatching: true } : {}) };
   } catch {
     return { status: 'unknown', version: 1, sessionBinding: '', gpc: req.headers.get('sec-gpc') === '1' };
+  }
+}
+
+export async function ensureConsentSessionBinding(
+  req: { cookies: { get(name: string): { value: string } | undefined }; headers: { get(name: string): string | null } },
+  businessSessionId?: string,
+): Promise<{ evidence: GoogleConversionConsentEvidence; newCookieToken?: string }> {
+  const existing = await getMarketingConsentFromRequest(req, businessSessionId);
+  if (existing.sessionBinding) return { evidence: existing };
+  try {
+    const newCookieToken = createConsentSessionToken();
+    const nonce = verifyConsentSessionToken(newCookieToken);
+    if (!nonce) return { evidence: existing };
+    return {
+      evidence: { ...existing, sessionBinding: digest(nonce) },
+      newCookieToken,
+    };
+  } catch {
+    return { evidence: existing };
   }
 }
 

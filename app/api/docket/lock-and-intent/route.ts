@@ -22,7 +22,12 @@ import { verifyUsAddress } from '@/lib/fulfillment/lob';
 import { addressVerificationStatusLabel } from '@/lib/docket/address-verification-status';
 import { resolvePaymentMode } from '@/lib/payment-mode';
 import { serverEnvironment } from '@/lib/admin-console/commands/access';
-import { getMarketingConsentFromRequest } from '@/lib/admin-console/advertising/consent';
+import {
+  consentCookieOptions,
+  ensureConsentSessionBinding,
+  GOOGLE_CONVERSION_CONSENT_COOKIE,
+  isMeasurementPermitted,
+} from '@/lib/admin-console/advertising/consent';
 
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -512,9 +517,10 @@ export async function POST(req: NextRequest) {
       ? entrySource.trim()
       : 'unknown';
 
-    const marketingConsentEvidence = await getMarketingConsentFromRequest(req, cleanSessionId);
+    const { evidence: marketingConsentEvidence, newCookieToken } = await ensureConsentSessionBinding(req, cleanSessionId);
+    const measurementPermitted = req.headers.get('sec-gpc') !== '1' && isMeasurementPermitted(marketingConsentEvidence);
     const acquisition = sanitizeAcquisition(rawAcquisition, cleanSessionId || '', lockedAt);
-    if (req.headers.get('sec-gpc') === '1' || marketingConsentEvidence.status !== 'granted') {
+    if (!measurementPermitted) {
       for (const touch of [acquisition.firstObserved, acquisition.currentSession]) if (touch) touch.clicks = [];
     }
     const acquisitionClicks = sanitizeRawClicks(rawAcquisitionClicks, acquisition, lockedAt);
@@ -563,7 +569,7 @@ export async function POST(req: NextRequest) {
         utmMedium: acquisition.currentSession?.medium,
         utmCampaign: acquisition.currentSession?.campaignId,
         // The request body is never authority to transmit to an advertising provider.
-        marketingConsent: marketingConsentEvidence.status === 'granted',
+        marketingConsent: measurementPermitted,
       },
       marketingConsentEvidence,
       acquisitionV2: { ...acquisition, frozenAt: new Date(lockedAt).toISOString() },
@@ -684,7 +690,7 @@ export async function POST(req: NextRequest) {
     });
     await updateOrderAttemptState(orderId, attempt);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       orderId,
       viewToken,
       clientSecret: paymentIntent.clientSecret,
@@ -700,6 +706,10 @@ export async function POST(req: NextRequest) {
       reviewPayload: frozenHtmlPayload,
       checkoutCapability,
     });
+    if (newCookieToken) {
+      response.cookies.set(GOOGLE_CONVERSION_CONSENT_COOKIE, newCookieToken, consentCookieOptions());
+    }
+    return response;
   } catch (error: any) {
     console.error('[/api/docket/lock-and-intent Error]', error);
     return NextResponse.json(

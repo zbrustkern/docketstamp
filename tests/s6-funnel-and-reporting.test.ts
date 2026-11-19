@@ -617,8 +617,9 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
         entrySource: 'home_chooser',
       });
 
+      const runKey = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const observation = observeAcquisition({ search: `?utm_source=google&utm_medium=cpc&utm_campaign=${PILOT_CAMPAIGN}&gclid=synthetic_lock_click`, origin: 'http://localhost:3000', sessionId: 'sess_lock_propagation_test', surface: 'home', now: Date.now(), touchId: 'touch_lock' });
-      Object.assign(validPayload, { checkoutCapability: 'offline_acquisition_capability_1234567890', idempotencyKey: 'offline_acquisition_request_01', acquisitionV2: { schemaVersion: 2, firstObserved: observation.touch, currentSession: observation.touch, persistence: 'persistent', missingReasons: [] }, acquisitionClicks: observation.rawClicks });
+      Object.assign(validPayload, { checkoutCapability: `offline_acquisition_capability_${runKey}`, idempotencyKey: `offline_acquisition_request_${runKey}`, acquisitionV2: { schemaVersion: 2, firstObserved: observation.touch, currentSession: observation.touch, persistence: 'persistent', missingReasons: [] }, acquisitionClicks: observation.rawClicks });
       const req = new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -642,8 +643,18 @@ describe('S6 Funnel Telemetry & Reporting Acceptance Gate', () => {
       assert.ok(!JSON.stringify(savedOrder).includes('synthetic_lock_click'));
       const { firestoreDb } = await import('../lib/firebase-admin');
       const clicks = await firestoreDb.collection('acquisition_click_evidence_v2').where('orderId', '==', data.orderId).get();
-      assert.equal(clicks.size, 0, "unknown consent must not persist advertising click identifiers");
-      assert.equal(savedOrder.marketingConsentEvidence?.status, "unknown");
+      assert.equal(clicks.size, 1, 'US opt-out default preserves advertising click identifier when GPC is absent');
+      assert.equal(savedOrder.marketingConsentEvidence?.status, 'unknown');
+      const gpcPayload = { ...validPayload, checkoutCapability: `offline_acquisition_capability_gpc_${runKey}`, idempotencyKey: `offline_acquisition_request_gpc_${runKey}` };
+      const gpcRes = await lockAndIntentPost(new NextRequest('http://localhost:3000/api/docket/lock-and-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Sec-GPC': '1' },
+        body: JSON.stringify(gpcPayload),
+      }));
+      assert.equal(gpcRes.status, 200);
+      const gpcData = await gpcRes.json();
+      const gpcClicks = await firestoreDb.collection('acquisition_click_evidence_v2').where('orderId', '==', gpcData.orderId).get();
+      assert.equal(gpcClicks.size, 0, 'Sec-GPC: 1 must strip advertising click identifiers');
       const replayPayload = { ...validPayload, acquisitionV2: { schemaVersion: 2, firstObserved: null, currentSession: null, persistence: 'unavailable', missingReasons: [] }, acquisitionClicks: [] };
       const replay = await lockAndIntentPost(new NextRequest('http://localhost:3000/api/docket/lock-and-intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(replayPayload) }));
       assert.equal(replay.status, 200);

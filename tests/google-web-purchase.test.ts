@@ -61,9 +61,43 @@ test('enhanced web purchase requires the same live grant and verified capture an
     assert.deepEqual(await (await request()).json(), tag);
     assert.ok((await queue.get()).data()?.webTagIssuedAt);
     assert.equal((await request(false, { Origin: 'https://other.example' })).status, 204);
-    for (const patch of [{ isTest: true }, { isComp: true }, { isFounderTest: true }, { noticeId: 'fcra-credit-bureau-written-dispute-letter' },
-      { noticeId: 'statutory-health-and-biometric-data-deletion-demand' }, { marketingConsentEvidence: { ...consent, enhancedEmailMatching: false } },
-      { marketingConsentEvidence: { ...consent, grantId: 'other' } }, { marketingConsentEvidence: { ...consent, status: 'withdrawn' } }]) {
+    // Default US opt-out buyer (status: unknown, valid signed sessionBinding cookie) succeeds,
+    // and paid-click -> direct-return falls back to firstObserved click evidence.
+    const defaultToken = createConsentSessionToken();
+    const defaultBinding = createHash('sha256').update(defaultToken.split('.')[0]).digest('hex');
+    const defaultConsent = { status: 'unknown' as const, version: 1 as const, sessionBinding: defaultBinding, gpc: false };
+    const defaultOrder = {
+      ...order,
+      marketingConsentEvidence: defaultConsent,
+      acquisitionV2: {
+        firstObserved: { source: 'google', clicks: [{ type: 'wbraid', digest: clickDigest('safe_click'), expiresAt }] },
+        currentSession: { source: 'direct', clicks: [] },
+      },
+    };
+    const defaultSnapshotHash = computeOrderSnapshotHash(defaultOrder as unknown as Order);
+    await orderRef.set({ ...defaultOrder, paymentSnapshotHash: defaultSnapshotHash });
+    await firestoreDb.collection('business_outbox_v1').doc(outboxId).set({ kind: 'payment_obligation', orderId, paymentFactId: factId, snapshotHash: defaultSnapshotHash });
+    const defaultReq = (probe = false, headers = {}) => POST(new NextRequest('https://docketstamp.com/api/marketing/purchase', {
+      method: 'POST', headers: { Origin: 'https://docketstamp.com', Cookie: GOOGLE_CONVERSION_CONSENT_COOKIE + '=' + defaultToken, ...headers },
+      body: JSON.stringify({ orderId, probe }),
+    }));
+    const defaultRes = await defaultReq();
+    assert.equal(defaultRes.status, 200);
+    assert.deepEqual(await defaultRes.json(), tag);
+    // Unbound browser (wrong cookie) cannot read purchase tag payload.
+    assert.equal((await request()).status, 204);
+    // Restore original order + snapshot hash for remaining negative assertions.
+    await orderRef.set({ ...order, paymentSnapshotHash: snapshotHash });
+    await firestoreDb.collection('business_outbox_v1').doc(outboxId).set({ kind: 'payment_obligation', orderId, paymentFactId: factId, snapshotHash });
+    for (const patch of [{ isTest: true }, { isComp: true }, { isFounderTest: true },
+      { noticeId: 'fcra-credit-bureau-written-dispute-letter' },
+      { noticeId: 'fdcpa-30-day-debt-validation-letter' },
+      { noticeId: 'statutory-health-and-biometric-data-deletion-demand' },
+      { marketingConsentEvidence: { ...consent, sessionBinding: 'f'.repeat(64) } },
+      { marketingConsentEvidence: { ...consent, grantId: 'other' } },
+      { marketingConsentEvidence: { ...consent, status: 'denied' } },
+      { marketingConsentEvidence: { ...consent, status: 'withdrawn' } },
+      { marketingConsentEvidence: { ...consent, gpc: true } }]) {
       await orderRef.set({ ...order, paymentSnapshotHash: snapshotHash, ...patch });
       assert.equal((await request()).status, 204);
     }

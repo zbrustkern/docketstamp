@@ -95,9 +95,19 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="font-serif text-lg font-bold text-white">Optional Google Ads measurement</h2>
-            <p>If you allow ad measurement, Google may use ad measurement cookies. We may share a transaction reference, purchase amount and currency, purchase time, and an available Google ad click ID with Google. If you allow email matching, we may also send a SHA-256 hash of your checkout email for eligible purchases. Google can match that hash with its own records to measure which ads led to purchases.</p>
-            <p>You can decline or withdraw permission in the Google ad measurement preferences on this site. A Global Privacy Control signal turns measurement off. The purchase signal excludes letter contents, mailing addresses, and recipient information.</p>
+            <h2 className="font-serif text-lg font-bold text-white flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-200 text-xs font-mono flex items-center justify-center font-bold">5</span>
+              Google Ads Purchase Measurement
+            </h2>
+            <p>
+              To measure the performance of our United States search advertising, DocketStamp records Google ad click identifiers for up to 30 days and reports completed purchases on eligible notices to Google Ads. Reported purchase events include only an opaque transaction reference, purchase amount and currency, an available Google ad click identifier, and a SHA-256 hash of the checkout email address (Google Enhanced Conversions). We disable ad personalization and remarketing signals on these events.
+            </p>
+            <p>
+              Purchase signals are sent from an isolated receipt step and never include letter contents, notice details, mailing addresses, or recipient information. Sensitive notices (credit-report disputes, debt-validation requests, and health or biometric data deletion demands) are excluded from Google Ads purchase measurement.
+            </p>
+            <p>
+              You can opt out at any time using the ad measurement preference control in the site footer. We also honor browser Global Privacy Control (GPC) signals automatically.
+            </p>
           </section>
         </div>
       </main>

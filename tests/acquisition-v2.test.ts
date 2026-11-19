@@ -44,7 +44,10 @@ test('server sanitizer binds session, strips extra fields, expires evidence and 
   assert.equal(sanitizeRawClicks(rawClicks,good,now).length,1);
   assert.equal(sanitizeRawClicks([{...rawClicks[0],value:'forged'}],good,now).length,0);
   assert.equal(sanitizeAcquisition(raw,'another_session',now).currentSession,null);
-  assert.equal(sanitizeAcquisition(raw,'session_test',now+CLICK_EVIDENCE_MS+1).currentSession?.clicks.length,0);
+  assert.equal(CLICK_EVIDENCE_MS, 30 * 86400000);
+  const earlyClickTouch = { ...touch!, clicks: [{ ...touch!.clicks[0], expiresAt: new Date(now + 1000).toISOString() }] };
+  assert.equal(sanitizeAcquisition({ ...raw, currentSession: earlyClickTouch }, 'session_test', now + 2000).currentSession?.clicks.length, 0);
+  assert.equal(sanitizeAcquisition(raw,'session_test',now+CLICK_EVIDENCE_MS+1).currentSession,null);
   assert.equal(sanitizeAcquisition(raw,'session_test',now+FIRST_TOUCH_MS+1).firstObserved,null);
 });
 

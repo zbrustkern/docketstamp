@@ -25,11 +25,13 @@
     });
     if (response.status !== 200 || denied() || left) return leave();
     const event = await response.json();
-    if (!/^AW-\d+\/[A-Za-z0-9_-]+$/.test(event.sendTo) || !/^[a-f0-9]{64}$/.test(event.emailHash)
+    const hasValidEmailHash = typeof event.emailHash === 'string' && /^[a-f0-9]{64}$/.test(event.emailHash);
+    const hasValidClick = ['gclid', 'gbraid', 'wbraid'].includes(event.click?.type) && /^[A-Za-z0-9_.~-]{1,255}$/.test(event.click.value);
+    if (!/^AW-\d+\/[A-Za-z0-9_-]+$/.test(event.sendTo) || (!hasValidEmailHash && !hasValidClick)
       || !/^[a-f0-9]{40}$/.test(event.transactionId) || event.currency !== 'USD' || !(event.value > 0)) return leave();
 
     // The linker can read the original, consented click without exposing the workspace URL.
-    if (['gclid', 'gbraid', 'wbraid'].includes(event.click?.type) && /^[A-Za-z0-9_.~-]{1,255}$/.test(event.click.value)) {
+    if (hasValidClick) {
       history.replaceState(null, '', '?' + event.click.type + '=' + encodeURIComponent(event.click.value));
     }
     window.dataLayer = [];
@@ -38,7 +40,7 @@
     gtag('consent', 'default', { ad_storage: 'granted', ad_user_data: 'granted', analytics_storage: 'denied', ad_personalization: 'denied' });
     gtag('js', new Date());
     const adsId = event.sendTo.split('/')[0];
-    gtag('config', adsId, { send_page_view: false, allow_ad_personalization_signals: false, page_referrer: '' });
+    gtag('config', adsId, { send_page_view: false, allow_enhanced_conversions: true, allow_ad_personalization_signals: false, page_referrer: '' });
     const script = document.createElement('script');
     script.async = true;
     script.referrerPolicy = 'no-referrer';
@@ -46,7 +48,7 @@
     script.onerror = leave;
     script.onload = () => {
       if (left || denied()) return leave();
-      gtag('set', 'user_data', { sha256_email_address: event.emailHash });
+      if (hasValidEmailHash) gtag('set', 'user_data', { sha256_email_address: event.emailHash });
       gtag('event', 'conversion', {
         send_to: event.sendTo, value: event.value, currency: event.currency, transaction_id: event.transactionId,
         event_callback: leave, event_timeout: 1800,
